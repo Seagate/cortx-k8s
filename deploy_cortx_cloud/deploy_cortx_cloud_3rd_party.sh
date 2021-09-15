@@ -37,12 +37,19 @@ printf "###############################\n"
 # kubectl create -f open-ldap-deployment.yaml
 # kubectl scale -f open-ldap-deployment.yaml --replicas=$NUM_WORKER_NODES
 
+# Set max number of OpenLDAP replicas to be 3
+num_replicas=3
+if [[ "$NUM_WORKER_NODES" -le 3 ]]; then
+    num_replicas=$NUM_WORKER_NODES
+fi
+
 helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set storageclass="openldap-storage" \
     --set storagesize="1Gi" \
     --set service.name="openldap-svc" \
     --set service.ip="10.105.117.12" \
     --set statefulset.name="openldap" \
+    --set statefulset.replicas=$num_replicas \
     --set pv1.name="openldap-pv-0" \
     --set pv1.node="node-1" \
     --set pv1.localpath="/var/lib/ldap" \
@@ -52,7 +59,6 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set pv3.name="openldap-pv-2" \
     --set pv3.node="node-3" \
     --set pv3.localpath="/var/lib/ldap"
-
 
 # Check if all OpenLDAP are up and running
 node_count=0

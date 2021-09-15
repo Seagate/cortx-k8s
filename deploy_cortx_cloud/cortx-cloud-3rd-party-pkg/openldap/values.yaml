@@ -6,6 +6,7 @@ service:
   ip: 10.105.117.12
 statefulset:
   name: openldap
+  replicas: 3
 pv1:
   name: openldap-pv-0
   node: node-1
