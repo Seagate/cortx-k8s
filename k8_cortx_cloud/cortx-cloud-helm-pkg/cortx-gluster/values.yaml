@@ -1,0 +1,16 @@
+namespace: default
+cortxgluster:
+  name: gluster
+  nodename: node-1
+  storagesize: 1Gi
+  service:
+    name: cortx-gluster-svc
+  pv:
+    name: gluster-default-volume
+    path: myvol
+  pvc:
+    name: gluster-claim
+  hostpath:
+    etc: /mnt/fs-local-volume/etc/gluster
+    logs: /mnt/fs-local-volume/var/log/gluster
+    config: /mnt/fs-local-volume/var/lib/glusterd

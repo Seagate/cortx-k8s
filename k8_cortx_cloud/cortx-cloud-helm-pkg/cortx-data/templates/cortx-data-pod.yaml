@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.cortxdata.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.cortxdata.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cortxdata.name }}
+    spec:
+      volumes:
+        - name: {{ .Values.cortxdata.cfgmap.ctr1.volmountname }}
+          configMap:
+            name: {{ .Values.cortxdata.cfgmap.ctr1.name }}
+        - name: {{ .Values.cortxdata.cfgmap.ctr2.volmountname }}
+          configMap:
+            name: {{ .Values.cortxdata.cfgmap.ctr2.name }}
+        {{- $nodename := (.Values.cortxdata.nodename) }}
+        {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
+        {{- $basepath := (base .) }}
+        - name: {{ printf "cortx-data-%s-pv-%s" $basepath $nodename }}
+          persistentVolumeClaim:
+            claimName: {{ printf "cortx-data-%s-pvc-%s" $basepath $nodename }}
+        {{- end }}
+        - name: {{ .Values.cortxgluster.pv.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.cortxgluster.pvc.name }}
+        - name: local-path-pv # dton remove
+          persistentVolumeClaim:  # dton remove
+            claimName: {{ .Values.cortxdata.localpathpvc.name }} # dton remove
+      containers:
+        - name: container001
+          image: nginx
+          imagePullPolicy: IfNotPresent
+          volumeDevices:
+            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
+            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
+              devicePath: {{ . }}
+            {{- end }}
+          volumeMounts:
+            - name: {{ .Values.cortxgluster.pv.name }}
+              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: {{ .Values.cortxdata.cfgmap.ctr1.volmountname }}
+              mountPath: /etc/nginx/conf.d
+            - name: local-path-pv # dton test
+              mountPath: /data  # dton test
+          ports:
+          - containerPort: 81
+        - name: container002
+          image: nginx
+          imagePullPolicy: IfNotPresent
+          volumeDevices:
+            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
+            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
+              devicePath: {{ . }}
+            {{- end }}
+          volumeMounts:
+            - name: {{ .Values.cortxgluster.pv.name }}
+              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: {{ .Values.cortxdata.cfgmap.ctr2.volmountname }}
+              mountPath: /etc/nginx/conf.d
+            - name: local-path-pv # dton test
+              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+          ports:
+          - containerPort: 82

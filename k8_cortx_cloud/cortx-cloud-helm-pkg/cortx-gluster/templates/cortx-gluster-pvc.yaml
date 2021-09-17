@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.cortxgluster.pvc.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+  - ReadWriteMany      
+  resources:
+     requests:
+       storage: {{ .Values.cortxgluster.storagesize }}    

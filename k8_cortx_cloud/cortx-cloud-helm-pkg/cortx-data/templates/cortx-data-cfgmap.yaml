@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr1.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  default.conf: "server {
+    listen       81;
+    server_name  localhost;
+    location / {
+    root   /usr/share/nginx/html;
+    index  index.html index.htm;
+    }
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+    root   /usr/share/nginx/html;
+    }
+}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr2.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  default.conf: "server {
+    listen       82;
+    server_name  localhost;
+    location / {
+    root   /usr/share/nginx/html;
+    index  index.html index.htm;
+    }
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+    root   /usr/share/nginx/html;
+    }
+}"

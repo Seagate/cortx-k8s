@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Values.cortxprov.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  volumes:
+    {{- $nodename := (.Values.cortxprov.nodename) }}
+    {{- range .Files.Lines .Values.cortxprov.mountblkinfo }}
+    {{- $basepath := (base .) }}
+    - name: {{ printf "cortx-data-%s-pv-%s" $basepath $nodename }}
+      persistentVolumeClaim:
+        claimName: {{ printf "cortx-data-%s-pvc-%s" $basepath $nodename }}
+    {{- end }}
+    - name: {{ .Values.cortxgluster.pv.name }}
+      persistentVolumeClaim:
+        claimName: {{ .Values.cortxgluster.pvc.name }}
+    - name: local-path-pv # dton remove
+      persistentVolumeClaim:  # dton remove
+        claimName: {{ .Values.cortxprov.localpathpvc.name }}  # dton remove
+  containers:
+  - name: container1
+    image: centos:7
+    imagePullPolicy: IfNotPresent        
+    command: 
+      - /bin/sh
+    args: 
+      - -c
+      - sleep $(shuf -i 5-10 -n 1)s
+      # - sleep $(shuf -i 60-70 -n 1)s
+    volumeDevices:
+      {{- range .Files.Lines .Values.cortxprov.mountblkinfo }}
+      - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
+        devicePath: {{ . }}
+      {{- end }}
+    volumeMounts:
+      - name: {{ .Values.cortxgluster.pv.name }}
+        mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+      - name: local-path-pv # dton test
+        mountPath: {{ .Values.cortxprov.localpathpvc.mountpath }}
+  restartPolicy: Never
