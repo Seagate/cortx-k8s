@@ -6,6 +6,12 @@
 - cortx-cloud-helm-pkg/cortx-data/mnt-blk-info-<node-name>.txt
 - cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info<node-name>.txt
 
+Note: "mnt-blk-info-<node-name>.txt" has to be created for each worker node
+in the CORTX cluster. For example if there are 3 worker nodes in the cluster, 
+3 "mnt-blk-info-<node-name>.txt" files are expected in the following folders:
+- cortx-cloud-helm-pkg/cortx-data/
+- cortx-cloud-helm-pkg/cortx-provisioner/
+
 ###############################################
 # Rancher Local Path Provisioner Requirements #
 ###############################################
