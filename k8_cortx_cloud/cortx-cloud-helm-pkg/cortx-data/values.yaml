@@ -35,11 +35,8 @@ cortxdata:
       name: cortx-data-cfgmap009
       volmountname: config009
   localpathpvc:
-    name: cortx-data-local-path-pvc
+    name: cortx-data-fs-local-pvc
     mountpath: /data # This is the mount path in the container
-cortxfslocal:
-  name: cortx-fs-local
-  hostpath: /mnt/fs-local-volume
 cortxgluster:
   pv:
     name: gluster-default-volume

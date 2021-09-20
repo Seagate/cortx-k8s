@@ -70,7 +70,7 @@ spec:
             - name: {{ .Values.cortxdata.cfgmap.ctr1.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
-              mountPath: /data
+              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}

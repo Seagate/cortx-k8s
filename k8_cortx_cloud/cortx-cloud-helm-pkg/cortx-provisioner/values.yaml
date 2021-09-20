@@ -6,7 +6,7 @@ cortxprov:
   service:
     name: cortx-data-clusterip-svc
   localpathpvc:
-    name: cortx-prov-local-path-pvc
+    name: cortx-data-fs-local-pvc
     mountpath: /data # This is the mount path in the container
     requeststoragesize: 1Gi
 cortxgluster:

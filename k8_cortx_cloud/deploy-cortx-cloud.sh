@@ -335,7 +335,7 @@ while IFS= read -r line; do
             --set cortxgluster.pv.name=$gluster_pv_name \
             --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
             --set cortxgluster.pvc.name=$gluster_pvc_name \
-            --set cortxprov.localpathpvc.name="cortx-local-path-pvc-$node_name" \
+            --set cortxprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxprov.localpathpvc.mountpath="/data" \
             --set cortxprov.localpathpvc.requeststoragesize="1Gi" \
             --set namespace=$namespace
@@ -406,7 +406,7 @@ while IFS= read -r line; do
             --set cortxdata.cfgmap.ctr8.volmountname="config008-$node_name" \
             --set cortxdata.cfgmap.ctr9.name="cortx-data-cfgmap009-$node_name" \
             --set cortxdata.cfgmap.ctr9.volmountname="config009-$node_name" \
-            --set cortxdata.localpathpvc.name="cortx-local-path-pvc-$node_name" \
+            --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="/data" \
             --set namespace=$namespace
     fi
