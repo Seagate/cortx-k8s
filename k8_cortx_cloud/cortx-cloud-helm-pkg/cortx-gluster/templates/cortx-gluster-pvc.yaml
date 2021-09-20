@@ -4,6 +4,7 @@ metadata:
   name: {{ .Values.cortxgluster.pvc.name }}
   namespace: {{ .Values.namespace }}
 spec:
+  storageClassName: {{ .Values.cortxgluster.storageclass }}
   accessModes:
   - ReadWriteMany      
   resources:

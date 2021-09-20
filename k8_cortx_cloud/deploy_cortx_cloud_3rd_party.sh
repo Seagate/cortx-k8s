@@ -18,9 +18,9 @@ then
     # kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
     kubectl create -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 fi
-# # Set default StorageClass
-# kubectl patch storageclass $STORAGE_CLASS \
-#     -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+# Set default StorageClass
+kubectl patch storageclass $STORAGE_CLASS \
+    -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
 helm install "consul" hashicorp/consul \
     --set global.name="consul" \

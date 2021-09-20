@@ -8,6 +8,7 @@ cortxprov:
   localpathpvc:
     name: cortx-prov-local-path-pvc
     mountpath: /data # This is the mount path in the container
+    requeststoragesize: 1Gi
 cortxgluster:
   pv:
     name: gluster-default-volume

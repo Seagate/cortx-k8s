@@ -5,6 +5,7 @@ metadata:
   name: {{ .Values.cortxgluster.pv.name }}
   namespace: {{ .Values.namespace }}
 spec:
+  storageClassName: {{ .Values.cortxgluster.storageclass }}
   capacity:
     storage: {{ .Values.cortxgluster.storagesize }}
   accessModes:

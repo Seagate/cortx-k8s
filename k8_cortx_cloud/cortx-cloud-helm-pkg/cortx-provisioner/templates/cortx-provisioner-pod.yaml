@@ -15,9 +15,9 @@ spec:
     - name: {{ .Values.cortxgluster.pv.name }}
       persistentVolumeClaim:
         claimName: {{ .Values.cortxgluster.pvc.name }}
-    - name: local-path-pv # dton remove
-      persistentVolumeClaim:  # dton remove
-        claimName: {{ .Values.cortxprov.localpathpvc.name }}  # dton remove
+    - name: local-path-pv
+      persistentVolumeClaim:
+        claimName: {{ .Values.cortxprov.localpathpvc.name }}
   containers:
   - name: container1
     image: centos:7
@@ -27,7 +27,6 @@ spec:
     args: 
       - -c
       - sleep $(shuf -i 5-10 -n 1)s
-      # - sleep $(shuf -i 60-70 -n 1)s
     volumeDevices:
       {{- range .Files.Lines .Values.cortxprov.mountblkinfo }}
       - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -36,6 +35,6 @@ spec:
     volumeMounts:
       - name: {{ .Values.cortxgluster.pv.name }}
         mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-      - name: local-path-pv # dton test
+      - name: local-path-pv
         mountPath: {{ .Values.cortxprov.localpathpvc.mountpath }}
   restartPolicy: Never

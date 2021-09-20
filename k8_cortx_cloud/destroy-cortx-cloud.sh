@@ -1,6 +1,16 @@
 #!/bin/bash
 
+PVC_CONSUL_FILTER="data-default-consul"
+PVC_KAFKA_FILTER="kafka"
+PVC_ZOOKEEPER_FILTER="zookeeper"
+PV_FILTER="pvc"
+OPENLDAP_PVC="openldap-data"
+
 namespace="default"
+
+#############################################################
+# Destroy CORTX Cloud
+#############################################################
 
 printf "########################################################\n"
 printf "# Delete CORTX data                                     \n"
@@ -90,18 +100,6 @@ done
 
 helm uninstall "cortx-gluster-node-1"
 
-# printf "######################################################\n"
-# printf "# Delete CORTX Local Filesystem Storage               \n"
-# printf "######################################################\n"
-# while IFS= read -r line; do
-#     if [[ $line != *"master"* && $line != *"AGE"* ]]
-#     then
-#         IFS=" " read -r -a node_name <<< "$line"
-#         helm_name1="cortx-data-fs-local001-$node_name"
-#         helm uninstall $helm_name1
-#     fi
-# done <<< "$(kubectl get nodes)"
-
 printf "######################################################\n"
 printf "# Delete CORTX Local Block Storage                    \n"
 printf "######################################################\n"
@@ -121,11 +119,6 @@ while IFS= read -r line; do
 done <<< "$(kubectl get nodes)"
 
 printf "######################################################\n"
-printf "# Delete Rancher Local Path Provisioner               \n"
-printf "######################################################\n"
-kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
-
-printf "######################################################\n"
 printf "# Delete Persistent Volume Claims                     \n"
 printf "######################################################\n"
 while IFS= read -r line; do
@@ -139,7 +132,55 @@ while IFS= read -r line; do
     fi
 done <<< "$(kubectl get pv -A)"
 
-# Delete CORTX namespace
-if [[ "$namespace" != "default" ]]; then
-    kubectl delete namespace $namespace
-fi
+#############################################################
+# Destroy CORTX 3rd party
+#############################################################
+
+printf "###################################\n"
+printf "# Delete Kafka                    #\n"
+printf "###################################\n"
+helm uninstall kafka
+
+printf "###################################\n"
+printf "# Delete Zookeeper                #\n"
+printf "###################################\n"
+helm uninstall zookeeper
+
+printf "###################################\n"
+printf "# Delete openLDAP                 #\n"
+printf "###################################\n"
+helm uninstall "openldap"
+# # Delete everything in "/var/lib/ldap folder" in all worker nodes
+# node1=${1:-'192.168.5.148'}
+# node2=${2:-'192.168.5.150'}
+# ssh root@$node1 "rm -rf /var/lib/ldap/*"
+# ssh root@$node2 "rm -rf /var/lib/ldap/*"
+
+printf "###################################\n"
+printf "# Delete Consul                   #\n"
+printf "###################################\n"
+helm delete consul
+# kubectl delete -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
+
+printf "###################################\n"
+printf "# Delete Persistent Volume Claims #\n"
+printf "###################################\n"
+VOLUME_CLAIMS=$(kubectl get pvc | grep -E "$PVC_CONSUL_FILTER|$PVC_KAFKA_FILTER|$PVC_ZOOKEEPER_FILTER|$OPENLDAP_PVC" | cut -f1 -d " ")
+echo $VOLUME_CLAIMS
+for VOLUME_CLAIM in $VOLUME_CLAIMS
+do
+    printf "Removing $VOLUME_CLAIM\n"
+    kubectl delete pvc $VOLUME_CLAIM
+done
+
+printf "###################################\n"
+printf "# Delete Persistent Volumes       #\n"
+printf "###################################\n"
+PERSISTENT_VOLUMES=$(kubectl get pv | grep -E "$PVC_CONSUL_FILTER|$PVC_KAFKA_FILTER|$PVC_ZOOKEEPER_FILTER" | cut -f1 -d " ")
+echo $PERSISTENT_VOLUMES
+for PERSISTENT_VOLUME in $PERSISTENT_VOLUMES
+do
+    printf "Removing $PERSISTENT_VOLUME\n"
+    kubectl delete pv $PERSISTENT_VOLUME
+done

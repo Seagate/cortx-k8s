@@ -3,6 +3,7 @@ cortxgluster:
   name: gluster
   nodename: node-1
   storagesize: 1Gi
+  storageclass: cortx-gluster-storage
   service:
     name: cortx-gluster-svc
   pv:
