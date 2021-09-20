@@ -4,18 +4,10 @@ metadata:
   name: {{ .Values.cortxdata.cfgmap.ctr1.name }}
   namespace: {{ .Values.namespace }}
 data:
-  default.conf: "server {
-    listen       81;
-    server_name  localhost;
-    location / {
-    root   /usr/share/nginx/html;
-    index  index.html index.htm;
+  config.json: |-
+    {
+      "test": "hello_world_container1"
     }
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-    root   /usr/share/nginx/html;
-    }
-}"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -23,15 +15,84 @@ metadata:
   name: {{ .Values.cortxdata.cfgmap.ctr2.name }}
   namespace: {{ .Values.namespace }}
 data:
-  default.conf: "server {
-    listen       82;
-    server_name  localhost;
-    location / {
-    root   /usr/share/nginx/html;
-    index  index.html index.htm;
+  config.json: |-
+    {
+      "test": "hello_world_container2"
     }
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-    root   /usr/share/nginx/html;
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr3.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  config.json: |-
+    {
+      "test": "hello_world_container3"
     }
-}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr4.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  config.json: |-
+    {
+      "test": "hello_world_container4"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr5.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  config.json: |-
+    {
+      "test": "hello_world_container5"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr6.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  config.json: |-
+    {
+      "test": "hello_world_container6"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr7.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  config.json: |-
+    {
+      "test": "hello_world_container7"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr8.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  config.json: |-
+    {
+      "test": "hello_world_container8"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxdata.cfgmap.ctr9.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  config.json: |-
+    {
+      "test": "hello_world_container9"
+    }

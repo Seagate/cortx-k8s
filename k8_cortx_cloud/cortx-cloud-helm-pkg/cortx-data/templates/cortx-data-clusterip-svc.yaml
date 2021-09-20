@@ -8,7 +8,39 @@ spec:
   selector:
     app: {{ .Values.cortxdata.name }}
   ports:
-    - name: cortx-data-tcp
+    - name: cortx-data001-tcp
       protocol: TCP
-      port: 90
-      targetPort: 90
+      port: 5051
+      targetPort: 5051
+    - name: cortx-data002-tcp
+      protocol: TCP
+      port: 5052
+      targetPort: 5052
+    - name: cortx-data003-tcp
+      protocol: TCP
+      port: 5053
+      targetPort: 5053
+    - name: cortx-data004-tcp
+      protocol: TCP
+      port: 5054
+      targetPort: 5054
+    - name: cortx-data005-tcp
+      protocol: TCP
+      port: 5055
+      targetPort: 5055
+    - name: cortx-data006-tcp
+      protocol: TCP
+      port: 5056
+      targetPort: 5056
+    - name: cortx-data007-tcp
+      protocol: TCP
+      port: 5057
+      targetPort: 5057
+    - name: cortx-data008-tcp
+      protocol: TCP
+      port: 5058
+      targetPort: 5058
+    - name: cortx-data009-tcp
+      protocol: TCP
+      port: 5059
+      targetPort: 5059
