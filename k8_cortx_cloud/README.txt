@@ -6,16 +6,6 @@
 - cortx-cloud-helm-pkg/cortx-data/mnt-blk-info-<node-name>.txt
 - cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info<node-name>.txt
 
-#######################################
-# GlusterFS requirements              #
-#######################################
-1. Create directories for GlusterFS if they don't exist on the worker node
-that is used to deploy GlusterFS
-
-mkdir -p /mnt/fs-local-volume/etc/gluster
-mkdir -p /mnt/fs-local-volume/var/log/gluster
-mkdir -p /mnt/fs-local-volume/var/lib/glusterd
-
 ###############################################
 # Rancher Local Path Provisioner Requirements #
 ###############################################
@@ -25,6 +15,16 @@ mkdir -p /mnt/fs-local-volume/local-path-provisioner
 
 Example:
 mount -t ext4 /dev/sdd /mnt/fs-local-volume
+
+#######################################
+# GlusterFS requirements              #
+#######################################
+1. Create directories for GlusterFS if they don't exist on each worker node
+that is used to deploy GlusterFS
+
+mkdir -p /mnt/fs-local-volume/etc/gluster
+mkdir -p /mnt/fs-local-volume/var/log/gluster
+mkdir -p /mnt/fs-local-volume/var/lib/glusterd
 
 #########################
 # OpenLDAP Requirements #
