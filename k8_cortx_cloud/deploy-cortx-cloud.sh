@@ -320,7 +320,7 @@ fi
 echo y | kubectl exec -i $first_gluster_node_name --namespace=$namespace --namespace=$namespace -- gluster volume start $gluster_vol
 
 printf "########################################################\n"
-printf "# Deploy CORTX provisioner                              \n"
+printf "# Deploy CORTX Provisioner                              \n"
 printf "########################################################\n"
 num_nodes=0
 while IFS= read -r line; do
@@ -335,7 +335,10 @@ while IFS= read -r line; do
             --set cortxgluster.pv.name=$gluster_pv_name \
             --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
             --set cortxgluster.pvc.name=$gluster_pvc_name \
-            --set cortxprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
+            --set cortxprov.cfgmap.name="cortx-provisioner-cfgmap001-$node_name" \
+            --set cortxprov.cfgmap.volmountname="config001-$node_name" \
+            --set cortxprov.cfgmap.mountpath="/etc/cortx" \
+            --set cortxprov.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
             --set cortxprov.localpathpvc.mountpath="/data" \
             --set cortxprov.localpathpvc.requeststoragesize="1Gi" \
             --set namespace=$namespace
@@ -357,7 +360,7 @@ while true; do
         break
     else
         printf "."
-    fi
+    fi    
     sleep 1s
 done
 printf "\n"
@@ -372,7 +375,7 @@ while IFS= read -r line; do
 done <<< "$(kubectl get nodes)"
 
 printf "########################################################\n"
-printf "# Deploy CORTX data                                     \n"
+printf "# Deploy CORTX Data                                     \n"
 printf "########################################################\n"
 num_nodes=0
 while IFS= read -r line; do
@@ -387,32 +390,16 @@ while IFS= read -r line; do
             --set cortxgluster.pv.name=$gluster_pv_name \
             --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
             --set cortxgluster.pvc.name=$gluster_pvc_name \
-            --set cortxdata.cfgmap.mountpath="/etc/cortx-config" \
-            --set cortxdata.cfgmap.ctr1.name="cortx-data-cfgmap001-$node_name" \
-            --set cortxdata.cfgmap.ctr1.volmountname="config001-$node_name" \
-            --set cortxdata.cfgmap.ctr2.name="cortx-data-cfgmap002-$node_name" \
-            --set cortxdata.cfgmap.ctr2.volmountname="config002-$node_name" \
-            --set cortxdata.cfgmap.ctr3.name="cortx-data-cfgmap003-$node_name" \
-            --set cortxdata.cfgmap.ctr3.volmountname="config003-$node_name" \
-            --set cortxdata.cfgmap.ctr4.name="cortx-data-cfgmap004-$node_name" \
-            --set cortxdata.cfgmap.ctr4.volmountname="config004-$node_name" \
-            --set cortxdata.cfgmap.ctr5.name="cortx-data-cfgmap005-$node_name" \
-            --set cortxdata.cfgmap.ctr5.volmountname="config005-$node_name" \
-            --set cortxdata.cfgmap.ctr6.name="cortx-data-cfgmap006-$node_name" \
-            --set cortxdata.cfgmap.ctr6.volmountname="config006-$node_name" \
-            --set cortxdata.cfgmap.ctr7.name="cortx-data-cfgmap007-$node_name" \
-            --set cortxdata.cfgmap.ctr7.volmountname="config007-$node_name" \
-            --set cortxdata.cfgmap.ctr8.name="cortx-data-cfgmap008-$node_name" \
-            --set cortxdata.cfgmap.ctr8.volmountname="config008-$node_name" \
-            --set cortxdata.cfgmap.ctr9.name="cortx-data-cfgmap009-$node_name" \
-            --set cortxdata.cfgmap.ctr9.volmountname="config009-$node_name" \
-            --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
+            --set cortxdata.cfgmap.name="cortx-data-cfgmap001-$node_name" \
+            --set cortxdata.cfgmap.volmountname="config001-$node_name" \
+            --set cortxdata.cfgmap.mountpath="/etc/cortx" \
+            --set cortxdata.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="/data" \
             --set namespace=$namespace
     fi
 done <<< "$(kubectl get nodes)"
 
-printf "Wait for CORTX data to complete"
+printf "Wait for CORTX Data to be ready"
 while true; do
     count=0
     while IFS= read -r line; do

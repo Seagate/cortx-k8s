@@ -14,33 +14,9 @@ spec:
         app: {{ .Values.cortxdata.name }}
     spec:
       volumes:
-        - name: {{ .Values.cortxdata.cfgmap.ctr1.volmountname }}
+        - name: {{ .Values.cortxdata.cfgmap.volmountname }}
           configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr1.name }}
-        - name: {{ .Values.cortxdata.cfgmap.ctr2.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr2.name }}
-        - name: {{ .Values.cortxdata.cfgmap.ctr3.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr3.name }}
-        - name: {{ .Values.cortxdata.cfgmap.ctr4.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr4.name }}
-        - name: {{ .Values.cortxdata.cfgmap.ctr5.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr5.name }}
-        - name: {{ .Values.cortxdata.cfgmap.ctr6.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr6.name }}
-        - name: {{ .Values.cortxdata.cfgmap.ctr7.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr7.name }}
-        - name: {{ .Values.cortxdata.cfgmap.ctr8.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr8.name }}
-        - name: {{ .Values.cortxdata.cfgmap.ctr9.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.cfgmap.ctr9.name }}
+            name: {{ .Values.cortxdata.cfgmap.name }}
         {{- $nodename := (.Values.cortxdata.nodename) }}
         {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
         {{- $basepath := (base .) }}
@@ -65,10 +41,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr1.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
@@ -86,10 +62,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr2.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
@@ -107,10 +83,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr3.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
@@ -128,10 +104,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr4.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
@@ -149,10 +125,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr5.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
@@ -170,10 +146,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr6.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
@@ -191,10 +167,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr7.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
@@ -212,10 +188,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr8.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
@@ -233,10 +209,10 @@ spec:
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
+            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: {{ .Values.cortxdata.cfgmap.ctr9.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:

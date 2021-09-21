@@ -6,36 +6,11 @@ cortxdata:
   service:
     name: cortx-data-clusterip-svc
   cfgmap:
-    mountpath: /etc/cortx-config
-    ctr1:
-      name: cortx-data-cfgmap001
-      volmountname: config001
-    ctr2:
-      name: cortx-data-cfgmap002
-      volmountname: config002
-    ctr3:
-      name: cortx-data-cfgmap003
-      volmountname: config003
-    ctr4:
-      name: cortx-data-cfgmap004
-      volmountname: config004
-    ctr5:
-      name: cortx-data-cfgmap005
-      volmountname: config005
-    ctr6:
-      name: cortx-data-cfgmap006
-      volmountname: config006
-    ctr7:
-      name: cortx-data-cfgmap007
-      volmountname: config007
-    ctr8:
-      name: cortx-data-cfgmap008
-      volmountname: config008
-    ctr9:
-      name: cortx-data-cfgmap009
-      volmountname: config009
+    mountpath: /etc/cortx
+    volmountname: config001
+    name: cortx-data-cfgmap
   localpathpvc:
-    name: cortx-data-fs-local-pvc
+    name: cortx-fs-local-pvc
     mountpath: /data # This is the mount path in the container
 cortxgluster:
   pv:

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.cortxdata.cfgmap.name }}
+  name: {{ .Values.cortxprov.cfgmap.name }}
   namespace: {{ .Values.namespace }}
 data:
   config.yaml: |-
@@ -24,4 +24,4 @@ data:
         - name: motr             # (motr_setup --services=io)
           services: 
           - io
-          
+    

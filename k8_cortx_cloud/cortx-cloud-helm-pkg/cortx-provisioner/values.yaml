@@ -5,8 +5,12 @@ cortxprov:
   mountblkinfo: mnt-blk-info.txt
   service:
     name: cortx-data-clusterip-svc
+  cfgmap:
+    mountpath: /etc/cortx
+    volmountname: config001
+    name: cortx-provisioner-cfgmap
   localpathpvc:
-    name: cortx-data-fs-local-pvc
+    name: cortx-fs-local-pvc
     mountpath: /data # This is the mount path in the container
     requeststoragesize: 1Gi
 cortxgluster:

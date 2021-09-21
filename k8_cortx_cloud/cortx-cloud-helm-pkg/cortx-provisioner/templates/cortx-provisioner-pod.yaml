@@ -5,6 +5,9 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   volumes:
+    - name: {{ .Values.cortxprov.cfgmap.volmountname }}
+      configMap:
+        name: {{ .Values.cortxprov.cfgmap.name }}
     {{- $nodename := (.Values.cortxprov.nodename) }}
     {{- range .Files.Lines .Values.cortxprov.mountblkinfo }}
     {{- $basepath := (base .) }}
@@ -33,6 +36,8 @@ spec:
         devicePath: {{ . }}
       {{- end }}
     volumeMounts:
+      - name: {{ .Values.cortxprov.cfgmap.volmountname }}
+        mountPath: {{ .Values.cortxprov.cfgmap.mountpath }}
       - name: {{ .Values.cortxgluster.pv.name }}
         mountPath: {{ .Values.cortxgluster.pv.mountpath }}
       - name: local-path-pv
