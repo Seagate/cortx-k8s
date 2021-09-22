@@ -1,0 +1,40 @@
+pipeline {
+  agent any
+  options {
+    skipStagesAfterUnstable()
+  }
+  environment {
+    VERSION = sh(script: "echo ${VERSION}", , returnStdout: true).trim()
+    REGISTRY = sh(script: "echo ${REGISTRY}", , returnStdout: true).trim()
+    K8S_MASTER_IP = sh(script: "echo ${K8S_MASTER_IP}", , returnStdout: true).trim()
+    K8S_SSH_PASSWORD = sh(script: "echo ${K8S_SSH_PASSWORD}", , returnStdout: true).trim()
+  }
+  stages {
+    stage("Build Docker image") {
+      steps {
+        sh "sudo docker build -t lp-test:$VERSION ./liveness-probe"
+      }
+    }
+    stage("Push docker image") {
+      steps {
+        sh "sudo docker tag lp-test:$VERSION $REGISTRY/lp-test:$VERSION"
+        sh "sudo docker push $REGISTRY/lp-test:$VERSION"
+      }
+    }
+    stage("Delete current deployment in K8s") {
+      steps {
+        sh "sshpass -p $K8S_SSH_PASSWORD ssh root@$K8S_MASTER_IP kubectl delete -f /root/Documents/pod.yaml --ignore-not-found=true"
+      }
+    }
+    stage("Update YAML to K8s") {
+      steps {
+        sh "sshpass -p $K8S_SSH_PASSWORD scp liveness-probe/deployment.yaml root@$K8S_MASTER_IP:/root/Documents/pod.yaml"
+      }
+    }
+    stage("Deploy") {
+      steps {
+        sh "sshpass -p $K8S_SSH_PASSWORD ssh root@$K8S_MASTER_IP kubectl apply -f /root/Documents/pod.yaml"
+      }
+    }
+  }
+}

@@ -66,23 +66,5 @@ solution:
           device: /dev/sdc
           size: 5Gi
         data:
-          d1:
-            device: /dev/sdd
-            size: 5Gi
-          d2:
-            device: /dev/sde
-            size: 5Gi
-    node4: 
-      name: node-4
-      devices:
-        system: /mnt/fs-local-volume/
-        metadata: 
-          device: /dev/sdc
-          size: 5Gi
-        data:
-          d1:
-            device: /dev/sdd
-            size: 5Gi
-          d2:
-            device: /dev/sde
-            size: 5Gi
+          d1: /dev/sdd
+          d2: /dev/sde
