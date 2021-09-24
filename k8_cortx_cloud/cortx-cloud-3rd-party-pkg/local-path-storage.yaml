@@ -101,28 +101,28 @@ metadata:
 data:
   config.json: |-
     {
-            "nodePathMap":[
-            {
-                    "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
-                    "paths":["/mnt/fs-local-volume/local-path-provisioner"]
-            }
-            ]
+      "nodePathMap":[
+        {
+          "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
+          "paths":["/mnt/fs-local-volume/local-path-provisioner"]
+        }
+      ]
     }
   setup: |-
     #!/bin/sh
     while getopts "m:s:p:" opt
     do
-        case $opt in
-            p)
-            absolutePath=$OPTARG
-            ;;
-            s)
-            sizeInBytes=$OPTARG
-            ;;
-            m)
-            volMode=$OPTARG
-            ;;
-        esac
+      case $opt in
+        p)
+        absolutePath=$OPTARG
+        ;;
+        s)
+        sizeInBytes=$OPTARG
+        ;;
+        m)
+        volMode=$OPTARG
+        ;;
+      esac
     done
 
     mkdir -m 0777 -p ${absolutePath}
@@ -130,17 +130,17 @@ data:
     #!/bin/sh
     while getopts "m:s:p:" opt
     do
-        case $opt in
-            p)
-            absolutePath=$OPTARG
-            ;;
-            s)
-            sizeInBytes=$OPTARG
-            ;;
-            m)
-            volMode=$OPTARG
-            ;;
-        esac
+      case $opt in
+        p)
+        absolutePath=$OPTARG
+        ;;
+        s)
+        sizeInBytes=$OPTARG
+        ;;
+        m)
+        volMode=$OPTARG
+        ;;
+      esac
     done
 
     rm -rf ${absolutePath}

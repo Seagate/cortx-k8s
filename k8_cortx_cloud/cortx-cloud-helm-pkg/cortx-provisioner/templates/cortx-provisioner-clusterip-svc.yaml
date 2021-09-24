@@ -8,7 +8,7 @@ spec:
   selector:
     app: {{ .Values.cortxprov.name }}
   ports:
-    - name: cortx-data-tcp
+    - name: cortx-prov-tcp
       protocol: TCP
-      port: 90
-      targetPort: 90
+      port: 5050
+      targetPort: 5050

@@ -18,35 +18,35 @@ spec:
         app: {{ .Values.cortxgluster.name }}
     spec:
       containers:
-      - image: gluster/gluster-centos
-        imagePullPolicy: IfNotPresent
-        name: {{ .Values.cortxgluster.name }}
-        livenessProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - systemctl status glusterd.service
-        readinessProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - systemctl status glusterd.service
-        securityContext:
-          capabilities: {}
-          privileged: true
-        volumeMounts:
-        - mountPath: /etc/gluster
-          name: gluster-etc
-        - mountPath: /var/log/gluster
-          name: gluster-logs
-        - mountPath: /var/lib/glusterd
-          name: gluster-config
-        - mountPath: /dev
-          name: gluster-dev
-        - mountPath: /sys/fs/cgroup
-          name: gluster-cgroup
+        - image: docker.io/gluster/gluster-centos
+          imagePullPolicy: IfNotPresent
+          name: {{ .Values.cortxgluster.name }}
+          livenessProbe:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - systemctl status glusterd.service
+          readinessProbe:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - systemctl status glusterd.service
+          securityContext:
+            capabilities: {}
+            privileged: true
+          volumeMounts:
+          - mountPath: /etc/gluster
+            name: gluster-etc
+          - mountPath: /var/log/gluster
+            name: gluster-logs
+          - mountPath: /var/lib/glusterd
+            name: gluster-config
+          - mountPath: /dev
+            name: gluster-dev
+          - mountPath: /sys/fs/cgroup
+            name: gluster-cgroup
       nodeSelector:
         kubernetes.io/hostname: {{ .Values.cortxgluster.nodename }}
       volumes:

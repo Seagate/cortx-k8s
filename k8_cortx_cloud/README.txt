@@ -1,16 +1,15 @@
-
 #######################################
 # Local block storage requirements    #
 #######################################
-1. Local block storage partition info must be updated at:
-- cortx-cloud-helm-pkg/cortx-data/mnt-blk-info-<node-name>.txt
-- cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info<node-name>.txt
+1. Update the "solution.yaml" file to have correct node names, devices,
+   and a list of worker nodes. The info in this file is used to create
+   persistent volumes and persistent volume claims for CORTX Provisioner
+   and CORTX Data.
 
-Note: "mnt-blk-info-<node-name>.txt" has to be created for each worker node
-in the CORTX cluster. For example if there are 3 worker nodes in the cluster, 
-3 "mnt-blk-info-<node-name>.txt" files are expected in the following folders:
-- cortx-cloud-helm-pkg/cortx-data/
-- cortx-cloud-helm-pkg/cortx-provisioner/
+Note: "solution.nodes.node<1/2/3/4>.devices.system" is the disk partition used
+by "Rancher Local Path Provisioner". Currently the script doesn't mount this
+disk partition on each worker node automatically and it's required that the user
+has to mount it manually as instructed below.
 
 ###############################################
 # Rancher Local Path Provisioner Requirements #
@@ -22,6 +21,13 @@ mkdir -p /mnt/fs-local-volume/local-path-provisioner
 Example:
 mount -t ext4 /dev/sdd /mnt/fs-local-volume
 
+Rancher Local Path location on worker node:
+/mnt/fs-local-volume/local-path-provisioner/pvc-<UID>_default_cortx-fs-local-pvc-node-1
+
+Rancher Local Path location in all Pod containers (CORTX Provisioner, Data,
+Control, and Support):
+/data
+
 #######################################
 # GlusterFS requirements              #
 #######################################
@@ -31,6 +37,9 @@ that is used to deploy GlusterFS
 mkdir -p /mnt/fs-local-volume/etc/gluster
 mkdir -p /mnt/fs-local-volume/var/log/gluster
 mkdir -p /mnt/fs-local-volume/var/lib/glusterd
+
+Shared glusterFS folder on the worker nodes and inside the Pod containers is located at:
+/mnt/fs-local-volume/etc/gluster
 
 #########################
 # OpenLDAP Requirements #

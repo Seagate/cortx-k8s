@@ -8,39 +8,35 @@ spec:
   selector:
     app: {{ .Values.cortxdata.name }}
   ports:
-    - name: cortx-data001-tcp
+    - name: cortx-s3-server001-tcp
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: cortx-s3-server002-tcp
+      protocol: TCP
+      port: 443
+      targetPort: 443
+    - name: cortx-s3-iam001-tcp
+      protocol: TCP
+      port: 9080
+      targetPort: 9080
+    - name: cortx-s3-iam002-tcp
+      protocol: TCP
+      port: 9443
+      targetPort: 9443
+    - name: cortx-s3-auth-server-tcp
+      protocol: TCP
+      port: 28050
+      targetPort: 28050
+    - name: cortx-consul-agent-tcp
+      protocol: TCP
+      port: 8500
+      targetPort: 8500
+    - name: cortx-s3-bg-consumer-tcp
+      protocol: TCP
+      port: 28049
+      targetPort: 28049
+    - name: cortx-liveness-probe-tcp
       protocol: TCP
       port: 5051
       targetPort: 5051
-    - name: cortx-data002-tcp
-      protocol: TCP
-      port: 5052
-      targetPort: 5052
-    - name: cortx-data003-tcp
-      protocol: TCP
-      port: 5053
-      targetPort: 5053
-    - name: cortx-data004-tcp
-      protocol: TCP
-      port: 5054
-      targetPort: 5054
-    - name: cortx-data005-tcp
-      protocol: TCP
-      port: 5055
-      targetPort: 5055
-    - name: cortx-data006-tcp
-      protocol: TCP
-      port: 5056
-      targetPort: 5056
-    - name: cortx-data007-tcp
-      protocol: TCP
-      port: 5057
-      targetPort: 5057
-    - name: cortx-data008-tcp
-      protocol: TCP
-      port: 5058
-      targetPort: 5058
-    - name: cortx-data009-tcp
-      protocol: TCP
-      port: 5059
-      targetPort: 5059

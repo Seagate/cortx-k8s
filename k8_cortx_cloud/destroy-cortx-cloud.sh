@@ -1,16 +1,76 @@
 #!/bin/bash
 
-PVC_CONSUL_FILTER="data-default-consul"
-PVC_KAFKA_FILTER="kafka"
-PVC_ZOOKEEPER_FILTER="zookeeper"
-PV_FILTER="pvc"
-OPENLDAP_PVC="openldap-data"
+pvc_consul_filter="data-default-consul"
+pvc_kafka_filter="kafka"
+pvc_zookeeper_filter="zookeeper"
+pv_filter="pvc"
+openldap_pvc="openldap-data"
 
 namespace="default"
+
+#################################################################
+# Create files that contain disk partitions on the worker nodes
+#################################################################
+function parseSolution()
+{
+    echo "$(./parse_yaml.sh solution.yaml $1)"
+}
+
+parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
+
+# Split parsed output into an array of vars and vals
+IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
+# Loop the var val tuple array
+for var_val_element in "${parsed_var_val_array[@]}"
+do
+    node_name=$(echo $var_val_element | cut -f2 -d'>')
+    file_name="mnt-blk-info-$node_name.txt"
+    provisioner_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
+    data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
+
+    if [[ -f $provisioner_file_path ]]; then
+        rm $provisioner_file_path
+    elif [[ -f $data_file_path ]]; then
+        rm $data_file_path
+    fi
+
+    # Get the node var from the tuple
+    node=$(echo $var_val_element | cut -f3 -d'.')
+    
+    filter="solution.nodes.$node.devices*"
+    parsed_dev_output=$(parseSolution $filter)
+    IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
+    for dev in "${parsed_dev_array[@]}"
+    do
+        if [[ "$dev" != *"system"* ]]
+        then
+            device=$(echo $dev | cut -f2 -d'>')
+            # echo $device >> $provisioner_file_path
+            # echo $device >> $data_file_path
+            if [[ -s $provisioner_file_path ]]; then
+                printf "\n" >> $provisioner_file_path
+            elif [[ -s $data_file_path ]]; then
+                printf "\n" >> $data_file_path
+            fi
+            printf $device >> $provisioner_file_path
+            printf $device >> $data_file_path
+        fi
+    done
+done
 
 #############################################################
 # Destroy CORTX Cloud
 #############################################################
+
+printf "########################################################\n"
+printf "# Delete CORTX Support                                  \n"
+printf "########################################################\n"
+helm uninstall "cortx-support"
+
+printf "########################################################\n"
+printf "# Delete CORTX Control                                  \n"
+printf "########################################################\n"
+helm uninstall "cortx-control"
 
 printf "########################################################\n"
 printf "# Delete CORTX data                                     \n"
@@ -38,8 +98,8 @@ printf "########################################################\n"
 printf "# Delete CORTX GlusterFS                                \n"
 printf "########################################################\n"
 gluster_vol="myvol"
-gluster_folder="/etc/gluster/test_folder"
-pod_ctr_mount_path="/mnt/glusterfs"
+gluster_folder="/etc/gluster"
+pod_ctr_mount_path="/mnt/fs-local-volume/$gluster_folder"
 
 # Build Gluster endpoint array
 gluster_ep_array=[]
@@ -166,21 +226,44 @@ kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 printf "###################################\n"
 printf "# Delete Persistent Volume Claims #\n"
 printf "###################################\n"
-VOLUME_CLAIMS=$(kubectl get pvc | grep -E "$PVC_CONSUL_FILTER|$PVC_KAFKA_FILTER|$PVC_ZOOKEEPER_FILTER|$OPENLDAP_PVC" | cut -f1 -d " ")
-echo $VOLUME_CLAIMS
-for VOLUME_CLAIM in $VOLUME_CLAIMS
+volume_claims=$(kubectl get pvc | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc" | cut -f1 -d " ")
+echo $volume_claims
+for volume_claim in $volume_claims
 do
-    printf "Removing $VOLUME_CLAIM\n"
-    kubectl delete pvc $VOLUME_CLAIM
+    printf "Removing $volume_claim\n"
+    kubectl delete pvc $volume_claim
 done
 
 printf "###################################\n"
 printf "# Delete Persistent Volumes       #\n"
 printf "###################################\n"
-PERSISTENT_VOLUMES=$(kubectl get pv | grep -E "$PVC_CONSUL_FILTER|$PVC_KAFKA_FILTER|$PVC_ZOOKEEPER_FILTER" | cut -f1 -d " ")
-echo $PERSISTENT_VOLUMES
-for PERSISTENT_VOLUME in $PERSISTENT_VOLUMES
+persistent_volumes=$(kubectl get pv | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
+echo $persistent_volumes
+for persistent_volume in $persistent_volumes
 do
-    printf "Removing $PERSISTENT_VOLUME\n"
-    kubectl delete pv $PERSISTENT_VOLUME
+    printf "Removing $persistent_volume\n"
+    kubectl delete pv $persistent_volume
 done
+
+# Delete CORTX namespace
+if [[ "$namespace" != "default" ]]; then
+    kubectl delete namespace $namespace
+fi
+
+#################################################################
+# Delete files that contain disk partitions on the worker nodes #
+#################################################################
+# Split parsed output into an array of vars and vals
+IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
+# Loop the var val tuple array
+for var_val_element in "${parsed_var_val_array[@]}"
+do
+    node_name=$(echo $var_val_element | cut -f2 -d'>')
+    file_name="mnt-blk-info-$node_name.txt"
+    rm $(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
+    rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
+done
+
+# Delete everything in "/var/lib/ldap folder" in all worker nodes
+sshpass -p "dton" ssh root@192.168.5.148 "rm -rf /var/lib/ldap/* /mnt/fs-local-volume/local-path-provisioner/*"
+sshpass -p "dton" ssh root@192.168.5.150 "rm -rf /var/lib/ldap/* /mnt/fs-local-volume/local-path-provisioner/*"

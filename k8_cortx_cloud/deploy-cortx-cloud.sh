@@ -1,45 +1,106 @@
 #!/bin/bash
-STORAGE_CLASS=${1:-'local-path'}
-NUM_WORKER_NODES=${2:-2}
-printf "STORAGE_CLASS = $STORAGE_CLASS\n"
-printf "NUM_WORKER_NODES = $NUM_WORKER_NODES\n"
+
+storage_class=${1:-'local-path'}
+num_worker_nodes=0
+while IFS= read -r line; do
+    if [[ $line != *"master"* && $line != *"AGE"* ]]
+    then
+        num_worker_nodes=$((num_worker_nodes+1))
+    fi
+done <<< "$(kubectl get nodes)"
+printf "Number of worker nodes detected: $num_worker_nodes\n"
+
+#################################################################
+# Create files that contain disk partitions on the worker nodes
+#################################################################
+function parseSolution()
+{
+    echo "$(./parse_yaml.sh solution.yaml $1)"
+}
+
+parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
+
+# Split parsed output into an array of vars and vals
+IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
+
+# Validate solution yaml file contains the same number of worker nodes
+echo "Number of worker nodes in solution.yaml: ${#parsed_var_val_array[@]}"
+if [[ "$num_worker_nodes" != "${#parsed_var_val_array[@]}" ]]
+then
+    printf "\nThe number of detected worker nodes is not the same as the number of\n"
+    printf "nodes defined in the 'solution.yaml' file\n"
+    exit 1
+fi
+
+# Loop the var val tuple array
+for var_val_element in "${parsed_var_val_array[@]}"
+do
+    node_name=$(echo $var_val_element | cut -f2 -d'>')
+    file_name="mnt-blk-info-$node_name.txt"
+    provisioner_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
+    data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
+
+    if [[ -f $provisioner_file_path ]]; then
+        rm $provisioner_file_path
+    elif [[ -f $data_file_path ]]; then
+        rm $data_file_path
+    fi
+
+    # Get the node var from the tuple
+    node=$(echo $var_val_element | cut -f3 -d'.')
+    
+    filter="solution.nodes.$node.devices*"
+    parsed_dev_output=$(parseSolution $filter)
+    IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
+    for dev in "${parsed_dev_array[@]}"
+    do
+        if [[ "$dev" != *"system"* ]]
+        then
+            device=$(echo $dev | cut -f2 -d'>')
+            if [[ -s $provisioner_file_path ]]; then
+                printf "\n" >> $provisioner_file_path
+            elif [[ -s $data_file_path ]]; then
+                printf "\n" >> $data_file_path
+            fi
+            printf $device >> $provisioner_file_path
+            printf $device >> $data_file_path
+        fi
+    done
+done
 
 namespace="default"
-kubectl create namespace $namespace
+if [[ "$namespace" != "default" ]]; then
+    kubectl create namespace $namespace
+fi
 
 ##########################################################
 # Deploy CORTX 3rd party
 ##########################################################
 
-printf "###############################\n"
-printf "# Deploy Consul               #\n"
-printf "###############################\n"
+printf "######################################################\n"
+printf "# Deploy Consul                                       \n"
+printf "######################################################\n"
 
 # Add the HashiCorp Helm Repository:
 helm repo add hashicorp https://helm.releases.hashicorp.com
-if [[ $STORAGE_CLASS == "local-path" ]]
+if [[ $storage_class == "local-path" ]]
 then
     printf "Install Rancher Local Path Provisioner"
-    # Install Rancher provisioner
     kubectl create -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 fi
-# Set default StorageClass
-kubectl patch storageclass $STORAGE_CLASS \
-    -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
 helm install "consul" hashicorp/consul \
     --set global.name="consul" \
-    --set server.storageClass=$STORAGE_CLASS \
-    --set server.replicas=$NUM_WORKER_NODES
+    --set server.storageClass=$storage_class \
+    --set server.replicas=$num_worker_nodes
 
-printf "###############################\n"
-printf "# Deploy openLDAP             #\n"
-printf "###############################\n"
-
+printf "######################################################\n"
+printf "# Deploy openLDAP                                     \n"
+printf "######################################################\n"
 # Set max number of OpenLDAP replicas to be 3
 num_replicas=3
-if [[ "$NUM_WORKER_NODES" -le 3 ]]; then
-    num_replicas=$NUM_WORKER_NODES
+if [[ "$num_worker_nodes" -le 3 ]]; then
+    num_replicas=$num_worker_nodes
 fi
 
 helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
@@ -74,7 +135,7 @@ done <<< "$(kubectl get nodes)"
 
 # Wait for all openLDAP pods to be ready and build up openLDAP endpoint array
 # which consists of "<openLDAP-pod-name> <openLDAP-endpoint-ip-addr>""
-printf "Wait for openLDAP PODs to be ready"
+printf "\nWait for openLDAP PODs to be ready"
 while true; do
     openldap_ep_array=[]
     count=0
@@ -93,11 +154,12 @@ while true; do
     fi
     sleep 1s
 done
+printf "\n\n"
 
 num_openldap_nodes=${#openldap_ep_array[@]}
 replicate_ldif_file="opt/seagate/cortx/s3/install/ldap/replicate.ldif"
 if [[ $num_openldap_nodes -eq 2 ]]
-then
+then    
     replicate_ldif_file="opt/seagate/cortx/s3/install/ldap/replicate_2nodes.ldif"
 fi
 
@@ -129,15 +191,15 @@ do
         -w ldapadmin \
         -f opt/seagate/cortx/s3/install/ldap/ppolicy-default.ldif \
         -H ldap://${my_array[1]}
-
+        
     kubectl exec -i ${my_array[0]} -- \
         ldapadd -Y EXTERNAL -H ldapi:/// \
         -f opt/seagate/cortx/s3/install/ldap/syncprov_mod.ldif
-
+        
     kubectl exec -i ${my_array[0]} -- \
         ldapadd -Y EXTERNAL -H ldapi:/// \
         -f opt/seagate/cortx/s3/install/ldap/syncprov.ldif
-
+        
     uri_count=1
     for openldap_ep in "${openldap_ep_array[@]}"
     do
@@ -150,34 +212,55 @@ do
     done
 done
 
-printf "###############################\n"
-printf "# Deploy Zookeeper            #\n"
-printf "###############################\n"
+printf "######################################################\n"
+printf "# Deploy Zookeeper                                    \n"
+printf "######################################################\n"
 # Add Zookeeper and Kafka Repository
 helm repo add bitnami https://charts.bitnami.com/bitnami
 
 helm install zookeeper bitnami/zookeeper \
-    --set replicaCount=$NUM_WORKER_NODES \
+    --set replicaCount=$num_worker_nodes \
     --set auth.enabled=false \
     --set allowAnonymousLogin=true \
-    --set global.storageClass=$STORAGE_CLASS
+    --set global.storageClass=$storage_class
 
-printf "###############################\n"
-printf "# Deploy Kafka                #\n"
-printf "###############################\n"
+printf "######################################################\n"
+printf "# Deploy Kafka                                        \n"
+printf "######################################################\n"
 helm install kafka bitnami/kafka \
     --set zookeeper.enabled=false \
-    --set replicaCount=$NUM_WORKER_NODES \
+    --set replicaCount=$num_worker_nodes \
     --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
-    --set global.storageClass=$STORAGE_CLASS
+    --set global.storageClass=$storage_class
+
+printf "\nWait for CORTX 3rd party to be ready"
+while true; do
+    count=0
+    while IFS= read -r line; do
+        IFS=" " read -r -a pod_status <<< "$line"        
+        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+            count=$((count+1))
+            break
+        fi
+    done <<< "$(kubectl get pods --namespace=$namespace | grep 'consul\|kafka\|openldap\|zookeeper')"
+
+    if [[ $count -eq 0 ]]; then
+        break
+    else
+        printf "."
+    fi    
+    sleep 1s
+done
+printf "\n\n"
 
 ##########################################################
 # Deploy CORTX cloud
 ##########################################################
 # GlusterFS
 gluster_vol="myvol"
-gluster_folder="/etc/gluster/test_folder"
-pod_ctr_mount_path="/mnt/fs-local-volume/etc/gluster/test_folder/"
+gluster_folder="/etc/gluster"
+pod_ctr_mount_path="/mnt/fs-local-volume/$gluster_folder"
 gluster_pv_name="gluster-default-volume"
 gluster_pvc_name="gluster-claim"
 
@@ -226,13 +309,13 @@ helm install "cortx-gluster-$node_name" cortx-cloud-helm-pkg/cortx-gluster \
     --set cortxgluster.pv.path=$gluster_vol \
     --set cortxgluster.pv.name=$gluster_pv_name \
     --set cortxgluster.pvc.name=$gluster_pvc_name \
-    --set cortxgluster.hostpath.etc="/mnt/fs-local-volume/etc/gluster" \
+    --set cortxgluster.hostpath.etc=$pod_ctr_mount_path \
     --set cortxgluster.hostpath.logs="/mnt/fs-local-volume/var/log/gluster" \
     --set cortxgluster.hostpath.config="/mnt/fs-local-volume/var/lib/glusterd" \
     --set namespace=$namespace
 num_nodes=1
 
-printf "Wait for GlusterFS endpoint to be ready"
+printf "\nWait for GlusterFS endpoint to be ready"
 while true; do
     count=0
     while IFS= read -r line; do
@@ -272,7 +355,7 @@ while true; do
     fi
     sleep 1s
 done
-printf "\n"
+printf "\n\n"
 
 # Build Gluster endpoint array
 gluster_ep_array=[]
@@ -345,7 +428,7 @@ while IFS= read -r line; do
     fi
 done <<< "$(kubectl get nodes)"
 
-printf "Wait for CORTX Provisioner to complete"
+printf "\nWait for CORTX Provisioner to complete"
 while true; do
     count=0
     while IFS= read -r line; do
@@ -363,7 +446,7 @@ while true; do
     fi    
     sleep 1s
 done
-printf "\n"
+printf "\n\n"
 
 # Delete CORTX Provisioner Services
 while IFS= read -r line; do
@@ -399,11 +482,11 @@ while IFS= read -r line; do
     fi
 done <<< "$(kubectl get nodes)"
 
-printf "Wait for CORTX Data to be ready"
+printf "\nWait for CORTX Data to be ready"
 while true; do
     count=0
     while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"
+        IFS=" " read -r -a pod_status <<< "$line"        
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
@@ -415,7 +498,110 @@ while true; do
         break
     else
         printf "."
+    fi    
+    sleep 1s
+done
+printf "\n\n"
+
+printf "########################################################\n"
+printf "# Deploy CORTX Control                                  \n"
+printf "########################################################\n"
+num_nodes=1
+first_node=""
+while IFS= read -r line; do
+    if [[ $line != *"master"* && $line != *"AGE"* ]]
+    then
+        IFS=" " read -r -a node_name <<< "$line"
+        first_node=$node_name
+        break
     fi
+done <<< "$(kubectl get nodes)"
+# This local path pvc has to match with the one created by CORTX Provisioner
+local_path_pvc="cortx-fs-local-pvc-$first_node"
+helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
+    --set cortxcontrol.name="cortx-control-pod" \
+    --set cortxcontrol.service.name="cortx-control-clusterip-svc" \
+    --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
+    --set cortxcontrol.cfgmap.name="cortx-control-cfgmap001" \
+    --set cortxcontrol.cfgmap.volmountname="config001" \
+    --set cortxcontrol.localpathpvc.name=$local_path_pvc \
+    --set cortxcontrol.localpathpvc.mountpath="/data" \
+    --set cortxgluster.pv.name="gluster-default-name" \
+    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+    --set cortxgluster.pvc.name="gluster-claim" \
+    --set namespace=$namespace
+
+printf "\nWait for CORTX Control to be ready"
+while true; do
+    count=0
+    while IFS= read -r line; do
+        IFS=" " read -r -a pod_status <<< "$line"        
+        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+            break
+        fi
+        count=$((count+1))
+    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
+
+    if [[ $num_nodes -eq $count ]]; then
+        break
+    else
+        printf "."
+    fi    
+    sleep 1s
+done
+printf "\n\n"
+
+printf "########################################################\n"
+printf "# Deploy CORTX Support                                  \n"
+printf "########################################################\n"
+num_nodes=1
+# This local path pvc has to match with the one created by CORTX Provisioner
+local_path_pvc="cortx-fs-local-pvc-$first_node"
+helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
+    --set cortxsupport.name="cortx-support-pod" \
+    --set cortxsupport.service.name="cortx-support-clusterip-svc" \
+    --set cortxsupport.cfgmap.mountpath="/etc/cortx" \
+    --set cortxsupport.cfgmap.name="cortx-support-cfgmap001" \
+    --set cortxsupport.cfgmap.volmountname="config001" \
+    --set cortxsupport.localpathpvc.name=$local_path_pvc \
+    --set cortxsupport.localpathpvc.mountpath="/data" \
+    --set cortxgluster.pv.name="gluster-default-name" \
+    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+    --set cortxgluster.pvc.name="gluster-claim" \
+    --set namespace=$namespace
+
+printf "Wait for CORTX Support to be ready"
+while true; do
+    count=0
+    while IFS= read -r line; do
+        IFS=" " read -r -a pod_status <<< "$line"        
+        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+            break
+        fi
+        count=$((count+1))
+    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-support-pod-')"
+
+    if [[ $num_nodes -eq $count ]]; then
+        break
+    else
+        printf "."
+    fi    
     sleep 1s
 done
 printf "\n"
+
+#################################################################
+# Delete files that contain disk partitions on the worker nodes
+#################################################################
+# Split parsed output into an array of vars and vals
+IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
+# Loop the var val tuple array
+for var_val_element in "${parsed_var_val_array[@]}"
+do
+    node_name=$(echo $var_val_element | cut -f2 -d'>')
+    file_name="mnt-blk-info-$node_name.txt"
+    rm $(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
+    rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
+done

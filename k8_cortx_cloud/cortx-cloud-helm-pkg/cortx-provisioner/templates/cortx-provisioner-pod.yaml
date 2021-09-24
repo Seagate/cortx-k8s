@@ -22,7 +22,7 @@ spec:
       persistentVolumeClaim:
         claimName: {{ .Values.cortxprov.localpathpvc.name }}
   containers:
-  - name: container1
+  - name: cortx-setup
     image: centos:7
     imagePullPolicy: IfNotPresent        
     command: 
@@ -42,4 +42,6 @@ spec:
         mountPath: {{ .Values.cortxgluster.pv.mountpath }}
       - name: local-path-pv
         mountPath: {{ .Values.cortxprov.localpathpvc.mountpath }}
+    ports:
+    - containerPort: 5050
   restartPolicy: Never
