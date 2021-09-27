@@ -1,5 +1,6 @@
 #!/bin/bash
 
+namespace="default"
 storage_class=${1:-'local-path'}
 num_worker_nodes=0
 while IFS= read -r line; do
@@ -68,7 +69,6 @@ do
     done
 done
 
-namespace="default"
 if [[ "$namespace" != "default" ]]; then
     kubectl create namespace $namespace
 fi
@@ -118,7 +118,8 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set pv2.localpath="/var/lib/ldap" \
     --set pv3.name="openldap-pv-2" \
     --set pv3.node="node-3" \
-    --set pv3.localpath="/var/lib/ldap"
+    --set pv3.localpath="/var/lib/ldap" \
+    --set namespace="default"
 
 # Check if all OpenLDAP are up and running
 node_count=0
@@ -143,10 +144,14 @@ while true; do
     while IFS= read -r line; do
         IFS=" " read -r -a my_array <<< "$line"
         openldap_ep_array[count]="${my_array[1]} ${my_array[6]}"
+        if [[ ${my_array[6]} == "<none>" ]]; then
+            break
+        fi
         count=$((count+1))
     done <<< "$(kubectl get pods -A -o wide | grep 'openldap-')"
 
-    if [[ $count -eq $node_count && ${my_array[6]} != "<none>" ]]
+    # if [[ $count -eq $node_count && ${my_array[6]} != "<none>" ]]
+    if [[ $count -eq $node_count ]]
     then
         break
     else
@@ -168,35 +173,35 @@ for openldap_ep in "${openldap_ep_array[@]}"
 do
     IFS=" " read -r -a my_array <<< "$openldap_ep"
 
-    SHA=$(kubectl exec -i ${my_array[0]} -- slappasswd -s ldapadmin)
-    ESC_SHA=$(kubectl exec -i ${my_array[0]} -- echo $SHA | sed 's/[/]/\\\//g')
+    SHA=$(kubectl exec -i ${my_array[0]} --namespace="default" -- slappasswd -s ldapadmin)
+    ESC_SHA=$(kubectl exec -i ${my_array[0]} --namespace=default -- echo $SHA | sed 's/[/]/\\\//g')
     EXPR='s/userPassword: *.*/userPassword: '$ESC_SHA'/g'
-    kubectl exec -i ${my_array[0]} -- \
+    kubectl exec -i ${my_array[0]} --namespace="default" -- \
         sed -i "$EXPR" opt/seagate/cortx/s3/install/ldap/iam-admin.ldif
 
-    kubectl exec -i ${my_array[0]} -- \
+    kubectl exec -i ${my_array[0]} --namespace="default" -- \
         ldapadd -x -D "cn=admin,dc=seagate,dc=com" \
         -w ldapadmin \
         -f opt/seagate/cortx/s3/install/ldap/ldap-init.ldif \
         -H ldap://${my_array[1]}
 
-    kubectl exec -i ${my_array[0]} -- \
+    kubectl exec -i ${my_array[0]} --namespace="default" -- \
         ldapadd -x -D "cn=admin,dc=seagate,dc=com" \
         -w ldapadmin \
         -f opt/seagate/cortx/s3/install/ldap/iam-admin.ldif \
         -H ldap://${my_array[1]}
 
-    kubectl exec -i ${my_array[0]} -- \
+    kubectl exec -i ${my_array[0]} --namespace="default" -- \
         ldapmodify -x -a -D cn=admin,dc=seagate,dc=com \
         -w ldapadmin \
         -f opt/seagate/cortx/s3/install/ldap/ppolicy-default.ldif \
         -H ldap://${my_array[1]}
         
-    kubectl exec -i ${my_array[0]} -- \
+    kubectl exec -i ${my_array[0]} --namespace="default" -- \
         ldapadd -Y EXTERNAL -H ldapi:/// \
         -f opt/seagate/cortx/s3/install/ldap/syncprov_mod.ldif
         
-    kubectl exec -i ${my_array[0]} -- \
+    kubectl exec -i ${my_array[0]} --namespace="default" -- \
         ldapadd -Y EXTERNAL -H ldapi:/// \
         -f opt/seagate/cortx/s3/install/ldap/syncprov.ldif
         
@@ -204,10 +209,10 @@ do
     for openldap_ep in "${openldap_ep_array[@]}"
     do
         IFS=" " read -r -a temp_array <<< "$openldap_ep"
-        output=$(kubectl exec -i ${my_array[0]} -- \
+        output=$(kubectl exec -i ${my_array[0]} --namespace=default -- \
                     sed "s/<sample_provider_URI_$uri_count>/${temp_array[1]}/g" \
                     $replicate_ldif_file)
-        kubectl exec -i ${my_array[0]} -- bash -c "echo '$output' > $replicate_ldif_file"
+        kubectl exec -i ${my_array[0]} --namespace="default" -- bash -c "echo '$output' > $replicate_ldif_file"
         uri_count=$((uri_count+1))
     done
 done
@@ -231,19 +236,25 @@ helm install kafka bitnami/kafka \
     --set zookeeper.enabled=false \
     --set replicaCount=$num_worker_nodes \
     --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
-    --set global.storageClass=$storage_class
+    --set global.storageClass=$storage_class \
+    --set defaultReplicationFactor=$num_worker_nodes \
+    --set offsetTopicReplicationFactor=$num_worker_nodes \
+    --set transactionStateLogReplicationFactor=$num_worker_nodes \
+    --set auth.enabled=false \
+    --set allowAnonymousLogin=true \
+    --set transactionStateLogMinIsr=2
 
 printf "\nWait for CORTX 3rd party to be ready"
 while true; do
     count=0
     while IFS= read -r line; do
         IFS=" " read -r -a pod_status <<< "$line"        
-        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
+        if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             count=$((count+1))
             break
         fi
-    done <<< "$(kubectl get pods --namespace=$namespace | grep 'consul\|kafka\|openldap\|zookeeper')"
+    done <<< "$(kubectl get pods -A | grep 'consul\|kafka\|openldap\|zookeeper')"
 
     if [[ $count -eq 0 ]]; then
         break

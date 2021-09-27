@@ -1,12 +1,11 @@
 #!/bin/bash
 
+namespace="default"
 pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
 pv_filter="pvc"
 openldap_pvc="openldap-data"
-
-namespace="default"
 
 #################################################################
 # Create files that contain disk partitions on the worker nodes
@@ -185,7 +184,7 @@ while IFS= read -r line; do
     if [[ $line != *"master"* && $line != *"AGE"* ]]
     then
         IFS=" " read -r -a pvc_line <<< "$line"
-        if [[ "${pvc_line[5]}" == *"cortx-"* ]]; then
+        if [[ "${pvc_line[5]}" == *"cortx-"* && "${pvc_line[5]}" != *"openldap"* ]]; then
             printf "Removing ${pvc_line[0]}\n"
             kubectl delete pv ${pvc_line[0]}
         fi
@@ -226,7 +225,7 @@ kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 printf "###################################\n"
 printf "# Delete Persistent Volume Claims #\n"
 printf "###################################\n"
-volume_claims=$(kubectl get pvc | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc" | cut -f1 -d " ")
+volume_claims=$(kubectl get pvc --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc" | cut -f1 -d " ")
 echo $volume_claims
 for volume_claim in $volume_claims
 do
@@ -234,16 +233,36 @@ do
     kubectl delete pvc $volume_claim
 done
 
+if [[ $namespace != 'default' ]]; then
+    volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc" | cut -f1 -d " ")
+    echo $volume_claims
+    for volume_claim in $volume_claims
+    do
+        printf "Removing $volume_claim\n"
+        kubectl delete pvc $volume_claim
+    done
+fi
+
 printf "###################################\n"
 printf "# Delete Persistent Volumes       #\n"
 printf "###################################\n"
-persistent_volumes=$(kubectl get pv | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
+persistent_volumes=$(kubectl get pv --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
 echo $persistent_volumes
 for persistent_volume in $persistent_volumes
 do
     printf "Removing $persistent_volume\n"
     kubectl delete pv $persistent_volume
 done
+
+if [[ $namespace != 'default' ]]; then
+    persistent_volumes=$(kubectl get pv --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
+    echo $persistent_volumes
+    for persistent_volume in $persistent_volumes
+    do
+        printf "Removing $persistent_volume\n"
+        kubectl delete pv $persistent_volume
+    done
+fi
 
 # Delete CORTX namespace
 if [[ "$namespace" != "default" ]]; then
