@@ -9,8 +9,8 @@ Example:
 mount -t ext4 /dev/sdd /mnt/fs-local-volume
 
 Note: if there's no disk partition on all worker nodes then just create folder
-"/mnt/fs-local-volume/local-path-provisioner" with the exact same path on worker
-nodes.
+"/mnt/fs-local-volume/local-path-provisioner" with the exact same path on all
+worker nodes.
 
 ###############################################
 # GlusterFS requirements                      #
@@ -41,7 +41,7 @@ the folder is empty.
 # Deploy and destroy CORTX cloud 3rd party    #
 ###############################################
 1. Deploy 3rd party:
-./deploy_cortx_cloud_3rd_party.sh
+./deploy-cortx-cloud-3rd-party.sh
 
 2. Destroy 3rd party:
-./destroy_cortx_cloud_3rd_party.sh
+./destroy-cortx-cloud-3rd-party.sh

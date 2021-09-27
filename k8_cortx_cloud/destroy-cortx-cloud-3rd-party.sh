@@ -56,7 +56,3 @@ do
     printf "Removing $PERSISTENT_VOLUME\n"
     kubectl delete pv $PERSISTENT_VOLUME
 done
-
-# Delete everything in "/var/lib/ldap folder" in all worker nodes
-sshpass -p "dton" ssh root@192.168.5.148 "rm -rf /var/lib/ldap/* /mnt/fs-local-volume/local-path-provisioner/*"
-sshpass -p "dton" ssh root@192.168.5.150 "rm -rf /var/lib/ldap/* /mnt/fs-local-volume/local-path-provisioner/*"

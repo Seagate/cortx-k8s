@@ -3,11 +3,11 @@
 ###############################################
 1. Update the "solution.yaml" file to have correct node names, devices,
    and a list of worker nodes. The info in this file is used to create
-   persistent volumes and persistent volume claims for CORTX Provisioner,
-   CORTX Data, CORTX Control, and CORTX Support.
+   persistent volumes and persistent volume claims for CORTX Provisioner
+   and CORTX Data.
 
-Note: "solution.nodes.node<1/2/3/4>.devices.system" contains the disk partition
-used by "Rancher Local Path Provisioner". Currently the script doesn't mount this
+Note: "solution.nodes.node<1/2/3/4>.devices.system" is the disk partition used
+by "Rancher Local Path Provisioner". Currently the script doesn't mount this
 disk partition on each worker node automatically and it's required that the user
 has to mount it manually as instructed below.
 

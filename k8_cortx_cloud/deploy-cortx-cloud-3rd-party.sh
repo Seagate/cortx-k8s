@@ -3,10 +3,16 @@
 storage_class=${1:-'local-path'}
 printf "Default storage class: $storage_class\n"
 
+# Default list of worker nodes to be used to deploy OpenLDAP
+openldap_worker_node_list[0]='node-1'
+openldap_worker_node_list[1]='node-2'
+openldap_worker_node_list[2]='node-3'
 num_worker_nodes=0
 while IFS= read -r line; do
     if [[ $line != *"master"* && $line != *"AGE"* ]]
     then
+        IFS=" " read -r -a node_name <<< "$line"
+        openldap_worker_node_list[num_worker_nodes]=$node_name
         num_worker_nodes=$((num_worker_nodes+1))
     fi
 done <<< "$(kubectl get nodes)"
@@ -51,13 +57,13 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set statefulset.name="openldap" \
     --set statefulset.replicas=$num_replicas \
     --set pv1.name="openldap-pv-0" \
-    --set pv1.node="node-1" \
+    --set pv1.node=${openldap_worker_node_list[0]} \
     --set pv1.localpath="/var/lib/ldap" \
     --set pv2.name="openldap-pv-1" \
-    --set pv2.node="node-2" \
+    --set pv2.node=${openldap_worker_node_list[1]} \
     --set pv2.localpath="/var/lib/ldap" \
     --set pv3.name="openldap-pv-2" \
-    --set pv3.node="node-3" \
+    --set pv3.node=${openldap_worker_node_list[2]} \
     --set pv3.localpath="/var/lib/ldap" \
     --set namespace="default"
 
