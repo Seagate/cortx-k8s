@@ -33,11 +33,14 @@ Control, and Support):
 # GlusterFS requirements                      #
 ###############################################
 1. Create directories for GlusterFS if they don't exist on each worker node
-that is used to deploy GlusterFS
+that is used to deploy GlusterFS:
 
 mkdir -p /mnt/fs-local-volume/etc/gluster
 mkdir -p /mnt/fs-local-volume/var/log/gluster
 mkdir -p /mnt/fs-local-volume/var/lib/glusterd
+
+2. Install glusterfs-fuse package on each worker node:
+yum install glusterfs-fuse -y
 
 Shared glusterFS folder on the worker nodes and inside the Pod containers is located at:
 /mnt/fs-local-volume/etc/gluster/
