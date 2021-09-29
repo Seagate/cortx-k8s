@@ -41,11 +41,18 @@ then
     exit 1
 fi
 
+node_name_list=[] # short version
+node_selector_list=[] # long version
+count=0
 # Loop the var val tuple array
 for var_val_element in "${parsed_var_val_array[@]}"
 do
     node_name=$(echo $var_val_element | cut -f2 -d'>')
-    file_name="mnt-blk-info-$node_name.txt"
+    node_selector_list[count]=$node_name
+    shorter_node_name=$(echo $node_name | cut -f1 -d'.')
+    node_name_list[count]=$shorter_node_name
+    count=$((count+1))
+    file_name="mnt-blk-info-$shorter_node_name.txt"
     provisioner_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 
@@ -68,7 +75,8 @@ do
             device=$(echo $dev | cut -f2 -d'>')
             if [[ -s $provisioner_file_path ]]; then
                 printf "\n" >> $provisioner_file_path
-            elif [[ -s $data_file_path ]]; then
+            fi
+            if [[ -s $data_file_path ]]; then
                 printf "\n" >> $data_file_path
             fi
             printf $device >> $provisioner_file_path
@@ -130,17 +138,7 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set namespace="default"
 
 # Check if all OpenLDAP are up and running
-node_count=0
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        if [[ $node_count -ge 3 ]]
-        then
-            break
-        fi
-        node_count=$((node_count+1))
-    fi
-done <<< "$(kubectl get nodes)"
+node_count="${#node_selector_list[@]}"
 
 # Wait for all openLDAP pods to be ready and build up openLDAP endpoint array
 # which consists of "<openLDAP-pod-name> <openLDAP-endpoint-ip-addr>""
@@ -158,7 +156,6 @@ while true; do
         count=$((count+1))
     done <<< "$(kubectl get pods -A -o wide | grep 'openldap-')"
 
-    # if [[ $count -eq $node_count && ${my_array[6]} != "<none>" ]]
     if [[ $count -eq $node_count ]]
     then
         break
@@ -286,43 +283,43 @@ gluster_pvc_name="gluster-claim"
 printf "######################################################\n"
 printf "# Deploy CORTX Local Block Storage                    \n"
 printf "######################################################\n"
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        IFS=" " read -r -a node_name <<< "$line"
-        file_path="cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info-$node_name.txt"
-        count=001
-        while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
-            mount_base_dir=$( echo "$mount_path" | sed -e 's/\/.*\///g')
-            count_str=$(printf "%03d" $count)
-            count=$((count+1))
-            helm_name1="cortx-data-blk-data$count_str-$node_name"
-            storage_class_name1="local-blk-storage$count_str-$node_name"
-            pvc1_name="cortx-data-$mount_base_dir-pvc-$node_name"
-            pv1_name="cortx-data-$mount_base_dir-pv-$node_name"
-            storage_size="5Gi"
-            helm install $helm_name1 cortx-cloud-helm-pkg/cortx-data-blk-data \
-                --set cortxblkdata.nodename=$node_name \
-                --set cortxblkdata.storage.localpath=$mount_path \
-                --set cortxblkdata.storage.size=$storage_size \
-                --set cortxblkdata.storageclass=$storage_class_name1 \
-                --set cortxblkdata.storage.pvc.name=$pvc1_name \
-                --set cortxblkdata.storage.pv.name=$pv1_name \
-                --set cortxblkdata.storage.volumemode="Block" \
-                --set namespace=$namespace
-        done < "$file_path"
-    fi
-done <<< "$(kubectl get nodes)"
+for i in "${!node_selector_list[@]}"; do
+    node_name=${node_name_list[i]}
+    node_selector=${node_selector_list[i]}
+    file_path="cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info-$node_name.txt"
+    count=001
+    while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
+        mount_base_dir=$( echo "$mount_path" | sed -e 's/\/.*\///g')
+        count_str=$(printf "%03d" $count)
+        count=$((count+1))
+        helm_name1="cortx-data-blk-data$count_str-$node_name"
+        storage_class_name1="local-blk-storage$count_str-$node_name"
+        pvc1_name="cortx-data-$mount_base_dir-pvc-$node_name"
+        pv1_name="cortx-data-$mount_base_dir-pv-$node_name"
+        storage_size="5Gi"
+        helm install $helm_name1 cortx-cloud-helm-pkg/cortx-data-blk-data \
+            --set cortxblkdata.nodename=$node_selector \
+            --set cortxblkdata.storage.localpath=$mount_path \
+            --set cortxblkdata.storage.size=$storage_size \
+            --set cortxblkdata.storageclass=$storage_class_name1 \
+            --set cortxblkdata.storage.pvc.name=$pvc1_name \
+            --set cortxblkdata.storage.pv.name=$pv1_name \
+            --set cortxblkdata.storage.volumemode="Block" \
+            --set namespace=$namespace
+    done < "$file_path"
+done
 
 printf "########################################################\n"
 printf "# Deploy CORTX GlusterFS                                \n"
 printf "########################################################\n"
 # Deploy GlusterFS
-node_name="node-1"
-helm install "cortx-gluster-$node_name" cortx-cloud-helm-pkg/cortx-gluster \
-    --set cortxgluster.name="gluster-$node_name" \
-    --set cortxgluster.nodename=$node_name \
-    --set cortxgluster.service.name="cortx-gluster-svc-$node_name" \
+first_node_name=${node_name_list[0]}
+first_node_selector=${node_selector_list[0]}
+
+helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster \
+    --set cortxgluster.name="gluster-$node_name_list" \
+    --set cortxgluster.nodename=$first_node_selector \
+    --set cortxgluster.service.name="cortx-gluster-svc-$first_node_name" \
     --set cortxgluster.storagesize="1Gi" \
     --set cortxgluster.storageclass="cortx-gluster-storage" \
     --set cortxgluster.pv.path=$gluster_vol \
@@ -424,28 +421,25 @@ echo y | kubectl exec -i $first_gluster_node_name --namespace=$namespace --names
 printf "########################################################\n"
 printf "# Deploy CORTX Provisioner                              \n"
 printf "########################################################\n"
-num_nodes=0
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]; then
-        IFS=" " read -r -a node_name <<< "$line"
-        num_nodes=$((num_nodes+1))
-        helm install "cortx-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-provisioner \
-            --set cortxprov.name="cortx-provisioner-pod-$node_name" \
-            --set cortxprov.nodename=$node_name \
-            --set cortxprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
-            --set cortxprov.service.name="cortx-data-clusterip-svc-$node_name" \
-            --set cortxgluster.pv.name=$gluster_pv_name \
-            --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
-            --set cortxgluster.pvc.name=$gluster_pvc_name \
-            --set cortxprov.cfgmap.name="cortx-provisioner-cfgmap001-$node_name" \
-            --set cortxprov.cfgmap.volmountname="config001-$node_name" \
-            --set cortxprov.cfgmap.mountpath="/etc/cortx" \
-            --set cortxprov.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
-            --set cortxprov.localpathpvc.mountpath="/data" \
-            --set cortxprov.localpathpvc.requeststoragesize="1Gi" \
-            --set namespace=$namespace
-    fi
-done <<< "$(kubectl get nodes)"
+for i in "${!node_selector_list[@]}"; do
+    node_name=${node_name_list[i]}
+    node_selector=${node_selector_list[i]}
+    helm install "cortx-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-provisioner \
+        --set cortxprov.name="cortx-provisioner-pod-$node_name" \
+        --set cortxprov.nodename=$node_name \
+        --set cortxprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
+        --set cortxprov.service.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxgluster.pv.name=$gluster_pv_name \
+        --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+        --set cortxgluster.pvc.name=$gluster_pvc_name \
+        --set cortxprov.cfgmap.name="cortx-provisioner-cfgmap001-$node_name" \
+        --set cortxprov.cfgmap.volmountname="config001-$node_name" \
+        --set cortxprov.cfgmap.mountpath="/etc/cortx" \
+        --set cortxprov.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
+        --set cortxprov.localpathpvc.mountpath="/data" \
+        --set cortxprov.localpathpvc.requeststoragesize="1Gi" \
+        --set namespace=$namespace
+done
 
 printf "\nWait for CORTX Provisioner to complete"
 while true; do
@@ -458,7 +452,7 @@ while true; do
         count=$((count+1))
     done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-provisioner-pod-')"
 
-    if [[ $num_nodes -eq $count ]]; then
+    if [[ $node_count -eq $count ]]; then
         break
     else
         printf "."
@@ -468,38 +462,36 @@ done
 printf "\n\n"
 
 # Delete CORTX Provisioner Services
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]; then
-        IFS=" " read -r -a node_name <<< "$line"
-        num_nodes=$((num_nodes+1))
-        kubectl delete service "cortx-data-clusterip-svc-$node_name" --namespace=$namespace
-    fi
-done <<< "$(kubectl get nodes)"
+for i in "${!node_selector_list[@]}"; do
+    node_name=${node_name_list[i]}
+    node_selector=${node_selector_list[i]}
+    num_nodes=$((num_nodes+1))
+    kubectl delete service "cortx-data-clusterip-svc-$node_name" --namespace=$namespace
+done
 
 printf "########################################################\n"
 printf "# Deploy CORTX Data                                     \n"
 printf "########################################################\n"
 num_nodes=0
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]; then
-        IFS=" " read -r -a node_name <<< "$line"
-        num_nodes=$((num_nodes+1))
-        helm install "cortx-data-$node_name" cortx-cloud-helm-pkg/cortx-data \
-            --set cortxdata.name="cortx-data-pod-$node_name" \
-            --set cortxdata.nodename=$node_name \
-            --set cortxdata.mountblkinfo="mnt-blk-info-$node_name.txt" \
-            --set cortxdata.service.name="cortx-data-clusterip-svc-$node_name" \
-            --set cortxgluster.pv.name=$gluster_pv_name \
-            --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
-            --set cortxgluster.pvc.name=$gluster_pvc_name \
-            --set cortxdata.cfgmap.name="cortx-data-cfgmap001-$node_name" \
-            --set cortxdata.cfgmap.volmountname="config001-$node_name" \
-            --set cortxdata.cfgmap.mountpath="/etc/cortx" \
-            --set cortxdata.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
-            --set cortxdata.localpathpvc.mountpath="/data" \
-            --set namespace=$namespace
-    fi
-done <<< "$(kubectl get nodes)"
+for i in "${!node_selector_list[@]}"; do
+    num_nodes=$((num_nodes+1))
+    node_name=${node_name_list[i]}
+    node_selector=${node_selector_list[i]}
+    helm install "cortx-data-$node_name" cortx-cloud-helm-pkg/cortx-data \
+        --set cortxdata.name="cortx-data-pod-$node_name" \
+        --set cortxdata.nodename=$node_name \
+        --set cortxdata.mountblkinfo="mnt-blk-info-$node_name.txt" \
+        --set cortxdata.service.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxgluster.pv.name=$gluster_pv_name \
+        --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+        --set cortxgluster.pvc.name=$gluster_pvc_name \
+        --set cortxdata.cfgmap.name="cortx-data-cfgmap001-$node_name" \
+        --set cortxdata.cfgmap.volmountname="config001-$node_name" \
+        --set cortxdata.cfgmap.mountpath="/etc/cortx" \
+        --set cortxdata.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
+        --set cortxdata.localpathpvc.mountpath="/data" \
+        --set namespace=$namespace
+done
 
 printf "\nWait for CORTX Data to be ready"
 while true; do
@@ -526,17 +518,8 @@ printf "########################################################\n"
 printf "# Deploy CORTX Control                                  \n"
 printf "########################################################\n"
 num_nodes=1
-first_node=""
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        IFS=" " read -r -a node_name <<< "$line"
-        first_node=$node_name
-        break
-    fi
-done <<< "$(kubectl get nodes)"
 # This local path pvc has to match with the one created by CORTX Provisioner
-local_path_pvc="cortx-fs-local-pvc-$first_node"
+local_path_pvc="cortx-fs-local-pvc-$first_node_name"
 helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.name="cortx-control-pod" \
     --set cortxcontrol.service.name="cortx-control-clusterip-svc" \
@@ -576,7 +559,7 @@ printf "# Deploy CORTX Support                                  \n"
 printf "########################################################\n"
 num_nodes=1
 # This local path pvc has to match with the one created by CORTX Provisioner
-local_path_pvc="cortx-fs-local-pvc-$first_node"
+local_path_pvc="cortx-fs-local-pvc-$first_node_name"
 helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.name="cortx-support-pod" \
     --set cortxsupport.service.name="cortx-support-clusterip-svc" \
@@ -620,7 +603,8 @@ IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 for var_val_element in "${parsed_var_val_array[@]}"
 do
     node_name=$(echo $var_val_element | cut -f2 -d'>')
-    file_name="mnt-blk-info-$node_name.txt"
+    shorter_node_name=$(echo $node_name | cut -f1 -d'.')
+    file_name="mnt-blk-info-$shorter_node_name.txt"
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 done

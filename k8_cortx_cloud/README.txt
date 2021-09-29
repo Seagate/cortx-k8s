@@ -1,12 +1,13 @@
 ###############################################
 # Local block storage requirements            #
 ###############################################
-1. Update the "solution.yaml" file to have correct node names, devices,
-   and a list of worker nodes. The info in this file is used to create
-   persistent volumes and persistent volume claims for CORTX Provisioner
-   and CORTX Data.
+1. Update the "solution.yaml" file to have correct node names in
+   "solution.nodes.nodeX.name" (ensure this field match the 'NAME' field
+   from the output of 'kubectl get nodes'), devices, and a list of worker
+   nodes. The info in this file is used to create persistent volumes and
+   persistent volume claims for CORTX Provisioner and CORTX Data.
 
-Note: "solution.nodes.node<1/2/3/4>.devices.system" is the disk partition used
+Note: "solution.nodes.nodeX.devices.system" is the disk partition used
 by "Rancher Local Path Provisioner". Currently the script doesn't mount this
 disk partition on each worker node automatically and it's required that the user
 has to mount it manually as instructed below.

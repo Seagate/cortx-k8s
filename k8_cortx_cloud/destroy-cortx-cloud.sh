@@ -19,11 +19,19 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
+
+node_name_list=[] # short version
+node_selector_list=[] # long version
+count=0
 # Loop the var val tuple array
 for var_val_element in "${parsed_var_val_array[@]}"
 do
     node_name=$(echo $var_val_element | cut -f2 -d'>')
-    file_name="mnt-blk-info-$node_name.txt"
+    node_selector_list[count]=$node_name
+    shorter_node_name=$(echo $node_name | cut -f1 -d'.')
+    node_name_list[count]=$shorter_node_name
+    count=$((count+1))
+    file_name="mnt-blk-info-$shorter_node_name.txt"
     provisioner_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 
@@ -48,7 +56,8 @@ do
             # echo $device >> $data_file_path
             if [[ -s $provisioner_file_path ]]; then
                 printf "\n" >> $provisioner_file_path
-            elif [[ -s $data_file_path ]]; then
+            fi
+            if [[ -s $data_file_path ]]; then
                 printf "\n" >> $data_file_path
             fi
             printf $device >> $provisioner_file_path
@@ -74,24 +83,16 @@ helm uninstall "cortx-control"
 printf "########################################################\n"
 printf "# Delete CORTX data                                     \n"
 printf "########################################################\n"
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        IFS=" " read -r -a node_name <<< "$line"
-        helm uninstall "cortx-data-$node_name"
-    fi
-done <<< "$(kubectl get nodes)"
+for i in "${!node_selector_list[@]}"; do
+    helm uninstall "cortx-data-${node_name_list[$i]}"
+done
 
 printf "########################################################\n"
 printf "# Delete CORTX provisioner                              \n"
 printf "########################################################\n"
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        IFS=" " read -r -a node_name <<< "$line"
-        helm uninstall "cortx-provisioner-$node_name"
-    fi
-done <<< "$(kubectl get nodes)"
+for i in "${!node_selector_list[@]}"; do
+    helm uninstall "cortx-provisioner-${node_name_list[$i]}"
+done 
 
 printf "########################################################\n"
 printf "# Delete CORTX GlusterFS                                \n"
@@ -157,25 +158,24 @@ do
     kubectl exec --namespace=$namespace -i $pod_name -- umount $pod_ctr_mount_path
 done
 
-helm uninstall "cortx-gluster-node-1"
+first_node=${node_name_list[0]}
+helm uninstall "cortx-gluster-$first_node"
 
 printf "######################################################\n"
 printf "# Delete CORTX Local Block Storage                    \n"
 printf "######################################################\n"
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        IFS=" " read -r -a node_name <<< "$line"
-        file_path="cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info-$node_name.txt"
-        count=001
-        while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
-            count_str=$(printf "%03d" $count)
-            count=$((count+1))
-            helm_name1="cortx-data-blk-data$count_str-$node_name"
-            helm uninstall $helm_name1
-        done < "$file_path"
-    fi
-done <<< "$(kubectl get nodes)"
+for i in "${!node_selector_list[@]}"; do
+    node_name=${node_name_list[i]}
+    node_selector=${node_selector_list[i]}
+    file_path="cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info-$node_name.txt"
+    count=001
+    while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
+        count_str=$(printf "%03d" $count)
+        count=$((count+1))
+        helm_name1="cortx-data-blk-data$count_str-$node_name"
+        helm uninstall $helm_name1
+    done < "$file_path"
+done
 
 printf "######################################################\n"
 printf "# Delete Persistent Volume Claims                     \n"
@@ -208,12 +208,21 @@ helm uninstall zookeeper
 printf "###################################\n"
 printf "# Delete openLDAP                 #\n"
 printf "###################################\n"
+openldap_array=[]
+count=0
+while IFS= read -r line; do
+    IFS=" " read -r -a my_array <<< "$line"
+    openldap_array[count]="${my_array[1]}"
+    count=$((count+1))
+done <<< "$(kubectl get pods -A | grep 'openldap-')"
+
+for openldap_pod_name in "${openldap_array[@]}"
+do
+    kubectl exec -ti $openldap_pod_name --namespace="default" -- bash -c \
+        'rm -rf /var/lib/ldap/*'
+done
+
 helm uninstall "openldap"
-# # Delete everything in "/var/lib/ldap folder" in all worker nodes
-# node1=${1:-'192.168.5.148'}
-# node2=${2:-'192.168.5.150'}
-# ssh root@$node1 "rm -rf /var/lib/ldap/*"
-# ssh root@$node2 "rm -rf /var/lib/ldap/*"
 
 printf "###################################\n"
 printf "# Delete Consul                   #\n"
@@ -278,7 +287,8 @@ IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 for var_val_element in "${parsed_var_val_array[@]}"
 do
     node_name=$(echo $var_val_element | cut -f2 -d'>')
-    file_name="mnt-blk-info-$node_name.txt"
+    shorter_node_name=$(echo $node_name | cut -f1 -d'.')
+    file_name="mnt-blk-info-$shorter_node_name.txt"
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 done
