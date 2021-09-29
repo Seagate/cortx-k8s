@@ -13,16 +13,6 @@ Note: if there's no disk partition on all worker nodes then just create folder
 worker nodes.
 
 ###############################################
-# GlusterFS requirements                      #
-###############################################
-1. Create directories for GlusterFS if they don't exist on each worker node
-that is used to deploy GlusterFS
-
-mkdir -p /mnt/fs-local-volume/etc/gluster
-mkdir -p /mnt/fs-local-volume/var/log/gluster
-mkdir -p /mnt/fs-local-volume/var/lib/glusterd
-
-###############################################
 # OpenLDAP Requirements                       #
 ###############################################
 1. Load OpenLDAP docker image:
