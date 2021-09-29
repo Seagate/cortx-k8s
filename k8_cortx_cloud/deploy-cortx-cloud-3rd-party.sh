@@ -184,6 +184,7 @@ helm install kafka bitnami/kafka \
     --set transactionStateLogReplicationFactor=$num_worker_nodes \
     --set auth.enabled=false \
     --set allowAnonymousLogin=true \
+    --set deleteTopicEnable=true \
     --set transactionStateLogMinIsr=2
     
 printf "\nWait for CORTX 3rd party to be ready"
