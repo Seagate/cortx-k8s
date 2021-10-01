@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cortxsupport.cfgmap.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  config.json: |-
+    {
+      "test": "hello_world_container1"
+    }

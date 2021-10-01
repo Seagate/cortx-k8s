@@ -1,0 +1,4 @@
+apiVersion: v1
+description: CORTX gluster
+name: cortx-gluster
+version: 0.0.1

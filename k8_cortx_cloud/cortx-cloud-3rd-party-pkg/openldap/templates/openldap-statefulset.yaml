@@ -4,6 +4,7 @@ metadata:
   name: {{ .Values.statefulset.name }}
   labels:
     app.kubernetes.io/name: {{ .Values.statefulset.name }}
+  namespace: {{ .Values.namespace }}
 spec:
   serviceName: {{ .Values.service.name }}
   selector:

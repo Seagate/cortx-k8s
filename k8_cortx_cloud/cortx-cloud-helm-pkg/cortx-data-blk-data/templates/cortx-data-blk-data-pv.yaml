@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.cortxblkdata.storage.pv.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  volumeMode: {{ .Values.cortxblkdata.storage.volumemode }}
+  storageClassName: {{ .Values.cortxblkdata.storageclass }}
+  persistentVolumeReclaimPolicy: Retain
+  local:
+    path: {{ .Values.cortxblkdata.storage.localpath }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ .Values.cortxblkdata.nodename }}

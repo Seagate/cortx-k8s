@@ -1,0 +1,20 @@
+namespace: default
+cortxdata:
+  name: cortx-data-pod
+  nodename: node-1
+  mountblkinfo: mnt-blk-info.txt
+  service:
+    name: cortx-data-clusterip-svc
+  cfgmap:
+    mountpath: /etc/cortx
+    volmountname: config001
+    name: cortx-data-cfgmap
+  localpathpvc:
+    name: cortx-fs-local-pvc
+    mountpath: /data # This is the mount path in the container
+cortxgluster:
+  pv:
+    name: gluster-default-volume
+    mountpath: /mnt/fs-local-volume/etc/gluster/test_folder/ # This is the mount path in the container
+  pvc:
+    name: gluster-claim

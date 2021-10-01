@@ -1,0 +1,12 @@
+namespace: default
+cortxblkdata:
+  nodename: node-1
+  storageclass: local-blk-storage001
+  storage:
+    size: 5Gi
+    volumemode: Block
+    localpath: /dev/sdb
+    pvc:
+      name: cortx-data-pvc
+    pv:
+      name: cortx-data-pv
