@@ -137,9 +137,6 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set pv3.localpath="/var/lib/ldap" \
     --set namespace="default"
 
-# Check if all OpenLDAP are up and running
-node_count="${#node_selector_list[@]}"
-
 # Wait for all openLDAP pods to be ready and build up openLDAP endpoint array
 # which consists of "<openLDAP-pod-name> <openLDAP-endpoint-ip-addr>""
 printf "\nWait for openLDAP PODs to be ready"
@@ -156,7 +153,7 @@ while true; do
         count=$((count+1))
     done <<< "$(kubectl get pods -A -o wide | grep 'openldap-')"
 
-    if [[ $count -eq $node_count ]]
+    if [[ $count -eq $num_replicas ]]
     then
         break
     else
@@ -441,6 +438,9 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxprov.localpathpvc.requeststoragesize="1Gi" \
         --set namespace=$namespace
 done
+
+# Check if all OpenLDAP are up and running
+node_count="${#node_selector_list[@]}"
 
 printf "\nWait for CORTX Provisioner to complete"
 while true; do
