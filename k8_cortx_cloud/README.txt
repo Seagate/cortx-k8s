@@ -16,8 +16,9 @@ has to mount it manually as instructed below.
 # Rancher Local Path Provisioner Requirements #
 ###############################################
 1. Mount disk partition and create a directory for Rancher local path provisioner
-mount -t ext4 <disk-partition> /mnt/fs-local-volume
 mkdir -p /mnt/fs-local-volume/local-path-provisioner
+mkfs.ext4 <disk-partition>
+mount -t ext4 <disk-partition> /mnt/fs-local-volume
 
 Example:
 mount -t ext4 /dev/sdd /mnt/fs-local-volume

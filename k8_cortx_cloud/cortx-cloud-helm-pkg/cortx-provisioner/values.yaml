@@ -4,7 +4,10 @@ cortxprov:
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
   service:
-    name: cortx-data-clusterip-svc
+    clusterip:
+      name: cortx-data-clusterip-svc
+    headless:
+      name: cortx-data-headless-svc
   cfgmap:
     mountpath: /etc/cortx
     volmountname: config001

@@ -137,9 +137,6 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set pv3.localpath="/var/lib/ldap" \
     --set namespace="default"
 
-# Check if all OpenLDAP are up and running
-node_count="${#node_selector_list[@]}"
-
 # Wait for all openLDAP pods to be ready and build up openLDAP endpoint array
 # which consists of "<openLDAP-pod-name> <openLDAP-endpoint-ip-addr>""
 printf "\nWait for openLDAP PODs to be ready"
@@ -156,7 +153,7 @@ while true; do
         count=$((count+1))
     done <<< "$(kubectl get pods -A -o wide | grep 'openldap-')"
 
-    if [[ $count -eq $node_count ]]
+    if [[ $count -eq $num_replicas ]]
     then
         break
     else
@@ -429,7 +426,8 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxprov.name="cortx-provisioner-pod-$node_name" \
         --set cortxprov.nodename=$node_name \
         --set cortxprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
-        --set cortxprov.service.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxprov.service.headless.name="cortx-data-headless-svc-$node_name" \
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
@@ -441,6 +439,9 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxprov.localpathpvc.requeststoragesize="1Gi" \
         --set namespace=$namespace
 done
+
+# Check if all OpenLDAP are up and running
+node_count="${#node_selector_list[@]}"
 
 printf "\nWait for CORTX Provisioner to complete"
 while true; do
@@ -468,7 +469,49 @@ for i in "${!node_selector_list[@]}"; do
     node_selector=${node_selector_list[i]}
     num_nodes=$((num_nodes+1))
     kubectl delete service "cortx-data-clusterip-svc-$node_name" --namespace=$namespace
+    kubectl delete service "cortx-data-headless-svc-$node_name" --namespace=$namespace
 done
+
+printf "########################################################\n"
+printf "# Deploy CORTX Control                                  \n"
+printf "########################################################\n"
+num_nodes=1
+# This local path pvc has to match with the one created by CORTX Provisioner
+local_path_pvc="cortx-fs-local-pvc-$first_node_name"
+helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
+    --set cortxcontrol.name="cortx-control-pod" \
+    --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
+    --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
+    --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
+    --set cortxcontrol.cfgmap.name="cortx-control-cfgmap001" \
+    --set cortxcontrol.cfgmap.volmountname="config001" \
+    --set cortxcontrol.localpathpvc.name=$local_path_pvc \
+    --set cortxcontrol.localpathpvc.mountpath="/data" \
+    --set cortxgluster.pv.name="gluster-default-name" \
+    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+    --set cortxgluster.pvc.name="gluster-claim" \
+    --set namespace=$namespace
+
+printf "\nWait for CORTX Control to be ready"
+while true; do
+    count=0
+    while IFS= read -r line; do
+        IFS=" " read -r -a pod_status <<< "$line"        
+        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+            break
+        fi
+        count=$((count+1))
+    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
+
+    if [[ $num_nodes -eq $count ]]; then
+        break
+    else
+        printf "."
+    fi    
+    sleep 1s
+done
+printf "\n\n"
 
 printf "########################################################\n"
 printf "# Deploy CORTX Data                                     \n"
@@ -482,7 +525,8 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdata.name="cortx-data-pod-$node_name" \
         --set cortxdata.nodename=$node_name \
         --set cortxdata.mountblkinfo="mnt-blk-info-$node_name.txt" \
-        --set cortxdata.service.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
@@ -505,46 +549,6 @@ while true; do
         fi
         count=$((count+1))
     done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-pod-')"
-
-    if [[ $num_nodes -eq $count ]]; then
-        break
-    else
-        printf "."
-    fi    
-    sleep 1s
-done
-printf "\n\n"
-
-printf "########################################################\n"
-printf "# Deploy CORTX Control                                  \n"
-printf "########################################################\n"
-num_nodes=1
-# This local path pvc has to match with the one created by CORTX Provisioner
-local_path_pvc="cortx-fs-local-pvc-$first_node_name"
-helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
-    --set cortxcontrol.name="cortx-control-pod" \
-    --set cortxcontrol.service.name="cortx-control-clusterip-svc" \
-    --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
-    --set cortxcontrol.cfgmap.name="cortx-control-cfgmap001" \
-    --set cortxcontrol.cfgmap.volmountname="config001" \
-    --set cortxcontrol.localpathpvc.name=$local_path_pvc \
-    --set cortxcontrol.localpathpvc.mountpath="/data" \
-    --set cortxgluster.pv.name="gluster-default-name" \
-    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
-    --set cortxgluster.pvc.name="gluster-claim" \
-    --set namespace=$namespace
-
-printf "\nWait for CORTX Control to be ready"
-while true; do
-    count=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"        
-        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            break
-        fi
-        count=$((count+1))
-    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
 
     if [[ $num_nodes -eq $count ]]; then
         break
