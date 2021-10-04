@@ -136,28 +136,6 @@ do
     count=$((count+1))
 done
 
-# Get a list of PODs in the cluster
-pod_list=[]
-count=0
-while IFS= read -r line; do
-    IFS=" " read -r -a my_array <<< "$line"
-    pod_name=${my_array[1]}
-    pod_list[count]=$pod_name
-    count=$((count+1))
-done <<< "$(kubectl get pods -A | grep 'cortx-provisioner-pod-')"
-
-printf "=================================================================\n"
-printf "Un-mount GlusterFS                                               \n"
-printf "=================================================================\n"
-count=0
-for pod_name in "${pod_list[@]}"
-do
-    ctr_name="container001"
-    count=$((count+1))
-    printf "Un-mount GlusterFS on node: $pod_name\n"
-    kubectl exec --namespace=$namespace -i $pod_name -- umount $pod_ctr_mount_path
-done
-
 first_node=${node_name_list[0]}
 helm uninstall "cortx-gluster-$first_node"
 
