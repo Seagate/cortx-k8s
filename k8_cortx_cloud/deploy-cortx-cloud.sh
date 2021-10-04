@@ -567,7 +567,8 @@ num_nodes=1
 local_path_pvc="cortx-fs-local-pvc-$first_node_name"
 helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.name="cortx-support-pod" \
-    --set cortxsupport.service.name="cortx-support-clusterip-svc" \
+    --set cortxsupport.service.clusterip.name="cortx-support-clusterip-svc" \
+    --set cortxsupport.service.headless.name="cortx-support-headless-svc" \
     --set cortxsupport.cfgmap.mountpath="/etc/cortx" \
     --set cortxsupport.cfgmap.name="cortx-support-cfgmap001" \
     --set cortxsupport.cfgmap.volmountname="config001" \
