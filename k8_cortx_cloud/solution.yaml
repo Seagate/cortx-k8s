@@ -1,0 +1,46 @@
+solution:
+  nodes:
+    node1:
+      name: node-1
+      volumes:
+        local: /mnt/fs-local-volume
+        share: /mnt/fs-local-volume
+      devices:
+        system: /dev/sdb
+        metadata: /dev/sdc
+        data:
+          d1: /dev/sdd
+          d2: /dev/sde
+    node2:
+      name: node-2
+      volumes:
+        local: /mnt/fs-local-volume
+        share: /mnt/fs-local-volume
+      devices:
+        system: /dev/sdb
+        metadata: /dev/sdc
+        data:
+          d1: /dev/sdd
+          d2: /dev/sde
+    node3:
+      name: node-3
+      volumes:
+        local: /mnt/fs-local-volume
+        share: /mnt/fs-local-volume
+      devices:
+        system: /dev/sdb
+        metadata: /dev/sdc
+        data:
+          d1: /dev/sdd
+          d2: /dev/sde
+    node4: 
+      name: node-4
+      volumes:
+        local: /mnt/fs-local-volume
+        share: /mnt/fs-local-volume
+      devices:
+        system: /dev/sdb
+        metadata: /dev/sdc
+        data:
+          d1: /dev/sdd
+          d2: /dev/sde

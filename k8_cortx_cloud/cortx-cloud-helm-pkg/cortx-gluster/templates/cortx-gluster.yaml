@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    description: Deploys the GlusterFS container
+  labels:
+    template: {{ .Values.cortxgluster.name }}
+  name: {{ .Values.cortxgluster.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.cortxgluster.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cortxgluster.name }}
+    spec:
+      containers:
+        - image: docker.io/gluster/gluster-centos
+          imagePullPolicy: IfNotPresent
+          name: {{ .Values.cortxgluster.name }}
+          livenessProbe:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - systemctl status glusterd.service
+          readinessProbe:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - systemctl status glusterd.service
+          securityContext:
+            capabilities: {}
+            privileged: true
+          volumeMounts:
+          - mountPath: /etc/gluster
+            name: gluster-etc
+          - mountPath: /var/log/gluster
+            name: gluster-logs
+          - mountPath: /var/lib/glusterd
+            name: gluster-config
+          - mountPath: /dev
+            name: gluster-dev
+          - mountPath: /sys/fs/cgroup
+            name: gluster-cgroup
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.cortxgluster.nodename }}
+      volumes:
+      - hostPath:
+          path: {{ .Values.cortxgluster.hostpath.etc }}
+        name: gluster-etc
+      - hostPath:
+          path: {{ .Values.cortxgluster.hostpath.logs }}
+        name: gluster-logs
+      - hostPath:
+          path: {{ .Values.cortxgluster.hostpath.config }}
+        name: gluster-config
+      - hostPath:
+          path: /dev
+        name: gluster-dev
+      - hostPath:
+          path: /sys/fs/cgroup
+        name: gluster-cgroup
