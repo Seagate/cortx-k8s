@@ -1,4 +1,7 @@
 solution:
+  common:
+    num_s3_inst: 2
+    num_motr_inst: 1
   nodes:
     node1:
       name: node-1

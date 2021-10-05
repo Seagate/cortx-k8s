@@ -67,19 +67,6 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set pv3.localpath="/var/lib/ldap" \
     --set namespace="default"
 
-# Check if all OpenLDAP are up and running
-node_count=0
-while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        if [[ $node_count -ge 3 ]]
-        then
-            break
-        fi
-        node_count=$((node_count+1))
-    fi
-done <<< "$(kubectl get nodes)"
-
 # Wait for all openLDAP pods to be ready and build up openLDAP endpoint array
 # which consists of "<openLDAP-pod-name> <openLDAP-endpoint-ip-addr>""
 printf "\nWait for openLDAP PODs to be ready"
@@ -90,10 +77,13 @@ while true; do
     while IFS= read -r line; do
         IFS=" " read -r -a my_array <<< "$line"
         openldap_ep_array[count]="${my_array[1]} ${my_array[6]}"
+        if [[ ${my_array[6]} == "<none>" ]]; then
+            break
+        fi
         count=$((count+1))
     done <<< "$(kubectl get pods -A -o wide | grep 'openldap-')"
 
-    if [[ $count -eq $node_count && ${my_array[6]} != "<none>" ]]
+    if [[ $count -eq $num_replicas ]]
     then
         break
     else

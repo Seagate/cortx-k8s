@@ -12,7 +12,7 @@ openldap_pvc="openldap-data"
 #################################################################
 function parseSolution()
 {
-    echo "$(./parse_yaml.sh solution.yaml $1)"
+    echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
 }
 
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
@@ -76,16 +76,16 @@ printf "########################################################\n"
 helm uninstall "cortx-support"
 
 printf "########################################################\n"
-printf "# Delete CORTX Control                                  \n"
-printf "########################################################\n"
-helm uninstall "cortx-control"
-
-printf "########################################################\n"
 printf "# Delete CORTX data                                     \n"
 printf "########################################################\n"
 for i in "${!node_selector_list[@]}"; do
     helm uninstall "cortx-data-${node_name_list[$i]}"
 done
+
+printf "########################################################\n"
+printf "# Delete CORTX Control                                  \n"
+printf "########################################################\n"
+helm uninstall "cortx-control"
 
 printf "########################################################\n"
 printf "# Delete CORTX provisioner                              \n"
@@ -169,23 +169,41 @@ while IFS= read -r line; do
     fi
 done <<< "$(kubectl get pv -A)"
 
+printf "########################################################\n"
+printf "# Delete CORTX Configmap                               #\n"
+printf "########################################################\n"
+# Delete CORTX configmap
+# kubectl delete configmap "cortx-cfgmap" --namespace=$namespace
+
+# Create template folder
+cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
+# Delete CORTX configmap folders
+for i in "${!node_name_list[@]}"; do
+    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
+    gen_file="$auto_gen_path/config.yaml"
+    kubectl delete configmap "cortx-cfgmap-${node_name_list[$i]}" --namespace=$namespace
+    rm -rf $auto_gen_path
+done
+
+rm -rf "$cfgmap_path/node-info"
+
 #############################################################
 # Destroy CORTX 3rd party
 #############################################################
 
-printf "###################################\n"
-printf "# Delete Kafka                    #\n"
-printf "###################################\n"
+printf "########################################################\n"
+printf "# Delete Kafka                                         #\n"
+printf "########################################################\n"
 helm uninstall kafka
 
-printf "###################################\n"
-printf "# Delete Zookeeper                #\n"
-printf "###################################\n"
+printf "########################################################\n"
+printf "# Delete Zookeeper                                     #\n"
+printf "########################################################\n"
 helm uninstall zookeeper
 
-printf "###################################\n"
-printf "# Delete openLDAP                 #\n"
-printf "###################################\n"
+printf "########################################################\n"
+printf "# Delete openLDAP                                      #\n"
+printf "########################################################\n"
 openldap_array=[]
 count=0
 while IFS= read -r line; do
@@ -202,16 +220,16 @@ done
 
 helm uninstall "openldap"
 
-printf "###################################\n"
-printf "# Delete Consul                   #\n"
-printf "###################################\n"
+printf "########################################################\n"
+printf "# Delete Consul                                        #\n"
+printf "########################################################\n"
 helm delete consul
 # kubectl delete -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
 kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 
-printf "###################################\n"
-printf "# Delete Persistent Volume Claims #\n"
-printf "###################################\n"
+printf "########################################################\n"
+printf "# Delete Persistent Volume Claims                      #\n"
+printf "########################################################\n"
 volume_claims=$(kubectl get pvc --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc" | cut -f1 -d " ")
 echo $volume_claims
 for volume_claim in $volume_claims
@@ -230,9 +248,9 @@ if [[ $namespace != 'default' ]]; then
     done
 fi
 
-printf "###################################\n"
-printf "# Delete Persistent Volumes       #\n"
-printf "###################################\n"
+printf "########################################################\n"
+printf "# Delete Persistent Volumes                            #\n"
+printf "########################################################\n"
 persistent_volumes=$(kubectl get pv --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
 echo $persistent_volumes
 for persistent_volume in $persistent_volumes
