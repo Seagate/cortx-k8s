@@ -2,7 +2,10 @@ namespace: default
 cortxsupport:
   name: cortx-support
   service:
-    name: cortx-support-clusterip-svc
+    clusterip:
+      name: cortx-support-clusterip-svc
+    headless:
+      name: cortx-support-headless-svc
   cfgmap:
     mountpath: /etc/cortx
     name: cortx-support-cfgmap001

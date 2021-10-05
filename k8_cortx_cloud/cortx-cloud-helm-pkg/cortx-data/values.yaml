@@ -6,7 +6,10 @@ cortxdata:
   nums3: 2
   nummotr: 1
   service:
-    name: cortx-data-clusterip-svc
+    clusterip:
+      name: cortx-data-clusterip-svc
+    headless:
+      name: cortx-data-headless-svc
   cfgmap:
     mountpath: /etc/cortx
     volmountname: config001

@@ -503,7 +503,8 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxprov.name="cortx-provisioner-pod-$node_name" \
         --set cortxprov.nodename=$node_name \
         --set cortxprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
-        --set cortxprov.service.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxprov.service.headless.name="cortx-data-headless-svc-$node_name" \
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
@@ -545,6 +546,7 @@ for i in "${!node_selector_list[@]}"; do
     node_selector=${node_selector_list[i]}
     num_nodes=$((num_nodes+1))
     kubectl delete service "cortx-data-clusterip-svc-$node_name" --namespace=$namespace
+    kubectl delete service "cortx-data-headless-svc-$node_name" --namespace=$namespace
 done
 
 printf "########################################################\n"
@@ -555,7 +557,8 @@ num_nodes=1
 local_path_pvc="cortx-fs-local-pvc-$first_node_name"
 helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.name="cortx-control-pod" \
-    --set cortxcontrol.service.name="cortx-control-clusterip-svc" \
+    --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
+    --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
     --set cortxcontrol.cfgmap.volmountname="config001" \
@@ -565,9 +568,6 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
     --set cortxgluster.pvc.name="gluster-claim" \
     --set namespace=$namespace
-
-    # dton remove
-    # --set cortxcontrol.cfgmap.name="cortx-control-cfgmap001" \
 
 printf "\nWait for CORTX Control to be ready"
 while true; do
@@ -585,7 +585,7 @@ while true; do
         break
     else
         printf "."
-    fi
+    fi    
     sleep 1s
 done
 printf "\n\n"
@@ -602,7 +602,8 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdata.name="cortx-data-pod-$node_name" \
         --set cortxdata.nodename=$node_name \
         --set cortxdata.mountblkinfo="mnt-blk-info-$node_name.txt" \
-        --set cortxdata.service.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
@@ -620,7 +621,7 @@ printf "\nWait for CORTX Data to be ready"
 while true; do
     count=0
     while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"
+        IFS=" " read -r -a pod_status <<< "$line"        
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
@@ -632,7 +633,7 @@ while true; do
         break
     else
         printf "."
-    fi
+    fi    
     sleep 1s
 done
 printf "\n\n"
@@ -645,7 +646,8 @@ num_nodes=1
 local_path_pvc="cortx-fs-local-pvc-$first_node_name"
 helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.name="cortx-support-pod" \
-    --set cortxsupport.service.name="cortx-support-clusterip-svc" \
+    --set cortxsupport.service.clusterip.name="cortx-support-clusterip-svc" \
+    --set cortxsupport.service.headless.name="cortx-support-headless-svc" \
     --set cortxsupport.cfgmap.mountpath="/etc/cortx" \
     --set cortxsupport.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
     --set cortxsupport.cfgmap.volmountname="config001" \
@@ -655,9 +657,6 @@ helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
     --set cortxgluster.pvc.name="gluster-claim" \
     --set namespace=$namespace
-
-    # dton remove
-    # --set cortxsupport.cfgmap.name="cortx-support-cfgmap001" \
 
 printf "Wait for CORTX Support to be ready"
 while true; do
