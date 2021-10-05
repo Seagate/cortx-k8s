@@ -1,12 +1,23 @@
 ###############################################
 # Rancher Local Path Provisioner Requirements #
 ###############################################
-1. Mount disk partition and create a directory for Rancher local path provisioner
-mount -t ext4 <disk-partition> /mnt/fs-local-volume
+1. Mount disk partition specified in the "solution.yaml" file in
+   "solution.nodes.nodeX.devices.system" and create a directory for Rancher
+   local path provisioner on each worker node:
 mkdir -p /mnt/fs-local-volume/local-path-provisioner
+mkfs.ext4 <disk-partition>
+mount -t ext4 <disk-partition> /mnt/fs-local-volume
 
 Example:
+mkfs.ext4 /dev/sdd
 mount -t ext4 /dev/sdd /mnt/fs-local-volume
+
+Rancher Local Path location on worker node:
+/mnt/fs-local-volume/local-path-provisioner/pvc-<UID>_default_cortx-fs-local-pvc-<node-name>
+
+Rancher Local Path location in all Pod containers (CORTX Provisioner, Data,
+Control, and Support):
+/data
 
 Note: if there's no disk partition on all worker nodes then just create folder
 "/mnt/fs-local-volume/local-path-provisioner" with the exact same path on all

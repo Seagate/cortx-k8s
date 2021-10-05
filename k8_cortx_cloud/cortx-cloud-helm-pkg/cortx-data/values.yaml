@@ -3,6 +3,8 @@ cortxdata:
   name: cortx-data-pod
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
+  nums3: 2
+  nummotr: 1
   service:
     name: cortx-data-clusterip-svc
   cfgmap:

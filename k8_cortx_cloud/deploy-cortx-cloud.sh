@@ -3,6 +3,12 @@
 namespace="default"
 storage_class=${1:-'local-path'}
 
+# Install "yq" package if it doesn't exist in '/usr/bin/'
+if [[ ! -f "/usr/bin/yq" ]]; then
+    wget https://github.com/mikefarah/yq/releases/download/v4.13.2/yq_linux_amd64 -O /usr/bin/yq
+    chmod +x /usr/bin/yq
+fi
+
 # Default list of worker nodes to be used to deploy OpenLDAP
 openldap_worker_node_list[0]='node-1'
 openldap_worker_node_list[1]='node-2'
@@ -24,7 +30,12 @@ printf "Number of worker nodes detected: $num_worker_nodes\n"
 #################################################################
 function parseSolution()
 {
-    echo "$(./parse_yaml.sh solution.yaml $1)"
+    echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
+}
+
+function extractBlock()
+{
+    echo "$(./parse_scripts/yaml_extract_block.sh solution.yaml $1)"
 }
 
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
@@ -41,8 +52,8 @@ then
     exit 1
 fi
 
-node_name_list=[] # short version
-node_selector_list=[] # long version
+node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
+node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
 count=0
 # Loop the var val tuple array
 for var_val_element in "${parsed_var_val_array[@]}"
@@ -64,7 +75,7 @@ do
 
     # Get the node var from the tuple
     node=$(echo $var_val_element | cut -f3 -d'.')
-    
+
     filter="solution.nodes.$node.devices*"
     parsed_dev_output=$(parseSolution $filter)
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
@@ -166,7 +177,7 @@ printf "\n\n"
 num_openldap_nodes=${#openldap_ep_array[@]}
 replicate_ldif_file="opt/seagate/cortx/s3/install/ldap/replicate.ldif"
 if [[ $num_openldap_nodes -eq 2 ]]
-then    
+then
     replicate_ldif_file="opt/seagate/cortx/s3/install/ldap/replicate_2nodes.ldif"
 fi
 
@@ -198,15 +209,15 @@ do
         -w ldapadmin \
         -f opt/seagate/cortx/s3/install/ldap/ppolicy-default.ldif \
         -H ldap://${my_array[1]}
-        
+
     kubectl exec -i ${my_array[0]} --namespace="default" -- \
         ldapadd -Y EXTERNAL -H ldapi:/// \
         -f opt/seagate/cortx/s3/install/ldap/syncprov_mod.ldif
-        
+
     kubectl exec -i ${my_array[0]} --namespace="default" -- \
         ldapadd -Y EXTERNAL -H ldapi:/// \
         -f opt/seagate/cortx/s3/install/ldap/syncprov.ldif
-        
+
     uri_count=1
     for openldap_ep in "${openldap_ep_array[@]}"
     do
@@ -251,7 +262,7 @@ printf "\nWait for CORTX 3rd party to be ready"
 while true; do
     count=0
     while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"        
+        IFS=" " read -r -a pod_status <<< "$line"
         IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
         if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             count=$((count+1))
@@ -263,7 +274,7 @@ while true; do
         break
     else
         printf "."
-    fi    
+    fi
     sleep 1s
 done
 printf "\n\n"
@@ -417,6 +428,72 @@ fi
 echo y | kubectl exec -i $first_gluster_node_name --namespace=$namespace --namespace=$namespace -- gluster volume start $gluster_vol
 
 printf "########################################################\n"
+printf "# Deploy CORTX Configmap                                \n"
+printf "########################################################\n"
+# Default path to CORTX configmap
+cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
+
+# Create node template folder
+node_info_folder="$cfgmap_path/node-info"
+mkdir -p $node_info_folder
+
+# Generate config files
+for i in "${!node_name_list[@]}"; do
+    # Create auto-gen config folder
+    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
+    mkdir -p $auto_gen_path
+    new_gen_file="$auto_gen_path/config.yaml"
+    cp "$cfgmap_path/templates/config-template.yaml" $new_gen_file
+    ./parse_scripts/subst.sh $new_gen_file "cortx.data.svc" "cortx-data-clusterip-svc-${node_name_list[$i]}"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.num_s3_inst')
+    ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.num_motr_inst')
+
+    # Generate node file with type storage_node in "node-info" folder
+    new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
+    cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
+    ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" ${node_name_list[$i]}
+    ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$(uuidgen)"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-clusterip-svc-${node_name_list[$i]}"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "storage_node"
+
+    # Generate node file with type control_node in "node-info" folder
+    if [[ "$i" -eq 0 ]]; then
+        new_gen_file="$node_info_folder/cluster-control-node-${node_name_list[$i]}.yaml"
+        cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
+        ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" ${node_name_list[$i]}
+        ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$(uuidgen)"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control-clusterip-svc"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
+    fi
+
+    # Copy cluster template
+    cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
+done
+
+cluster_uuid=$(uuidgen)
+for i in "${!node_name_list[@]}"; do
+    node_info_folder="$cfgmap_path/node-info"
+    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
+    ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
+    for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
+        extract_output=$(./parse_scripts/yaml_extract_block.sh $fname)
+        ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 4
+    done
+done
+
+# Delete node-info folder
+node_info_folder="$cfgmap_path/node-info"
+rm -rf $node_info_folder
+
+# Create configmaps
+for i in "${!node_name_list[@]}"; do
+    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
+    kubectl create configmap "cortx-cfgmap-${node_name_list[$i]}" \
+        --namespace=$namespace \
+        --from-file=$auto_gen_path
+done
+
+printf "########################################################\n"
 printf "# Deploy CORTX Provisioner                              \n"
 printf "########################################################\n"
 for i in "${!node_selector_list[@]}"; do
@@ -430,7 +507,7 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxprov.cfgmap.name="cortx-provisioner-cfgmap001-$node_name" \
+        --set cortxprov.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
         --set cortxprov.cfgmap.volmountname="config001-$node_name" \
         --set cortxprov.cfgmap.mountpath="/etc/cortx" \
         --set cortxprov.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
@@ -457,7 +534,7 @@ while true; do
         break
     else
         printf "."
-    fi    
+    fi
     sleep 1s
 done
 printf "\n\n"
@@ -469,6 +546,49 @@ for i in "${!node_selector_list[@]}"; do
     num_nodes=$((num_nodes+1))
     kubectl delete service "cortx-data-clusterip-svc-$node_name" --namespace=$namespace
 done
+
+printf "########################################################\n"
+printf "# Deploy CORTX Control                                  \n"
+printf "########################################################\n"
+num_nodes=1
+# This local path pvc has to match with the one created by CORTX Provisioner
+local_path_pvc="cortx-fs-local-pvc-$first_node_name"
+helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
+    --set cortxcontrol.name="cortx-control-pod" \
+    --set cortxcontrol.service.name="cortx-control-clusterip-svc" \
+    --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
+    --set cortxcontrol.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
+    --set cortxcontrol.cfgmap.volmountname="config001" \
+    --set cortxcontrol.localpathpvc.name=$local_path_pvc \
+    --set cortxcontrol.localpathpvc.mountpath="/data" \
+    --set cortxgluster.pv.name="gluster-default-name" \
+    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+    --set cortxgluster.pvc.name="gluster-claim" \
+    --set namespace=$namespace
+
+    # dton remove
+    # --set cortxcontrol.cfgmap.name="cortx-control-cfgmap001" \
+
+printf "\nWait for CORTX Control to be ready"
+while true; do
+    count=0
+    while IFS= read -r line; do
+        IFS=" " read -r -a pod_status <<< "$line"
+        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+            break
+        fi
+        count=$((count+1))
+    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
+
+    if [[ $num_nodes -eq $count ]]; then
+        break
+    else
+        printf "."
+    fi
+    sleep 1s
+done
+printf "\n\n"
 
 printf "########################################################\n"
 printf "# Deploy CORTX Data                                     \n"
@@ -486,11 +606,13 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxdata.cfgmap.name="cortx-data-cfgmap001-$node_name" \
+        --set cortxdata.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
         --set cortxdata.cfgmap.volmountname="config001-$node_name" \
         --set cortxdata.cfgmap.mountpath="/etc/cortx" \
         --set cortxdata.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
         --set cortxdata.localpathpvc.mountpath="/data" \
+        --set cortxdata.nummotr=$(extractBlock 'solution.common.num_motr_inst') \
+        --set cortxdata.nums3=$(extractBlock 'solution.common.num_s3_inst') \
         --set namespace=$namespace
 done
 
@@ -498,7 +620,7 @@ printf "\nWait for CORTX Data to be ready"
 while true; do
     count=0
     while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"        
+        IFS=" " read -r -a pod_status <<< "$line"
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
@@ -510,47 +632,7 @@ while true; do
         break
     else
         printf "."
-    fi    
-    sleep 1s
-done
-printf "\n\n"
-
-printf "########################################################\n"
-printf "# Deploy CORTX Control                                  \n"
-printf "########################################################\n"
-num_nodes=1
-# This local path pvc has to match with the one created by CORTX Provisioner
-local_path_pvc="cortx-fs-local-pvc-$first_node_name"
-helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
-    --set cortxcontrol.name="cortx-control-pod" \
-    --set cortxcontrol.service.name="cortx-control-clusterip-svc" \
-    --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
-    --set cortxcontrol.cfgmap.name="cortx-control-cfgmap001" \
-    --set cortxcontrol.cfgmap.volmountname="config001" \
-    --set cortxcontrol.localpathpvc.name=$local_path_pvc \
-    --set cortxcontrol.localpathpvc.mountpath="/data" \
-    --set cortxgluster.pv.name="gluster-default-name" \
-    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
-    --set cortxgluster.pvc.name="gluster-claim" \
-    --set namespace=$namespace
-
-printf "\nWait for CORTX Control to be ready"
-while true; do
-    count=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"        
-        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            break
-        fi
-        count=$((count+1))
-    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
-
-    if [[ $num_nodes -eq $count ]]; then
-        break
-    else
-        printf "."
-    fi    
+    fi
     sleep 1s
 done
 printf "\n\n"
@@ -565,7 +647,7 @@ helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.name="cortx-support-pod" \
     --set cortxsupport.service.name="cortx-support-clusterip-svc" \
     --set cortxsupport.cfgmap.mountpath="/etc/cortx" \
-    --set cortxsupport.cfgmap.name="cortx-support-cfgmap001" \
+    --set cortxsupport.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
     --set cortxsupport.cfgmap.volmountname="config001" \
     --set cortxsupport.localpathpvc.name=$local_path_pvc \
     --set cortxsupport.localpathpvc.mountpath="/data" \
@@ -574,11 +656,14 @@ helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxgluster.pvc.name="gluster-claim" \
     --set namespace=$namespace
 
+    # dton remove
+    # --set cortxsupport.cfgmap.name="cortx-support-cfgmap001" \
+
 printf "Wait for CORTX Support to be ready"
 while true; do
     count=0
     while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"        
+        IFS=" " read -r -a pod_status <<< "$line"
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
@@ -590,7 +675,7 @@ while true; do
         break
     else
         printf "."
-    fi    
+    fi
     sleep 1s
 done
 printf "\n"

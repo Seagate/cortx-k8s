@@ -76,6 +76,22 @@ spec:
               value: {{ .Values.cortxdata.name }}
           ports:
           - containerPort: 28050
+        {{- range $i := until (.Values.cortxdata.nums3|int) }}
+        - name: {{ printf "cortx-s3-%03d" (add 1 $i) }}
+          image: centos:7
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sleep", "3650d"]
+          volumeMounts:
+            - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ $.Values.cortxgluster.pv.name }}
+              mountPath: {{ $.Values.cortxgluster.pv.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ $.Values.cortxdata.name }}
+        {{- end }}
         - name: cortx-motr-hax
           image: centos:7
           imagePullPolicy: IfNotPresent
@@ -133,6 +149,22 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
+        {{- range $i := until (.Values.cortxdata.nummotr|int) }}
+        - name: {{ printf "cortx-motr-%03d" (add 1 $i) }}
+          image: centos:7
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sleep", "3650d"]
+          volumeMounts:
+            - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ $.Values.cortxgluster.pv.name }}
+              mountPath: {{ $.Values.cortxgluster.pv.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ $.Values.cortxdata.name }}
+        {{- end }}
         - name: cortx-consul-agent
           image: centos:7
           imagePullPolicy: IfNotPresent
