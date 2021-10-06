@@ -10,6 +10,8 @@ cortxdata:
       name: cortx-data-clusterip-svc
     headless:
       name: cortx-data-headless-svc
+    loadbal:
+      name: cortx-data-loadbal-svc
   cfgmap:
     mountpath: /etc/cortx
     volmountname: config001

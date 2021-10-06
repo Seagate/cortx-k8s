@@ -559,6 +559,8 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.name="cortx-control-pod" \
     --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
     --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
+    --set cortxcontrol.service.ingress.name="cortx-control-ingress-svc" \
+    --set cortxcontrol.ingress.name="cortx-control-ingress" \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
     --set cortxcontrol.cfgmap.volmountname="config001" \
@@ -604,6 +606,7 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdata.mountblkinfo="mnt-blk-info-$node_name.txt" \
         --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
         --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
+        --set cortxdata.service.loadbal.name="cortx-data-loadbal-svc-$node_name" \
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
