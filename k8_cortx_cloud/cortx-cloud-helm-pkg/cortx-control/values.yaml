@@ -2,7 +2,15 @@ namespace: default
 cortxcontrol:
   name: cortx-control
   service:
-    name: cortx-control-clusterip-svc
+    clusterip:
+      name: cortx-control-clusterip-svc
+    headless:
+      name: cortx-control-headless-svc
+    ingress:
+      name: cortx-control-ingress-svc
+  ingress:
+    name: cortx-control-ingress
+    path: /csm
   cfgmap:
     mountpath: /etc/cortx
     name: cortx-control-cfgmap001
