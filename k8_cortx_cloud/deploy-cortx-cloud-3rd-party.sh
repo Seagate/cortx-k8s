@@ -18,9 +18,9 @@ while IFS= read -r line; do
 done <<< "$(kubectl get nodes)"
 printf "Number of worker nodes detected: $num_worker_nodes\n"
 
-printf "###############################\n"
-printf "# Deploy Consul               #\n"
-printf "###############################\n"
+printf "######################################################\n"
+printf "# Deploy Consul                                       \n"
+printf "######################################################\n"
 
 # Add the HashiCorp Helm Repository:
 helm repo add hashicorp https://helm.releases.hashicorp.com
@@ -40,9 +40,9 @@ helm install "consul" hashicorp/consul \
     --set server.storageClass=$storage_class \
     --set server.replicas=$num_worker_nodes
 
-printf "###############################\n"
-printf "# Deploy openLDAP             #\n"
-printf "###############################\n"
+printf "######################################################\n"
+printf "# Deploy openLDAP                                     \n"
+printf "######################################################\n"
 # Set max number of OpenLDAP replicas to be 3
 num_replicas=3
 if [[ "$num_worker_nodes" -le 3 ]]; then
@@ -149,9 +149,9 @@ do
     done
 done
 
-printf "###############################\n"
-printf "# Deploy Zookeeper            #\n"
-printf "###############################\n"
+printf "######################################################\n"
+printf "# Deploy Zookeeper                                    \n"
+printf "######################################################\n"
 # Add Zookeeper and Kafka Repository
 helm repo add bitnami https://charts.bitnami.com/bitnami
 
@@ -161,9 +161,9 @@ helm install zookeeper bitnami/zookeeper \
     --set allowAnonymousLogin=true \
     --set global.storageClass=$storage_class
 
-printf "###############################\n"
-printf "# Deploy Kafka                #\n"
-printf "###############################\n"
+printf "######################################################\n"
+printf "# Deploy Kafka                                        \n"
+printf "######################################################\n"
 helm install kafka bitnami/kafka \
     --set zookeeper.enabled=false \
     --set replicaCount=$num_worker_nodes \

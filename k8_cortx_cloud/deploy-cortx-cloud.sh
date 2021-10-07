@@ -52,6 +52,10 @@ then
     exit 1
 fi
 
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
+
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
 node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
 count=0
@@ -64,14 +68,8 @@ do
     node_name_list[count]=$shorter_node_name
     count=$((count+1))
     file_name="mnt-blk-info-$shorter_node_name.txt"
-    provisioner_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
+    data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
-
-    if [[ -f $provisioner_file_path ]]; then
-        rm $provisioner_file_path
-    elif [[ -f $data_file_path ]]; then
-        rm $data_file_path
-    fi
 
     # Get the node var from the tuple
     node=$(echo $var_val_element | cut -f3 -d'.')
@@ -84,13 +82,13 @@ do
         if [[ "$dev" != *"system"* ]]
         then
             device=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $provisioner_file_path ]]; then
-                printf "\n" >> $provisioner_file_path
+            if [[ -s $data_prov_file_path ]]; then
+                printf "\n" >> $data_prov_file_path
             fi
             if [[ -s $data_file_path ]]; then
                 printf "\n" >> $data_file_path
             fi
-            printf $device >> $provisioner_file_path
+            printf $device >> $data_prov_file_path
             printf $device >> $data_file_path
         fi
     done
@@ -295,7 +293,7 @@ printf "######################################################\n"
 for i in "${!node_selector_list[@]}"; do
     node_name=${node_name_list[i]}
     node_selector=${node_selector_list[i]}
-    file_path="cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info-$node_name.txt"
+    file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-info-$node_name.txt"
     count=001
     while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
         mount_base_dir=$( echo "$mount_path" | sed -e 's/\/.*\///g')
@@ -345,7 +343,6 @@ while true; do
     count=0
     while IFS= read -r line; do
         IFS=" " read -r -a service_status <<< "$line"
-        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${service_status[2]}" == "<none>" ]]; then
             break
         fi
@@ -494,33 +491,31 @@ for i in "${!node_name_list[@]}"; do
 done
 
 printf "########################################################\n"
-printf "# Deploy CORTX Provisioner                              \n"
+printf "# Deploy CORTX Control Provisioner                      \n"
 printf "########################################################\n"
 for i in "${!node_selector_list[@]}"; do
     node_name=${node_name_list[i]}
     node_selector=${node_selector_list[i]}
-    helm install "cortx-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-provisioner \
-        --set cortxprov.name="cortx-provisioner-pod-$node_name" \
-        --set cortxprov.nodename=$node_name \
-        --set cortxprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
-        --set cortxprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
-        --set cortxprov.service.headless.name="cortx-data-headless-svc-$node_name" \
+    helm install "cortx-control-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-control-provisioner \
+        --set cortxcontrolprov.name="cortx-control-provisioner-pod-$node_name" \
+        --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc-$node_name" \
+        --set cortxcontrolprov.service.headless.name="cortx-control-headless-svc-$node_name" \
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxprov.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
-        --set cortxprov.cfgmap.volmountname="config001-$node_name" \
-        --set cortxprov.cfgmap.mountpath="/etc/cortx" \
-        --set cortxprov.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
-        --set cortxprov.localpathpvc.mountpath="/data" \
-        --set cortxprov.localpathpvc.requeststoragesize="1Gi" \
+        --set cortxcontrolprov.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
+        --set cortxcontrolprov.cfgmap.volmountname="config001-$node_name" \
+        --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx" \
+        --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc-$node_name" \
+        --set cortxcontrolprov.localpathpvc.mountpath="/data" \
+        --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
         --set namespace=$namespace
 done
 
 # Check if all OpenLDAP are up and running
 node_count="${#node_selector_list[@]}"
 
-printf "\nWait for CORTX Provisioner to complete"
+printf "\nWait for CORTX Control Provisioner to complete"
 while true; do
     count=0
     while IFS= read -r line; do
@@ -529,7 +524,63 @@ while true; do
             break
         fi
         count=$((count+1))
-    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-provisioner-pod-')"
+    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-provisioner-pod-')"
+
+    if [[ $node_count -eq $count ]]; then
+        break
+    else
+        printf "."
+    fi
+    sleep 1s
+done
+printf "\n\n"
+
+# Delete CORTX Provisioner Services
+for i in "${!node_selector_list[@]}"; do
+    node_name=${node_name_list[i]}
+    node_selector=${node_selector_list[i]}
+    num_nodes=$((num_nodes+1))
+    kubectl delete service "cortx-control-clusterip-svc-$node_name" --namespace=$namespace
+    kubectl delete service "cortx-control-headless-svc-$node_name" --namespace=$namespace
+done
+
+printf "########################################################\n"
+printf "# Deploy CORTX Data Provisioner                              \n"
+printf "########################################################\n"
+for i in "${!node_selector_list[@]}"; do
+    node_name=${node_name_list[i]}
+    node_selector=${node_selector_list[i]}
+    helm install "cortx-data-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-data-provisioner \
+        --set cortxdataprov.name="cortx-data-provisioner-pod-$node_name" \
+        --set cortxdataprov.nodename=$node_name \
+        --set cortxdataprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
+        --set cortxdataprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
+        --set cortxdataprov.service.headless.name="cortx-data-headless-svc-$node_name" \
+        --set cortxgluster.pv.name=$gluster_pv_name \
+        --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+        --set cortxgluster.pvc.name=$gluster_pvc_name \
+        --set cortxdataprov.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
+        --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
+        --set cortxdataprov.cfgmap.mountpath="/etc/cortx" \
+        --set cortxdataprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
+        --set cortxdataprov.localpathpvc.mountpath="/data" \
+        --set cortxdataprov.localpathpvc.requeststoragesize="1Gi" \
+        --set namespace=$namespace
+done
+
+# Check if all OpenLDAP are up and running
+node_count="${#node_selector_list[@]}"
+
+printf "\nWait for CORTX Data Provisioner to complete"
+while true; do
+    count=0
+    while IFS= read -r line; do
+        IFS=" " read -r -a pod_status <<< "$line"
+        if [[ "${pod_status[2]}" != "Completed" ]]; then
+            break
+        fi
+        count=$((count+1))
+    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-provisioner-pod-')"
 
     if [[ $node_count -eq $count ]]; then
         break
@@ -553,8 +604,7 @@ printf "########################################################\n"
 printf "# Deploy CORTX Control                                  \n"
 printf "########################################################\n"
 num_nodes=1
-# This local path pvc has to match with the one created by CORTX Provisioner
-local_path_pvc="cortx-fs-local-pvc-$first_node_name"
+# This local path pvc has to match with the one created by CORTX Control Provisioner
 helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.name="cortx-control-pod" \
     --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
@@ -562,7 +612,7 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
     --set cortxcontrol.cfgmap.volmountname="config001" \
-    --set cortxcontrol.localpathpvc.name=$local_path_pvc \
+    --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$first_node_name" \
     --set cortxcontrol.localpathpvc.mountpath="/data" \
     --set cortxgluster.pv.name="gluster-default-name" \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
@@ -585,7 +635,7 @@ while true; do
         break
     else
         printf "."
-    fi    
+    fi
     sleep 1s
 done
 printf "\n\n"
@@ -610,7 +660,7 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdata.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
         --set cortxdata.cfgmap.volmountname="config001-$node_name" \
         --set cortxdata.cfgmap.mountpath="/etc/cortx" \
-        --set cortxdata.localpathpvc.name="cortx-fs-local-pvc-$node_name" \
+        --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
         --set cortxdata.localpathpvc.mountpath="/data" \
         --set cortxdata.nummotr=$(extractBlock 'solution.common.num_motr_inst') \
         --set cortxdata.nums3=$(extractBlock 'solution.common.num_s3_inst') \
@@ -621,7 +671,7 @@ printf "\nWait for CORTX Data to be ready"
 while true; do
     count=0
     while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"        
+        IFS=" " read -r -a pod_status <<< "$line"
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
@@ -633,7 +683,7 @@ while true; do
         break
     else
         printf "."
-    fi    
+    fi
     sleep 1s
 done
 printf "\n\n"
@@ -642,8 +692,8 @@ printf "########################################################\n"
 printf "# Deploy CORTX Support                                  \n"
 printf "########################################################\n"
 num_nodes=1
-# This local path pvc has to match with the one created by CORTX Provisioner
-local_path_pvc="cortx-fs-local-pvc-$first_node_name"
+# This local path pvc has to match with the one created by CORTX Data Provisioner
+local_path_pvc="cortx-data-fs-local-pvc-$first_node_name"
 helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.name="cortx-support-pod" \
     --set cortxsupport.service.clusterip.name="cortx-support-clusterip-svc" \
@@ -681,15 +731,7 @@ printf "\n"
 
 #################################################################
 # Delete files that contain disk partitions on the worker nodes
+# and the node info
 #################################################################
-# Split parsed output into an array of vars and vals
-IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
-# Loop the var val tuple array
-for var_val_element in "${parsed_var_val_array[@]}"
-do
-    node_name=$(echo $var_val_element | cut -f2 -d'>')
-    shorter_node_name=$(echo $node_name | cut -f1 -d'.')
-    file_name="mnt-blk-info-$shorter_node_name.txt"
-    rm $(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
-    rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
-done
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete

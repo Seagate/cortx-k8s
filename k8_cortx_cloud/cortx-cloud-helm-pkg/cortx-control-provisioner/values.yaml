@@ -1,13 +1,11 @@
 namespace: default
-cortxprov:
-  name: cortx-prov-pod
-  nodename: node-1
-  mountblkinfo: mnt-blk-info.txt
+cortxcontrolprov:
+  name: cortx-control-prov-pod
   service:
     clusterip:
-      name: cortx-data-clusterip-svc
+      name: cortx-control-clusterip-svc
     headless:
-      name: cortx-data-headless-svc
+      name: cortx-control-headless-svc
   cfgmap:
     mountpath: /etc/cortx
     volmountname: config001

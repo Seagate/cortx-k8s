@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.cortxcontrol.ingress.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  rules:
+  - http:
+      paths: 
+      - path: {{ .Values.cortxcontrol.ingress.path }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.cortxcontrol.service.ingress.name }}
+            port:
+              number: 28101
