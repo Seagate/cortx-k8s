@@ -1,20 +1,15 @@
 namespace: default
-cortxcontrol:
-  name: cortx-control
+cortxcontrolprov:
+  name: cortx-control-prov-pod
   service:
     clusterip:
       name: cortx-control-clusterip-svc
     headless:
       name: cortx-control-headless-svc
-    ingress:
-      name: cortx-control-ingress-svc
-  ingress:
-    name: cortx-control-ingress
-    path: /csm
   cfgmap:
     mountpath: /etc/cortx
-    name: cortx-control-cfgmap001
     volmountname: config001
+    name: cortx-provisioner-cfgmap
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config
@@ -22,9 +17,10 @@ cortxcontrol:
   localpathpvc:
     name: cortx-fs-local-pvc
     mountpath: /data # This is the mount path in the container
+    requeststoragesize: 1Gi
 cortxgluster:
   pv:
     name: gluster-default-volume
-    mountpath: /mnt/fs-local-volume/etc/gluster/ # This is the mount path in the container
+    mountpath: /mnt/fs-local-volume/etc/gluster/test_folder/ # This is the mount path in the container
   pvc:
     name: gluster-claim

@@ -45,7 +45,7 @@ kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 printf "###################################\n"
 printf "# Delete Persistent Volume Claims #\n"
 printf "###################################\n"
-VOLUME_CLAIMS=$(kubectl get pvc | grep -E "$PVC_CONSUL_FILTER|$PVC_KAFKA_FILTER|$PVC_ZOOKEEPER_FILTER|$OPENLDAP_PVC" | cut -f1 -d " ")
+VOLUME_CLAIMS=$(kubectl get pvc | grep -E "$PVC_CONSUL_FILTER|$PVC_KAFKA_FILTER|$PVC_ZOOKEEPER_FILTER|$OPENLDAP_PVC|cortx" | cut -f1 -d " ")
 echo $VOLUME_CLAIMS
 for VOLUME_CLAIM in $VOLUME_CLAIMS
 do
@@ -56,7 +56,7 @@ done
 printf "###################################\n"
 printf "# Delete Persistent Volumes       #\n"
 printf "###################################\n"
-PERSISTENT_VOLUMES=$(kubectl get pv | grep -E "$PVC_CONSUL_FILTER|$PVC_KAFKA_FILTER|$PVC_ZOOKEEPER_FILTER" | cut -f1 -d " ")
+PERSISTENT_VOLUMES=$(kubectl get pv | grep -E "$PVC_CONSUL_FILTER|$PVC_KAFKA_FILTER|$PVC_ZOOKEEPER_FILTER|cortx" | cut -f1 -d " ")
 echo $PERSISTENT_VOLUMES
 for PERSISTENT_VOLUME in $PERSISTENT_VOLUMES
 do

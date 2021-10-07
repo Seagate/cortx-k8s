@@ -20,6 +20,9 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
+
 node_name_list=[] # short version
 node_selector_list=[] # long version
 count=0
@@ -32,18 +35,12 @@ do
     node_name_list[count]=$shorter_node_name
     count=$((count+1))
     file_name="mnt-blk-info-$shorter_node_name.txt"
-    provisioner_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
+    data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
-
-    if [[ -f $provisioner_file_path ]]; then
-        rm $provisioner_file_path
-    elif [[ -f $data_file_path ]]; then
-        rm $data_file_path
-    fi
 
     # Get the node var from the tuple
     node=$(echo $var_val_element | cut -f3 -d'.')
-    
+
     filter="solution.nodes.$node.devices*"
     parsed_dev_output=$(parseSolution $filter)
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
@@ -52,15 +49,13 @@ do
         if [[ "$dev" != *"system"* ]]
         then
             device=$(echo $dev | cut -f2 -d'>')
-            # echo $device >> $provisioner_file_path
-            # echo $device >> $data_file_path
-            if [[ -s $provisioner_file_path ]]; then
-                printf "\n" >> $provisioner_file_path
+            if [[ -s $data_prov_file_path ]]; then
+                printf "\n" >> $data_prov_file_path
             fi
             if [[ -s $data_file_path ]]; then
                 printf "\n" >> $data_file_path
             fi
-            printf $device >> $provisioner_file_path
+            printf $device >> $data_prov_file_path
             printf $device >> $data_file_path
         fi
     done
@@ -76,7 +71,7 @@ printf "########################################################\n"
 helm uninstall "cortx-support"
 
 printf "########################################################\n"
-printf "# Delete CORTX data                                     \n"
+printf "# Delete CORTX Data                                     \n"
 printf "########################################################\n"
 for i in "${!node_selector_list[@]}"; do
     helm uninstall "cortx-data-${node_name_list[$i]}"
@@ -88,11 +83,16 @@ printf "########################################################\n"
 helm uninstall "cortx-control"
 
 printf "########################################################\n"
-printf "# Delete CORTX provisioner                              \n"
+printf "# Delete CORTX Data provisioner                              \n"
 printf "########################################################\n"
 for i in "${!node_selector_list[@]}"; do
-    helm uninstall "cortx-provisioner-${node_name_list[$i]}"
-done 
+    helm uninstall "cortx-data-provisioner-${node_name_list[$i]}"
+done
+
+printf "########################################################\n"
+printf "# Delete CORTX Control provisioner                      \n"
+printf "########################################################\n"
+helm uninstall "cortx-control-provisioner"
 
 printf "########################################################\n"
 printf "# Delete CORTX GlusterFS                                \n"
@@ -122,9 +122,9 @@ do
     IFS=" " read -r -a my_array <<< "$gluster_ep"
     gluster_ep_ip=${my_array[6]}
     gluster_node_name=${my_array[1]}
-    printf "=================================================================\n"
-    printf "Stop and delete GlusterFS volume: $gluster_node_name             \n"
-    printf "=================================================================\n"
+    printf "=================================================================================\n"
+    printf "Stop and delete GlusterFS volume: $gluster_node_name                             \n"
+    printf "=================================================================================\n"
 
     if [[ "$count" == 0 ]]; then
         first_gluster_node_name=$gluster_node_name
@@ -132,7 +132,7 @@ do
         echo y | kubectl exec --namespace=$namespace -i $gluster_node_name -- gluster volume delete $gluster_vol
     else
         echo y | kubectl exec --namespace=$namespace -i $first_gluster_node_name -- gluster peer detach $gluster_ep_ip
-    fi    
+    fi
     count=$((count+1))
 done
 
@@ -145,7 +145,7 @@ printf "######################################################\n"
 for i in "${!node_selector_list[@]}"; do
     node_name=${node_name_list[i]}
     node_selector=${node_selector_list[i]}
-    file_path="cortx-cloud-helm-pkg/cortx-provisioner/mnt-blk-info-$node_name.txt"
+    file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-info-$node_name.txt"
     count=001
     while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
         count_str=$(printf "%03d" $count)
@@ -172,17 +172,22 @@ done <<< "$(kubectl get pv -A)"
 printf "########################################################\n"
 printf "# Delete CORTX Configmap                               #\n"
 printf "########################################################\n"
-# Delete CORTX configmap
-# kubectl delete configmap "cortx-cfgmap" --namespace=$namespace
-
-# Create template folder
 cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
-# Delete CORTX configmap folders
+# Create machine id config maps
+for i in "${!node_name_list[@]}"; do
+    kubectl delete configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}"
+
+    if [[ -f $cfgmap_path/${node_name_list[i]}/control/id ]]; then
+        kubectl delete configmap "cortx-control-machine-id-cfgmap-${node_name_list[i]}"
+    fi
+done
+# Delete CORTX config maps
 for i in "${!node_name_list[@]}"; do
     auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
     gen_file="$auto_gen_path/config.yaml"
     kubectl delete configmap "cortx-cfgmap-${node_name_list[$i]}" --namespace=$namespace
     rm -rf $auto_gen_path
+    rm -rf "$cfgmap_path/${node_name_list[i]}"
 done
 
 rm -rf "$cfgmap_path/node-info"
@@ -230,7 +235,7 @@ kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 printf "########################################################\n"
 printf "# Delete Persistent Volume Claims                      #\n"
 printf "########################################################\n"
-volume_claims=$(kubectl get pvc --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc" | cut -f1 -d " ")
+volume_claims=$(kubectl get pvc --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx" | cut -f1 -d " ")
 echo $volume_claims
 for volume_claim in $volume_claims
 do
@@ -239,7 +244,7 @@ do
 done
 
 if [[ $namespace != 'default' ]]; then
-    volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc" | cut -f1 -d " ")
+    volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx" | cut -f1 -d " ")
     echo $volume_claims
     for volume_claim in $volume_claims
     do
@@ -285,6 +290,6 @@ do
     node_name=$(echo $var_val_element | cut -f2 -d'>')
     shorter_node_name=$(echo $node_name | cut -f1 -d'.')
     file_name="mnt-blk-info-$shorter_node_name.txt"
-    rm $(pwd)/cortx-cloud-helm-pkg/cortx-provisioner/$file_name
+    rm $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 done

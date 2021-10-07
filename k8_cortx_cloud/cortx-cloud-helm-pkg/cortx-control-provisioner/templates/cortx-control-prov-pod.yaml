@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Values.cortxcontrolprov.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  volumes:
+    - name: {{ .Values.cortxcontrolprov.cfgmap.volmountname }}
+      configMap:
+        name: {{ .Values.cortxcontrolprov.cfgmap.name }}
+    - name: {{ .Values.cortxcontrolprov.machineid.volmountname }}
+      configMap:
+        name: {{ .Values.cortxcontrolprov.machineid.name }}
+    - name: {{ .Values.cortxgluster.pv.name }}
+      persistentVolumeClaim:
+        claimName: {{ .Values.cortxgluster.pvc.name }}
+    - name: local-path-pv
+      persistentVolumeClaim:
+        claimName: {{ .Values.cortxcontrolprov.localpathpvc.name }}
+  containers:
+  - name: cortx-setup
+    image: centos:7
+    imagePullPolicy: IfNotPresent        
+    command: 
+      - /bin/sh
+    args: 
+      - -c
+      - sleep $(shuf -i 5-10 -n 1)s
+    volumeMounts:
+      - name: {{ .Values.cortxcontrolprov.cfgmap.volmountname }}
+        mountPath: {{ .Values.cortxcontrolprov.cfgmap.mountpath }}
+      - name: {{ .Values.cortxcontrolprov.machineid.volmountname }}
+        mountPath: {{ .Values.cortxcontrolprov.machineid.mountpath }}
+      - name: {{ .Values.cortxgluster.pv.name }}
+        mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+      - name: local-path-pv
+        mountPath: {{ .Values.cortxcontrolprov.localpathpvc.mountpath }}
+    ports:
+    - containerPort: 5050
+  restartPolicy: Never

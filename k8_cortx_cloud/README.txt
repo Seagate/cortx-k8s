@@ -72,3 +72,41 @@ the folder is empty.
 
 2. Destroy CORTX cloud:
 ./destroy-cortx-cloud.sh
+
+###########################################################
+# Replacing a dummy container with real CORTX container   #
+###########################################################
+See the following example from CORTX Data helm chart, replace the image and
+command section hightlighted with "<<===" with the relevant CORTX container
+image and commands required for the entrypoint. An "args" section also can
+be added to provide additional arguments.
+
+./k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-data/templates/cortx-data-pod.yaml
+
+containers:
+- name: cortx-s3-server
+   image: centos:7                     <<===
+   imagePullPolicy: IfNotPresent
+   command: ["/bin/sleep", "3650d"]    <<===
+   volumeDevices:
+   {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
+   - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
+      devicePath: {{ . }}
+   {{- end }}
+   volumeMounts:
+   - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+      mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
+   - name: {{ .Values.cortxdata.machineid.volmountname }}
+      mountPath: {{ .Values.cortxdata.machineid.mountpath }}
+   - name: {{ .Values.cortxgluster.pv.name }}
+      mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+   - name: local-path-pv
+      mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+   env:
+   - name: UDS_CLOUD_CONTAINER_NAME
+      value: {{ .Values.cortxdata.name }}
+   ports:
+   - containerPort: 80
+   - containerPort: 443
+   - containerPort: 9080
+   - containerPort: 9443
