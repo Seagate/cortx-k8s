@@ -20,6 +20,9 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
+
 node_name_list=[] # short version
 node_selector_list=[] # long version
 count=0
@@ -34,13 +37,6 @@ do
     file_name="mnt-blk-info-$shorter_node_name.txt"
     data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
-
-    if [[ -f $data_prov_file_path ]]; then
-        rm $data_prov_file_path
-    fi
-    if [[ -f $data_file_path ]]; then
-        rm $data_file_path
-    fi
 
     # Get the node var from the tuple
     node=$(echo $var_val_element | cut -f3 -d'.')

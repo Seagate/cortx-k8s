@@ -53,7 +53,6 @@ then
 fi
 
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
-find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "mnt-blk-info-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
 
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
