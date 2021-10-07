@@ -1,39 +1,72 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Values.statefulset.name }}
+  name: openldap
   labels:
-    app.kubernetes.io/name: {{ .Values.statefulset.name }}
-  namespace: {{ .Values.namespace }}
+    name: openldap-connect
 spec:
-  serviceName: {{ .Values.service.name }}
+  serviceName: {{ .Values.openldap.servicename }}
+  replicas: {{ .Values.openldap.numreplicas }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Values.statefulset.name }}
-  replicas: {{ .Values.statefulset.replicas }}
+      name: openldap-connect
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ .Values.statefulset.name }}
+        name: openldap-connect
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+                matchLabels:
+                  name: openldap-connect
       containers:
-        - name: {{ .Values.statefulset.name }}
-          image: localhost:5000/cortx-openldap:latest
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            privileged: true
-          ports:
-            - name: tcp-ldap
-              containerPort: 389
+        - name: openldap
+          image: ghcr.io/seagate/symas-openldap:latest
+          imagePullPolicy: "Never"
           volumeMounts:
-            - name: openldap-data
-              mountPath: /var/lib/ldap
+            - name: etc-cortx
+              mountPath: /etc/cortx
+            - name: var-data-cortx
+              mountPath: /var/data/cortx
+            - name: var-log-cortx
+              mountPath: /var/log/cortx
+          ports:
+            - name: ldapport
+              containerPort: 389
+          command:
+            - "/opt/entrypoint.sh"
+          args:
+            - "--rootdnpassword"
+            - "seagate"
   volumeClaimTemplates:
   - metadata:
-      name: openldap-data
+      name: etc-cortx
     spec:
-      accessModes: [ "ReadWriteMany" ]
-      storageClassName: {{ .Values.storageclass }}
+      storageClassName: {{ .Values.openldap.storageclass }}
+      accessModes:
+      - ReadWriteMany
+      volumeMode: Filesystem
       resources:
         requests:
-          storage: {{ .Values.storagesize }}
+          storage: 3Gi
+  - metadata:
+      name: var-data-cortx
+    spec:
+      accessModes:
+      - ReadWriteMany
+      volumeMode: Filesystem
+      resources:
+        requests:
+          storage: 3Gi
+  - metadata:
+      name: var-log-cortx
+    spec:
+      accessModes:
+      - ReadWriteMany
+      volumeMode: Filesystem
+      resources:
+        requests:
+          storage: 3Gi

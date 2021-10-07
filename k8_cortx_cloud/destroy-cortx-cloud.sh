@@ -209,20 +209,6 @@ helm uninstall zookeeper
 printf "########################################################\n"
 printf "# Delete openLDAP                                      #\n"
 printf "########################################################\n"
-openldap_array=[]
-count=0
-while IFS= read -r line; do
-    IFS=" " read -r -a my_array <<< "$line"
-    openldap_array[count]="${my_array[1]}"
-    count=$((count+1))
-done <<< "$(kubectl get pods -A | grep 'openldap-')"
-
-for openldap_pod_name in "${openldap_array[@]}"
-do
-    kubectl exec -ti $openldap_pod_name --namespace="default" -- bash -c \
-        'rm -rf /var/lib/ldap/*'
-done
-
 helm uninstall "openldap"
 
 printf "########################################################\n"

@@ -1,17 +1,24 @@
+{{- range $line := .Files.Lines .Values.openldap.nodelistinfo }}
+{{ $parts := split " " . }}
+{{- $index := $parts._0 }}
+{{- $nodename := $parts._1 }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Values.pv1.name }}
-  labels:
-    type: local
+  name: {{ printf "etc-cortx-%s" $index }}
 spec:
-  storageClassName: {{ .Values.storageclass }}
+  storageClassName: {{ $.Values.openldap.storageclass }}
   capacity:
-    storage: {{ .Values.storagesize }}
+    storage: {{ $.Values.openldap.storagesize }}
   accessModes:
     - ReadWriteMany
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: default
+    name: {{ printf "etc-cortx-openldap-%s" $index }}
   local:
-    path: {{ .Values.pv1.localpath }}
+    path: /etc/cortx
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -19,22 +26,25 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-            - {{ .Values.pv1.node }}
+          - {{ printf "%s" $nodename }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Values.pv2.name }}
-  labels:
-    type: local
+  name: {{ printf "var-data-cortx-%s" $index }}
 spec:
-  storageClassName: {{ .Values.storageclass }}
+  storageClassName: {{ $.Values.openldap.storageclass }}
   capacity:
-    storage: {{ .Values.storagesize }}
+    storage: {{ $.Values.openldap.storagesize }}
   accessModes:
     - ReadWriteMany
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: default
+    name: {{ printf "var-data-cortx-openldap-%s" $index }}
   local:
-    path: {{ .Values.pv2.localpath }}
+    path: /var/data/cortx
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -42,22 +52,25 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-            - {{ .Values.pv2.node }}
+          - {{ printf "%s" $nodename }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Values.pv3.name }}
-  labels:
-    type: local
+  name: {{ printf "var-log-cortx-%s" $index }}
 spec:
-  storageClassName: {{ .Values.storageclass }}
+  storageClassName: {{ $.Values.openldap.storageclass }}
   capacity:
-    storage: {{ .Values.storagesize }}
+    storage: {{ $.Values.openldap.storagesize }}
   accessModes:
     - ReadWriteMany
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: default
+    name: {{ printf "var-log-cortx-openldap-%s" $index }}
   local:
-    path: {{ .Values.pv3.localpath }}
+    path: /var/log/cortx
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -65,4 +78,6 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-            - {{ .Values.pv3.node }}
+          - {{ printf "%s" $nodename }}
+---
+{{- end }}

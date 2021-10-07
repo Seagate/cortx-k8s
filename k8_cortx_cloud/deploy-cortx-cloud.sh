@@ -9,18 +9,28 @@ if [[ ! -f "/usr/bin/yq" ]]; then
     chmod +x /usr/bin/yq
 fi
 
-# Default list of worker nodes to be used to deploy OpenLDAP
-openldap_worker_node_list[0]='node-1'
-openldap_worker_node_list[1]='node-2'
-openldap_worker_node_list[2]='node-3'
+# Delete old "node-list-info.txt" file
+find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
 
+max_openldap_inst=3 # Default max openldap instances
+num_openldap_replicas=0 # Default the number of actual openldap instances
 num_worker_nodes=0
 while IFS= read -r line; do
     if [[ $line != *"master"* && $line != *"AGE"* ]]
     then
         IFS=" " read -r -a node_name <<< "$line"
-        openldap_worker_node_list[num_worker_nodes]=$node_name
+        node_list_str="$num_worker_nodes $node_name"
+        echo "$node_list_str"
         num_worker_nodes=$((num_worker_nodes+1))
+
+        if [[ "$num_worker_nodes" -lt "$max_openldap_inst" ]]; then
+            num_openldap_replicas=$num_worker_nodes
+            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
+            if [[ -s $node_list_info_path ]]; then
+                printf "\n" >> $node_list_info_path
+            fi
+            printf "$node_list_str" >> $node_list_info_path
+        fi
     fi
 done <<< "$(kubectl get nodes)"
 printf "Number of worker nodes detected: $num_worker_nodes\n"
@@ -121,48 +131,28 @@ helm install "consul" hashicorp/consul \
 printf "######################################################\n"
 printf "# Deploy openLDAP                                     \n"
 printf "######################################################\n"
-# Set max number of OpenLDAP replicas to be 3
-num_replicas=3
-if [[ "$num_worker_nodes" -le 3 ]]; then
-    num_replicas=$num_worker_nodes
-fi
 
 helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
-    --set storageclass="openldap-storage" \
-    --set storagesize="1Gi" \
-    --set service.name="openldap-svc" \
-    --set service.ip="10.105.117.12" \
-    --set statefulset.name="openldap" \
-    --set statefulset.replicas=$num_replicas \
-    --set pv1.name="openldap-pv-0" \
-    --set pv1.node=${openldap_worker_node_list[0]} \
-    --set pv1.localpath="/var/lib/ldap" \
-    --set pv2.name="openldap-pv-1" \
-    --set pv2.node=${openldap_worker_node_list[1]} \
-    --set pv2.localpath="/var/lib/ldap" \
-    --set pv3.name="openldap-pv-2" \
-    --set pv3.node=${openldap_worker_node_list[2]} \
-    --set pv3.localpath="/var/lib/ldap" \
-    --set namespace="default"
+    --set openldap.servicename="openldap-svc" \
+    --set openldap.storageclass="openldap-local-storage" \
+    --set openldap.storagesize="5Gi" \
+    --set openldap.nodelistinfo="node-list-info.txt" \
+    --set openldap.numreplicas=$num_openldap_replicas
 
-# Wait for all openLDAP pods to be ready and build up openLDAP endpoint array
-# which consists of "<openLDAP-pod-name> <openLDAP-endpoint-ip-addr>""
+# Wait for all openLDAP pods to be ready
 printf "\nWait for openLDAP PODs to be ready"
 while true; do
-    openldap_ep_array=[]
     count=0
-
     while IFS= read -r line; do
-        IFS=" " read -r -a my_array <<< "$line"
-        openldap_ep_array[count]="${my_array[1]} ${my_array[6]}"
-        if [[ ${my_array[6]} == "<none>" ]]; then
+        IFS=" " read -r -a pod_status <<< "$line"
+        IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
+        if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
         fi
         count=$((count+1))
-    done <<< "$(kubectl get pods -A -o wide | grep 'openldap-')"
+    done <<< "$(kubectl get pods -A | grep 'openldap')"
 
-    if [[ $count -eq $num_replicas ]]
-    then
+    if [[ $count -eq $num_openldap_replicas ]]; then
         break
     else
         printf "."
@@ -171,61 +161,17 @@ while true; do
 done
 printf "\n\n"
 
-num_openldap_nodes=${#openldap_ep_array[@]}
-replicate_ldif_file="opt/seagate/cortx/s3/install/ldap/replicate.ldif"
-if [[ $num_openldap_nodes -eq 2 ]]
-then
-    replicate_ldif_file="opt/seagate/cortx/s3/install/ldap/replicate_2nodes.ldif"
-fi
-
-# Update openLDAP config
-for openldap_ep in "${openldap_ep_array[@]}"
-do
-    IFS=" " read -r -a my_array <<< "$openldap_ep"
-
-    SHA=$(kubectl exec -i ${my_array[0]} --namespace="default" -- slappasswd -s ldapadmin)
-    ESC_SHA=$(kubectl exec -i ${my_array[0]} --namespace=default -- echo $SHA | sed 's/[/]/\\\//g')
-    EXPR='s/userPassword: *.*/userPassword: '$ESC_SHA'/g'
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        sed -i "$EXPR" opt/seagate/cortx/s3/install/ldap/iam-admin.ldif
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapadd -x -D "cn=admin,dc=seagate,dc=com" \
-        -w ldapadmin \
-        -f opt/seagate/cortx/s3/install/ldap/ldap-init.ldif \
-        -H ldap://${my_array[1]}
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapadd -x -D "cn=admin,dc=seagate,dc=com" \
-        -w ldapadmin \
-        -f opt/seagate/cortx/s3/install/ldap/iam-admin.ldif \
-        -H ldap://${my_array[1]}
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapmodify -x -a -D cn=admin,dc=seagate,dc=com \
-        -w ldapadmin \
-        -f opt/seagate/cortx/s3/install/ldap/ppolicy-default.ldif \
-        -H ldap://${my_array[1]}
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapadd -Y EXTERNAL -H ldapi:/// \
-        -f opt/seagate/cortx/s3/install/ldap/syncprov_mod.ldif
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapadd -Y EXTERNAL -H ldapi:/// \
-        -f opt/seagate/cortx/s3/install/ldap/syncprov.ldif
-
-    uri_count=1
-    for openldap_ep in "${openldap_ep_array[@]}"
-    do
-        IFS=" " read -r -a temp_array <<< "$openldap_ep"
-        output=$(kubectl exec -i ${my_array[0]} --namespace=default -- \
-                    sed "s/<sample_provider_URI_$uri_count>/${temp_array[1]}/g" \
-                    $replicate_ldif_file)
-        kubectl exec -i ${my_array[0]} --namespace="default" -- bash -c "echo '$output' > $replicate_ldif_file"
-        uri_count=$((uri_count+1))
-    done
+for ((i=0;i<$num_openldap_replicas;i++)); do
+    printf "Update 'cortx.conf' for pod 'openldap-$i'\n"
+    kubectl cp ./cortx-cloud-3rd-party-pkg/configmap/openldap/cortx.conf \
+        "openldap-$i":/etc/cortx/cortx.conf
 done
+
+printf "===========================================================\n"
+printf "Setup OpenLDAP replication                                 \n"
+printf "===========================================================\n"
+# Run replication script
+./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh
 
 printf "######################################################\n"
 printf "# Deploy Zookeeper                                    \n"
@@ -754,5 +700,6 @@ printf "\n"
 # Delete files that contain disk partitions on the worker nodes
 # and the node info
 #################################################################
+find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
