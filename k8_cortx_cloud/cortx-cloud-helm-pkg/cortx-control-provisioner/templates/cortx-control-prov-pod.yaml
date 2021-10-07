@@ -8,6 +8,9 @@ spec:
     - name: {{ .Values.cortxcontrolprov.cfgmap.volmountname }}
       configMap:
         name: {{ .Values.cortxcontrolprov.cfgmap.name }}
+    - name: {{ .Values.cortxcontrolprov.machineid.volmountname }}
+      configMap:
+        name: {{ .Values.cortxcontrolprov.machineid.name }}
     - name: {{ .Values.cortxgluster.pv.name }}
       persistentVolumeClaim:
         claimName: {{ .Values.cortxgluster.pvc.name }}
@@ -26,6 +29,8 @@ spec:
     volumeMounts:
       - name: {{ .Values.cortxcontrolprov.cfgmap.volmountname }}
         mountPath: {{ .Values.cortxcontrolprov.cfgmap.mountpath }}
+      - name: {{ .Values.cortxcontrolprov.machineid.volmountname }}
+        mountPath: {{ .Values.cortxcontrolprov.machineid.mountpath }}
       - name: {{ .Values.cortxgluster.pv.name }}
         mountPath: {{ .Values.cortxgluster.pv.mountpath }}
       - name: local-path-pv

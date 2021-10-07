@@ -16,6 +16,10 @@ cortxdata:
     mountpath: /etc/cortx
     volmountname: config001
     name: cortx-data-cfgmap
+  machineid:
+    mountpath: /etc/cortx/solution/node
+    volmountname: machine-id-config
+    name:  cortx-data-machine-id-cfgmap
   localpathpvc:
     name: cortx-fs-local-pvc
     mountpath: /data # This is the mount path in the container

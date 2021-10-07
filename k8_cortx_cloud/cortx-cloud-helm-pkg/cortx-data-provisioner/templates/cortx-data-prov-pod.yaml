@@ -8,6 +8,9 @@ spec:
     - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
       configMap:
         name: {{ .Values.cortxdataprov.cfgmap.name }}
+    - name: {{ .Values.cortxdataprov.machineid.volmountname }}
+      configMap:
+        name: {{ .Values.cortxdataprov.machineid.name }}
     {{- $nodename := (.Values.cortxdataprov.nodename) }}
     {{- range .Files.Lines .Values.cortxdataprov.mountblkinfo }}
     {{- $basepath := (base .) }}
@@ -38,6 +41,8 @@ spec:
     volumeMounts:
       - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
         mountPath: {{ .Values.cortxdataprov.cfgmap.mountpath }}
+      - name: {{ .Values.cortxdataprov.machineid.volmountname }}
+        mountPath: {{ .Values.cortxdataprov.machineid.mountpath }}
       - name: {{ .Values.cortxgluster.pv.name }}
         mountPath: {{ .Values.cortxgluster.pv.mountpath }}
       - name: local-path-pv

@@ -448,18 +448,28 @@ for i in "${!node_name_list[@]}"; do
     new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
     cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
     ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" ${node_name_list[$i]}
-    ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$(uuidgen)"
+    uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+    ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
     ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-clusterip-svc-${node_name_list[$i]}"
     ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "storage_node"
+    
+    auto_gen_node_path="$cfgmap_path/${node_name_list[$i]}/data"
+    mkdir -p $auto_gen_node_path
+    echo $uuid_str > $auto_gen_node_path/id
 
     # Generate node file with type control_node in "node-info" folder
     if [[ "$i" -eq 0 ]]; then
         new_gen_file="$node_info_folder/cluster-control-node-${node_name_list[$i]}.yaml"
         cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
         ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" ${node_name_list[$i]}
-        ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$(uuidgen)"
+        uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+        ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
         ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control-clusterip-svc"
         ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
+        
+        auto_gen_node_path="$cfgmap_path/${node_name_list[$i]}/control"
+        mkdir -p $auto_gen_node_path
+        echo $uuid_str > $auto_gen_node_path/id
     fi
 
     # Copy cluster template
@@ -481,12 +491,27 @@ done
 node_info_folder="$cfgmap_path/node-info"
 rm -rf $node_info_folder
 
-# Create configmaps
+# Create config maps
 for i in "${!node_name_list[@]}"; do
     auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
     kubectl create configmap "cortx-cfgmap-${node_name_list[$i]}" \
         --namespace=$namespace \
         --from-file=$auto_gen_path
+done
+
+# Create machine ID config maps
+for i in "${!node_name_list[@]}"; do
+    auto_gen_cfgmap_path="$cfgmap_path/${node_name_list[i]}/data"
+    kubectl create configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}" \
+        --namespace=$namespace \
+        --from-file=$auto_gen_cfgmap_path
+
+    auto_gen_cfgmap_path="$cfgmap_path/${node_name_list[i]}/control"
+    if [[ -f $cfgmap_path/${node_name_list[i]}/control/id ]]; then
+        kubectl create configmap "cortx-control-machine-id-cfgmap-${node_name_list[i]}" \
+            --namespace=$namespace \
+            --from-file=$auto_gen_cfgmap_path
+    fi
 done
 
 printf "########################################################\n"
@@ -502,6 +527,7 @@ helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-prov
     --set cortxcontrolprov.cfgmap.name="cortx-cfgmap-$first_node_name" \
     --set cortxcontrolprov.cfgmap.volmountname="config001" \
     --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx" \
+    --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap-$first_node_name" \
     --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc-$first_node_name" \
     --set cortxcontrolprov.localpathpvc.mountpath="/data" \
     --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
@@ -548,9 +574,10 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxdataprov.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
+        --set cortxdataprov.cfgmap.name="cortx-cfgmap-$node_name" \
         --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
         --set cortxdataprov.cfgmap.mountpath="/etc/cortx" \
+        --set cortxdataprov.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdataprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
         --set cortxdataprov.localpathpvc.mountpath="/data" \
         --set cortxdataprov.localpathpvc.requeststoragesize="1Gi" \
@@ -601,8 +628,9 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.service.ingress.name="cortx-control-ingress-svc" \
     --set cortxcontrol.ingress.name="cortx-control-ingress" \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
-    --set cortxcontrol.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
+    --set cortxcontrol.cfgmap.name="cortx-cfgmap-$first_node_name" \
     --set cortxcontrol.cfgmap.volmountname="config001" \
+    --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap-$first_node_name" \
     --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$first_node_name" \
     --set cortxcontrol.localpathpvc.mountpath="/data" \
     --set cortxgluster.pv.name="gluster-default-name" \
@@ -649,9 +677,10 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxdata.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
+        --set cortxdata.cfgmap.name="cortx-cfgmap-$node_name" \
         --set cortxdata.cfgmap.volmountname="config001-$node_name" \
         --set cortxdata.cfgmap.mountpath="/etc/cortx" \
+        --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
         --set cortxdata.localpathpvc.mountpath="/data" \
         --set cortxdata.nummotr=$(extractBlock 'solution.common.num_motr_inst') \

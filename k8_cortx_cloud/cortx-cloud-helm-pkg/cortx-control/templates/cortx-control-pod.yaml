@@ -16,7 +16,10 @@ spec:
       volumes:
         - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
           configMap:
-            name: {{ .Values.cortxcontrol.cfgmap.name }}  
+            name: {{ .Values.cortxcontrol.cfgmap.name }}
+        - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+          configMap:
+            name: {{ .Values.cortxcontrol.machineid.name }}
         - name: {{ .Values.cortxgluster.pv.name }}
           persistentVolumeClaim:
               claimName: {{ .Values.cortxgluster.pvc.name }}
@@ -31,6 +34,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
@@ -45,6 +50,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
@@ -61,6 +68,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
@@ -77,6 +86,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
