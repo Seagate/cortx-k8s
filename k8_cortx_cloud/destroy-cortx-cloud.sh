@@ -92,9 +92,7 @@ done
 printf "########################################################\n"
 printf "# Delete CORTX Control provisioner                      \n"
 printf "########################################################\n"
-for i in "${!node_selector_list[@]}"; do
-    helm uninstall "cortx-control-provisioner-${node_name_list[$i]}"
-done
+helm uninstall "cortx-control-provisioner"
 
 printf "########################################################\n"
 printf "# Delete CORTX GlusterFS                                \n"

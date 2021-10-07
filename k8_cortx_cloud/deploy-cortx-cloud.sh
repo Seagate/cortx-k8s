@@ -492,28 +492,23 @@ done
 printf "########################################################\n"
 printf "# Deploy CORTX Control Provisioner                      \n"
 printf "########################################################\n"
-for i in "${!node_selector_list[@]}"; do
-    node_name=${node_name_list[i]}
-    node_selector=${node_selector_list[i]}
-    helm install "cortx-control-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-control-provisioner \
-        --set cortxcontrolprov.name="cortx-control-provisioner-pod-$node_name" \
-        --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc-$node_name" \
-        --set cortxcontrolprov.service.headless.name="cortx-control-headless-svc-$node_name" \
-        --set cortxgluster.pv.name=$gluster_pv_name \
-        --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
-        --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxcontrolprov.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
-        --set cortxcontrolprov.cfgmap.volmountname="config001-$node_name" \
-        --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx" \
-        --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc-$node_name" \
-        --set cortxcontrolprov.localpathpvc.mountpath="/data" \
-        --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
-        --set namespace=$namespace
-done
+helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-provisioner \
+    --set cortxcontrolprov.name="cortx-control-provisioner-pod" \
+    --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc" \
+    --set cortxcontrolprov.service.headless.name="cortx-control-headless-svc" \
+    --set cortxgluster.pv.name=$gluster_pv_name \
+    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+    --set cortxgluster.pvc.name=$gluster_pvc_name \
+    --set cortxcontrolprov.cfgmap.name="cortx-cfgmap-$first_node_name" \
+    --set cortxcontrolprov.cfgmap.volmountname="config001" \
+    --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx" \
+    --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc-$first_node_name" \
+    --set cortxcontrolprov.localpathpvc.mountpath="/data" \
+    --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
+    --set namespace=$namespace
 
-# Check if all OpenLDAP are up and running
-node_count="${#node_selector_list[@]}"
-
+# Check if all Cortx Control Provisioner is up and running
+node_count=1
 printf "\nWait for CORTX Control Provisioner to complete"
 while true; do
     count=0
@@ -523,7 +518,7 @@ while true; do
             break
         fi
         count=$((count+1))
-    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-provisioner-pod-')"
+    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-provisioner-pod')"
 
     if [[ $node_count -eq $count ]]; then
         break
@@ -535,13 +530,8 @@ done
 printf "\n\n"
 
 # Delete CORTX Provisioner Services
-for i in "${!node_selector_list[@]}"; do
-    node_name=${node_name_list[i]}
-    node_selector=${node_selector_list[i]}
-    num_nodes=$((num_nodes+1))
-    kubectl delete service "cortx-control-clusterip-svc-$node_name" --namespace=$namespace
-    kubectl delete service "cortx-control-headless-svc-$node_name" --namespace=$namespace
-done
+kubectl delete service "cortx-control-clusterip-svc" --namespace=$namespace
+kubectl delete service "cortx-control-headless-svc" --namespace=$namespace
 
 printf "########################################################\n"
 printf "# Deploy CORTX Data Provisioner                              \n"
