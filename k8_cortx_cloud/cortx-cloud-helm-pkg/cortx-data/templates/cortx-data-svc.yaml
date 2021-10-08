@@ -36,10 +36,6 @@ spec:
       protocol: TCP
       port: 28049
       targetPort: 28049
-    - name: cortx-liveness-probe-tcp
-      protocol: TCP
-      port: 5051
-      targetPort: 5051
 ---
 apiVersion: v1
 kind: Service
@@ -79,10 +75,6 @@ spec:
       protocol: TCP
       port: 28049
       targetPort: 28049
-    - name: cortx-liveness-probe-tcp
-      protocol: TCP
-      port: 5051
-      targetPort: 5051
 ---
 apiVersion: v1
 kind: Service
