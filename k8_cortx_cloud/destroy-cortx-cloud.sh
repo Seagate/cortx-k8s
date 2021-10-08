@@ -20,8 +20,8 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
 node_selector_list=[] # long version

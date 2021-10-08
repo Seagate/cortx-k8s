@@ -10,4 +10,4 @@ spec:
   storageClassName: {{ .Values.cortxblkdata.storageclass }}
   resources:
      requests:
-       storage: 5Gi
+       storage: {{  .Values.cortxblkdata.storage.size }}
