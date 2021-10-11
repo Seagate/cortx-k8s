@@ -16,7 +16,7 @@ while IFS= read -r line; do
         node_list_str="$num_worker_nodes $node_name"
         num_worker_nodes=$((num_worker_nodes+1))
 
-        if [[ "$num_worker_nodes" -lt "$max_openldap_inst" ]]; then
+        if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
             num_openldap_replicas=$num_worker_nodes
             node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
             if [[ -s $node_list_info_path ]]; then
