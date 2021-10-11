@@ -1,6 +1,6 @@
 #!/bin/bash
 
-storage_class=${1:-'local-path'}
+storage_class='local-path'
 printf "Default storage class: $storage_class\n"
 
 # Delete old "node-list-info.txt" file
@@ -41,9 +41,6 @@ then
     # kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
     kubectl create -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 fi
-# # Set default StorageClass
-# kubectl patch storageclass $STORAGE_CLASS \
-#     -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
 helm install "consul" hashicorp/consul \
     --set global.name="consul" \

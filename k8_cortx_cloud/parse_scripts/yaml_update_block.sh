@@ -9,9 +9,9 @@ TEMPLATE_UPDATE=$4
 if [ "$INPUT_FILE" == "" ] || [ "$OUTPUT_FILE" == "" ]
 then
     echo "Invalid input paramters"
-    echo "./subst.sh <input file> <output file> [<yaml path filter> OPTIONAL] [<template update> OPTIONAL]"
-    echo "<input file>    = $INPUT_FILE"
-    echo "<output file>   = $OUTPUT_FILE"
+    echo "./yaml_update_block.sh <input file> <output file> [<yaml path filter> OPTIONAL] [<template update> OPTIONAL]"
+    echo "<input file>                  = $INPUT_FILE"
+    echo "<output file>                 = $OUTPUT_FILE"
     echo "[<yaml path filter> OPTIONAL] = $YAML_PATH_FILTER"
     ehco "[<template update> OPTIONAL]  = $TEMPLATE_UPDATE"
     exit 1

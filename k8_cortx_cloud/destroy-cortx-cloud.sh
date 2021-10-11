@@ -1,6 +1,5 @@
 #!/bin/bash
 
-namespace="default"
 pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
@@ -15,13 +14,15 @@ function parseSolution()
     echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
 }
 
+namespace=$(parseSolution 'solution.namespace')
+namespace=$(echo $namespace | cut -f2 -d'>')
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
 node_selector_list=[] # long version
@@ -175,12 +176,12 @@ printf "########################################################\n"
 cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 # Delete data machine id config maps
 for i in "${!node_name_list[@]}"; do
-    kubectl delete configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}"
+    kubectl delete configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}" --namespace=$namespace
     rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}"
 
 done
 # Delete control machine id config map
-kubectl delete configmap "cortx-control-machine-id-cfgmap"
+kubectl delete configmap "cortx-control-machine-id-cfgmap" --namespace=$namespace
 rm -rf "$cfgmap_path/auto-gen-control"
 # Delete CORTX config maps
 rm -rf "$cfgmap_path/auto-gen-cfgmap"
