@@ -79,12 +79,6 @@ while true; do
 done
 printf "\n\n"
 
-for ((i=0;i<$num_openldap_replicas;i++)); do
-    printf "Update 'cortx.conf' for pod 'openldap-$i'\n"
-    kubectl cp ./cortx-cloud-3rd-party-pkg/configmap/openldap/cortx.conf \
-        "openldap-$i":/etc/cortx/cortx.conf
-done
-
 printf "===========================================================\n"
 printf "Setup OpenLDAP replication                                 \n"
 printf "===========================================================\n"
