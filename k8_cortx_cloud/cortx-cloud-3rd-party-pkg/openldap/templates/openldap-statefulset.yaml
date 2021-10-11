@@ -40,7 +40,7 @@ spec:
             - "/opt/entrypoint.sh"
           args:
             - "--rootdnpassword"
-            - "seagate"
+            - "seagate1"
   volumeClaimTemplates:
   - metadata:
       name: etc-3rd-party
