@@ -42,10 +42,6 @@ spec:
       protocol: TCP
       port: 28049
       targetPort: 28049
-    - name: cortx-liveness-probe-tcp
-      protocol: TCP
-      port: 5051
-      targetPort: 5051
     {{- range $i := until (.Values.cortxdata.motr.numinst|int) }}
     - name: {{ printf "cortx-motr-%03d-tcp" (add 1 $i) }}
       protocol: TCP
@@ -97,10 +93,6 @@ spec:
       protocol: TCP
       port: 28049
       targetPort: 28049
-    - name: cortx-liveness-probe-tcp
-      protocol: TCP
-      port: 5051
-      targetPort: 5051
     {{- range $i := until (.Values.cortxdata.motr.numinst|int) }}
     - name: {{ printf "cortx-motr-%03d-tcp" (add 1 $i) }}
       protocol: TCP

@@ -253,26 +253,3 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
-        - name: cortx-liveness-probe
-          image: centos:7
-          imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
-          volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
-              mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
-          ports:
-          - containerPort: 5051
