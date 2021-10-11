@@ -1,21 +1,7 @@
 namespace: default
-storageclass: openldap-storage
-storagesize: 1Gi
-service:
-  name: openldap-svc
-  ip: 10.105.117.12
-statefulset:
-  name: openldap
-  replicas: 3
-pv1:
-  name: openldap-pv-0
-  node: node-1
-  localpath: /var/lib/ldap
-pv2:
-  name: openldap-pv-1
-  node: node-2
-  localpath: /var/lib/ldap
-pv3:
-  name: openldap-pv-2
-  node: node-3
-  localpath: /var/lib/ldap
+openldap:
+  servicename: openldap-svc
+  storageclass: openldap-local-storage
+  storagesize: 5Gi
+  nodelistinfo: node-list-info.txt
+  numreplicas: 3

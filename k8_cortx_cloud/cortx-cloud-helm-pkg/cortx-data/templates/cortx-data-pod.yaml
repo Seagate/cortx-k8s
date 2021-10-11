@@ -83,7 +83,7 @@ spec:
               value: {{ .Values.cortxdata.name }}
           ports:
           - containerPort: 28050
-        {{- range $i := until (.Values.cortxdata.nums3|int) }}
+        {{- range $i := until (.Values.cortxdata.s3.numinst|int) }}
         - name: {{ printf "cortx-s3-%03d" (add 1 $i) }}
           image: centos:7
           imagePullPolicy: IfNotPresent
@@ -100,6 +100,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ $.Values.cortxdata.name }}
+          ports:
+          - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.s3.startportnum) }}
         {{- end }}
         - name: cortx-motr-hax
           image: centos:7
@@ -164,7 +166,7 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
-        {{- range $i := until (.Values.cortxdata.nummotr|int) }}
+        {{- range $i := until (.Values.cortxdata.motr.numinst|int) }}
         - name: {{ printf "cortx-motr-%03d" (add 1 $i) }}
           image: centos:7
           imagePullPolicy: IfNotPresent
@@ -181,6 +183,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ $.Values.cortxdata.name }}
+          ports:
+          - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
         {{- end }}
         - name: cortx-consul-agent
           image: centos:7

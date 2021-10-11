@@ -10,4 +10,4 @@ spec:
   storageClassName: {{ .Values.cortxblkdata.storageclass }}
   resources:
      requests:
-       storage: {{  .Values.cortxblkdata.storage.size }}
+       storage: {{ .Values.cortxblkdata.storage.size }}

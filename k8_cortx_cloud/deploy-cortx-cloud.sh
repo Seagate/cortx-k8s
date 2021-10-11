@@ -8,18 +8,27 @@ if [[ ! -f "/usr/bin/yq" ]]; then
     chmod +x /usr/bin/yq
 fi
 
-# Default list of worker nodes to be used to deploy OpenLDAP
-openldap_worker_node_list[0]='node-1'
-openldap_worker_node_list[1]='node-2'
-openldap_worker_node_list[2]='node-3'
+# Delete old "node-list-info.txt" file
+find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
 
+max_openldap_inst=3 # Default max openldap instances
+num_openldap_replicas=0 # Default the number of actual openldap instances
 num_worker_nodes=0
 while IFS= read -r line; do
     if [[ $line != *"master"* && $line != *"AGE"* ]]
     then
         IFS=" " read -r -a node_name <<< "$line"
-        openldap_worker_node_list[num_worker_nodes]=$node_name
+        node_list_str="$num_worker_nodes $node_name"
         num_worker_nodes=$((num_worker_nodes+1))
+
+        if [[ "$num_worker_nodes" -lt "$max_openldap_inst" ]]; then
+            num_openldap_replicas=$num_worker_nodes
+            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
+            if [[ -s $node_list_info_path ]]; then
+                printf "\n" >> $node_list_info_path
+            fi
+            printf "$node_list_str" >> $node_list_info_path
+        fi
     fi
 done <<< "$(kubectl get nodes)"
 printf "Number of worker nodes detected: $num_worker_nodes\n"
@@ -155,48 +164,28 @@ helm install "consul" hashicorp/consul \
 printf "######################################################\n"
 printf "# Deploy openLDAP                                     \n"
 printf "######################################################\n"
-# Set max number of OpenLDAP replicas to be 3
-num_replicas=3
-if [[ "$num_worker_nodes" -le 3 ]]; then
-    num_replicas=$num_worker_nodes
-fi
 
 helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
-    --set storageclass="openldap-storage" \
-    --set storagesize="1Gi" \
-    --set service.name="openldap-svc" \
-    --set service.ip="10.105.117.12" \
-    --set statefulset.name="openldap" \
-    --set statefulset.replicas=$num_replicas \
-    --set pv1.name="openldap-pv-0" \
-    --set pv1.node=${openldap_worker_node_list[0]} \
-    --set pv1.localpath="/var/lib/ldap" \
-    --set pv2.name="openldap-pv-1" \
-    --set pv2.node=${openldap_worker_node_list[1]} \
-    --set pv2.localpath="/var/lib/ldap" \
-    --set pv3.name="openldap-pv-2" \
-    --set pv3.node=${openldap_worker_node_list[2]} \
-    --set pv3.localpath="/var/lib/ldap" \
-    --set namespace="default"
+    --set openldap.servicename="openldap-svc" \
+    --set openldap.storageclass="openldap-local-storage" \
+    --set openldap.storagesize="5Gi" \
+    --set openldap.nodelistinfo="node-list-info.txt" \
+    --set openldap.numreplicas=$num_openldap_replicas
 
-# Wait for all openLDAP pods to be ready and build up openLDAP endpoint array
-# which consists of "<openLDAP-pod-name> <openLDAP-endpoint-ip-addr>""
+# Wait for all openLDAP pods to be ready
 printf "\nWait for openLDAP PODs to be ready"
 while true; do
-    openldap_ep_array=[]
     count=0
-
     while IFS= read -r line; do
-        IFS=" " read -r -a my_array <<< "$line"
-        openldap_ep_array[count]="${my_array[1]} ${my_array[6]}"
-        if [[ ${my_array[6]} == "<none>" ]]; then
+        IFS=" " read -r -a pod_status <<< "$line"
+        IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
+        if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
         fi
         count=$((count+1))
-    done <<< "$(kubectl get pods -A -o wide | grep 'openldap-')"
+    done <<< "$(kubectl get pods -A | grep 'openldap')"
 
-    if [[ $count -eq $num_replicas ]]
-    then
+    if [[ $count -eq $num_openldap_replicas ]]; then
         break
     else
         printf "."
@@ -205,61 +194,11 @@ while true; do
 done
 printf "\n\n"
 
-num_openldap_nodes=${#openldap_ep_array[@]}
-replicate_ldif_file="opt/seagate/cortx/s3/install/ldap/replicate.ldif"
-if [[ $num_openldap_nodes -eq 2 ]]
-then
-    replicate_ldif_file="opt/seagate/cortx/s3/install/ldap/replicate_2nodes.ldif"
-fi
-
-# Update openLDAP config
-for openldap_ep in "${openldap_ep_array[@]}"
-do
-    IFS=" " read -r -a my_array <<< "$openldap_ep"
-
-    SHA=$(kubectl exec -i ${my_array[0]} --namespace="default" -- slappasswd -s ldapadmin)
-    ESC_SHA=$(kubectl exec -i ${my_array[0]} --namespace=default -- echo $SHA | sed 's/[/]/\\\//g')
-    EXPR='s/userPassword: *.*/userPassword: '$ESC_SHA'/g'
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        sed -i "$EXPR" opt/seagate/cortx/s3/install/ldap/iam-admin.ldif
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapadd -x -D "cn=admin,dc=seagate,dc=com" \
-        -w ldapadmin \
-        -f opt/seagate/cortx/s3/install/ldap/ldap-init.ldif \
-        -H ldap://${my_array[1]}
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapadd -x -D "cn=admin,dc=seagate,dc=com" \
-        -w ldapadmin \
-        -f opt/seagate/cortx/s3/install/ldap/iam-admin.ldif \
-        -H ldap://${my_array[1]}
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapmodify -x -a -D cn=admin,dc=seagate,dc=com \
-        -w ldapadmin \
-        -f opt/seagate/cortx/s3/install/ldap/ppolicy-default.ldif \
-        -H ldap://${my_array[1]}
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapadd -Y EXTERNAL -H ldapi:/// \
-        -f opt/seagate/cortx/s3/install/ldap/syncprov_mod.ldif
-
-    kubectl exec -i ${my_array[0]} --namespace="default" -- \
-        ldapadd -Y EXTERNAL -H ldapi:/// \
-        -f opt/seagate/cortx/s3/install/ldap/syncprov.ldif
-
-    uri_count=1
-    for openldap_ep in "${openldap_ep_array[@]}"
-    do
-        IFS=" " read -r -a temp_array <<< "$openldap_ep"
-        output=$(kubectl exec -i ${my_array[0]} --namespace=default -- \
-                    sed "s/<sample_provider_URI_$uri_count>/${temp_array[1]}/g" \
-                    $replicate_ldif_file)
-        kubectl exec -i ${my_array[0]} --namespace="default" -- bash -c "echo '$output' > $replicate_ldif_file"
-        uri_count=$((uri_count+1))
-    done
-done
+printf "===========================================================\n"
+printf "Setup OpenLDAP replication                                 \n"
+printf "===========================================================\n"
+# Run replication script
+./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh
 
 printf "######################################################\n"
 printf "# Deploy Zookeeper                                    \n"
@@ -478,16 +417,17 @@ cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 node_info_folder="$cfgmap_path/node-info"
 mkdir -p $node_info_folder
 
+# Create auto-gen config folder
+auto_gen_path="$cfgmap_path/auto-gen-cfgmap"
+mkdir -p $auto_gen_path
+
 # Generate config files
 for i in "${!node_name_list[@]}"; do
-    # Create auto-gen config folder
-    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
-    mkdir -p $auto_gen_path
     new_gen_file="$auto_gen_path/config.yaml"
     cp "$cfgmap_path/templates/config-template.yaml" $new_gen_file
     ./parse_scripts/subst.sh $new_gen_file "cortx.data.svc" "cortx-data-clusterip-svc-${node_name_list[$i]}"
-    ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.num_s3_inst')
-    ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.num_motr_inst')
+    ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
+    ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_inst')
 
     # Generate node file with type storage_node in "node-info" folder
     new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
@@ -498,72 +438,69 @@ for i in "${!node_name_list[@]}"; do
     ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-clusterip-svc-${node_name_list[$i]}"
     ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "storage_node"
     
-    auto_gen_node_path="$cfgmap_path/${node_name_list[$i]}/data"
+    # Create data machine id file
+    auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}/data"
     mkdir -p $auto_gen_node_path
     echo $uuid_str > $auto_gen_node_path/id
 
-    # Generate node file with type control_node in "node-info" folder
-    if [[ "$i" -eq 0 ]]; then
-        new_gen_file="$node_info_folder/cluster-control-node-${node_name_list[$i]}.yaml"
-        cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" ${node_name_list[$i]}
-        uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
-        ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control-clusterip-svc"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
-        
-        auto_gen_node_path="$cfgmap_path/${node_name_list[$i]}/control"
-        mkdir -p $auto_gen_node_path
-        echo $uuid_str > $auto_gen_node_path/id
-    fi
-
-    # Copy cluster template
-    cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
 done
 
+# Generate node file with type control_node in "node-info" folder
+new_gen_file="$node_info_folder/cluster-control-node.yaml"
+cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
+./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "control-node"
+uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
+./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control-clusterip-svc"
+./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
+
+# Create control machine id file
+auto_gen_control_path="$cfgmap_path/auto-gen-control"
+mkdir -p $auto_gen_control_path
+echo $uuid_str > $auto_gen_control_path/id        
+
+# Copy cluster template
+cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
+
+# Insert all node info stored in "node-info" folder into "cluster.yaml" file
 cluster_uuid=$(uuidgen)
-for i in "${!node_name_list[@]}"; do
-    extract_output=""
-    node_info_folder="$cfgmap_path/node-info"
-    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
-    ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
-    for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
-        if [ "$extract_output" == "" ]
-        then
-            extract_output="$(./parse_scripts/yaml_extract_block.sh $fname)"
-        else
-            extract_output="$extract_output"$'\n'"$(./parse_scripts/yaml_extract_block.sh $fname)"
-        fi
-    done
-    ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 6 "cluster.storage_sets.nodes"
+extract_output=""
+node_info_folder="$cfgmap_path/node-info"
+./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
+for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
+    if [ "$extract_output" == "" ]
+    then
+        extract_output="$(./parse_scripts/yaml_extract_block.sh $fname)"
+    else
+        extract_output="$extract_output"$'\n'"$(./parse_scripts/yaml_extract_block.sh $fname)"
+    fi
 done
+./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 6 "cluster.storage_sets.nodes"
 
 # Delete node-info folder
 node_info_folder="$cfgmap_path/node-info"
 rm -rf $node_info_folder
 
 # Create config maps
-for i in "${!node_name_list[@]}"; do
-    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
-    kubectl create configmap "cortx-cfgmap-${node_name_list[$i]}" \
-        --namespace=$namespace \
-        --from-file=$auto_gen_path
-done
+auto_gen_path="$cfgmap_path/auto-gen-cfgmap"
+kubectl create configmap "cortx-cfgmap" \
+    --namespace=$namespace \
+    --from-file=$auto_gen_path
 
-# Create machine ID config maps
+# Create data machine ID config maps
 for i in "${!node_name_list[@]}"; do
-    auto_gen_cfgmap_path="$cfgmap_path/${node_name_list[i]}/data"
+    auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}/data"
     kubectl create configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}" \
         --namespace=$namespace \
         --from-file=$auto_gen_cfgmap_path
 
-    auto_gen_cfgmap_path="$cfgmap_path/${node_name_list[i]}/control"
-    if [[ -f $cfgmap_path/${node_name_list[i]}/control/id ]]; then
-        kubectl create configmap "cortx-control-machine-id-cfgmap-${node_name_list[i]}" \
-            --namespace=$namespace \
-            --from-file=$auto_gen_cfgmap_path
-    fi
 done
+
+# Create control machine ID config maps
+auto_gen_control_path="$cfgmap_path/auto-gen-control"
+kubectl create configmap "cortx-control-machine-id-cfgmap" \
+    --namespace=$namespace \
+    --from-file=$auto_gen_control_path
 
 printf "########################################################\n"
 printf "# Deploy CORTX Control Provisioner                      \n"
@@ -575,11 +512,11 @@ helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-prov
     --set cortxgluster.pv.name=$gluster_pv_name \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
     --set cortxgluster.pvc.name=$gluster_pvc_name \
-    --set cortxcontrolprov.cfgmap.name="cortx-cfgmap-$first_node_name" \
+    --set cortxcontrolprov.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrolprov.cfgmap.volmountname="config001" \
     --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx" \
-    --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap-$first_node_name" \
-    --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc-$first_node_name" \
+    --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap" \
+    --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc" \
     --set cortxcontrolprov.localpathpvc.mountpath="/data" \
     --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
     --set namespace=$namespace
@@ -625,7 +562,7 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxdataprov.cfgmap.name="cortx-cfgmap-$node_name" \
+        --set cortxdataprov.cfgmap.name="cortx-cfgmap" \
         --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
         --set cortxdataprov.cfgmap.mountpath="/etc/cortx" \
         --set cortxdataprov.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
@@ -679,10 +616,10 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.service.ingress.name="cortx-control-ingress-svc" \
     --set cortxcontrol.ingress.name="cortx-control-ingress" \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
-    --set cortxcontrol.cfgmap.name="cortx-cfgmap-$first_node_name" \
+    --set cortxcontrol.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrol.cfgmap.volmountname="config001" \
-    --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap-$first_node_name" \
-    --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$first_node_name" \
+    --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap" \
+    --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc" \
     --set cortxcontrol.localpathpvc.mountpath="/data" \
     --set cortxgluster.pv.name="gluster-default-name" \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
@@ -728,14 +665,16 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxdata.cfgmap.name="cortx-cfgmap-$node_name" \
+        --set cortxdata.cfgmap.name="cortx-cfgmap" \
         --set cortxdata.cfgmap.volmountname="config001-$node_name" \
         --set cortxdata.cfgmap.mountpath="/etc/cortx" \
         --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
         --set cortxdata.localpathpvc.mountpath="/data" \
-        --set cortxdata.nummotr=$(extractBlock 'solution.common.num_motr_inst') \
-        --set cortxdata.nums3=$(extractBlock 'solution.common.num_s3_inst') \
+        --set cortxdata.motr.numinst=$(extractBlock 'solution.common.motr.num_inst') \
+        --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
+        --set cortxdata.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
+        --set cortxdata.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
         --set namespace=$namespace
 done
 
@@ -764,16 +703,14 @@ printf "########################################################\n"
 printf "# Deploy CORTX Support                                  \n"
 printf "########################################################\n"
 num_nodes=1
-# This local path pvc has to match with the one created by CORTX Data Provisioner
-local_path_pvc="cortx-data-fs-local-pvc-$first_node_name"
 helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.name="cortx-support-pod" \
     --set cortxsupport.service.clusterip.name="cortx-support-clusterip-svc" \
     --set cortxsupport.service.headless.name="cortx-support-headless-svc" \
     --set cortxsupport.cfgmap.mountpath="/etc/cortx" \
-    --set cortxsupport.cfgmap.name="cortx-cfgmap-${node_name_list[$i]}" \
+    --set cortxsupport.cfgmap.name="cortx-cfgmap" \
     --set cortxsupport.cfgmap.volmountname="config001" \
-    --set cortxsupport.localpathpvc.name=$local_path_pvc \
+    --set cortxsupport.localpathpvc.name="cortx-data-fs-local-pvc-$first_node_name" \
     --set cortxsupport.localpathpvc.mountpath="/data" \
     --set cortxgluster.pv.name="gluster-default-name" \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
@@ -805,5 +742,6 @@ printf "\n"
 # Delete files that contain disk partitions on the worker nodes
 # and the node info
 #################################################################
+find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete

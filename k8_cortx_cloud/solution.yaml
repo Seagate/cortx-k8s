@@ -1,8 +1,12 @@
 solution:
   namespace: default
-  common:    
-    num_s3_inst: 2
-    num_motr_inst: 1
+  common:
+    s3:
+      num_inst: 2
+      start_port_num: 28051
+    motr:
+      num_inst: 1
+      start_port_num: 29000
   nodes:
     node1:
       name: node-1
