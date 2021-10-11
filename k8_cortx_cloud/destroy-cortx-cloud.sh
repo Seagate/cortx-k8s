@@ -277,7 +277,3 @@ do
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 done
-
-# dton remove
-sshpass -p 'dton' ssh root@192.168.5.148 'rm -rf /mnt/fs-local-volume/local-path-provisioner/* /etc/3rd-party/* /var/data/3rd-party/* /var/log/3rd-party/*'
-sshpass -p 'dton' ssh root@192.168.5.150 'rm -rf /mnt/fs-local-volume/local-path-provisioner/* /etc/3rd-party/* /var/data/3rd-party/* /var/log/3rd-party/*'

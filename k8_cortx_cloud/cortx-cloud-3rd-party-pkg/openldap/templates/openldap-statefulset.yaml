@@ -25,7 +25,7 @@ spec:
       containers:
         - name: openldap
           image: ghcr.io/seagate/symas-openldap:standalone
-          imagePullPolicy: "Never"
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: etc-3rd-party
               mountPath: /etc/3rd-party
