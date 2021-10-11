@@ -1,5 +1,6 @@
 solution:
-  common:
+  namespace: default
+  common:    
     num_s3_inst: 2
     num_motr_inst: 1
   nodes:

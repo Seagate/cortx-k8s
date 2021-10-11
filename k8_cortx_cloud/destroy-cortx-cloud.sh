@@ -1,6 +1,5 @@
 #!/bin/bash
 
-namespace="default"
 pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
@@ -15,6 +14,8 @@ function parseSolution()
     echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
 }
 
+namespace=$(parseSolution 'solution.namespace')
+namespace=$(echo $namespace | cut -f2 -d'>')
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
 # Split parsed output into an array of vars and vals
