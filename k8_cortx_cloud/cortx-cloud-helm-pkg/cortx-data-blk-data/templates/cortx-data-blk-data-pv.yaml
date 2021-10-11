@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   capacity:
-    storage: 5Gi
+    storage: {{ .Values.cortxblkdata.storage.size }}
   accessModes:
     - ReadWriteMany
   volumeMode: {{ .Values.cortxblkdata.storage.volumemode }}

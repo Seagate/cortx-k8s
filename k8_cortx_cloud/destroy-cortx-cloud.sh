@@ -173,22 +173,19 @@ printf "########################################################\n"
 printf "# Delete CORTX Configmap                               #\n"
 printf "########################################################\n"
 cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
-# Create machine id config maps
+# Delete data machine id config maps
 for i in "${!node_name_list[@]}"; do
     kubectl delete configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}"
+    rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}"
 
-    if [[ -f $cfgmap_path/${node_name_list[i]}/control/id ]]; then
-        kubectl delete configmap "cortx-control-machine-id-cfgmap-${node_name_list[i]}"
-    fi
 done
+# Delete control machine id config map
+kubectl delete configmap "cortx-control-machine-id-cfgmap"
+rm -rf "$cfgmap_path/auto-gen-control"
 # Delete CORTX config maps
-for i in "${!node_name_list[@]}"; do
-    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
-    gen_file="$auto_gen_path/config.yaml"
-    kubectl delete configmap "cortx-cfgmap-${node_name_list[$i]}" --namespace=$namespace
-    rm -rf $auto_gen_path
-    rm -rf "$cfgmap_path/${node_name_list[i]}"
-done
+rm -rf "$cfgmap_path/auto-gen-cfgmap"
+kubectl delete configmap "cortx-cfgmap" --namespace=$namespace
+rm -rf "$cfgmap_path/auto-gen-cfgmap"
 
 rm -rf "$cfgmap_path/node-info"
 

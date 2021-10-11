@@ -28,6 +28,12 @@ spec:
       protocol: TCP
       port: 28050
       targetPort: 28050
+    {{- range $i := until (.Values.cortxdata.s3.numinst|int) }}
+    - name: {{ printf "cortx-s3-%03d-tcp" (add 1 $i) }}
+      protocol: TCP
+      port: {{ printf "%d" (add $i $.Values.cortxdata.s3.startportnum) }}
+      targetPort: {{ printf "%d" (add $i $.Values.cortxdata.s3.startportnum) }}
+    {{- end }}
     - name: cortx-consul-agent-tcp
       protocol: TCP
       port: 8500
@@ -40,6 +46,12 @@ spec:
       protocol: TCP
       port: 5051
       targetPort: 5051
+    {{- range $i := until (.Values.cortxdata.motr.numinst|int) }}
+    - name: {{ printf "cortx-motr-%03d-tcp" (add 1 $i) }}
+      protocol: TCP
+      port: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+      targetPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+    {{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -71,6 +83,12 @@ spec:
       protocol: TCP
       port: 28050
       targetPort: 28050
+    {{- range $i := until (.Values.cortxdata.s3.numinst|int) }}
+    - name: {{ printf "cortx-s3-%03d-tcp" (add 1 $i) }}
+      protocol: TCP
+      port: {{ printf "%d" (add $i $.Values.cortxdata.s3.startportnum) }}
+      targetPort: {{ printf "%d" (add $i $.Values.cortxdata.s3.startportnum) }}
+    {{- end }}
     - name: cortx-consul-agent-tcp
       protocol: TCP
       port: 8500
@@ -83,6 +101,12 @@ spec:
       protocol: TCP
       port: 5051
       targetPort: 5051
+    {{- range $i := until (.Values.cortxdata.motr.numinst|int) }}
+    - name: {{ printf "cortx-motr-%03d-tcp" (add 1 $i) }}
+      protocol: TCP
+      port: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+      targetPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+    {{- end }}
 ---
 apiVersion: v1
 kind: Service

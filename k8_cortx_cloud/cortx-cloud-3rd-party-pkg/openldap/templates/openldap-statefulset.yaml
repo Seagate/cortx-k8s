@@ -51,7 +51,7 @@ spec:
       volumeMode: Filesystem
       resources:
         requests:
-          storage: 3Gi
+          storage: {{ $.Values.openldap.storagesize }}
   - metadata:
       name: var-data-cortx
     spec:
@@ -60,7 +60,7 @@ spec:
       volumeMode: Filesystem
       resources:
         requests:
-          storage: 3Gi
+          storage: {{ $.Values.openldap.storagesize }}
   - metadata:
       name: var-log-cortx
     spec:
@@ -69,4 +69,4 @@ spec:
       volumeMode: Filesystem
       resources:
         requests:
-          storage: 3Gi
+          storage: {{ $.Values.openldap.storagesize }}
