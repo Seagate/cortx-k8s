@@ -1,7 +1,6 @@
 #!/bin/bash
 
-namespace="default"
-storage_class=${1:-'local-path'}
+storage_class='local-path'
 
 # Install "yq" package if it doesn't exist in '/usr/bin/'
 if [[ ! -f "/usr/bin/yq" ]]; then
@@ -38,6 +37,8 @@ function extractBlock()
     echo "$(./parse_scripts/yaml_extract_block.sh solution.yaml $1)"
 }
 
+namespace=$(parseSolution 'solution.namespace')
+namespace=$(echo $namespace | cut -f2 -d'>')
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
 # Split parsed output into an array of vars and vals
