@@ -522,13 +522,19 @@ done
 
 cluster_uuid=$(uuidgen)
 for i in "${!node_name_list[@]}"; do
+    extract_output=""
     node_info_folder="$cfgmap_path/node-info"
     auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
     ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
     for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
-        extract_output=$(./parse_scripts/yaml_extract_block.sh $fname)
-        ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 4
+        if [ "$extract_output" == "" ]
+        then
+            extract_output="$(./parse_scripts/yaml_extract_block.sh $fname)"
+        else
+            extract_output="$extract_output"$'\n'"$(./parse_scripts/yaml_extract_block.sh $fname)"
+        fi
     done
+    ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 6 "cluster.storage_sets.nodes"
 done
 
 # Delete node-info folder
