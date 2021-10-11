@@ -40,7 +40,7 @@ Control, and Support):
 that is used to deploy GlusterFS:
 
 mkdir -p /mnt/fs-local-volume/etc/gluster
-mkdir -p /mnt/fs-local-volume/var/log/gluster
+mkdir -p /mnt/fs-local-volume/var/log/glusterfs
 mkdir -p /mnt/fs-local-volume/var/lib/glusterd
 
 2. Install glusterfs-fuse package on each worker node:

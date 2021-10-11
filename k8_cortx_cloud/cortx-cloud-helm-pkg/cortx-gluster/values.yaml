@@ -13,5 +13,5 @@ cortxgluster:
     name: gluster-claim
   hostpath:
     etc: /mnt/fs-local-volume/etc/gluster
-    logs: /mnt/fs-local-volume/var/log/gluster
+    logs: /mnt/fs-local-volume/var/log/glusterfs
     config: /mnt/fs-local-volume/var/lib/glusterd
