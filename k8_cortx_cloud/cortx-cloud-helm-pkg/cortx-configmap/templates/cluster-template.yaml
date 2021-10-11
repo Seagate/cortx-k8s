@@ -50,3 +50,4 @@ cluster:
       sns: 8+7+0
       dix: 1+7+0
     nodes:
+      <<.Values.cluster.storage_sets.nodes>>

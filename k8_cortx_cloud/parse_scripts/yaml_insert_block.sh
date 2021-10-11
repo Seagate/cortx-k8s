@@ -4,15 +4,17 @@
 OUTPUT_YAML_FILE=$1
 BLOCK_TO_INSERT=$2
 INDENT=$3
+YAML_PATH=$4
 
 # Check that all of the required parameters have been passed in
 if [ "$OUTPUT_YAML_FILE" == "" ] || [ "$BLOCK_TO_INSERT" == "" ]
 then
     echo "Invalid input paramters"
-    echo "./yaml_insert_block.sh <output yaml file> <block to insert> [<indent> OPTIONAL]"
-    echo "<input yaml file>   = $OUTPUT_YAML_FILE"
-    echo "<block to insert>   = $BLOCK_TO_INSERT"
-    echo "[<indent> OPTIONAL] = $INDENT"
+    echo "./yaml_insert_block.sh <output yaml file> <block to insert> [<indent> OPTIONAL] [<yaml variable path> OPTIONAL]"
+    echo "<output yaml file>              = $OUTPUT_YAML_FILE"
+    echo "<block to insert>               = $BLOCK_TO_INSERT"
+    echo "[<indent> OPTIONAL]             = $INDENT"
+    echo "[<yaml variable path> OPTIONAL] = $YAML_PATH"
     exit 1
 fi
 
@@ -31,13 +33,21 @@ else
         # If the OUTPUT is empty set it otherwise append
         if [ "$OUTPUT" == "" ]
         then
-            OUTPUT="$INDENT_PATTERN""$LINE"
+            if [ "$YAML_PATH" == "" ]
+            then
+                OUTPUT="$INDENT_PATTERN""$LINE"
+            else
+                 OUTPUT="$LINE"
+            fi
         else
             OUTPUT="$OUTPUT"$'\n'"$INDENT_PATTERN""$LINE"
         fi
     done <<< "$BLOCK_TO_INSERT"
 fi
 
-cat <<EOF>> $OUTPUT_YAML_FILE
-${OUTPUT}
-EOF
+if [ "$YAML_PATH" == "" ]
+then
+    echo "${OUTPUT}" >> $OUTPUT_YAML_FILE
+else
+    ./parse_scripts/subst.sh $OUTPUT_YAML_FILE $YAML_PATH "${OUTPUT}"
+fi

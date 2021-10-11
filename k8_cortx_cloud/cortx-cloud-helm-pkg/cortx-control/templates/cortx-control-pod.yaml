@@ -79,21 +79,3 @@ spec:
               value: {{ .Values.cortxcontrol.name }}
           ports:
           - containerPort: 28101
-        - name: cortx-liveness-probe
-          image: centos:7
-          imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
-          volumeMounts:
-            - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
-            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
-              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxcontrol.name }}
-          ports:
-          - containerPort: 5152

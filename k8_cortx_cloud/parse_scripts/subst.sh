@@ -34,10 +34,6 @@ then
     exit 1
 fi
 
-# Use sed to substitute the variable in the file and check the command was executed successfully
-sed -i "s|$TO_SUBST|$REPLACE_WITH|g" $YAML_FILE_TO_MOD
-if [ $? -ne 0 ]
-then
-    echo "ERROR: Failed execute substitution of $YAML_PATH in $YAML_FILE_TO_MOD"
-    exit 1
-fi
+# Use awk to substitute the variable in the file and check the command was executed successfully
+OUTPUT=$(awk -v var1=$TO_SUBST -v var2="$REPLACE_WITH" '{sub(var1,var2)}1' $YAML_FILE_TO_MOD)
+echo "${OUTPUT}" > $YAML_FILE_TO_MOD

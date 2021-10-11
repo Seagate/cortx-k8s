@@ -52,8 +52,8 @@ then
     exit 1
 fi
 
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
 node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
@@ -67,15 +67,32 @@ do
     node_name_list[count]=$shorter_node_name
     count=$((count+1))
     file_name="mnt-blk-info-$shorter_node_name.txt"
+    file_name_storage_size="mnt-blk-storage-size-$shorter_node_name.txt"
     data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
+    data_prov_storage_size_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name_storage_size
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
+    data_storage_size_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name_storage_size
 
     # Get the node var from the tuple
     node=$(echo $var_val_element | cut -f3 -d'.')
 
-    filter="solution.nodes.$node.devices*"
+    # Get the devices from the solution
+    filter="solution.nodes.$node.devices*.device"
     parsed_dev_output=$(parseSolution $filter)
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
+
+    # Get the sizes from the solution
+    filter="solution.nodes.$node.devices*.size"
+    parsed_size_output=$(parseSolution $filter)
+    IFS=';' read -r -a parsed_size_array <<< "$parsed_size_output"
+
+    if [[ "${#parsed_dev_array[@]}" != "${#parsed_size_array[@]}" ]]
+    then
+        printf "\nStorage sizes are not defined for all of the storage devices\n"
+        printf "in the 'solution.yaml' file\n"
+        exit 1
+    fi
+
     for dev in "${parsed_dev_array[@]}"
     do
         if [[ "$dev" != *"system"* ]]
@@ -89,6 +106,22 @@ do
             fi
             printf $device >> $data_prov_file_path
             printf $device >> $data_file_path
+        fi
+    done
+
+    for dev in "${parsed_size_array[@]}"
+    do
+        if [[ "$dev" != *"system"* ]]
+        then
+            size=$(echo $dev | cut -f2 -d'>')
+            if [[ -s $data_prov_storage_size_file_path ]]; then
+                printf "\n" >> $data_prov_storage_size_file_path
+            fi
+            if [[ -s $data_storage_size_file_path ]]; then
+                printf "\n" >> $data_storage_size_file_path
+            fi
+            printf $size >> $data_prov_storage_size_file_path
+            printf $size >> $data_storage_size_file_path
         fi
     done
 done
@@ -292,8 +325,19 @@ printf "######################################################\n"
 for i in "${!node_selector_list[@]}"; do
     node_name=${node_name_list[i]}
     node_selector=${node_selector_list[i]}
+
+    storage_size_file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-storage-size-$node_name.txt"
+    storage_size=[]
+    size_count=0
+    while IFS=' ' read -r size || [[ -n "$size" ]]; do
+        storage_size[size_count]=$size
+        size_count=$((size_count+1))        
+    done < "$storage_size_file_path"
+
+
     file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-info-$node_name.txt"
     count=001
+    size_count=0
     while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
         mount_base_dir=$( echo "$mount_path" | sed -e 's/\/.*\///g')
         count_str=$(printf "%03d" $count)
@@ -302,16 +346,16 @@ for i in "${!node_selector_list[@]}"; do
         storage_class_name1="local-blk-storage$count_str-$node_name"
         pvc1_name="cortx-data-$mount_base_dir-pvc-$node_name"
         pv1_name="cortx-data-$mount_base_dir-pv-$node_name"
-        storage_size="5Gi"
         helm install $helm_name1 cortx-cloud-helm-pkg/cortx-data-blk-data \
             --set cortxblkdata.nodename=$node_selector \
             --set cortxblkdata.storage.localpath=$mount_path \
-            --set cortxblkdata.storage.size=$storage_size \
+            --set cortxblkdata.storage.size=${storage_size[size_count]} \
             --set cortxblkdata.storageclass=$storage_class_name1 \
             --set cortxblkdata.storage.pvc.name=$pvc1_name \
             --set cortxblkdata.storage.pv.name=$pv1_name \
             --set cortxblkdata.storage.volumemode="Block" \
             --set namespace=$namespace
+        size_count=$((size_count+1))
     done < "$file_path"
 done
 
@@ -478,13 +522,19 @@ done
 
 cluster_uuid=$(uuidgen)
 for i in "${!node_name_list[@]}"; do
+    extract_output=""
     node_info_folder="$cfgmap_path/node-info"
     auto_gen_path="$cfgmap_path/auto-gen-cfgmap-${node_name_list[$i]}"
     ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
     for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
-        extract_output=$(./parse_scripts/yaml_extract_block.sh $fname)
-        ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 4
+        if [ "$extract_output" == "" ]
+        then
+            extract_output="$(./parse_scripts/yaml_extract_block.sh $fname)"
+        else
+            extract_output="$extract_output"$'\n'"$(./parse_scripts/yaml_extract_block.sh $fname)"
+        fi
     done
+    ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 6 "cluster.storage_sets.nodes"
 done
 
 # Delete node-info folder
@@ -754,5 +804,5 @@ printf "\n"
 # Delete files that contain disk partitions on the worker nodes
 # and the node info
 #################################################################
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-info-*" -delete
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-info-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
