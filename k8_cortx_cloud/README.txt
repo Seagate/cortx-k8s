@@ -52,17 +52,10 @@ Shared glusterFS folder on the worker nodes and inside the Pod containers is loc
 ###############################################
 # OpenLDAP Requirements                       #
 ###############################################
-1. Load OpenLDAP docker image:
-docker load -i cortx-openldap.tar
-
-2. On each worker node perform the following:
-mkdir -p /var/lib/ldap
-echo "ldap:x:55:" >> /etc/group
-echo "ldap:x:55:55:OpenLDAP server:/var/lib/ldap:/sbin/nologin" >> /etc/passwd
-chown -R ldap.ldap /var/lib/ldap
-
-Note: If "/var/lib/ldap" already exists prior to deploy CORTX cloud, make sure
-the folder is empty.
+1. On each worker node perform the following:
+mkdir -p /etc/3rd-party/openldap
+mkdir -p /var/data/3rd-party
+mkdir -p /var/log/3rd-party
 
 ###############################################
 # Deploy and destroy CORTX cloud              #

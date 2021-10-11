@@ -219,7 +219,7 @@ kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 printf "########################################################\n"
 printf "# Delete Persistent Volume Claims                      #\n"
 printf "########################################################\n"
-volume_claims=$(kubectl get pvc --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx" | cut -f1 -d " ")
+volume_claims=$(kubectl get pvc --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx|3rd-party" | cut -f1 -d " ")
 echo $volume_claims
 for volume_claim in $volume_claims
 do
@@ -228,7 +228,7 @@ do
 done
 
 if [[ $namespace != 'default' ]]; then
-    volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx" | cut -f1 -d " ")
+    volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx|3rd-party" | cut -f1 -d " ")
     echo $volume_claims
     for volume_claim in $volume_claims
     do
@@ -277,3 +277,7 @@ do
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
     rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 done
+
+# dton remove
+sshpass -p 'dton' ssh root@192.168.5.148 'rm -rf /mnt/fs-local-volume/local-path-provisioner/* /etc/3rd-party/* /var/data/3rd-party/* /var/log/3rd-party/*'
+sshpass -p 'dton' ssh root@192.168.5.150 'rm -rf /mnt/fs-local-volume/local-path-provisioner/* /etc/3rd-party/* /var/data/3rd-party/* /var/log/3rd-party/*'
