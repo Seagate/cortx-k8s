@@ -249,7 +249,7 @@ do
 done
 
 if [[ $namespace != 'default' ]]; then
-    persistent_volumes=$(kubectl get pv --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
+    persistent_volumes=$(kubectl get pv --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
     echo $persistent_volumes
     for persistent_volume in $persistent_volumes
     do

@@ -39,7 +39,7 @@ spec:
           volumeMounts:
           - mountPath: /etc/gluster
             name: gluster-etc
-          - mountPath: /var/log/gluster
+          - mountPath: /var/log/glusterfs
             name: gluster-logs
           - mountPath: /var/lib/glusterd
             name: gluster-config

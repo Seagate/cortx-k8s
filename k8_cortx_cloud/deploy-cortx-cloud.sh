@@ -316,7 +316,7 @@ helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster
     --set cortxgluster.pv.name=$gluster_pv_name \
     --set cortxgluster.pvc.name=$gluster_pvc_name \
     --set cortxgluster.hostpath.etc=$pod_ctr_mount_path \
-    --set cortxgluster.hostpath.logs="/mnt/fs-local-volume/var/log/gluster" \
+    --set cortxgluster.hostpath.logs="/mnt/fs-local-volume/var/log/glusterfs" \
     --set cortxgluster.hostpath.config="/mnt/fs-local-volume/var/lib/glusterd" \
     --set namespace=$namespace
 num_nodes=1
