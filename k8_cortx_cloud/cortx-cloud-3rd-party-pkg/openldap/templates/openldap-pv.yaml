@@ -5,7 +5,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ printf "etc-cortx-%s" $index }}
+  name: {{ printf "etc-3rd-party-%s" $index }}
 spec:
   storageClassName: {{ $.Values.openldap.storageclass }}
   capacity:
@@ -16,9 +16,9 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   claimRef:
     namespace: default
-    name: {{ printf "etc-cortx-openldap-%s" $index }}
+    name: {{ printf "etc-3rd-party-openldap-%s" $index }}
   local:
-    path: /etc/cortx
+    path: /etc/3rd-party
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -31,7 +31,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ printf "var-data-cortx-%s" $index }}
+  name: {{ printf "var-data-3rd-party-%s" $index }}
 spec:
   storageClassName: {{ $.Values.openldap.storageclass }}
   capacity:
@@ -42,9 +42,9 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   claimRef:
     namespace: default
-    name: {{ printf "var-data-cortx-openldap-%s" $index }}
+    name: {{ printf "var-data-3rd-party-openldap-%s" $index }}
   local:
-    path: /var/data/cortx
+    path: /var/data/3rd-party
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -57,7 +57,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ printf "var-log-cortx-%s" $index }}
+  name: {{ printf "var-log-3rd-party-%s" $index }}
 spec:
   storageClassName: {{ $.Values.openldap.storageclass }}
   capacity:
@@ -68,9 +68,9 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   claimRef:
     namespace: default
-    name: {{ printf "var-log-cortx-openldap-%s" $index }}
+    name: {{ printf "var-log-3rd-party-openldap-%s" $index }}
   local:
-    path: /var/log/cortx
+    path: /var/log/3rd-party
   nodeAffinity:
     required:
       nodeSelectorTerms:

@@ -24,15 +24,15 @@ spec:
                   name: openldap-connect
       containers:
         - name: openldap
-          image: ghcr.io/seagate/symas-openldap:latest
+          image: ghcr.io/seagate/symas-openldap:standalone
           imagePullPolicy: "Never"
           volumeMounts:
-            - name: etc-cortx
-              mountPath: /etc/cortx
-            - name: var-data-cortx
-              mountPath: /var/data/cortx
-            - name: var-log-cortx
-              mountPath: /var/log/cortx
+            - name: etc-3rd-party
+              mountPath: /etc/3rd-party
+            - name: var-data-3rd-party
+              mountPath: /var/data/3rd-party
+            - name: var-log-3rd-party
+              mountPath: /var/log/3rd-party
           ports:
             - name: ldapport
               containerPort: 389
@@ -43,7 +43,7 @@ spec:
             - "seagate"
   volumeClaimTemplates:
   - metadata:
-      name: etc-cortx
+      name: etc-3rd-party
     spec:
       storageClassName: {{ .Values.openldap.storageclass }}
       accessModes:
@@ -53,7 +53,7 @@ spec:
         requests:
           storage: {{ $.Values.openldap.storagesize }}
   - metadata:
-      name: var-data-cortx
+      name: var-data-3rd-party
     spec:
       accessModes:
       - ReadWriteMany
@@ -62,7 +62,7 @@ spec:
         requests:
           storage: {{ $.Values.openldap.storagesize }}
   - metadata:
-      name: var-log-cortx
+      name: var-log-3rd-party
     spec:
       accessModes:
       - ReadWriteMany
