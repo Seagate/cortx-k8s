@@ -1,5 +1,20 @@
 solution:
   namespace: default
+  secrets:
+    kafka-secret:
+      kafka-secret: segate123
+      kafka-secret1: segate1234
+    cortx-secret:
+      openldap_admin_secret: seagate2
+      kafka_admin_secret: Seagate@123
+      consul_admin_secret: Seagate@123
+      common_admin_secret: Seagate@123
+      s3_auth_admin_secret: ldapadmin
+      csm_auth_admin_secret: seagate2
+      csm_mgmt_admin_secret: Cortxadmin@123
+    consul-secret:
+      consul-secret: hadjhjdhsjd
+      consul-secret1: hadjhjdhsjdaaa
   images:
     cortxcontrolprov: centos:7
     cortxcontrol: centos:7

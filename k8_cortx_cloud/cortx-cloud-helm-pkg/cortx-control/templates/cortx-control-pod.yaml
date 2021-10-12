@@ -25,7 +25,12 @@ spec:
               claimName: {{ .Values.cortxgluster.pvc.name }}
         - name: local-path-pv
           persistentVolumeClaim:
-            claimName: {{ .Values.cortxcontrol.localpathpvc.name }}            
+            claimName: {{ .Values.cortxcontrol.localpathpvc.name }}
+        {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
+        - name: {{ printf "%s" . }}
+          secret:
+            secretName: {{ printf "%s" . }}
+        {{- end }}
       containers:
         - name: cortx-free-space-monitor
           image: {{ .Values.cortxcontrol.image }}
@@ -40,6 +45,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
@@ -56,6 +66,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
@@ -74,6 +89,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}

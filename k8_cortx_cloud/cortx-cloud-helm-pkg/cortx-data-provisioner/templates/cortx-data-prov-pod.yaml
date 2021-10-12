@@ -24,6 +24,11 @@ spec:
     - name: local-path-pv
       persistentVolumeClaim:
         claimName: {{ .Values.cortxdataprov.localpathpvc.name }}
+    {{- range .Files.Lines .Values.cortxdataprov.secretinfo }}
+    - name: {{ printf "%s" . }}
+      secret:
+        secretName: {{ printf "%s" . }}
+    {{- end }}
   containers:
   - name: cortx-setup
     image: {{ .Values.cortxdataprov.image }}
@@ -47,6 +52,11 @@ spec:
         mountPath: {{ .Values.cortxgluster.pv.mountpath }}
       - name: local-path-pv
         mountPath: {{ .Values.cortxdataprov.localpathpvc.mountpath }}
+      {{- range .Files.Lines .Values.cortxdataprov.secretinfo }}
+      - name: {{ printf "%s" . }}
+        mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+        readOnly: true
+      {{- end }}
     ports:
     - containerPort: 5050
   restartPolicy: Never

@@ -224,6 +224,22 @@ done
 helm uninstall "openldap"
 
 printf "########################################################\n"
+printf "# Delete Secrets                                       #\n"
+printf "########################################################\n"
+output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets*.name")
+IFS=';' read -r -a parsed_secret_name_array <<< "$output"
+for secret_name in "${parsed_secret_name_array[@]}"
+do
+    secret_name=$(echo $secret_name | cut -f2 -d'>')
+    kubectl delete secret $secret_name --namespace=$namespace
+done
+
+find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "secret-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "secret-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
+
+printf "########################################################\n"
 printf "# Delete Consul                                        #\n"
 printf "########################################################\n"
 helm delete consul
