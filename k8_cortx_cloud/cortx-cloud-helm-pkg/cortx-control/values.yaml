@@ -13,7 +13,7 @@ cortxcontrol:
     name: cortx-control-ingress
     path: /csm
   cfgmap:
-    mountpath: /etc/cortx
+    mountpath: /etc/cortx/solution
     name: cortx-control-cfgmap001
     volmountname: config001
   machineid:
@@ -22,7 +22,7 @@ cortxcontrol:
     name:  cortx-control-machine-id-cfgmap
   localpathpvc:
     name: cortx-fs-local-pvc
-    mountpath: /data # This is the mount path in the container
+    mountpath: /etc/cortx # This is the mount path in the container
 cortxgluster:
   pv:
     name: gluster-default-volume

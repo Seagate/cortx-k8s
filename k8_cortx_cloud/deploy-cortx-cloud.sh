@@ -512,10 +512,10 @@ helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-prov
     --set cortxgluster.pvc.name=$gluster_pvc_name \
     --set cortxcontrolprov.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrolprov.cfgmap.volmountname="config001" \
-    --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx" \
+    --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap" \
     --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc" \
-    --set cortxcontrolprov.localpathpvc.mountpath="/data" \
+    --set cortxcontrolprov.localpathpvc.mountpath="/etc/cortx" \
     --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
     --set namespace=$namespace
 
@@ -566,10 +566,10 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxdataprov.cfgmap.name="cortx-cfgmap" \
         --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
-        --set cortxdataprov.cfgmap.mountpath="/etc/cortx" \
+        --set cortxdataprov.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxdataprov.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdataprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
-        --set cortxdataprov.localpathpvc.mountpath="/data" \
+        --set cortxdataprov.localpathpvc.mountpath="/etc/cortx" \
         --set cortxdataprov.localpathpvc.requeststoragesize="1Gi" \
         --set namespace=$namespace
 done
@@ -621,12 +621,12 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
     --set cortxcontrol.service.ingress.name="cortx-control-ingress-svc" \
     --set cortxcontrol.ingress.name="cortx-control-ingress" \
-    --set cortxcontrol.cfgmap.mountpath="/etc/cortx" \
+    --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrol.cfgmap.volmountname="config001" \
     --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap" \
     --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc" \
-    --set cortxcontrol.localpathpvc.mountpath="/data" \
+    --set cortxcontrol.localpathpvc.mountpath="/etc/cortx" \
     --set cortxgluster.pv.name="gluster-default-name" \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
     --set cortxgluster.pvc.name="gluster-claim" \
@@ -677,10 +677,10 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxdata.cfgmap.name="cortx-cfgmap" \
         --set cortxdata.cfgmap.volmountname="config001-$node_name" \
-        --set cortxdata.cfgmap.mountpath="/etc/cortx" \
+        --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
-        --set cortxdata.localpathpvc.mountpath="/data" \
+        --set cortxdata.localpathpvc.mountpath="/etc/cortx" \
         --set cortxdata.motr.numinst=$(extractBlock 'solution.common.motr.num_inst') \
         --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
         --set cortxdata.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
@@ -721,11 +721,11 @@ helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.image=$cortxsupport_image \
     --set cortxsupport.service.clusterip.name="cortx-support-clusterip-svc" \
     --set cortxsupport.service.headless.name="cortx-support-headless-svc" \
-    --set cortxsupport.cfgmap.mountpath="/etc/cortx" \
+    --set cortxsupport.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxsupport.cfgmap.name="cortx-cfgmap" \
     --set cortxsupport.cfgmap.volmountname="config001" \
     --set cortxsupport.localpathpvc.name="cortx-data-fs-local-pvc-$first_node_name" \
-    --set cortxsupport.localpathpvc.mountpath="/data" \
+    --set cortxsupport.localpathpvc.mountpath="/etc/cortx" \
     --set cortxgluster.pv.name="gluster-default-name" \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
     --set cortxgluster.pvc.name="gluster-claim" \
