@@ -198,7 +198,7 @@ printf "===========================================================\n"
 printf "Setup OpenLDAP replication                                 \n"
 printf "===========================================================\n"
 # Run replication script
-./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh
+./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword seagate1
 
 printf "######################################################\n"
 printf "# Deploy Zookeeper                                    \n"

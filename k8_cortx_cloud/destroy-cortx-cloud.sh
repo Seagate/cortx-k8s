@@ -42,7 +42,7 @@ do
     # Get the node var from the tuple
     node=$(echo $var_val_element | cut -f3 -d'.')
 
-    filter="solution.nodes.$node.devices*"
+    filter="solution.nodes.$node.devices*.device"
     parsed_dev_output=$(parseSolution $filter)
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
     for dev in "${parsed_dev_array[@]}"
