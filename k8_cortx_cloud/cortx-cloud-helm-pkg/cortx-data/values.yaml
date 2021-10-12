@@ -17,7 +17,7 @@ cortxdata:
     loadbal:
       name: cortx-data-loadbal-svc
   cfgmap:
-    mountpath: /etc/cortx
+    mountpath: /etc/cortx/solution
     volmountname: config001
     name: cortx-data-cfgmap
   machineid:
@@ -26,7 +26,7 @@ cortxdata:
     name:  cortx-data-machine-id-cfgmap
   localpathpvc:
     name: cortx-fs-local-pvc
-    mountpath: /data # This is the mount path in the container
+    mountpath: /etc/cortx # This is the mount path in the container
 cortxgluster:
   pv:
     name: gluster-default-volume
