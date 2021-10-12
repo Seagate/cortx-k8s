@@ -33,6 +33,11 @@ spec:
         - name: local-path-pv
           persistentVolumeClaim:
             claimName: {{ .Values.cortxdata.localpathpvc.name }}
+        {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+        - name: {{ printf "%s" . }}
+          secret:
+            secretName: {{ printf "%s" . }}
+        {{- end }}
       containers:
         - name: cortx-s3-server
           image: {{ .Values.cortxdata.image }}
@@ -52,6 +57,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -78,6 +88,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -97,6 +112,11 @@ spec:
               mountPath: {{ $.Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+            {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ $.Values.cortxdata.name }}
@@ -121,6 +141,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -142,6 +167,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -163,6 +193,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -180,6 +215,11 @@ spec:
               mountPath: {{ $.Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+            {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ $.Values.cortxdata.name }}
@@ -204,6 +244,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -227,6 +272,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -250,6 +300,11 @@ spec:
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              readOnly: true
+            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
