@@ -28,7 +28,7 @@ spec:
             claimName: {{ .Values.cortxcontrol.localpathpvc.name }}            
       containers:
         - name: cortx-free-space-monitor
-          image: centos:7
+          image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeMounts:
@@ -44,7 +44,7 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
         - name: cortx-bg-producer
-          image: centos:7
+          image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeMounts:
@@ -62,7 +62,7 @@ spec:
           ports:
           - containerPort: 28049
         - name: cortx-csm-agent
-          image: centos:7
+          image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeMounts:

@@ -35,7 +35,7 @@ spec:
             claimName: {{ .Values.cortxdata.localpathpvc.name }}
       containers:
         - name: cortx-s3-server
-          image: centos:7
+          image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:
@@ -61,7 +61,7 @@ spec:
           - containerPort: 9080
           - containerPort: 9443
         - name: cortx-s3-auth-server
-          image: centos:7
+          image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:
@@ -85,7 +85,7 @@ spec:
           - containerPort: 28050
         {{- range $i := until (.Values.cortxdata.s3.numinst|int) }}
         - name: {{ printf "cortx-s3-%03d" (add 1 $i) }}
-          image: centos:7
+          image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeMounts:
@@ -104,7 +104,7 @@ spec:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.s3.startportnum) }}
         {{- end }}
         - name: cortx-motr-hax
-          image: centos:7
+          image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:
@@ -125,7 +125,7 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
         - name: cortx-motr-io-cas
-          image: centos:7
+          image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:
@@ -146,7 +146,7 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
         - name: cortx-motr-confd
-          image: centos:7
+          image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:
@@ -168,7 +168,7 @@ spec:
               value: {{ .Values.cortxdata.name }}
         {{- range $i := until (.Values.cortxdata.motr.numinst|int) }}
         - name: {{ printf "cortx-motr-%03d" (add 1 $i) }}
-          image: centos:7
+          image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeMounts:
@@ -187,7 +187,7 @@ spec:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
         {{- end }}
         - name: cortx-consul-agent
-          image: centos:7
+          image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:
@@ -210,7 +210,7 @@ spec:
           ports:
           - containerPort: 8500
         - name: cortx-s3-bg-consumer
-          image: centos:7
+          image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:
@@ -233,7 +233,7 @@ spec:
           ports:
           - containerPort: 28049
         - name: cortx-message-svc
-          image: centos:7
+          image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:

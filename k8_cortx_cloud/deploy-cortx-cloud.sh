@@ -2,12 +2,6 @@
 
 storage_class='local-path'
 
-# Install "yq" package if it doesn't exist in '/usr/bin/'
-if [[ ! -f "/usr/bin/yq" ]]; then
-    wget https://github.com/mikefarah/yq/releases/download/v4.13.2/yq_linux_amd64 -O /usr/bin/yq
-    chmod +x /usr/bin/yq
-fi
-
 # Delete old "node-list-info.txt" file
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
 
@@ -505,8 +499,12 @@ kubectl create configmap "cortx-control-machine-id-cfgmap" \
 printf "########################################################\n"
 printf "# Deploy CORTX Control Provisioner                      \n"
 printf "########################################################\n"
+cortxcontrolprov_image=$(parseSolution 'solution.images.cortxcontrolprov')
+cortxcontrolprov_image=$(echo $cortxcontrolprov_image | cut -f2 -d'>')
+
 helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-provisioner \
     --set cortxcontrolprov.name="cortx-control-provisioner-pod" \
+    --set cortxcontrolprov.image=$cortxcontrolprov_image \
     --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc" \
     --set cortxcontrolprov.service.headless.name="cortx-control-headless-svc" \
     --set cortxgluster.pv.name=$gluster_pv_name \
@@ -550,11 +548,15 @@ kubectl delete service "cortx-control-headless-svc" --namespace=$namespace
 printf "########################################################\n"
 printf "# Deploy CORTX Data Provisioner                              \n"
 printf "########################################################\n"
+cortxdataprov_image=$(parseSolution 'solution.images.cortxdataprov')
+cortxdataprov_image=$(echo $cortxdataprov_image | cut -f2 -d'>')
+
 for i in "${!node_selector_list[@]}"; do
     node_name=${node_name_list[i]}
     node_selector=${node_selector_list[i]}
     helm install "cortx-data-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-data-provisioner \
         --set cortxdataprov.name="cortx-data-provisioner-pod-$node_name" \
+        --set cortxdataprov.image=$cortxdataprov_image \
         --set cortxdataprov.nodename=$node_name \
         --set cortxdataprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
         --set cortxdataprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
@@ -607,10 +609,14 @@ done
 printf "########################################################\n"
 printf "# Deploy CORTX Control                                  \n"
 printf "########################################################\n"
+cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
+cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
+
 num_nodes=1
 # This local path pvc has to match with the one created by CORTX Control Provisioner
 helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.name="cortx-control-pod" \
+    --set cortxcontrol.image=$cortxcontrol_image \
     --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
     --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
     --set cortxcontrol.service.ingress.name="cortx-control-ingress-svc" \
@@ -650,6 +656,9 @@ printf "\n\n"
 printf "########################################################\n"
 printf "# Deploy CORTX Data                                     \n"
 printf "########################################################\n"
+cortxdata_image=$(parseSolution 'solution.images.cortxdata')
+cortxdata_image=$(echo $cortxdata_image | cut -f2 -d'>')
+
 num_nodes=0
 for i in "${!node_selector_list[@]}"; do
     num_nodes=$((num_nodes+1))
@@ -657,6 +666,7 @@ for i in "${!node_selector_list[@]}"; do
     node_selector=${node_selector_list[i]}
     helm install "cortx-data-$node_name" cortx-cloud-helm-pkg/cortx-data \
         --set cortxdata.name="cortx-data-pod-$node_name" \
+        --set cortxdata.image=$cortxdata_image \
         --set cortxdata.nodename=$node_name \
         --set cortxdata.mountblkinfo="mnt-blk-info-$node_name.txt" \
         --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
@@ -702,9 +712,13 @@ printf "\n\n"
 printf "########################################################\n"
 printf "# Deploy CORTX Support                                  \n"
 printf "########################################################\n"
+cortxsupport_image=$(parseSolution 'solution.images.cortxsupport')
+cortxsupport_image=$(echo $cortxsupport_image | cut -f2 -d'>')
+
 num_nodes=1
 helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.name="cortx-support-pod" \
+    --set cortxsupport.image=$cortxsupport_image \
     --set cortxsupport.service.clusterip.name="cortx-support-clusterip-svc" \
     --set cortxsupport.service.headless.name="cortx-support-headless-svc" \
     --set cortxsupport.cfgmap.mountpath="/etc/cortx" \
