@@ -1,6 +1,7 @@
 namespace: default
 cortxcontrolprov:
   name: cortx-control-prov-pod
+  image: centos:7
   service:
     clusterip:
       name: cortx-control-clusterip-svc

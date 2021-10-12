@@ -1,5 +1,11 @@
 solution:
   namespace: default
+  images:
+    cortxcontrolprov: centos:7
+    cortxcontrol: centos:7
+    cortxdataprov: centos:7
+    cortxdata: centos:7
+    cortxsupport: centos:7
   common:
     s3:
       num_inst: 2

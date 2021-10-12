@@ -1,6 +1,7 @@
 namespace: default
 cortxdataprov:
   name: cortx-data-prov-pod
+  image: centos:7
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
   service:

@@ -1,6 +1,7 @@
 namespace: default
 cortxsupport:
   name: cortx-support
+  image: centos:7
   service:
     clusterip:
       name: cortx-support-clusterip-svc

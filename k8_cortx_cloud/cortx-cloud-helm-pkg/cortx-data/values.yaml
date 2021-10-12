@@ -1,6 +1,7 @@
 namespace: default
 cortxdata:
   name: cortx-data-pod
+  image: centos:7
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
   s3:
