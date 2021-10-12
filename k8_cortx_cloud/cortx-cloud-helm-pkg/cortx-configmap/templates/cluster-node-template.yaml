@@ -1,0 +1,4 @@
+- name: <<.Values.cortx.node.name>>
+  id: <<.Values.cortx.pod.uuid>>
+  hostname: <<.Values.cortx.svc.name>>
+  type: <<.Values.cortx.node.type>>

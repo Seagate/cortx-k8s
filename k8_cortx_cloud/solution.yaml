@@ -1,0 +1,80 @@
+solution:
+  namespace: default
+  images:
+    cortxcontrolprov: centos:7
+    cortxcontrol: centos:7
+    cortxdataprov: centos:7
+    cortxdata: centos:7
+    cortxsupport: centos:7
+  common:
+    s3:
+      num_inst: 2
+      start_port_num: 28051
+    motr:
+      num_inst: 1
+      start_port_num: 29000
+  nodes:
+    node1:
+      name: node-1
+      volumes:
+        local: /mnt/fs-local-volume
+        share: /mnt/fs-local-volume
+      devices:
+        metadata: 
+          device: /dev/sdc
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdd
+            size: 5Gi
+          d2:
+            device: /dev/sde
+            size: 5Gi
+    node2:
+      name: node-2
+      volumes:
+        local: /mnt/fs-local-volume
+        share: /mnt/fs-local-volume
+      devices:
+        metadata: 
+          device: /dev/sdc
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdd
+            size: 5Gi
+          d2:
+            device: /dev/sde
+            size: 5Gi
+    node3:
+      name: node-3
+      volumes:
+        local: /mnt/fs-local-volume
+        share: /mnt/fs-local-volume
+      devices:
+        metadata: 
+          device: /dev/sdc
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdd
+            size: 5Gi
+          d2:
+            device: /dev/sde
+            size: 5Gi
+    node4: 
+      name: node-4
+      volumes:
+        local: /mnt/fs-local-volume
+        share: /mnt/fs-local-volume
+      devices:
+        metadata: 
+          device: /dev/sdc
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdd
+            size: 5Gi
+          d2:
+            device: /dev/sde
+            size: 5Gi

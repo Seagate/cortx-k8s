@@ -1,0 +1,36 @@
+namespace: default
+cortxdata:
+  name: cortx-data-pod
+  image: centos:7
+  nodename: node-1
+  mountblkinfo: mnt-blk-info.txt
+  s3:
+    numinst: 2
+    startportnum: 28051
+  motr:
+    numinst: 1
+    startportnum: 29000
+  service:
+    clusterip:
+      name: cortx-data-clusterip-svc
+    headless:
+      name: cortx-data-headless-svc
+    loadbal:
+      name: cortx-data-loadbal-svc
+  cfgmap:
+    mountpath: /etc/cortx/solution
+    volmountname: config001
+    name: cortx-data-cfgmap
+  machineid:
+    mountpath: /etc/cortx/solution/node
+    volmountname: machine-id-config
+    name:  cortx-data-machine-id-cfgmap
+  localpathpvc:
+    name: cortx-fs-local-pvc
+    mountpath: /etc/cortx # This is the mount path in the container
+cortxgluster:
+  pv:
+    name: gluster-default-volume
+    mountpath: /mnt/fs-local-volume/etc/gluster/test_folder/ # This is the mount path in the container
+  pvc:
+    name: gluster-claim

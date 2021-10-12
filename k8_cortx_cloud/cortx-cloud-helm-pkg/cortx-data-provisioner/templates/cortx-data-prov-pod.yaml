@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Values.cortxdataprov.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  volumes:
+    - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
+      configMap:
+        name: {{ .Values.cortxdataprov.cfgmap.name }}
+    - name: {{ .Values.cortxdataprov.machineid.volmountname }}
+      configMap:
+        name: {{ .Values.cortxdataprov.machineid.name }}
+    {{- $nodename := (.Values.cortxdataprov.nodename) }}
+    {{- range .Files.Lines .Values.cortxdataprov.mountblkinfo }}
+    {{- $basepath := (base .) }}
+    - name: {{ printf "cortx-data-%s-pv-%s" $basepath $nodename }}
+      persistentVolumeClaim:
+        claimName: {{ printf "cortx-data-%s-pvc-%s" $basepath $nodename }}
+    {{- end }}
+    - name: {{ .Values.cortxgluster.pv.name }}
+      persistentVolumeClaim:
+        claimName: {{ .Values.cortxgluster.pvc.name }}
+    - name: local-path-pv
+      persistentVolumeClaim:
+        claimName: {{ .Values.cortxdataprov.localpathpvc.name }}
+  containers:
+  - name: cortx-setup
+    image: {{ .Values.cortxdataprov.image }}
+    imagePullPolicy: IfNotPresent        
+    command: 
+      - /bin/sh
+    args: 
+      - -c
+      - sleep $(shuf -i 5-10 -n 1)s
+    volumeDevices:
+      {{- range .Files.Lines .Values.cortxdataprov.mountblkinfo }}
+      - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
+        devicePath: {{ . }}
+      {{- end }}
+    volumeMounts:
+      - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
+        mountPath: {{ .Values.cortxdataprov.cfgmap.mountpath }}
+      - name: {{ .Values.cortxdataprov.machineid.volmountname }}
+        mountPath: {{ .Values.cortxdataprov.machineid.mountpath }}
+      - name: {{ .Values.cortxgluster.pv.name }}
+        mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+      - name: local-path-pv
+        mountPath: {{ .Values.cortxdataprov.localpathpvc.mountpath }}
+    ports:
+    - containerPort: 5050
+  restartPolicy: Never

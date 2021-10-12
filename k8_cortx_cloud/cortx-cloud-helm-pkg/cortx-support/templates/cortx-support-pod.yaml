@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.cortxsupport.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.cortxsupport.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cortxsupport.name }}
+    spec:
+      volumes:
+        - name: {{ .Values.cortxsupport.cfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxsupport.cfgmap.name }}  
+        - name: {{ .Values.cortxgluster.pv.name }}
+          persistentVolumeClaim:
+              claimName: {{ .Values.cortxgluster.pvc.name }}
+        - name: local-path-pv
+          persistentVolumeClaim:
+            claimName: {{ .Values.cortxsupport.localpathpvc.name }}            
+      containers:
+        - name: cortx-support-bundle
+          image: {{ .Values.cortxsupport.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sleep", "3650d"]
+          volumeMounts:
+            - name: {{ .Values.cortxsupport.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxsupport.cfgmap.mountpath }}
+            - name: {{ .Values.cortxgluster.pv.name }}
+              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxsupport.localpathpvc.mountpath }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxsupport.name }}
+          ports:
+          - containerPort: 5250

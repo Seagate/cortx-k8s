@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.cortxcontrol.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.cortxcontrol.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cortxcontrol.name }}
+    spec:
+      volumes:
+        - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxcontrol.cfgmap.name }}
+        - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+          configMap:
+            name: {{ .Values.cortxcontrol.machineid.name }}
+        - name: {{ .Values.cortxgluster.pv.name }}
+          persistentVolumeClaim:
+              claimName: {{ .Values.cortxgluster.pvc.name }}
+        - name: local-path-pv
+          persistentVolumeClaim:
+            claimName: {{ .Values.cortxcontrol.localpathpvc.name }}            
+      containers:
+        - name: cortx-free-space-monitor
+          image: {{ .Values.cortxcontrol.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sleep", "3650d"]
+          volumeMounts:
+            - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            - name: {{ .Values.cortxgluster.pv.name }}
+              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxcontrol.name }}
+        - name: cortx-bg-producer
+          image: {{ .Values.cortxcontrol.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sleep", "3650d"]
+          volumeMounts:
+            - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            - name: {{ .Values.cortxgluster.pv.name }}
+              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxcontrol.name }}
+          ports:
+          - containerPort: 28049
+        - name: cortx-csm-agent
+          image: {{ .Values.cortxcontrol.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sleep", "3650d"]
+          volumeMounts:
+            - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            - name: {{ .Values.cortxgluster.pv.name }}
+              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxcontrol.name }}
+          ports:
+          - containerPort: 28101

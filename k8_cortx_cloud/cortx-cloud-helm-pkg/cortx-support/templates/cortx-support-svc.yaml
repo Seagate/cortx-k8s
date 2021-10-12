@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cortxsupport.service.clusterip.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Values.cortxsupport.name }}
+  ports:
+    - name: cortx-support001-tcp
+      protocol: TCP
+      port: 5250
+      targetPort: 5250
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cortxsupport.service.headless.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: {{ .Values.cortxsupport.name }}
+  ports:
+    - name: cortx-support001-tcp
+      protocol: TCP
+      port: 5250
+      targetPort: 5250

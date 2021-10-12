@@ -1,0 +1,31 @@
+namespace: default
+cortxcontrol:
+  name: cortx-control
+  image: centos:7
+  service:
+    clusterip:
+      name: cortx-control-clusterip-svc
+    headless:
+      name: cortx-control-headless-svc
+    ingress:
+      name: cortx-control-ingress-svc
+  ingress:
+    name: cortx-control-ingress
+    path: /csm
+  cfgmap:
+    mountpath: /etc/cortx/solution
+    name: cortx-control-cfgmap001
+    volmountname: config001
+  machineid:
+    mountpath: /etc/cortx/solution/node
+    volmountname: machine-id-config
+    name:  cortx-control-machine-id-cfgmap
+  localpathpvc:
+    name: cortx-fs-local-pvc
+    mountpath: /etc/cortx # This is the mount path in the container
+cortxgluster:
+  pv:
+    name: gluster-default-volume
+    mountpath: /mnt/fs-local-volume/etc/gluster/ # This is the mount path in the container
+  pvc:
+    name: gluster-claim

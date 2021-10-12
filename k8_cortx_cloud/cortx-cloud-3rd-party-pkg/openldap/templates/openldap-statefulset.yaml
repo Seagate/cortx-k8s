@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openldap
+  labels:
+    name: openldap-connect
+spec:
+  serviceName: {{ .Values.openldap.servicename }}
+  replicas: {{ .Values.openldap.numreplicas }}
+  selector:
+    matchLabels:
+      name: openldap-connect
+  template:
+    metadata:
+      labels:
+        name: openldap-connect
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+                matchLabels:
+                  name: openldap-connect
+      containers:
+        - name: openldap
+          image: ghcr.io/seagate/symas-openldap:standalone
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: etc-3rd-party
+              mountPath: /etc/3rd-party
+            - name: var-data-3rd-party
+              mountPath: /var/data/3rd-party
+            - name: var-log-3rd-party
+              mountPath: /var/log/3rd-party
+          ports:
+            - name: ldapport
+              containerPort: 389
+          command:
+            - "/opt/entrypoint.sh"
+          args:
+            - "--rootdnpassword"
+            - "seagate1"
+  volumeClaimTemplates:
+  - metadata:
+      name: etc-3rd-party
+    spec:
+      storageClassName: {{ .Values.openldap.storageclass }}
+      accessModes:
+      - ReadWriteMany
+      volumeMode: Filesystem
+      resources:
+        requests:
+          storage: {{ $.Values.openldap.storagesize }}
+  - metadata:
+      name: var-data-3rd-party
+    spec:
+      accessModes:
+      - ReadWriteMany
+      volumeMode: Filesystem
+      resources:
+        requests:
+          storage: {{ $.Values.openldap.storagesize }}
+  - metadata:
+      name: var-log-3rd-party
+    spec:
+      accessModes:
+      - ReadWriteMany
+      volumeMode: Filesystem
+      resources:
+        requests:
+          storage: {{ $.Values.openldap.storagesize }}

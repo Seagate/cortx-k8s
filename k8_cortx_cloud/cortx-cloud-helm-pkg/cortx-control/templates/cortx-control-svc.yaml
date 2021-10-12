@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cortxcontrol.service.clusterip.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Values.cortxcontrol.name }}
+  ports:
+    - name: cortx-bg-producer-tcp
+      protocol: TCP
+      port: 28049
+      targetPort: 28049
+    - name: cortx-csm-agent-tcp
+      protocol: TCP
+      port: 28101
+      targetPort: 28101
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cortxcontrol.service.headless.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: {{ .Values.cortxcontrol.name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cortxcontrol.service.ingress.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.cortxcontrol.name }}
+  ports:
+    - name: cortx-csm-agent-tcp
+      protocol: TCP
+      port: 28101
+      targetPort: 28101
