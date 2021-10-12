@@ -19,7 +19,7 @@ spec:
         claimName: {{ .Values.cortxcontrolprov.localpathpvc.name }}
   containers:
   - name: cortx-setup
-    image: centos:7
+    image: {{ .Values.cortxcontrolprov.image }}
     imagePullPolicy: IfNotPresent        
     command: 
       - /bin/sh

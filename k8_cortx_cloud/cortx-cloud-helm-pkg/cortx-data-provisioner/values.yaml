@@ -1,6 +1,7 @@
 namespace: default
 cortxdataprov:
   name: cortx-data-prov-pod
+  image: centos:7
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
   service:
@@ -9,7 +10,7 @@ cortxdataprov:
     headless:
       name: cortx-data-headless-svc
   cfgmap:
-    mountpath: /etc/cortx
+    mountpath: /etc/cortx/solution
     volmountname: config001
     name: cortx-provisioner-cfgmap
   machineid:
@@ -18,7 +19,7 @@ cortxdataprov:
     name:  cortx-data-machine-id-cfgmap
   localpathpvc:
     name: cortx-fs-local-pvc
-    mountpath: /data # This is the mount path in the container
+    mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
 cortxgluster:
   pv:

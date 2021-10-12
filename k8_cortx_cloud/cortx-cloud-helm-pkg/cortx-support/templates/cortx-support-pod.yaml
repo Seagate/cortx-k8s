@@ -25,7 +25,7 @@ spec:
             claimName: {{ .Values.cortxsupport.localpathpvc.name }}            
       containers:
         - name: cortx-support-bundle
-          image: centos:7
+          image: {{ .Values.cortxsupport.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeMounts:

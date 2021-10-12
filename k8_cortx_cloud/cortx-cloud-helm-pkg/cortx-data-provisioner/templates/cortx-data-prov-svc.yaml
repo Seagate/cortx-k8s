@@ -22,8 +22,3 @@ spec:
   clusterIP: None
   selector:
     app: {{ .Values.cortxdataprov.name }}
-  ports:
-    - name: cortx-prov-tcp
-      protocol: TCP
-      port: 5050
-      targetPort: 5050

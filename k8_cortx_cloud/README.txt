@@ -71,14 +71,14 @@ mkdir -p /var/log/3rd-party
 ###########################################################
 See the following example from CORTX Data helm chart, replace the image and
 command section hightlighted with "<<===" with the relevant CORTX container
-image and commands required for the entrypoint. An "args" section also can
+commands required for the entrypoint. An "args" section also can
 be added to provide additional arguments.
 
 ./k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-data/templates/cortx-data-pod.yaml
 
 containers:
 - name: cortx-s3-server
-   image: centos:7                     <<===
+   image: {{ .Values.cortxdata.image }}
    imagePullPolicy: IfNotPresent
    command: ["/bin/sleep", "3650d"]    <<===
    volumeDevices:
@@ -103,3 +103,14 @@ containers:
    - containerPort: 443
    - containerPort: 9080
    - containerPort: 9443
+
+The images can be changed by modifying the solution.yaml file section solution.images
+
+solution:
+  namespace: default
+  images:
+    cortxcontrolprov: centos:7
+    cortxcontrol: centos:7
+    cortxdataprov: centos:7
+    cortxdata: centos:7
+    cortxsupport: centos:7
