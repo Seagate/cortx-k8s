@@ -192,7 +192,7 @@ printf "===========================================================\n"
 printf "Setup OpenLDAP replication                                 \n"
 printf "===========================================================\n"
 # Run replication script
-./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh
+./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword seagate1
 
 printf "######################################################\n"
 printf "# Deploy Zookeeper                                    \n"
@@ -497,6 +497,52 @@ kubectl create configmap "cortx-control-machine-id-cfgmap" \
     --from-file=$auto_gen_control_path
 
 printf "########################################################\n"
+printf "# Deploy CORTX Secrets                                  \n"
+printf "########################################################\n"
+# Parse secret from the solution file and create all secret yaml files
+# in the "auto-gen-secret" folder
+secret_auto_gen_path="$cfgmap_path/auto-gen-secret"
+mkdir -p $secret_auto_gen_path
+output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets*.name")
+IFS=';' read -r -a parsed_secret_name_array <<< "$output"
+for secret_name in "${parsed_secret_name_array[@]}"
+do
+    secret_fname=$(echo $secret_name | cut -f2 -d'>')
+    yaml_content_path=$(echo $secret_name | cut -f1 -d'>')
+    yaml_content_path=${yaml_content_path/.name/".content"}
+    secrets="$(./parse_scripts/yaml_extract_block.sh solution.yaml $yaml_content_path 2)"
+
+    new_secret_gen_file="$secret_auto_gen_path/$secret_fname.yaml"
+    cp "$cfgmap_path/templates/secret-template.yaml" $new_secret_gen_file
+    ./parse_scripts/subst.sh $new_secret_gen_file "secret.name" "$secret_fname"
+    ./parse_scripts/subst.sh $new_secret_gen_file "secret.content" "$secrets"
+    
+    kubectl create -f $new_secret_gen_file --namespace=$namespace
+
+    control_prov_secret_path="./cortx-cloud-helm-pkg/cortx-control-provisioner/secret-info.txt"
+    control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
+    data_prov_secret_path="./cortx-cloud-helm-pkg/cortx-data-provisioner/secret-info.txt"
+    data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
+    if [[ -s $control_prov_secret_path ]]; then
+        printf "\n" >> $control_prov_secret_path
+    fi
+    if [[ -s $control_secret_path ]]; then
+        printf "\n" >> $control_secret_path
+    fi
+    if [[ -s $data_prov_secret_path ]]; then
+        printf "\n" >> $data_prov_secret_path
+    fi
+    if [[ -s $data_secret_path ]]; then
+        printf "\n" >> $data_secret_path
+    fi
+    printf "$secret_fname" >> $control_prov_secret_path
+    printf "$secret_fname" >> $control_secret_path
+    printf "$secret_fname" >> $data_prov_secret_path
+    printf "$secret_fname" >> $data_secret_path
+done
+
+
+printf "########################################################\n"
 printf "# Deploy CORTX Control Provisioner                      \n"
 printf "########################################################\n"
 cortxcontrolprov_image=$(parseSolution 'solution.images.cortxcontrolprov')
@@ -517,6 +563,7 @@ helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-prov
     --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc" \
     --set cortxcontrolprov.localpathpvc.mountpath="/etc/cortx" \
     --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
+    --set cortxcontrolprov.secretinfo="secret-info.txt" \
     --set namespace=$namespace
 
 # Check if all Cortx Control Provisioner is up and running
@@ -571,6 +618,7 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdataprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
         --set cortxdataprov.localpathpvc.mountpath="/etc/cortx" \
         --set cortxdataprov.localpathpvc.requeststoragesize="1Gi" \
+        --set cortxdataprov.secretinfo="secret-info.txt" \
         --set namespace=$namespace
 done
 
@@ -627,6 +675,7 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap" \
     --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc" \
     --set cortxcontrol.localpathpvc.mountpath="/etc/cortx" \
+    --set cortxcontrol.secretinfo="secret-info.txt" \
     --set cortxgluster.pv.name="gluster-default-name" \
     --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
     --set cortxgluster.pvc.name="gluster-claim" \
@@ -685,6 +734,7 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
         --set cortxdata.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
         --set cortxdata.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
+        --set cortxdata.secretinfo="secret-info.txt" \
         --set namespace=$namespace
 done
 
@@ -759,3 +809,9 @@ printf "\n"
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "secret-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "secret-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
+
+rm -rf "$cfgmap_path/auto-gen-secret"

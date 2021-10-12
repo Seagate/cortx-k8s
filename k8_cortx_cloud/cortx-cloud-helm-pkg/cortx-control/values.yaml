@@ -2,6 +2,7 @@ namespace: default
 cortxcontrol:
   name: cortx-control
   image: centos:7
+  secretinfo: secret-info.txt
   service:
     clusterip:
       name: cortx-control-clusterip-svc
