@@ -482,7 +482,7 @@ for i in "${!node_name_list[@]}"; do
     ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.name" "cvg-$count_str"
     ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.type" "iso"
     extract_output="$(./parse_scripts/yaml_extract_block.sh $storage_data_dev_gen_file)"
-    ./parse_scripts/yaml_insert_block.sh "$storage_info_gen_file" "$extract_output" 2 "cortx.data.dev_partition"
+    ./parse_scripts/yaml_insert_block.sh "$storage_info_gen_file" "$extract_output" 4 "cortx.data.dev_partition"
     # Substitute metadata device partition in the template file
     node_output=$(parseSolution 'solution.nodes.node*.name')
     IFS=';' read -r -a node_var_val_array <<< "$node_output"
@@ -517,7 +517,7 @@ echo $uuid_str > $auto_gen_control_path/id
 cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
 
 # Insert all node info stored in "node-info" folder into "cluster.yaml" file
-cluster_uuid=$(uuidgen)
+cluster_uuid=$(UUID=$(uuidgen); echo ${UUID//-/})
 extract_output=""
 node_info_folder="$cfgmap_path/node-info"
 ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid

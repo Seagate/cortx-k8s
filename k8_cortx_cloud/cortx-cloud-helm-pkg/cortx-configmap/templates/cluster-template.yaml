@@ -31,8 +31,8 @@ cluster:
       - agent
   storage_sets:
   - name: <<.Values.cluster.storage_sets.name>>
-  durability:
-    sns: <<.Values.cluster.storage_sets.durability.sns>>
-    dix: <<.Values.cluster.storage_sets.durability.dix>>
+    durability:
+      sns: <<.Values.cluster.storage_sets.durability.sns>>
+      dix: <<.Values.cluster.storage_sets.durability.dix>>
     nodes:
     <<.Values.cluster.storage_sets.nodes>>
