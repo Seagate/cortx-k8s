@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app: {{ .Values.cortxdata.name }}
   name: {{ .Values.cortxdata.name }}
   namespace: {{ .Values.namespace }}
 spec:
@@ -13,6 +15,7 @@ spec:
       labels:
         app: {{ .Values.cortxdata.name }}
     spec:
+      hostname: {{ .Values.cortxdata.service.headless.name }}
       volumes:
         - name: {{ .Values.cortxdata.cfgmap.volmountname }}
           configMap:

@@ -1,9 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    app: {{ .Values.cortxdataprov.name }}
   name: {{ .Values.cortxdataprov.name }}
   namespace: {{ .Values.namespace }}
 spec:
+  hostname: {{ .Values.cortxdataprov.service.headless.name }}
   volumes:
     - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
       configMap:
