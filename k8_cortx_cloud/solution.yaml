@@ -30,6 +30,11 @@ solution:
     motr:
       num_inst: 1
       start_port_num: 29000
+    storage_sets:
+      name: storage-set-1
+      durability:
+        sns: 8+7+0
+        dix: 1+0+0
   nodes:
     node1:
       name: node-1

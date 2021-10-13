@@ -484,6 +484,19 @@ cluster_uuid=$(uuidgen)
 extract_output=""
 node_info_folder="$cfgmap_path/node-info"
 ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
+
+# Populate the storage set info
+storage_set_name=$(parseSolution 'solution.common.storage_sets.name')
+storage_set_name=$(echo $storage_set_name | cut -f2 -d'>')
+storage_set_dur_sns=$(parseSolution 'solution.common.storage_sets.durability.sns')
+storage_set_dur_sns=$(echo $storage_set_dur_sns | cut -f2 -d'>')
+storage_set_dur_dix=$(parseSolution 'solution.common.storage_sets.durability.dix')
+storage_set_dur_dix=$(echo $storage_set_dur_dix | cut -f2 -d'>')
+
+./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.name" $storage_set_name
+./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.durability.sns" $storage_set_dur_sns
+./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.durability.dix" $storage_set_dur_dix
+
 for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
     if [ "$extract_output" == "" ]
     then
