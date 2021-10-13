@@ -514,7 +514,7 @@ printf "########################################################\n"
 # in the "auto-gen-secret" folder
 secret_auto_gen_path="$cfgmap_path/auto-gen-secret"
 mkdir -p $secret_auto_gen_path
-output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets*.name")
+output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets.name")
 IFS=';' read -r -a parsed_secret_name_array <<< "$output"
 for secret_name in "${parsed_secret_name_array[@]}"
 do

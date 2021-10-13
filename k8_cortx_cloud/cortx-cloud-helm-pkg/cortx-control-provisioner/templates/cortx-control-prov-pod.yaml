@@ -42,7 +42,7 @@ spec:
         mountPath: {{ .Values.cortxcontrolprov.localpathpvc.mountpath }}
       {{- range .Files.Lines .Values.cortxcontrolprov.secretinfo }}
       - name: {{ printf "%s" . }}
-        mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+        mountPath: /etc/cortx/solution/secret
         readOnly: true
       {{- end }}
     ports:
