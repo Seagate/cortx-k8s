@@ -189,6 +189,7 @@ kubectl delete configmap "cortx-cfgmap" --namespace=$namespace
 rm -rf "$cfgmap_path/auto-gen-cfgmap"
 
 rm -rf "$cfgmap_path/node-info"
+rm -rf "$cfgmap_path/storage-info"
 
 #############################################################
 # Destroy CORTX 3rd party
