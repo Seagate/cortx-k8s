@@ -17,36 +17,36 @@ spec:
         app: liveness
     spec:
       containers:
-        # - name: liveness
-        #   image: 10.235.177.135:5000/lp-test:2
-        #   imagePullPolicy: Always
-        #   resources:
-        #     limits:
-        #       cpu: "1"
-        #       memory: "100Mi"
-        #     requests:
-        #       cpu: "0.3"
-        #       memory: "30Mi"
-        #   livenessProbe:
-        #     exec:
-        #       command:
-        #       - cat
-        #       - /app/liveness.txt
-        #     initialDelaySeconds: 6
-        #     periodSeconds: 5
-        #   readinessProbe:
-        #     exec:
-        #       command:
-        #       - cat
-        #       - /app/liveness.txt
-        #     initialDelaySeconds: 5
-        #   lifecycle:
-        #     postStart:
-        #       exec:
-        #         command: ["/bin/sh", "/app/postStart.sh"]
-        #     preStop:
-        #       exec:
-        #         command: ["/bin/sh", "/app/preStop.sh"]
+        - name: liveness
+          image: 10.235.177.135:5000/lp-test:2
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: "1"
+              memory: "100Mi"
+            requests:
+              cpu: "0.3"
+              memory: "30Mi"
+          livenessProbe:
+            exec:
+              command:
+              - cat
+              - /app/liveness.txt
+            initialDelaySeconds: 6
+            periodSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+              - cat
+              - /app/liveness.txt
+            initialDelaySeconds: 5
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "/app/postStart.sh"]
+            preStop:
+              exec:
+                command: ["/bin/sh", "/app/preStop.sh"]
         - name: cortx-poc-test
           image: centos:7
           resources:
