@@ -246,10 +246,19 @@ printf "\n\n"
 ##########################################################
 # Deploy CORTX cloud
 ##########################################################
+
+# Get the storage paths to use
+local_storage=$(parseSolution 'solution.common.storage.local')
+local_storage=$(echo $local_storage | cut -f2 -d'>')
+shared_storage=$(parseSolution 'solution.common.storage.shared')
+shared_storage=$(echo $shared_storage | cut -f2 -d'>')
+log_storage=$(parseSolution 'solution.common.storage.log')
+log_storage=$(echo $log_storage | cut -f2 -d'>')
+
 # GlusterFS
 gluster_vol="myvol"
 gluster_folder="/etc/gluster"
-pod_ctr_mount_path="/mnt/fs-local-volume/$gluster_folder"
+gluster_etc_path="/mnt/fs-local-volume/$gluster_folder"
 gluster_pv_name="gluster-default-volume"
 gluster_pvc_name="gluster-claim"
 
@@ -309,7 +318,7 @@ helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster
     --set cortxgluster.pv.path=$gluster_vol \
     --set cortxgluster.pv.name=$gluster_pv_name \
     --set cortxgluster.pvc.name=$gluster_pvc_name \
-    --set cortxgluster.hostpath.etc=$pod_ctr_mount_path \
+    --set cortxgluster.hostpath.etc=$gluster_etc_path \
     --set cortxgluster.hostpath.logs="/mnt/fs-local-volume/var/log/glusterfs" \
     --set cortxgluster.hostpath.config="/mnt/fs-local-volume/var/lib/glusterd" \
     --set namespace=$namespace
@@ -422,14 +431,16 @@ for i in "${!node_name_list[@]}"; do
     ./parse_scripts/subst.sh $new_gen_file "cortx.data.svc" "cortx-data-clusterip-svc-${node_name_list[$i]}"
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_inst')
-
+    ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $(extractBlock 'solution.common.storage.local')
+    ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $(extractBlock 'solution.common.storage.shared')
+    ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $(extractBlock 'solution.common.storage.log')
     # Generate node file with type storage_node in "node-info" folder
     new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
     cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-    ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" ${node_name_list[$i]}
+    ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-data-headless-svc-${node_name_list[$i]}"
     uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
     ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
-    ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-clusterip-svc-${node_name_list[$i]}"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-headless-svc-${node_name_list[$i]}"
     ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "storage_node"
     
     # Create data machine id file
@@ -442,7 +453,7 @@ done
 # Generate node file with type control_node in "node-info" folder
 new_gen_file="$node_info_folder/cluster-control-node.yaml"
 cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "control-node"
+./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control-clusterip-svc"
 uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
 ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
 ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control-clusterip-svc"
@@ -554,14 +565,14 @@ helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-prov
     --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc" \
     --set cortxcontrolprov.service.headless.name="cortx-control-headless-svc" \
     --set cortxgluster.pv.name=$gluster_pv_name \
-    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+    --set cortxgluster.pv.mountpath=$shared_storage \
     --set cortxgluster.pvc.name=$gluster_pvc_name \
     --set cortxcontrolprov.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrolprov.cfgmap.volmountname="config001" \
     --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap" \
     --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc" \
-    --set cortxcontrolprov.localpathpvc.mountpath="/etc/cortx" \
+    --set cortxcontrolprov.localpathpvc.mountpath="$local_storage" \
     --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
     --set cortxcontrolprov.secretinfo="secret-info.txt" \
     --set namespace=$namespace
@@ -609,14 +620,14 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdataprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
         --set cortxdataprov.service.headless.name="cortx-data-headless-svc-$node_name" \
         --set cortxgluster.pv.name=$gluster_pv_name \
-        --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+        --set cortxgluster.pv.mountpath=$shared_storage \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxdataprov.cfgmap.name="cortx-cfgmap" \
         --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
         --set cortxdataprov.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxdataprov.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdataprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
-        --set cortxdataprov.localpathpvc.mountpath="/etc/cortx" \
+        --set cortxdataprov.localpathpvc.mountpath="$local_storage" \
         --set cortxdataprov.localpathpvc.requeststoragesize="1Gi" \
         --set cortxdataprov.secretinfo="secret-info.txt" \
         --set namespace=$namespace
@@ -674,10 +685,10 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.cfgmap.volmountname="config001" \
     --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap" \
     --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc" \
-    --set cortxcontrol.localpathpvc.mountpath="/etc/cortx" \
+    --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
     --set cortxcontrol.secretinfo="secret-info.txt" \
     --set cortxgluster.pv.name="gluster-default-name" \
-    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+    --set cortxgluster.pv.mountpath=$shared_storage \
     --set cortxgluster.pvc.name="gluster-claim" \
     --set namespace=$namespace
 
@@ -722,14 +733,14 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
         --set cortxdata.service.loadbal.name="cortx-data-loadbal-svc-$node_name" \
         --set cortxgluster.pv.name=$gluster_pv_name \
-        --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+        --set cortxgluster.pv.mountpath=$shared_storage \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxdata.cfgmap.name="cortx-cfgmap" \
         --set cortxdata.cfgmap.volmountname="config001-$node_name" \
         --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
-        --set cortxdata.localpathpvc.mountpath="/etc/cortx" \
+        --set cortxdata.localpathpvc.mountpath="$local_storage" \
         --set cortxdata.motr.numinst=$(extractBlock 'solution.common.motr.num_inst') \
         --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
         --set cortxdata.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
@@ -775,9 +786,9 @@ helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.cfgmap.name="cortx-cfgmap" \
     --set cortxsupport.cfgmap.volmountname="config001" \
     --set cortxsupport.localpathpvc.name="cortx-data-fs-local-pvc-$first_node_name" \
-    --set cortxsupport.localpathpvc.mountpath="/etc/cortx" \
+    --set cortxsupport.localpathpvc.mountpath="$local_storage" \
     --set cortxgluster.pv.name="gluster-default-name" \
-    --set cortxgluster.pv.mountpath=$pod_ctr_mount_path \
+    --set cortxgluster.pv.mountpath=$shared_storage \
     --set cortxgluster.pvc.name="gluster-claim" \
     --set namespace=$namespace
 

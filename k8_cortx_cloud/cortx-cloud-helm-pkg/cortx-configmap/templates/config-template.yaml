@@ -30,10 +30,9 @@ cortx:
       admin: admin
       secret: common-secret
     storage:
-      shared: /share
-      log: /share/var/log/cortx/
-      local: /etc/cortx
-      config: /etc/cortx
+      shared: <<.Values.cortx.common.storage.shared>>
+      local: <<.Values.cortx.common.storage.local>>
+      log: <<.Values.cortx.common.storage.log>>
     security:
       ssl_certificate: /opt/seagate/cortx/s3/install/haproxy/ssl/s3.seagate.com.pem
       domain_certificate: /etc/cortx/solution/ssl/stx.pem
