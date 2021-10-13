@@ -30,13 +30,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.cortxcontrol.service.ingress.name }}
+  name: {{ .Values.cortxcontrol.service.nodeport.name }}
   namespace: {{ .Values.namespace }}
 spec:
   selector:
     app: {{ .Values.cortxcontrol.name }}
+  type: NodePort
   ports:
-    - name: cortx-csm-agent-tcp
-      protocol: TCP
-      port: 28101
-      targetPort: 28101
+  - port: 8081
+    nodePort: 32102

@@ -20,6 +20,7 @@ solution:
     openldap:
       password: seagate1
   common:
+    cortx_io_svc_ingress: false
     storage:
       local: /etc/cortx
       shared: /share

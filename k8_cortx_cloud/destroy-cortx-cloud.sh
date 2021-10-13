@@ -79,12 +79,24 @@ for i in "${!node_selector_list[@]}"; do
 done
 
 printf "########################################################\n"
+printf "# Delete Services                                       \n"
+printf "########################################################\n"
+kubectl delete service cortx-io-svc --namespace=$namespace
+
+cortx_io_svc_ingress=$(parseSolution 'solution.common.cortx_io_svc_ingress')
+cortx_io_svc_ingress=$(echo $cortx_io_svc_ingress | cut -f2 -d'>')
+if [ "$cortx_io_svc_ingress" == "true" ]
+then
+    kubectl delete ingress cortx-io-svc-ingress --namespace=$namespace
+fi
+
+printf "########################################################\n"
 printf "# Delete CORTX Control                                  \n"
 printf "########################################################\n"
 helm uninstall "cortx-control"
 
 printf "########################################################\n"
-printf "# Delete CORTX Data provisioner                              \n"
+printf "# Delete CORTX Data provisioner                         \n"
 printf "########################################################\n"
 for i in "${!node_selector_list[@]}"; do
     helm uninstall "cortx-data-provisioner-${node_name_list[$i]}"

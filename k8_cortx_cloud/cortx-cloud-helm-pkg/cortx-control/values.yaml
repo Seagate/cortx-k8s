@@ -8,11 +8,8 @@ cortxcontrol:
       name: cortx-control-clusterip-svc
     headless:
       name: cortx-control-headless-svc
-    ingress:
-      name: cortx-control-ingress-svc
-  ingress:
-    name: cortx-control-ingress
-    path: /csm
+    nodeport:
+      name: cortx-control-nodeport-svc
   cfgmap:
     mountpath: /etc/cortx/solution
     name: cortx-control-cfgmap001

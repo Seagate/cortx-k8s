@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ .Values.cortxdata.name }}
+        name: cortx-data
     spec:
       hostname: {{ .Values.cortxdata.service.headless.name }}
       volumes:

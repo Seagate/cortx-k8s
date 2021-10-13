@@ -752,8 +752,7 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.image=$cortxcontrol_image \
     --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
     --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
-    --set cortxcontrol.service.ingress.name="cortx-control-ingress-svc" \
-    --set cortxcontrol.ingress.name="cortx-control-ingress" \
+    --set cortxcontrol.nodeport.name="cortx-control-nodeport-svc" \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrol.cfgmap.volmountname="config001" \
@@ -843,6 +842,18 @@ while true; do
     sleep 1s
 done
 printf "\n\n"
+
+printf "########################################################\n"
+printf "# Deploy Services                                       \n"
+printf "########################################################\n"
+kubectl apply -f services/cortx-io-svc.yaml --namespace=$namespace
+
+cortx_io_svc_ingress=$(parseSolution 'solution.common.cortx_io_svc_ingress')
+cortx_io_svc_ingress=$(echo $cortx_io_svc_ingress | cut -f2 -d'>')
+if [ "$cortx_io_svc_ingress" == "true" ]
+then
+    kubectl apply -f services/cortx-io-svc-ingress.yaml --namespace=$namespace
+fi
 
 printf "########################################################\n"
 printf "# Deploy CORTX Support                                  \n"
