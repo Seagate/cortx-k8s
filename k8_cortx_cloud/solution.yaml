@@ -1,33 +1,29 @@
 solution:
   namespace: default
   secrets:
-    secret1:
-      name: kafka-secret
-      content:
-        kafka_secret: segate123
-        kafka_secret1: segate1234
-    secret2:
-      name: cortx-secret
-      content:
-        openldap_admin_secret: seagate2
-        kafka_admin_secret: Seagate@123
-        consul_admin_secret: Seagate@123
-        common_admin_secret: Seagate@123
-        s3_auth_admin_secret: ldapadmin
-        csm_auth_admin_secret: seagate2
-        csm_mgmt_admin_secret: Cortxadmin@123
-    secret3:
-      name: consul-secret
-      content:
-        consul_secret: hadjhjdhsjd
-        consul_secret1: hadjhjdhsjdaaa
+    name: cortx-secret
+    content:
+      openldap_admin_secret: seagate2
+      kafka_admin_secret: Seagate@123
+      consul_admin_secret: Seagate@123
+      common_admin_secret: Seagate@123
+      s3_auth_admin_secret: ldapadmin
+      csm_auth_admin_secret: seagate2
+      csm_mgmt_admin_secret: Cortxadmin@123
   images:
     cortxcontrolprov: centos:7
     cortxcontrol: centos:7
     cortxdataprov: centos:7
     cortxdata: centos:7
     cortxsupport: centos:7
+  3rdparty:
+    openldap:
+      password: seagate1
   common:
+    storage:
+      local: /etc/cortx
+      shared: /share
+      log: /share/var/log/cortx
     s3:
       num_inst: 2
       start_port_num: 28051
@@ -37,10 +33,8 @@ solution:
   nodes:
     node1:
       name: node-1
-      volumes:
-        local: /mnt/fs-local-volume
-        share: /mnt/fs-local-volume
       devices:
+        system: /mnt/fs-local-volume/
         metadata: 
           device: /dev/sdc
           size: 5Gi
@@ -53,10 +47,8 @@ solution:
             size: 5Gi
     node2:
       name: node-2
-      volumes:
-        local: /mnt/fs-local-volume
-        share: /mnt/fs-local-volume
       devices:
+        system: /mnt/fs-local-volume/
         metadata: 
           device: /dev/sdc
           size: 5Gi
@@ -69,9 +61,6 @@ solution:
             size: 5Gi
     node3:
       name: node-3
-      volumes:
-        local: /mnt/fs-local-volume
-        share: /mnt/fs-local-volume
       devices:
         metadata: 
           device: /dev/sdc
@@ -85,10 +74,8 @@ solution:
             size: 5Gi
     node4: 
       name: node-4
-      volumes:
-        local: /mnt/fs-local-volume
-        share: /mnt/fs-local-volume
       devices:
+        system: /mnt/fs-local-volume/
         metadata: 
           device: /dev/sdc
           size: 5Gi

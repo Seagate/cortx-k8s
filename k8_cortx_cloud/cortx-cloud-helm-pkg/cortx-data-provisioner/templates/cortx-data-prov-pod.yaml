@@ -1,9 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    app: {{ .Values.cortxdataprov.name }}
   name: {{ .Values.cortxdataprov.name }}
   namespace: {{ .Values.namespace }}
 spec:
+  hostname: {{ .Values.cortxdataprov.service.headless.name }}
   volumes:
     - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
       configMap:
@@ -54,7 +57,7 @@ spec:
         mountPath: {{ .Values.cortxdataprov.localpathpvc.mountpath }}
       {{- range .Files.Lines .Values.cortxdataprov.secretinfo }}
       - name: {{ printf "%s" . }}
-        mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+        mountPath: /etc/cortx/solution/secret
         readOnly: true
       {{- end }}
     ports:

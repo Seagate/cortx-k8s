@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app: {{ .Values.cortxdata.name }}
   name: {{ .Values.cortxdata.name }}
   namespace: {{ .Values.namespace }}
 spec:
@@ -13,6 +15,7 @@ spec:
       labels:
         app: {{ .Values.cortxdata.name }}
     spec:
+      hostname: {{ .Values.cortxdata.service.headless.name }}
       volumes:
         - name: {{ .Values.cortxdata.cfgmap.volmountname }}
           configMap:
@@ -59,7 +62,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -90,7 +93,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -114,7 +117,7 @@ spec:
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
             {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -143,7 +146,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -169,7 +172,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -195,7 +198,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -217,7 +220,7 @@ spec:
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
             {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -246,7 +249,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -274,7 +277,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -302,7 +305,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: {{ printf "/etc/cortx/solution/secret/%s" . }}
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
