@@ -57,9 +57,9 @@ spec:
               cpu: "0.5"
               memory: "30Mi"
           lifecycle:
-            postStart:
-              exec:
-                command: ["ps", "aux"]
+            # postStart:
+            #   exec:
+            #     command: ["ps", "aux"]
             preStop:
               exec:
                 command: ["shutdown", "-h", "now"]
