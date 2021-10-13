@@ -4,6 +4,7 @@ cluster:
   node_types:
   - name: storage_node
     components:
+    - name: utils
     - name: motr
       services:
       - io
@@ -13,41 +14,25 @@ cluster:
       - io
       - auth
       - bg_consumer
-    - name: utils
-      services:
-      - message_bus
     storage:
-    - name: cvg-01
-      type: ios
-      devices:
-        metadata: /dev/sda
-        data:
-        - /dev/sdb
-        - /dev/sdc
-    - name: cvg-02
-      type: cas
-      devices:
-        log: /dev/sdh
-        meta0: /dev/sdj
-        metadata: /dev/sdk
-        data:
-          - /dev/sdx
-          - /dev/sdy
+    <<.Values.cluster.storage_list>>
   - name: control_node
     components:
-    - name: csm
-      services:
-      - agent
+    - name: utils
     - name: motr
       services:
       - fsm
     - name: s3
       services:
       - bg_producer
+      - openldap
+    - name: csm
+      services:
+      - agent
   storage_sets:
-  - name: storage-set-1
+  - name: <<.Values.cluster.storage_sets.name>>
     durability:
-      sns: 8+7+0
-      dix: 1+7+0
+      sns: <<.Values.cluster.storage_sets.durability.sns>>
+      dix: <<.Values.cluster.storage_sets.durability.dix>>
     nodes:
-      <<.Values.cluster.storage_sets.nodes>>
+    <<.Values.cluster.storage_sets.nodes>>

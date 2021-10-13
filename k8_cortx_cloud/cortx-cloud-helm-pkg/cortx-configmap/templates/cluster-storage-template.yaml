@@ -1,0 +1,6 @@
+- name: <<.Values.cortx.storage.name>>
+  type: <<.Values.cortx.storage.type>>
+  devices:
+    metadata: <<.Values.cortx.metadata.dev_partition>>
+    data:
+    <<.Values.cortx.data.dev_partition>>
