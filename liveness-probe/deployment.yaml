@@ -27,26 +27,26 @@ spec:
             requests:
               cpu: "0.3"
               memory: "30Mi"
-          livenessProbe:
-            exec:
-              command:
-              - cat
-              - /app/liveness.txt
-            initialDelaySeconds: 6
-            periodSeconds: 5
-          readinessProbe:
-            exec:
-              command:
-              - cat
-              - /app/liveness.txt
-            initialDelaySeconds: 5
-          lifecycle:
-            postStart:
-              exec:
-                command: ["/bin/sh", "/app/postStart.sh"]
-            preStop:
-              exec:
-                command: ["/bin/sh", "/app/preStop.sh"]
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #     - cat
+          #     - /app/liveness.txt
+          #   initialDelaySeconds: 6
+          #   periodSeconds: 5
+          # readinessProbe:
+          #   exec:
+          #     command:
+          #     - cat
+          #     - /app/liveness.txt
+          #   initialDelaySeconds: 5
+          # lifecycle:
+          #   postStart:
+          #     exec:
+          #       command: ["/bin/sh", "/app/postStart.sh"]
+          #   preStop:
+          #     exec:
+          #       command: ["/bin/sh", "/app/preStop.sh"]
         - name: cortx-poc-test
           image: centos:7
           resources:
