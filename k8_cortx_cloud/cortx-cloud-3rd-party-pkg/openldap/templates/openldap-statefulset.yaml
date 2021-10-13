@@ -40,7 +40,7 @@ spec:
             - "/opt/entrypoint.sh"
           args:
             - "--rootdnpassword"
-            - "seagate1"
+            - {{ .Values.openldap.password }}
   volumeClaimTemplates:
   - metadata:
       name: etc-3rd-party

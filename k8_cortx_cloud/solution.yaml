@@ -16,6 +16,9 @@ solution:
     cortxdataprov: centos:7
     cortxdata: centos:7
     cortxsupport: centos:7
+  3rdparty:
+    openldap:
+      password: seagate1
   common:
     storage:
       local: /etc/cortx

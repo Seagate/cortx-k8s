@@ -159,12 +159,16 @@ printf "######################################################\n"
 printf "# Deploy openLDAP                                     \n"
 printf "######################################################\n"
 
+openldap_password=$(parseSolution 'solution.3rdparty.openldap.password')
+openldap_password=$(echo $openldap_password | cut -f2 -d'>')
+
 helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set openldap.servicename="openldap-svc" \
     --set openldap.storageclass="openldap-local-storage" \
     --set openldap.storagesize="5Gi" \
     --set openldap.nodelistinfo="node-list-info.txt" \
-    --set openldap.numreplicas=$num_openldap_replicas
+    --set openldap.numreplicas=$num_openldap_replicas \
+    --set openldap.password=$openldap_password
 
 # Wait for all openLDAP pods to be ready
 printf "\nWait for openLDAP PODs to be ready"
@@ -192,7 +196,7 @@ printf "===========================================================\n"
 printf "Setup OpenLDAP replication                                 \n"
 printf "===========================================================\n"
 # Run replication script
-./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword seagate1
+./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword $openldap_password
 
 printf "######################################################\n"
 printf "# Deploy Zookeeper                                    \n"
