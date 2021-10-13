@@ -58,10 +58,7 @@ spec:
               memory: "30Mi"
           command: ["/bin/sleep", "3650d"]
           lifecycle:
-            # postStart:
-            #   exec:
-            #     command: ["ps", "aux"]
             preStop:
               exec:
                 command: ["shutdown", "-h", "now"]
-      terminationGracePeriodSeconds: 180
+      terminationGracePeriodSeconds: 30
