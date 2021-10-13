@@ -432,6 +432,14 @@ mkdir -p $auto_gen_path
 for i in "${!node_name_list[@]}"; do
     new_gen_file="$auto_gen_path/config.yaml"
     cp "$cfgmap_path/templates/config-template.yaml" $new_gen_file
+    # 3rd party endpoints
+    kafka_endpoint="kafka.default.svc.cluster.local"
+    openldap_endpoint="openldap-svc.default.svc.cluster.local"
+    consul_endpoint="consul-server.default.svc.cluster.local"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.external.kafka.endpoints" $kafka_endpoint
+    ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.endpoints" $openldap_endpoint
+    ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.servers" $openldap_endpoint
+    ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
     ./parse_scripts/subst.sh $new_gen_file "cortx.data.svc" "cortx-data-clusterip-svc-${node_name_list[$i]}"
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_inst')
