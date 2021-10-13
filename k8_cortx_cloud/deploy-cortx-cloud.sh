@@ -432,6 +432,14 @@ mkdir -p $auto_gen_path
 for i in "${!node_name_list[@]}"; do
     new_gen_file="$auto_gen_path/config.yaml"
     cp "$cfgmap_path/templates/config-template.yaml" $new_gen_file
+    # 3rd party endpoints
+    kafka_endpoint="kafka.default.svc.cluster.local"
+    openldap_endpoint="openldap-svc.default.svc.cluster.local"
+    consul_endpoint="consul-server.default.svc.cluster.local"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.external.kafka.endpoints" $kafka_endpoint
+    ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.endpoints" $openldap_endpoint
+    ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.servers" $openldap_endpoint
+    ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
     ./parse_scripts/subst.sh $new_gen_file "cortx.data.svc" "cortx-data-clusterip-svc-${node_name_list[$i]}"
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_inst')
@@ -476,6 +484,19 @@ cluster_uuid=$(uuidgen)
 extract_output=""
 node_info_folder="$cfgmap_path/node-info"
 ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
+
+# Populate the storage set info
+storage_set_name=$(parseSolution 'solution.common.storage_sets.name')
+storage_set_name=$(echo $storage_set_name | cut -f2 -d'>')
+storage_set_dur_sns=$(parseSolution 'solution.common.storage_sets.durability.sns')
+storage_set_dur_sns=$(echo $storage_set_dur_sns | cut -f2 -d'>')
+storage_set_dur_dix=$(parseSolution 'solution.common.storage_sets.durability.dix')
+storage_set_dur_dix=$(echo $storage_set_dur_dix | cut -f2 -d'>')
+
+./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.name" $storage_set_name
+./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.durability.sns" $storage_set_dur_sns
+./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.durability.dix" $storage_set_dur_dix
+
 for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
     if [ "$extract_output" == "" ]
     then
