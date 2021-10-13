@@ -484,7 +484,7 @@ for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
         extract_output="$extract_output"$'\n'"$(./parse_scripts/yaml_extract_block.sh $fname)"
     fi
 done
-./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 6 "cluster.storage_sets.nodes"
+./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 4 "cluster.storage_sets.nodes"
 
 # Delete node-info folder
 node_info_folder="$cfgmap_path/node-info"
