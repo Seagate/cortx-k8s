@@ -58,13 +58,6 @@ cortx:
     interface_type: tcp
     interface_family: inet
     transport_type: libfab
-    ios:
-      endpoints:
-      - motr://<<.Values.cortx.data.svc>>:3232
-  hare:
-    hax:
-      endpoints:
-      - tcp://<<.Values.cortx.data.svc>>:28000
   csm:
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
