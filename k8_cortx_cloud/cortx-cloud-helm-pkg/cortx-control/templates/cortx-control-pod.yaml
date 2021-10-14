@@ -101,4 +101,4 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
           ports:
-          - containerPort: 28101
+          - containerPort: 8101

@@ -43,7 +43,7 @@ spec:
             secretName: {{ printf "%s" . }}
         {{- end }}
       containers:
-        - name: cortx-s3-server
+        - name: cortx-s3-haproxy
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
@@ -74,6 +74,7 @@ spec:
           - containerPort: 443
           - containerPort: 9080
           - containerPort: 9443
+          - containerPort: 28049
         - name: cortx-s3-auth-server
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -100,8 +101,6 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
-          ports:
-          - containerPort: 28050
         {{- range $i := until (.Values.cortxdata.s3.numinst|int) }}
         - name: {{ printf "cortx-s3-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
@@ -230,34 +229,6 @@ spec:
           ports:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
         {{- end }}
-        - name: cortx-consul-agent
-          image: {{ .Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
-          volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
-              mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
-          ports:
-          - containerPort: 8500
         - name: cortx-s3-bg-consumer
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -286,29 +257,3 @@ spec:
               value: {{ .Values.cortxdata.name }}
           ports:
           - containerPort: 28049
-        - name: cortx-message-svc
-          image: {{ .Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
-          volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
-              mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
