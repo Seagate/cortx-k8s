@@ -502,10 +502,10 @@ done
 # Generate node file with type control_node in "node-info" folder
 new_gen_file="$node_info_folder/cluster-control-node.yaml"
 cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control-clusterip-svc"
+./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control-headless-svc"
 uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
 ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
-./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control-clusterip-svc"
+./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control-headless-svc"
 ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
 
 # Create control machine id file
