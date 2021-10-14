@@ -24,10 +24,10 @@ spec:
       protocol: TCP
       port: 9443
       targetPort: 9443
-    - name: cortx-s3-auth-server-tcp
+    - name: cortx-s3-bg-tcp
       protocol: TCP
-      port: 28050
-      targetPort: 28050
+      port: 28049
+      targetPort: 28049
     {{- range $i := until (.Values.cortxdata.s3.numinst|int) }}
     - name: {{ printf "cortx-s3-%03d-tcp" (add 1 $i) }}
       protocol: TCP
@@ -38,10 +38,6 @@ spec:
       protocol: TCP
       port: 8500
       targetPort: 8500
-    - name: cortx-s3-bg-consumer-tcp
-      protocol: TCP
-      port: 28049
-      targetPort: 28049
     {{- range $i := until (.Values.cortxdata.motr.numinst|int) }}
     - name: {{ printf "cortx-motr-%03d-tcp" (add 1 $i) }}
       protocol: TCP

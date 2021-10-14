@@ -51,6 +51,9 @@ solution:
           d2:
             device: /dev/sde
             size: 5Gi
+          d3:
+            device: /dev/sdf
+            size: 5Gi
     node2:
       name: node-2
       devices:
@@ -65,6 +68,9 @@ solution:
           d2:
             device: /dev/sde
             size: 5Gi
+          d3:
+            device: /dev/sdf
+            size: 5Gi            
     node3:
       name: node-3
       devices:
@@ -79,6 +85,9 @@ solution:
           d2:
             device: /dev/sde
             size: 5Gi
+          d3:
+            device: /dev/sdf
+            size: 5Gi
     node4: 
       name: node-4
       devices:
@@ -92,4 +101,7 @@ solution:
             size: 5Gi
           d2:
             device: /dev/sde
+            size: 5Gi
+          d3:
+            device: /dev/sdf
             size: 5Gi
