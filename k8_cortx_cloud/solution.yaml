@@ -45,7 +45,7 @@ solution:
           device: /dev/sdc
           size: 5Gi
         data:
-          d1: 
+          d1:
             device: /dev/sdd
             size: 5Gi
     cvg2:
@@ -56,7 +56,7 @@ solution:
           device: /dev/sde
           size: 5Gi
         data:
-          d1: 
+          d1:
             device: /dev/sdf
             size: 5Gi
   nodes:
@@ -72,7 +72,7 @@ solution:
       name: node-3
       devices:
         system: /mnt/fs-local-volume/
-    node4: 
+    node4:
       name: node-4
       devices:
         system: /mnt/fs-local-volume/
