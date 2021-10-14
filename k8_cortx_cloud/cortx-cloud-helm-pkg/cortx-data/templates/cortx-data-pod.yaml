@@ -152,32 +152,34 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
-        - name: cortx-motr-io-cas
-          image: {{ .Values.cortxdata.image }}
+        {{- range $i := until (.Values.cortxdata.motr.numclientinst|int) }}
+        - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
+          image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
           volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
+            {{- range $.Files.Lines $.Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
               devicePath: {{ . }}
             {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
-              mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
+              mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ $.Values.cortxdata.machineid.volmountname }}
+              mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
+            - name: {{ $.Values.cortxgluster.pv.name }}
+              mountPath: {{ $.Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
-              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+              mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+            {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
               mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
+              value: {{ $.Values.cortxdata.name }}
+        {{- end }}
         - name: cortx-motr-confd
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -204,8 +206,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
-        {{- range $i := until (.Values.cortxdata.motr.numinst|int) }}
-        - name: {{ printf "cortx-motr-%03d" (add 1 $i) }}
+        {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
+        - name: {{ printf "cortx-motr-ios-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           command: ["/bin/sleep", "3650d"]
