@@ -81,12 +81,12 @@ do
     node=$(echo $var_val_element | cut -f3 -d'.')
 
     # Get the devices from the solution
-    filter="solution.nodes.$node.devices*.device"
+    filter="solution.storage.cvg*.devices*.device"
     parsed_dev_output=$(parseSolution $filter)
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
 
     # Get the sizes from the solution
-    filter="solution.nodes.$node.devices*.size"
+    filter="solution.storage.cvg*.devices*.size"
     parsed_size_output=$(parseSolution $filter)
     IFS=';' read -r -a parsed_size_array <<< "$parsed_size_output"
 
@@ -417,6 +417,16 @@ echo y | kubectl exec -i $first_gluster_node_name --namespace=$namespace --names
 printf "########################################################\n"
 printf "# Deploy CORTX Configmap                                \n"
 printf "########################################################\n"
+# Delete all stale auto gen folders
+rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-cfgmap
+rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-control
+rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-secret
+rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/node-info
+rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/storage-info
+for i in "${!node_name_list[@]}"; do
+    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name_list[i]}
+done
+
 # Default path to CORTX configmap
 cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 
@@ -477,38 +487,6 @@ for i in "${!node_name_list[@]}"; do
     auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}/data"
     mkdir -p $auto_gen_node_path
     echo $uuid_str > $auto_gen_node_path/id
-
-    # Generate storage file in "storage-info" folder
-    storage_data_dev_gen_file="$storage_info_temp_folder/cluster-storage-data-dev-${node_name_list[$i]}.yaml"
-    touch $storage_data_dev_gen_file
-    device_list=$(parseSolution 'solution.nodes.node1.devices.data.d*.device')
-    IFS=';' read -r -a device_var_val_array <<< "$device_list"
-    for device_var_val_element in "${device_var_val_array[@]}"; do
-        device_name=$(echo $device_var_val_element | cut -f2 -d'>')
-        echo "- $device_name" >> $storage_data_dev_gen_file
-    done
-    # Substitute all the variables in the template file
-    storage_info_gen_file="$storage_info_folder/cluster-storage-info-${node_name_list[$i]}.yaml"
-    cp "$cfgmap_path/templates/cluster-storage-template.yaml" $storage_info_gen_file
-    count_str=$(printf "%02d" $(($i+1)))
-    ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.name" "cvg-$count_str"
-    ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.type" "ios"
-    extract_output="$(./parse_scripts/yaml_extract_block.sh $storage_data_dev_gen_file)"
-    ./parse_scripts/yaml_insert_block.sh "$storage_info_gen_file" "$extract_output" 4 "cortx.data.dev_partition"
-    # Substitute metadata device partition in the template file
-    node_output=$(parseSolution 'solution.nodes.node*.name')
-    IFS=';' read -r -a node_var_val_array <<< "$node_output"
-    for node_var_val_element in "${node_var_val_array[@]}"; do
-        node_name=$(echo $node_var_val_element | cut -f2 -d'>')
-        if [[ "$node_name" == "${node_name_list[$i]}" ]]; then
-            node_var=$(echo $node_var_val_element | cut -f1 -d'>')
-            node_var_index=$(echo $node_var | cut -f3 -d'.')
-            filter="solution.nodes.$node_var_index.devices.metadata.device"
-            metadata_dev_var_val=$(parseSolution $filter)
-            metadata_dev=$(echo $metadata_dev_var_val | cut -f2 -d'>')
-            ./parse_scripts/subst.sh $storage_info_gen_file "cortx.metadata.dev_partition" "$metadata_dev"
-        fi
-    done
 done
 
 # Generate node file with type control_node in "node-info" folder
@@ -555,6 +533,50 @@ for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
     fi
 done
 ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 4 "cluster.storage_sets.nodes"
+
+
+cvg_output=$(parseSolution 'solution.storage.cvg*.name')
+IFS=';' read -r -a cvg_var_val_array <<< "$cvg_output"
+# Build CVG index list (ex: [cvg1, cvg2, cvg3])
+cvg_index_list=[]
+count=0
+for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
+    cvg_name=$(echo $cvg_var_val_element | cut -f2 -d'>')
+    cvg_filter=$(echo $cvg_var_val_element | cut -f1 -d'>')
+    cvg_index=$(echo $cvg_filter | cut -f3 -d'.')    
+    cvg_index_list[$count]=$cvg_index
+    count=$((count+1))
+done
+
+for cvg_index in "${cvg_index_list[@]}"; do
+    storage_cvg_data_auto_gen_file="$storage_info_temp_folder/cluster-storage-$cvg_index-data.yaml"
+    filter="solution.storage.$cvg_index.devices.data.d*.device"
+    cvg_devices_output=$(parseSolution $filter)
+    IFS=';' read -r -a cvg_dev_var_val_array <<< "$cvg_devices_output"
+    for cvg_dev_var_val_element in "${cvg_dev_var_val_array[@]}"; do
+        cvg_dev=$(echo $cvg_dev_var_val_element | cut -f2 -d'>')
+        echo "- $cvg_dev" >> $storage_cvg_data_auto_gen_file
+    done
+    
+    # Substitute all the variables in the template file
+    storage_info_gen_file="$storage_info_folder/cluster-storage-$cvg_index-info.yaml"
+    cp "$cfgmap_path/templates/cluster-storage-template.yaml" $storage_info_gen_file
+
+    cvg_name_output=$(parseSolution "solution.storage.$cvg_index.name")
+    cvg_name=$(echo $cvg_name_output | cut -f2 -d'>')
+    ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.name" $cvg_name
+
+    cvg_type_output=$(parseSolution "solution.storage.$cvg_index.type")
+    cvg_type=$(echo $cvg_type_output | cut -f2 -d'>')
+    ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.type" $cvg_type
+    
+    cvg_metadata_output=$(parseSolution "solution.storage.$cvg_index.devices.metadata.device")
+    cvg_metadata=$(echo $cvg_metadata_output | cut -f2 -d'>')
+    ./parse_scripts/subst.sh $storage_info_gen_file "cortx.metadata.dev_partition" $cvg_metadata
+    
+    extract_output="$(./parse_scripts/yaml_extract_block.sh $storage_cvg_data_auto_gen_file)"
+    ./parse_scripts/yaml_insert_block.sh "$storage_info_gen_file" "$extract_output" 4 "cortx.data.dev_partition"
+done
 # Remove "storage-info/temp_folder"
 rm -rf $storage_info_temp_folder
 # Insert data device info stored in 'storage-info' folder into 'cluster-storage-node.yaml' file
