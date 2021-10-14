@@ -203,6 +203,10 @@ rm -rf "$cfgmap_path/auto-gen-cfgmap"
 rm -rf "$cfgmap_path/node-info"
 rm -rf "$cfgmap_path/storage-info"
 
+# Delete SSL cert config map
+ssl_cert_path="$cfgmap_path/ssl-cert"
+kubectl delete configmap "cortx-ssl-cert-cfgmap" --namespace=$namespace
+
 #############################################################
 # Destroy CORTX 3rd party
 #############################################################
