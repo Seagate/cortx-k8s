@@ -150,102 +150,102 @@ then
     kubectl create -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 fi
 
-helm install "consul" hashicorp/consul \
-    --set global.name="consul" \
-    --set server.storageClass=$storage_class \
-    --set server.replicas=$num_worker_nodes
+# helm install "consul" hashicorp/consul \
+#     --set global.name="consul" \
+#     --set server.storageClass=$storage_class \
+#     --set server.replicas=$num_worker_nodes
 
-printf "######################################################\n"
-printf "# Deploy openLDAP                                     \n"
-printf "######################################################\n"
+# printf "######################################################\n"
+# printf "# Deploy openLDAP                                     \n"
+# printf "######################################################\n"
 
-openldap_password=$(parseSolution 'solution.3rdparty.openldap.password')
-openldap_password=$(echo $openldap_password | cut -f2 -d'>')
+# openldap_password=$(parseSolution 'solution.3rdparty.openldap.password')
+# openldap_password=$(echo $openldap_password | cut -f2 -d'>')
 
-helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
-    --set openldap.servicename="openldap-svc" \
-    --set openldap.storageclass="openldap-local-storage" \
-    --set openldap.storagesize="5Gi" \
-    --set openldap.nodelistinfo="node-list-info.txt" \
-    --set openldap.numreplicas=$num_openldap_replicas \
-    --set openldap.password=$openldap_password
+# helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
+#     --set openldap.servicename="openldap-svc" \
+#     --set openldap.storageclass="openldap-local-storage" \
+#     --set openldap.storagesize="5Gi" \
+#     --set openldap.nodelistinfo="node-list-info.txt" \
+#     --set openldap.numreplicas=$num_openldap_replicas \
+#     --set openldap.password=$openldap_password
 
-# Wait for all openLDAP pods to be ready
-printf "\nWait for openLDAP PODs to be ready"
-while true; do
-    count=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"
-        IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
-        if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            break
-        fi
-        count=$((count+1))
-    done <<< "$(kubectl get pods -A | grep 'openldap')"
+# # Wait for all openLDAP pods to be ready
+# printf "\nWait for openLDAP PODs to be ready"
+# while true; do
+#     count=0
+#     while IFS= read -r line; do
+#         IFS=" " read -r -a pod_status <<< "$line"
+#         IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
+#         if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+#             break
+#         fi
+#         count=$((count+1))
+#     done <<< "$(kubectl get pods -A | grep 'openldap')"
 
-    if [[ $count -eq $num_openldap_replicas ]]; then
-        break
-    else
-        printf "."
-    fi
-    sleep 1s
-done
-printf "\n\n"
+#     if [[ $count -eq $num_openldap_replicas ]]; then
+#         break
+#     else
+#         printf "."
+#     fi
+#     sleep 1s
+# done
+# printf "\n\n"
 
-printf "===========================================================\n"
-printf "Setup OpenLDAP replication                                 \n"
-printf "===========================================================\n"
-# Run replication script
-./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword $openldap_password
+# printf "===========================================================\n"
+# printf "Setup OpenLDAP replication                                 \n"
+# printf "===========================================================\n"
+# # Run replication script
+# ./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword $openldap_password
 
-printf "######################################################\n"
-printf "# Deploy Zookeeper                                    \n"
-printf "######################################################\n"
-# Add Zookeeper and Kafka Repository
-helm repo add bitnami https://charts.bitnami.com/bitnami
+# printf "######################################################\n"
+# printf "# Deploy Zookeeper                                    \n"
+# printf "######################################################\n"
+# # Add Zookeeper and Kafka Repository
+# helm repo add bitnami https://charts.bitnami.com/bitnami
 
-helm install zookeeper bitnami/zookeeper \
-    --set replicaCount=$num_worker_nodes \
-    --set auth.enabled=false \
-    --set allowAnonymousLogin=true \
-    --set global.storageClass=$storage_class
+# helm install zookeeper bitnami/zookeeper \
+#     --set replicaCount=$num_worker_nodes \
+#     --set auth.enabled=false \
+#     --set allowAnonymousLogin=true \
+#     --set global.storageClass=$storage_class
 
-printf "######################################################\n"
-printf "# Deploy Kafka                                        \n"
-printf "######################################################\n"
-helm install kafka bitnami/kafka \
-    --set zookeeper.enabled=false \
-    --set replicaCount=$num_worker_nodes \
-    --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
-    --set global.storageClass=$storage_class \
-    --set defaultReplicationFactor=$num_worker_nodes \
-    --set offsetTopicReplicationFactor=$num_worker_nodes \
-    --set transactionStateLogReplicationFactor=$num_worker_nodes \
-    --set auth.enabled=false \
-    --set allowAnonymousLogin=true \
-    --set deleteTopicEnable=true \
-    --set transactionStateLogMinIsr=2
+# printf "######################################################\n"
+# printf "# Deploy Kafka                                        \n"
+# printf "######################################################\n"
+# helm install kafka bitnami/kafka \
+#     --set zookeeper.enabled=false \
+#     --set replicaCount=$num_worker_nodes \
+#     --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
+#     --set global.storageClass=$storage_class \
+#     --set defaultReplicationFactor=$num_worker_nodes \
+#     --set offsetTopicReplicationFactor=$num_worker_nodes \
+#     --set transactionStateLogReplicationFactor=$num_worker_nodes \
+#     --set auth.enabled=false \
+#     --set allowAnonymousLogin=true \
+#     --set deleteTopicEnable=true \
+#     --set transactionStateLogMinIsr=2
 
-printf "\nWait for CORTX 3rd party to be ready"
-while true; do
-    count=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"
-        IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
-        if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            count=$((count+1))
-            break
-        fi
-    done <<< "$(kubectl get pods -A | grep 'consul\|kafka\|openldap\|zookeeper')"
+# printf "\nWait for CORTX 3rd party to be ready"
+# while true; do
+#     count=0
+#     while IFS= read -r line; do
+#         IFS=" " read -r -a pod_status <<< "$line"
+#         IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
+#         if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+#             count=$((count+1))
+#             break
+#         fi
+#     done <<< "$(kubectl get pods -A | grep 'consul\|kafka\|openldap\|zookeeper')"
 
-    if [[ $count -eq 0 ]]; then
-        break
-    else
-        printf "."
-    fi
-    sleep 1s
-done
-printf "\n\n"
+#     if [[ $count -eq 0 ]]; then
+#         break
+#     else
+#         printf "."
+#     fi
+#     sleep 1s
+# done
+# printf "\n\n"
 
 ##########################################################
 # Deploy CORTX cloud
@@ -615,6 +615,12 @@ kubectl create configmap "cortx-control-machine-id-cfgmap" \
     --namespace=$namespace \
     --from-file=$auto_gen_control_path
 
+# Create SSL cert config map
+ssl_cert_path="$cfgmap_path/ssl-cert"
+kubectl create configmap "cortx-ssl-cert-cfgmap" \
+    --namespace=$namespace \
+    --from-file=$ssl_cert_path
+
 printf "########################################################\n"
 printf "# Deploy CORTX Secrets                                  \n"
 printf "########################################################\n"
@@ -678,6 +684,9 @@ helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-prov
     --set cortxcontrolprov.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrolprov.cfgmap.volmountname="config001" \
     --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx/solution" \
+    --set cortxcontrolprov.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+    --set cortxcontrolprov.sslcfgmap.volmountname="ssl-config001" \
+    --set cortxcontrolprov.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
     --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap" \
     --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc" \
     --set cortxcontrolprov.localpathpvc.mountpath="$local_storage" \
@@ -733,6 +742,9 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdataprov.cfgmap.name="cortx-cfgmap" \
         --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
         --set cortxdataprov.cfgmap.mountpath="/etc/cortx/solution" \
+        --set cortxdataprov.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+        --set cortxdataprov.sslcfgmap.volmountname="ssl-config001" \
+        --set cortxdataprov.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
         --set cortxdataprov.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdataprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
         --set cortxdataprov.localpathpvc.mountpath="$local_storage" \
@@ -790,6 +802,9 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrol.cfgmap.volmountname="config001" \
+    --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+    --set cortxcontrol.sslcfgmap.volmountname="ssl-config001" \
+    --set cortxcontrol.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
     --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap" \
     --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc" \
     --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
@@ -845,6 +860,9 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdata.cfgmap.name="cortx-cfgmap" \
         --set cortxdata.cfgmap.volmountname="config001-$node_name" \
         --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
+        --set cortxdata.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+        --set cortxdata.sslcfgmap.volmountname="ssl-config001" \
+        --set cortxdata.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
         --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
         --set cortxdata.localpathpvc.mountpath="$local_storage" \
@@ -905,6 +923,9 @@ helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
     --set cortxsupport.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxsupport.cfgmap.name="cortx-cfgmap" \
     --set cortxsupport.cfgmap.volmountname="config001" \
+    --set cortxsupport.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+    --set cortxsupport.sslcfgmap.volmountname="ssl-config001" \
+    --set cortxsupport.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
     --set cortxsupport.localpathpvc.name="cortx-data-fs-local-pvc-$first_node_name" \
     --set cortxsupport.localpathpvc.mountpath="$local_storage" \
     --set cortxgluster.pv.name="gluster-default-name" \

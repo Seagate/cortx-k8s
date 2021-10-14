@@ -11,7 +11,11 @@ cortxcontrolprov:
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-provisioner-cfgmap
+    name: cortx-cfgmap
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+    volmountname: ssl-config001
+    name: cortx-ssl-cert-cfgmap
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config
