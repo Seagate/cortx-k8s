@@ -45,7 +45,7 @@ cortx:
     data:
       endpoints:
       - http://<<.Values.cortx.io.svc>>:80
-      - https://<<.Values.cortx.data.svc>>:443
+      - https://<<.Values.cortx.io.svc>>:443
     internal:
       endpoints:
       - http://<<.Values.cortx.io.svc>>:28049
