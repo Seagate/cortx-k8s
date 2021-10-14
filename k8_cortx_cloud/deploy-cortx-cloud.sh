@@ -470,7 +470,7 @@ for i in "${!node_name_list[@]}"; do
     ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
     ./parse_scripts/subst.sh $new_gen_file "cortx.data.svc" "cortx-data-clusterip-svc-${node_name_list[$i]}"
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
-    ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_inst')
+    ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
     ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $(extractBlock 'solution.common.storage.local')
     ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $(extractBlock 'solution.common.storage.shared')
     ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $(extractBlock 'solution.common.storage.log')
@@ -848,7 +848,8 @@ for i in "${!node_selector_list[@]}"; do
         --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
         --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
         --set cortxdata.localpathpvc.mountpath="$local_storage" \
-        --set cortxdata.motr.numinst=$(extractBlock 'solution.common.motr.num_inst') \
+        --set cortxdata.motr.numclientinst=$(extractBlock 'solution.common.motr.num_client_inst') \
+        --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
         --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
         --set cortxdata.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
         --set cortxdata.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \

@@ -9,8 +9,9 @@ cortxdata:
     numinst: 2
     startportnum: 28051
   motr:
-    numinst: 1
+    numclientinst: 1
     startportnum: 29000
+    numiosinst: 1
   service:
     clusterip:
       name: cortx-data-clusterip-svc
