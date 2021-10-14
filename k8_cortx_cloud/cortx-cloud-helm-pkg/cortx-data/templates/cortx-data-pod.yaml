@@ -21,6 +21,9 @@ spec:
         - name: {{ .Values.cortxdata.cfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxdata.cfgmap.name }}
+        - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxdata.sslcfgmap.name }}
         - name: {{ .Values.cortxdata.machineid.volmountname }}
           configMap:
             name: {{ .Values.cortxdata.machineid.name }}
@@ -55,6 +58,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxdata.machineid.volmountname }}
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
@@ -87,6 +92,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxdata.machineid.volmountname }}
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
@@ -115,6 +122,8 @@ spec:
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
+              mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
             - name: {{ $.Values.cortxdata.machineid.volmountname }}
               mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
             - name: {{ $.Values.cortxgluster.pv.name }}
@@ -141,6 +150,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxdata.machineid.volmountname }}
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
@@ -168,6 +179,8 @@ spec:
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
+              mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
             - name: {{ $.Values.cortxdata.machineid.volmountname }}
               mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
             - name: {{ $.Values.cortxgluster.pv.name }}
@@ -195,6 +208,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxdata.machineid.volmountname }}
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
@@ -217,6 +232,8 @@ spec:
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
+              mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
             - name: {{ $.Values.cortxdata.machineid.volmountname }}
               mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
             - name: {{ $.Values.cortxgluster.pv.name }}
@@ -246,6 +263,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
+            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxdata.machineid.volmountname }}
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
