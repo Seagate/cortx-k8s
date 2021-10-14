@@ -7,7 +7,7 @@
    nodes. The info in this file is used to create persistent volumes and
    persistent volume claims for CORTX Provisioner and CORTX Data.
 
-Note: "solution.nodes.nodeX.devices.system" is the disk partition used
+Note: "solution.nodes.nodeX.devices.system" is the mount point/directory used
 by "Rancher Local Path Provisioner". Currently the script doesn't mount this
 disk partition on each worker node automatically and it's required that the user
 has to mount it manually as instructed below.
@@ -15,7 +15,7 @@ has to mount it manually as instructed below.
 ###############################################
 # Rancher Local Path Provisioner Requirements #
 ###############################################
-1. Mount disk partition specified in the "solution.yaml" file in
+1. Mount the mount point/directory specified in the "solution.yaml" file in
    "solution.nodes.nodeX.devices.system" and create a directory for Rancher
    local path provisioner on each worker node:
 mkdir -p /mnt/fs-local-volume/local-path-provisioner
