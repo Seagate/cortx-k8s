@@ -492,7 +492,7 @@ for i in "${!node_name_list[@]}"; do
     cp "$cfgmap_path/templates/cluster-storage-template.yaml" $storage_info_gen_file
     count_str=$(printf "%02d" $(($i+1)))
     ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.name" "cvg-$count_str"
-    ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.type" "iso"
+    ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.type" "ios"
     extract_output="$(./parse_scripts/yaml_extract_block.sh $storage_data_dev_gen_file)"
     ./parse_scripts/yaml_insert_block.sh "$storage_info_gen_file" "$extract_output" 4 "cortx.data.dev_partition"
     # Substitute metadata device partition in the template file
