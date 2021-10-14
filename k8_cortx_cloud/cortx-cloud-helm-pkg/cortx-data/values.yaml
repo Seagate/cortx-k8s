@@ -9,8 +9,9 @@ cortxdata:
     numinst: 2
     startportnum: 28051
   motr:
-    numinst: 1
+    numclientinst: 1
     startportnum: 29000
+    numiosinst: 1
   service:
     clusterip:
       name: cortx-data-clusterip-svc
@@ -22,6 +23,10 @@ cortxdata:
     mountpath: /etc/cortx/solution
     volmountname: config001
     name: cortx-data-cfgmap
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+    volmountname: ssl-config001
+    name: cortx-ssl-cert-cfgmap
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config

@@ -20,6 +20,9 @@ spec:
         - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxcontrol.cfgmap.name }}
+        - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxcontrol.sslcfgmap.name }}
         - name: {{ .Values.cortxcontrol.machineid.volmountname }}
           configMap:
             name: {{ .Values.cortxcontrol.machineid.name }}
@@ -42,6 +45,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.machineid.volmountname }}
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
@@ -63,6 +68,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.machineid.volmountname }}
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
@@ -86,6 +93,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.machineid.volmountname }}
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
@@ -101,4 +110,4 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
           ports:
-          - containerPort: 28101
+          - containerPort: 8101

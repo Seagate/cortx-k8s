@@ -42,7 +42,7 @@ do
     # Get the node var from the tuple
     node=$(echo $var_val_element | cut -f3 -d'.')
 
-    filter="solution.nodes.$node.devices*.device"
+    filter="solution.storage.cvg*.devices*.device"
     parsed_dev_output=$(parseSolution $filter)
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
     for dev in "${parsed_dev_array[@]}"
@@ -79,12 +79,24 @@ for i in "${!node_selector_list[@]}"; do
 done
 
 printf "########################################################\n"
+printf "# Delete Services                                       \n"
+printf "########################################################\n"
+kubectl delete service cortx-io-svc --namespace=$namespace
+
+cortx_io_svc_ingress=$(parseSolution 'solution.common.cortx_io_svc_ingress')
+cortx_io_svc_ingress=$(echo $cortx_io_svc_ingress | cut -f2 -d'>')
+if [ "$cortx_io_svc_ingress" == "true" ]
+then
+    kubectl delete ingress cortx-io-svc-ingress --namespace=$namespace
+fi
+
+printf "########################################################\n"
 printf "# Delete CORTX Control                                  \n"
 printf "########################################################\n"
 helm uninstall "cortx-control"
 
 printf "########################################################\n"
-printf "# Delete CORTX Data provisioner                              \n"
+printf "# Delete CORTX Data provisioner                         \n"
 printf "########################################################\n"
 for i in "${!node_selector_list[@]}"; do
     helm uninstall "cortx-data-provisioner-${node_name_list[$i]}"
@@ -190,6 +202,10 @@ rm -rf "$cfgmap_path/auto-gen-cfgmap"
 
 rm -rf "$cfgmap_path/node-info"
 rm -rf "$cfgmap_path/storage-info"
+
+# Delete SSL cert config map
+ssl_cert_path="$cfgmap_path/ssl-cert"
+kubectl delete configmap "cortx-ssl-cert-cfgmap" --namespace=$namespace
 
 #############################################################
 # Destroy CORTX 3rd party

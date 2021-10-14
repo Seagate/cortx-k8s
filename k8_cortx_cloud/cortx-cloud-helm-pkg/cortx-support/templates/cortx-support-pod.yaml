@@ -16,7 +16,10 @@ spec:
       volumes:
         - name: {{ .Values.cortxsupport.cfgmap.volmountname }}
           configMap:
-            name: {{ .Values.cortxsupport.cfgmap.name }}  
+            name: {{ .Values.cortxsupport.cfgmap.name }}
+        - name: {{ .Values.cortxsupport.sslcfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxsupport.sslcfgmap.name }} 
         - name: {{ .Values.cortxgluster.pv.name }}
           persistentVolumeClaim:
               claimName: {{ .Values.cortxgluster.pvc.name }}
@@ -31,6 +34,8 @@ spec:
           volumeMounts:
             - name: {{ .Values.cortxsupport.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxsupport.cfgmap.mountpath }}
+            - name: {{ .Values.cortxsupport.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxsupport.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxgluster.pv.name }}
               mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv

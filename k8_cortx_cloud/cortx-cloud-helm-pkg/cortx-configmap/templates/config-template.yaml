@@ -10,7 +10,7 @@ cortx:
         - ldap://<<.Values.cortx.external.openldap.endpoints>>:389
         - ssl://<<.Values.cortx.external.openldap.endpoints>>:636
       servers:
-        - <<.Values.cortx.external.openldap.servers>>
+        <<.Values.cortx.external.openldap.servers>>
       admin: admin
       secret: openldap_admin_secret
       base_dn: dc=seagate,dc=com
@@ -40,15 +40,15 @@ cortx:
   s3:
     iam:
       endpoints:
-      - https://<<.Values.cortx.data.svc>>:9443
-      - http://<<.Values.cortx.data.svc>>:9080
+      - https://<<.Values.cortx.io.svc>>:9443
+      - http://<<.Values.cortx.io.svc>>:9080
     data:
       endpoints:
-      - http://<<.Values.cortx.data.svc>>:80
-      - https://<<.Values.cortx.data.svc>>:443
+      - http://<<.Values.cortx.io.svc>>:80
+      - https://<<.Values.cortx.io.svc>>:443
     internal:
       endpoints:
-      - http://<<.Values.cortx.data.svc>>:28049
+      - http://<<.Values.cortx.io.svc>>:28049
     service_instances: <<.Values.cortx.num_s3_inst>>
     io_max_units: 8
     auth_admin: sgiamadmin
@@ -58,13 +58,6 @@ cortx:
     interface_type: tcp
     interface_family: inet
     transport_type: libfab
-    ios:
-      endpoints:
-      - motr://<<.Values.cortx.data.svc>>:3232
-  hare:
-    hax:
-      endpoints:
-      - tcp://<<.Values.cortx.data.svc>>:28000
   csm:
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret

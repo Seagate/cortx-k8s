@@ -42,6 +42,8 @@ fi
 
 # Store the parsed output in a single string
 PARSED_OUTPUT=$(parseYaml $INPUT_YAML_FILE)
+# Remove any additional indent '.' characters
+PARSED_OUTPUT=$(echo ${PARSED_OUTPUT//../.})
 
 # Star with empty output
 OUTPUT=""

@@ -11,6 +11,10 @@ cortxsupport:
     mountpath: /etc/cortx/solution
     name: cortx-support-cfgmap001
     volmountname: config001
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+    volmountname: ssl-config001
+    name: cortx-ssl-cert-cfgmap
   localpathpvc:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container

@@ -11,6 +11,9 @@ spec:
     - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
       configMap:
         name: {{ .Values.cortxdataprov.cfgmap.name }}
+    - name: {{ .Values.cortxdataprov.sslcfgmap.volmountname }}
+      configMap:
+        name: {{ .Values.cortxdataprov.sslcfgmap.name }}
     - name: {{ .Values.cortxdataprov.machineid.volmountname }}
       configMap:
         name: {{ .Values.cortxdataprov.machineid.name }}
@@ -49,6 +52,8 @@ spec:
     volumeMounts:
       - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
         mountPath: {{ .Values.cortxdataprov.cfgmap.mountpath }}
+      - name: {{ .Values.cortxdataprov.sslcfgmap.volmountname }}
+        mountPath: {{ .Values.cortxdataprov.sslcfgmap.mountpath }}
       - name: {{ .Values.cortxdataprov.machineid.volmountname }}
         mountPath: {{ .Values.cortxdataprov.machineid.mountpath }}
       - name: {{ .Values.cortxgluster.pv.name }}
