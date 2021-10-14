@@ -442,9 +442,20 @@ for i in "${!node_name_list[@]}"; do
     kafka_endpoint="kafka.default.svc.cluster.local"
     openldap_endpoint="openldap-svc.default.svc.cluster.local"
     consul_endpoint="consul-server.default.svc.cluster.local"
+    openldap_servers=""
+    while IFS= read -r line; do
+        IFS=" " read -r -a my_array <<< "$line"
+        if [ "$openldap_servers" == "" ]
+        then
+            openldap_servers="- ""${my_array[1]}"".""$openldap_endpoint"
+        else
+            openldap_servers="$openldap_servers"$'\n'"- ""${my_array[1]}"".""$openldap_endpoint"
+        fi
+    done <<< "$(kubectl get pods -A | grep 'openldap-')"
+
     ./parse_scripts/subst.sh $new_gen_file "cortx.external.kafka.endpoints" $kafka_endpoint
     ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.endpoints" $openldap_endpoint
-    ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.servers" $openldap_endpoint
+    ./parse_scripts/yaml_insert_block.sh $new_gen_file "$openldap_servers" 8 "cortx.external.openldap.servers"
     ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
     ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
     ./parse_scripts/subst.sh $new_gen_file "cortx.data.svc" "cortx-data-clusterip-svc-${node_name_list[$i]}"
