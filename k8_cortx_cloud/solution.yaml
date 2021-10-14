@@ -36,72 +36,43 @@ solution:
       durability:
         sns: 8+7+0
         dix: 1+0+0
+  storage:
+    cvg1:
+      name: cvg-01
+      type: ios
+      devices:
+        metadata:
+          device: /dev/sdc
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdd
+            size: 5Gi
+    cvg2:
+      name: cvg-02
+      type: ios
+      devices:
+        metadata:
+          device: /dev/sde
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdf
+            size: 5Gi
   nodes:
     node1:
       name: node-1
       devices:
         system: /mnt/fs-local-volume/
-        metadata:
-          device: /dev/sdc
-          size: 5Gi
-        data:
-          d1:
-            device: /dev/sdd
-            size: 5Gi
-          d2:
-            device: /dev/sde
-            size: 5Gi
-          d3:
-            device: /dev/sdf
-            size: 5Gi
     node2:
       name: node-2
       devices:
         system: /mnt/fs-local-volume/
-        metadata:
-          device: /dev/sdc
-          size: 5Gi
-        data:
-          d1:
-            device: /dev/sdd
-            size: 5Gi
-          d2:
-            device: /dev/sde
-            size: 5Gi
-          d3:
-            device: /dev/sdf
-            size: 5Gi            
     node3:
       name: node-3
       devices:
         system: /mnt/fs-local-volume/
-        metadata:
-          device: /dev/sdc
-          size: 5Gi
-        data:
-          d1:
-            device: /dev/sdd
-            size: 5Gi
-          d2:
-            device: /dev/sde
-            size: 5Gi
-          d3:
-            device: /dev/sdf
-            size: 5Gi
-    node4: 
+    node4:
       name: node-4
       devices:
         system: /mnt/fs-local-volume/
-        metadata:
-          device: /dev/sdc
-          size: 5Gi
-        data:
-          d1:
-            device: /dev/sdd
-            size: 5Gi
-          d2:
-            device: /dev/sde
-            size: 5Gi
-          d3:
-            device: /dev/sdf
-            size: 5Gi
