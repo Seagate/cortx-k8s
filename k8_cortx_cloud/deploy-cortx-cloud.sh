@@ -6,6 +6,8 @@ storage_class='local-path'
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
 
 max_openldap_inst=3 # Default max openldap instances
+max_consul_inst=3
+max_kafka_inst=3
 num_openldap_replicas=0 # Default the number of actual openldap instances
 num_worker_nodes=0
 while IFS= read -r line; do
@@ -141,6 +143,10 @@ fi
 printf "######################################################\n"
 printf "# Deploy Consul                                       \n"
 printf "######################################################\n"
+num_consul_replicas=$num_worker_nodes
+if [[ "$num_worker_nodes" -gt "$max_consul_inst" ]]; then
+    num_consul_replicas=$max_consul_inst
+fi
 
 # Add the HashiCorp Helm Repository:
 helm repo add hashicorp https://helm.releases.hashicorp.com
@@ -153,7 +159,7 @@ fi
 helm install "consul" hashicorp/consul \
     --set global.name="consul" \
     --set server.storageClass=$storage_class \
-    --set server.replicas=$num_worker_nodes
+    --set server.replicas=$num_consul_replicas
 
 printf "######################################################\n"
 printf "# Deploy openLDAP                                     \n"
@@ -201,11 +207,16 @@ printf "===========================================================\n"
 printf "######################################################\n"
 printf "# Deploy Zookeeper                                    \n"
 printf "######################################################\n"
+num_kafka_replicas=$num_worker_nodes
+if [[ "$num_worker_nodes" -gt "$max_kafka_inst" ]]; then
+    num_kafka_replicas=$max_kafka_inst
+fi
+
 # Add Zookeeper and Kafka Repository
 helm repo add bitnami https://charts.bitnami.com/bitnami
 
 helm install zookeeper bitnami/zookeeper \
-    --set replicaCount=$num_worker_nodes \
+    --set replicaCount=$num_kafka_replicas \
     --set auth.enabled=false \
     --set allowAnonymousLogin=true \
     --set global.storageClass=$storage_class
@@ -215,12 +226,12 @@ printf "# Deploy Kafka                                        \n"
 printf "######################################################\n"
 helm install kafka bitnami/kafka \
     --set zookeeper.enabled=false \
-    --set replicaCount=$num_worker_nodes \
+    --set replicaCount=$num_kafka_replicas \
     --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
     --set global.storageClass=$storage_class \
-    --set defaultReplicationFactor=$num_worker_nodes \
-    --set offsetTopicReplicationFactor=$num_worker_nodes \
-    --set transactionStateLogReplicationFactor=$num_worker_nodes \
+    --set defaultReplicationFactor=$num_kafka_replicas \
+    --set offsetTopicReplicationFactor=$num_kafka_replicas \
+    --set transactionStateLogReplicationFactor=$num_kafka_replicas \
     --set auth.enabled=false \
     --set allowAnonymousLogin=true \
     --set deleteTopicEnable=true \
