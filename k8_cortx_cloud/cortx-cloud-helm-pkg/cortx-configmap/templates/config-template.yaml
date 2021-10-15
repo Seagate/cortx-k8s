@@ -66,4 +66,4 @@ cortx:
     email_address: cortx@seagate.com
     agent:
       endpoints:
-      - https://<<.Values.cortx.data.svc>>:8081
+      - https://<<.Values.cortx.io.svc>>:8081
