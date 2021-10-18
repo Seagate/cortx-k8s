@@ -84,8 +84,6 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
-          ports:
-          - containerPort: 28049
         - name: cortx-csm-agent
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
