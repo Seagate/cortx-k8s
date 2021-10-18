@@ -11,19 +11,21 @@ max_kafka_inst=3
 num_openldap_replicas=0 # Default the number of actual openldap instances
 num_worker_nodes=0
 while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        IFS=" " read -r -a node_name <<< "$line"
-        node_list_str="$num_worker_nodes $node_name"
-        num_worker_nodes=$((num_worker_nodes+1))
+    IFS=" " read -r -a node_name <<< "$line"
+    if [[ "$node_name" != "NAME" ]]; then
+        output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
+        if [[ "$output" == "" ]]; then
+            node_list_str="$num_worker_nodes $node_name"
+            num_worker_nodes=$((num_worker_nodes+1))
 
-        if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
-            num_openldap_replicas=$num_worker_nodes
-            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
-            if [[ -s $node_list_info_path ]]; then
-                printf "\n" >> $node_list_info_path
+            if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
+                num_openldap_replicas=$num_worker_nodes
+                node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
+                if [[ -s $node_list_info_path ]]; then
+                    printf "\n" >> $node_list_info_path
+                fi
+                printf "$node_list_str" >> $node_list_info_path
             fi
-            printf "$node_list_str" >> $node_list_info_path
         fi
     fi
 done <<< "$(kubectl get nodes)"
@@ -49,13 +51,39 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 
-# Validate solution yaml file contains the same number of worker nodes
-echo "Number of worker nodes in solution.yaml: ${#parsed_var_val_array[@]}"
-if [[ "$num_worker_nodes" != "${#parsed_var_val_array[@]}" ]]
-then
-    printf "\nThe number of detected worker nodes is not the same as the number of\n"
-    printf "nodes defined in the 'solution.yaml' file\n"
-    exit 1
+tainted_worker_node_list=[]
+num_tainted_worker_nodes=0
+not_found_node_list=[]
+num_not_found_nodes=0
+# Validate solution yaml file doesn't have nodes that are tainted with "NoSchedule"
+for parsed_var_val_element in "${parsed_var_val_array[@]}";
+do
+    node_name=$(echo $parsed_var_val_element | cut -f2 -d'>')
+    output_get_node=$(kubectl get nodes | grep $node_name)
+    output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
+    if [[ "$output" != "" ]]; then
+        tainted_worker_node_list[$num_tainted_worker_nodes]=$node_name
+        num_tainted_worker_nodes=$((num_tainted_worker_nodes+1))
+    elif [[ "$output_get_node" == "" ]]; then
+        not_found_node_list[$num_not_found_nodes]=$node_name
+        num_not_found_nodes=$((num_not_found_nodes+1))
+    fi
+done
+
+if [[ $num_tainted_worker_nodes -gt 0 || $num_not_found_nodes -gt 0 ]]; then
+    echo "Can't deploy CORTX cloud."
+    if [[ $num_tainted_worker_nodes -gt 0 ]]; then
+        echo "List of tainted nodes:"
+        for tainted_node_name in "${tainted_worker_node_list[@]}"; do
+            echo "- $tainted_node_name"
+        done
+    fi
+    if [[ $num_not_found_nodes -gt 0 ]]; then
+        echo "List of nodes don't exist in the cluster:"
+        for node_not_found in "${not_found_node_list[@]}"; do
+            echo "- $node_not_found"
+        done
+    fi
 fi
 
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
@@ -325,7 +353,7 @@ first_node_name=${node_name_list[0]}
 first_node_selector=${node_selector_list[0]}
 
 helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster \
-    --set cortxgluster.name="gluster-$node_name_list" \
+    --set cortxgluster.name="gluster-$first_node_name" \
     --set cortxgluster.nodename=$first_node_selector \
     --set cortxgluster.service.name="cortx-gluster-svc-$first_node_name" \
     --set cortxgluster.storagesize="1Gi" \

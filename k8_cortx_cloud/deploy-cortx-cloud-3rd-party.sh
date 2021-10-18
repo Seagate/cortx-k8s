@@ -14,19 +14,21 @@ max_kafka_inst=3
 num_openldap_replicas=0 # Default the number of actual openldap instances
 num_worker_nodes=0
 while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        IFS=" " read -r -a node_name <<< "$line"
-        node_list_str="$num_worker_nodes $node_name"
-        num_worker_nodes=$((num_worker_nodes+1))
+    IFS=" " read -r -a node_name <<< "$line"
+    if [[ "$node_name" != "NAME" ]]; then
+        output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
+        if [[ "$output" == "" ]]; then
+            node_list_str="$num_worker_nodes $node_name"
+            num_worker_nodes=$((num_worker_nodes+1))
 
-        if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
-            num_openldap_replicas=$num_worker_nodes
-            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
-            if [[ -s $node_list_info_path ]]; then
-                printf "\n" >> $node_list_info_path
+            if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
+                num_openldap_replicas=$num_worker_nodes
+                node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
+                if [[ -s $node_list_info_path ]]; then
+                    printf "\n" >> $node_list_info_path
+                fi
+                printf "$node_list_str" >> $node_list_info_path
             fi
-            printf "$node_list_str" >> $node_list_info_path
         fi
     fi
 done <<< "$(kubectl get nodes)"

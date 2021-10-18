@@ -17,7 +17,8 @@ has to mount it manually as instructed below.
 ###############################################
 1. Mount the mount point/directory specified in the "solution.yaml" file in
    "solution.nodes.nodeX.devices.system" and create a directory for Rancher
-   local path provisioner on each worker node:
+   local path provisioner on each worker node, and untained master node that
+   allows scheduling:
 mkdir -p /mnt/fs-local-volume/local-path-provisioner
 mkfs.ext4 <disk-partition>
 mount -t ext4 <disk-partition> /mnt/fs-local-volume
@@ -36,8 +37,8 @@ Control, and Support):
 ###############################################
 # GlusterFS requirements                      #
 ###############################################
-1. Create directories for GlusterFS if they don't exist on each worker node
-that is used to deploy GlusterFS:
+1. Create directories for GlusterFS if they don't exist on each worker node, and untained
+master node that allows scheduling, that are used to deploy GlusterFS:
 
 mkdir -p /mnt/fs-local-volume/etc/gluster
 mkdir -p /mnt/fs-local-volume/var/log/glusterfs
@@ -52,7 +53,7 @@ Shared glusterFS folder on the worker nodes and inside the Pod containers is loc
 ###############################################
 # OpenLDAP Requirements                       #
 ###############################################
-1. On each worker node perform the following:
+1. On each worker node, and untained master node that allows scheduling, perform the following:
 mkdir -p /etc/3rd-party/openldap
 mkdir -p /var/data/3rd-party
 mkdir -p /var/log/3rd-party
