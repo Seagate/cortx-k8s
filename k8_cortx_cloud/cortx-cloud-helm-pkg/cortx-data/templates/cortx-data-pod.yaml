@@ -284,5 +284,3 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
-          ports:
-          - containerPort: 28049

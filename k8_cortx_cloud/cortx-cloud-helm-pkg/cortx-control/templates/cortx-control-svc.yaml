@@ -8,10 +8,6 @@ spec:
   selector:
     app: {{ .Values.cortxcontrol.name }}
   ports:
-    - name: cortx-bg-producer-tcp
-      protocol: TCP
-      port: 28049
-      targetPort: 28049
     - name: cortx-csm-agent-tcp
       protocol: TCP
       port: 8101
