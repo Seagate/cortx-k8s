@@ -31,9 +31,6 @@ while IFS= read -r line; do
 done <<< "$(kubectl get nodes)"
 printf "Number of worker nodes detected: $num_worker_nodes\n"
 
-#################################################################
-# Create files that contain disk partitions on the worker nodes
-#################################################################
 function parseSolution()
 {
     echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
@@ -991,6 +988,20 @@ while true; do
     sleep 1s
 done
 printf "\n"
+
+printf "########################################################\n"
+printf "# Delete CORTX Data provisioner                         \n"
+printf "########################################################\n"
+while IFS= read -r line; do
+    IFS=" " read -r -a pod_status <<< "$line"
+    kubectl delete pod "${pod_status[0]}" --namespace=$namespace
+    count=$((count+1))
+done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-provisioner-pod-')"
+
+printf "########################################################\n"
+printf "# Delete CORTX Control provisioner                      \n"
+printf "########################################################\n"
+kubectl delete pod cortx-control-provisioner-pod --namespace=$namespace
 
 #################################################################
 # Delete files that contain disk partitions on the worker nodes
