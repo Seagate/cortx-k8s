@@ -43,7 +43,7 @@ spec:
       - /bin/sh
     args: 
       - -c
-      - sleep $(shuf -i 5-10 -n 1)s
+      - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
     volumeDevices:
       {{- range .Files.Lines .Values.cortxdataprov.mountblkinfo }}
       - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
