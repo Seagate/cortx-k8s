@@ -29,9 +29,6 @@ while IFS= read -r line; do
 done <<< "$(kubectl get nodes)"
 printf "Number of worker nodes detected: $num_worker_nodes\n"
 
-#################################################################
-# Create files that contain disk partitions on the worker nodes
-#################################################################
 function parseSolution()
 {
     echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
