@@ -6,9 +6,6 @@ pvc_zookeeper_filter="zookeeper"
 pv_filter="pvc"
 openldap_pvc="openldap-data"
 
-#################################################################
-# Create files that contain disk partitions on the worker nodes
-#################################################################
 function parseSolution()
 {
     echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
