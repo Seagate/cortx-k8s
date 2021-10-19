@@ -944,52 +944,6 @@ then
 fi
 
 printf "########################################################\n"
-printf "# Deploy CORTX Support                                  \n"
-printf "########################################################\n"
-cortxsupport_image=$(parseSolution 'solution.images.cortxsupport')
-cortxsupport_image=$(echo $cortxsupport_image | cut -f2 -d'>')
-
-num_nodes=1
-helm install "cortx-support" cortx-cloud-helm-pkg/cortx-support \
-    --set cortxsupport.name="cortx-support-pod" \
-    --set cortxsupport.image=$cortxsupport_image \
-    --set cortxsupport.service.clusterip.name="cortx-support-clusterip-svc" \
-    --set cortxsupport.service.headless.name="cortx-support-headless-svc" \
-    --set cortxsupport.cfgmap.mountpath="/etc/cortx/solution" \
-    --set cortxsupport.cfgmap.name="cortx-cfgmap" \
-    --set cortxsupport.cfgmap.volmountname="config001" \
-    --set cortxsupport.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
-    --set cortxsupport.sslcfgmap.volmountname="ssl-config001" \
-    --set cortxsupport.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-    --set cortxsupport.localpathpvc.name="cortx-data-fs-local-pvc-$first_node_name" \
-    --set cortxsupport.localpathpvc.mountpath="$local_storage" \
-    --set cortxgluster.pv.name="gluster-default-name" \
-    --set cortxgluster.pv.mountpath=$shared_storage \
-    --set cortxgluster.pvc.name="gluster-claim" \
-    --set namespace=$namespace
-
-printf "Wait for CORTX Support to be ready"
-while true; do
-    count=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"
-        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            break
-        fi
-        count=$((count+1))
-    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-support-pod-')"
-
-    if [[ $num_nodes -eq $count ]]; then
-        break
-    else
-        printf "."
-    fi
-    sleep 1s
-done
-printf "\n"
-
-printf "########################################################\n"
 printf "# Delete CORTX Data provisioner                         \n"
 printf "########################################################\n"
 while IFS= read -r line; do
