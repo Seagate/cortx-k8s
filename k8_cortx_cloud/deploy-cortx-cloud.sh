@@ -6,30 +6,31 @@ storage_class='local-path'
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
 
 max_openldap_inst=3 # Default max openldap instances
+max_consul_inst=3
+max_kafka_inst=3
 num_openldap_replicas=0 # Default the number of actual openldap instances
 num_worker_nodes=0
 while IFS= read -r line; do
-    if [[ $line != *"master"* && $line != *"AGE"* ]]
-    then
-        IFS=" " read -r -a node_name <<< "$line"
-        node_list_str="$num_worker_nodes $node_name"
-        num_worker_nodes=$((num_worker_nodes+1))
+    IFS=" " read -r -a node_name <<< "$line"
+    if [[ "$node_name" != "NAME" ]]; then
+        output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
+        if [[ "$output" == "" ]]; then
+            node_list_str="$num_worker_nodes $node_name"
+            num_worker_nodes=$((num_worker_nodes+1))
 
-        if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
-            num_openldap_replicas=$num_worker_nodes
-            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
-            if [[ -s $node_list_info_path ]]; then
-                printf "\n" >> $node_list_info_path
+            if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
+                num_openldap_replicas=$num_worker_nodes
+                node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
+                if [[ -s $node_list_info_path ]]; then
+                    printf "\n" >> $node_list_info_path
+                fi
+                printf "$node_list_str" >> $node_list_info_path
             fi
-            printf "$node_list_str" >> $node_list_info_path
         fi
     fi
 done <<< "$(kubectl get nodes)"
 printf "Number of worker nodes detected: $num_worker_nodes\n"
 
-#################################################################
-# Create files that contain disk partitions on the worker nodes
-#################################################################
 function parseSolution()
 {
     echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
@@ -47,13 +48,39 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 
-# Validate solution yaml file contains the same number of worker nodes
-echo "Number of worker nodes in solution.yaml: ${#parsed_var_val_array[@]}"
-if [[ "$num_worker_nodes" != "${#parsed_var_val_array[@]}" ]]
-then
-    printf "\nThe number of detected worker nodes is not the same as the number of\n"
-    printf "nodes defined in the 'solution.yaml' file\n"
-    exit 1
+tainted_worker_node_list=[]
+num_tainted_worker_nodes=0
+not_found_node_list=[]
+num_not_found_nodes=0
+# Validate solution yaml file doesn't have nodes that are tainted with "NoSchedule"
+for parsed_var_val_element in "${parsed_var_val_array[@]}";
+do
+    node_name=$(echo $parsed_var_val_element | cut -f2 -d'>')
+    output_get_node=$(kubectl get nodes | grep $node_name)
+    output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
+    if [[ "$output" != "" ]]; then
+        tainted_worker_node_list[$num_tainted_worker_nodes]=$node_name
+        num_tainted_worker_nodes=$((num_tainted_worker_nodes+1))
+    elif [[ "$output_get_node" == "" ]]; then
+        not_found_node_list[$num_not_found_nodes]=$node_name
+        num_not_found_nodes=$((num_not_found_nodes+1))
+    fi
+done
+
+if [[ $num_tainted_worker_nodes -gt 0 || $num_not_found_nodes -gt 0 ]]; then
+    echo "Can't deploy CORTX cloud."
+    if [[ $num_tainted_worker_nodes -gt 0 ]]; then
+        echo "List of tainted nodes:"
+        for tainted_node_name in "${tainted_worker_node_list[@]}"; do
+            echo "- $tainted_node_name"
+        done
+    fi
+    if [[ $num_not_found_nodes -gt 0 ]]; then
+        echo "List of nodes don't exist in the cluster:"
+        for node_not_found in "${not_found_node_list[@]}"; do
+            echo "- $node_not_found"
+        done
+    fi
 fi
 
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
@@ -141,6 +168,10 @@ fi
 printf "######################################################\n"
 printf "# Deploy Consul                                       \n"
 printf "######################################################\n"
+num_consul_replicas=$num_worker_nodes
+if [[ "$num_worker_nodes" -gt "$max_consul_inst" ]]; then
+    num_consul_replicas=$max_consul_inst
+fi
 
 # Add the HashiCorp Helm Repository:
 helm repo add hashicorp https://helm.releases.hashicorp.com
@@ -153,7 +184,7 @@ fi
 helm install "consul" hashicorp/consul \
     --set global.name="consul" \
     --set server.storageClass=$storage_class \
-    --set server.replicas=$num_worker_nodes
+    --set server.replicas=$num_consul_replicas
 
 printf "######################################################\n"
 printf "# Deploy openLDAP                                     \n"
@@ -201,11 +232,16 @@ printf "===========================================================\n"
 printf "######################################################\n"
 printf "# Deploy Zookeeper                                    \n"
 printf "######################################################\n"
+num_kafka_replicas=$num_worker_nodes
+if [[ "$num_worker_nodes" -gt "$max_kafka_inst" ]]; then
+    num_kafka_replicas=$max_kafka_inst
+fi
+
 # Add Zookeeper and Kafka Repository
 helm repo add bitnami https://charts.bitnami.com/bitnami
 
 helm install zookeeper bitnami/zookeeper \
-    --set replicaCount=$num_worker_nodes \
+    --set replicaCount=$num_kafka_replicas \
     --set auth.enabled=false \
     --set allowAnonymousLogin=true \
     --set global.storageClass=$storage_class
@@ -215,12 +251,12 @@ printf "# Deploy Kafka                                        \n"
 printf "######################################################\n"
 helm install kafka bitnami/kafka \
     --set zookeeper.enabled=false \
-    --set replicaCount=$num_worker_nodes \
+    --set replicaCount=$num_kafka_replicas \
     --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
     --set global.storageClass=$storage_class \
-    --set defaultReplicationFactor=$num_worker_nodes \
-    --set offsetTopicReplicationFactor=$num_worker_nodes \
-    --set transactionStateLogReplicationFactor=$num_worker_nodes \
+    --set defaultReplicationFactor=$num_kafka_replicas \
+    --set offsetTopicReplicationFactor=$num_kafka_replicas \
+    --set transactionStateLogReplicationFactor=$num_kafka_replicas \
     --set auth.enabled=false \
     --set allowAnonymousLogin=true \
     --set deleteTopicEnable=true \
@@ -314,7 +350,7 @@ first_node_name=${node_name_list[0]}
 first_node_selector=${node_selector_list[0]}
 
 helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster \
-    --set cortxgluster.name="gluster-$node_name_list" \
+    --set cortxgluster.name="gluster-$first_node_name" \
     --set cortxgluster.nodename=$first_node_selector \
     --set cortxgluster.service.name="cortx-gluster-svc-$first_node_name" \
     --set cortxgluster.storagesize="1Gi" \
@@ -468,7 +504,6 @@ for i in "${!node_name_list[@]}"; do
     ./parse_scripts/yaml_insert_block.sh $new_gen_file "$openldap_servers" 8 "cortx.external.openldap.servers"
     ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
     ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
-    ./parse_scripts/subst.sh $new_gen_file "cortx.data.svc" "cortx-data-clusterip-svc-${node_name_list[$i]}"
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
     ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
     ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $(extractBlock 'solution.common.storage.local')
@@ -953,6 +988,20 @@ while true; do
     sleep 1s
 done
 printf "\n"
+
+printf "########################################################\n"
+printf "# Delete CORTX Data provisioner                         \n"
+printf "########################################################\n"
+while IFS= read -r line; do
+    IFS=" " read -r -a pod_status <<< "$line"
+    kubectl delete pod "${pod_status[0]}" --namespace=$namespace
+    count=$((count+1))
+done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-provisioner-pod-')"
+
+printf "########################################################\n"
+printf "# Delete CORTX Control provisioner                      \n"
+printf "########################################################\n"
+kubectl delete pod cortx-control-provisioner-pod --namespace=$namespace
 
 #################################################################
 # Delete files that contain disk partitions on the worker nodes
