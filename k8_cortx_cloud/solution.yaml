@@ -42,28 +42,28 @@ solution:
       type: ios
       devices:
         metadata:
-          device: /dev/sde
+          device: /dev/sdc
           size: 5Gi
         data:
           d1:
-            device: /dev/sdf
+            device: /dev/sdd
             size: 5Gi
           d2:
-            device: /dev/sdg
+            device: /dev/sde
             size: 5Gi
     cvg2:
       name: cvg-02
       type: ios
       devices:
         metadata:
-          device: /dev/sdh
+          device: /dev/sdf
           size: 5Gi
         data:
           d1:
-            device: /dev/sdi
+            device: /dev/sdg
             size: 5Gi
           d1:
-            device: /dev/sdj
+            device: /dev/sdh
             size: 5Gi
   nodes:
     node1:
@@ -74,4 +74,11 @@ solution:
       name: node-2
       devices:
         system: /mnt/fs-local-volume/
-
+    node3:
+      name: node-3
+      devices:
+        system: /mnt/fs-local-volume/
+    node4:
+      name: node-4
+      devices:
+        system: /mnt/fs-local-volume/
