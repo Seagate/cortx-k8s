@@ -49,11 +49,11 @@ spec:
         - name: cortx-s3-haproxy
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
+          command: 
+            - /bin/sh
           args:
-          - /bin/sh
-          - -c
-          - set -x;
-            /opt/seagate/cortx/s3/bin/s3_start --service haproxy -c yaml:///etc/cortx/cluster.conf;
+            - -c
+            - /opt/seagate/cortx/s3/bin/s3_start --service haproxy -c yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -87,11 +87,11 @@ spec:
         - name: cortx-s3-auth-server
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
+          command: 
+            - /bin/sh
           args:
-          - /bin/sh
-          - -c
-          - set -x;
-            /opt/seagate/cortx/s3/bin/s3_start --service s3authserver -c yaml:///etc/cortx/cluster.conf;
+            - -c
+            - /opt/seagate/cortx/s3/bin/s3_start --service s3authserver -c yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -125,11 +125,11 @@ spec:
               value: {{ $.Values.cortxdata.name }}
             - name: S3_INDEX
               value: {{ printf "%d" (add 1 $i) | quote }}
+          command: 
+            - /bin/sh
           args:
-          - /bin/sh
-          - -c
-          - set -x;
-            /opt/seagate/cortx/s3/bin/s3_start --service s3server --index $S3_INDEX -c yaml:///etc/cortx/cluster.conf;
+            - -c
+            - /opt/seagate/cortx/s3/bin/s3_start --service s3server --index $S3_INDEX -c yaml:///etc/cortx/cluster.conf;
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
@@ -152,11 +152,11 @@ spec:
         - name: cortx-motr-hax
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
+          command: 
+            - /bin/sh
           args:
-          - /bin/sh
-          - -c
-          - set -x;
-            /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
+            - -c
+            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -218,9 +218,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - set -x;
-              /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf;
-              sleep infinity;
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -258,8 +256,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - set -x;
-              /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range $.Files.Lines $.Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -287,11 +284,11 @@ spec:
         - name: cortx-s3-bg-consumer
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
+          command: 
+            - /bin/sh
           args:
-          - /bin/sh
-          - -c
-          - set -x;
-            /opt/seagate/cortx/s3/bin/s3_start --service s3bgconsumer -c yaml:///etc/cortx/cluster.conf;
+            - -c
+            - /opt/seagate/cortx/s3/bin/s3_start --service s3bgconsumer -c yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}

@@ -3,13 +3,13 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      openldap_admin_secret: seagate1
-      kafka_admin_secret: Seagate@123
-      consul_admin_secret: Seagate@123
-      common_admin_secret: Seagate@123
-      s3_auth_admin_secret: ldapadmin
-      csm_auth_admin_secret: seagate2
-      csm_mgmt_admin_secret: Cortxadmin@123
+      openldap_admin_secret: <password>
+      kafka_admin_secret: <password>
+      consul_admin_secret: <password>
+      common_admin_secret: <password>
+      s3_auth_admin_secret: <password>
+      csm_auth_admin_secret: <password>
+      csm_mgmt_admin_secret: <password>
   images:
     cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
     cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
@@ -18,7 +18,7 @@ solution:
     cortxsupport: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
   3rdparty:
     openldap:
-      password: seagate1
+      password: <password>
   common:
     cortx_io_svc_ingress: false
     storage:
@@ -34,7 +34,7 @@ solution:
     storage_sets:
       name: storage-set-1
       durability:
-        sns: 1+0+0
+        sns: 8+7+0
         dix: 1+0+0
   storage:
     cvg1:
@@ -67,11 +67,11 @@ solution:
             size: 5Gi
   nodes:
     node1:
-      name: ssc-vm-g3-rhev4-1357.colo.seagate.com
+      name: node-1
       devices:
         system: /mnt/fs-local-volume/
     node2:
-      name: ssc-vm-g3-rhev4-1358.colo.seagate.com
+      name: node-2
       devices:
         system: /mnt/fs-local-volume/
 
