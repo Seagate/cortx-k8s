@@ -24,14 +24,14 @@ Example:
 scp prereq-deploy-cortx-cloud.sh root@192.168.1.1:/home/
 
 2. Run prerequisite script on all worker nodes, and untainted master node that allows
-   scheduling. "<disk-partition>" and "<mount-path>" are required inputs to run this script.
-   The disk mount point should match "solution.nodes.nodeX.devices.system" in the "solution.yaml"
-   file. This disk partition should NOT match any devices listed in "solution.storage.cvg*":
+   scheduling. "<disk-partition>" is a required input to run this script. This disk
+   partition should NOT match any devices listed in "solution.storage.cvg*" in the
+   "solution.yaml" file:
 
-./prereq-deploy-cortx-cloud.sh <disk-partition> <mount-path>
+./prereq-deploy-cortx-cloud.sh <disk-partition>
 
 Example:
-./prereq-deploy-cortx-cloud.sh /dev/sdb /mnt/fs-local-volume
+./prereq-deploy-cortx-cloud.sh /dev/sdb
 
 ###############################################
 # Deploy and destroy CORTX cloud              #
@@ -43,16 +43,13 @@ Example:
 ./destroy-cortx-cloud.sh
 
 NOTE:
-If the mount path in the "solution.yaml" file at "solution.nodes.nodeX.devices.system" is
-"/mnt/fs-local-volume" then:
-- Rancher Local Path location on worker node is available at:
+Rancher Local Path location on worker node:
 /mnt/fs-local-volume/local-path-provisioner/pvc-<UID>_default_cortx-fs-local-pvc-<node-name>
 
-- Rancher Local Path location in all Pod containers (CORTX Provisioners, Data, Control) is
-available at:
+Rancher Local Path mount point in all Pod containers (CORTX Provisioners, Data, Control):
 /data
 
-- Shared glusterFS folder on the worker nodes and inside the Pod containers is located at:
+Shared glusterFS folder on the worker nodes and inside the Pod containers is located at:
 /mnt/fs-local-volume/etc/gluster/
 
 ###########################################################

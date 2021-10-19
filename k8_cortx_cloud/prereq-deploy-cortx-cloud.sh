@@ -1,12 +1,12 @@
 #!/bin/bash
 
 disk_partition=$1
-fs_mount_path=$2
+fs_mount_path="/mnt/fs-local-volume"
 
-if [[ "$disk_partition" == "" || "$fs_mount_path" == "" ]]
+if [[ "$disk_partition" == "" ]]
 then
     echo "Invalid input paramters"
-    echo "./prereq-deploy-cortx-cloud.sh <disk-partition> <mount-path>"
+    echo "./prereq-deploy-cortx-cloud.sh <disk-partition>"
     exit 1
 fi
 
