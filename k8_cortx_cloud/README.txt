@@ -13,50 +13,25 @@ disk partition on each worker node automatically and it's required that the user
 has to mount it manually as instructed below.
 
 ###############################################
-# Rancher Local Path Provisioner Requirements #
+# Run prerequisite deployment script          #
 ###############################################
-1. Mount the mount point/directory specified in the "solution.yaml" file in
-   "solution.nodes.nodeX.devices.system" and create a directory for Rancher
-   local path provisioner on each worker node, and untained master node that
-   allows scheduling:
-mkdir -p /mnt/fs-local-volume/local-path-provisioner
-mkfs.ext4 <disk-partition>
-mount -t ext4 <disk-partition> /mnt/fs-local-volume
+1. Copy "prereq-deploy-cortx-cloud.sh" script to all worker nodes, and untainted master
+   node that allows scheduling:
+
+scp prereq-deploy-cortx-cloud.sh root@<worker-node-IP-address>:<path-to-prereq-script>
 
 Example:
-mkfs.ext4 /dev/sdd
-mount -t ext4 /dev/sdd /mnt/fs-local-volume
+scp prereq-deploy-cortx-cloud.sh root@192.168.1.1:/home/
 
-Rancher Local Path location on worker node:
-/mnt/fs-local-volume/local-path-provisioner/pvc-<UID>_default_cortx-fs-local-pvc-<node-name>
+2. Run prerequisite script on all worker nodes, and untainted master node that allows
+   scheduling. "<disk-partition>" and "<mount-path>" are required inputs to run this script.
+   The disk mount point should match "solution.nodes.nodeX.devices.system" in the "solution.yaml"
+   file. This disk partition should NOT match any devices listed in "solution.storage.cvg*":
 
-Rancher Local Path location in all Pod containers (CORTX Provisioner, Data,
-Control, and Support):
-/data
+./prereq-deploy-cortx-cloud.sh <disk-partition> <mount-path>
 
-###############################################
-# GlusterFS requirements                      #
-###############################################
-1. Create directories for GlusterFS if they don't exist on each worker node, and untained
-master node that allows scheduling, that are used to deploy GlusterFS:
-
-mkdir -p /mnt/fs-local-volume/etc/gluster
-mkdir -p /mnt/fs-local-volume/var/log/glusterfs
-mkdir -p /mnt/fs-local-volume/var/lib/glusterd
-
-2. Install glusterfs-fuse package on each worker node:
-yum install glusterfs-fuse -y
-
-Shared glusterFS folder on the worker nodes and inside the Pod containers is located at:
-/mnt/fs-local-volume/etc/gluster/
-
-###############################################
-# OpenLDAP Requirements                       #
-###############################################
-1. On each worker node, and untained master node that allows scheduling, perform the following:
-mkdir -p /etc/3rd-party/openldap
-mkdir -p /var/data/3rd-party
-mkdir -p /var/log/3rd-party
+Example:
+./prereq-deploy-cortx-cloud.sh /dev/sdb /mnt/fs-local-volume
 
 ###############################################
 # Deploy and destroy CORTX cloud              #
@@ -66,6 +41,19 @@ mkdir -p /var/log/3rd-party
 
 2. Destroy CORTX cloud:
 ./destroy-cortx-cloud.sh
+
+NOTE:
+If the mount path in the "solution.yaml" file at "solution.nodes.nodeX.devices.system" is
+"/mnt/fs-local-volume" then:
+- Rancher Local Path location on worker node is available at:
+/mnt/fs-local-volume/local-path-provisioner/pvc-<UID>_default_cortx-fs-local-pvc-<node-name>
+
+- Rancher Local Path location in all Pod containers (CORTX Provisioners, Data, Control) is
+available at:
+/data
+
+- Shared glusterFS folder on the worker nodes and inside the Pod containers is located at:
+/mnt/fs-local-volume/etc/gluster/
 
 ###########################################################
 # Replacing a dummy container with real CORTX container   #
