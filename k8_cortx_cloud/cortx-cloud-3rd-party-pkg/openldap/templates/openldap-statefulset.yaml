@@ -24,7 +24,7 @@ spec:
                   name: openldap-connect
       containers:
         - name: openldap
-          image: ghcr.io/seagate/symas-openldap:standalone
+          image: {{ .Values.openldap.image }}
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: etc-3rd-party
