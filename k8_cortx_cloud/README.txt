@@ -15,13 +15,19 @@ has to mount it manually as instructed below.
 ###############################################
 # Run prerequisite deployment script          #
 ###############################################
-1. Copy "prereq-deploy-cortx-cloud.sh" script to all worker nodes, and untainted master
-   node that allows scheduling:
+1. Copy "prereq-deploy-cortx-cloud.sh" script, "solution.yaml" file, and
+   "parse_scripts" folder to all worker nodes:
 
-scp prereq-deploy-cortx-cloud.sh root@<worker-node-IP-address>:<path-to-prereq-script>
+scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
+scp solution.yaml <user>@<worker-node-IP-address>:<path-to-prereq-script>
+mkdir -p <path-to-prereq-script>/parse_scripts
+scp -r ./parse_scripts/* <user>@<worker-node-IP-address>:<path-to-prereq-script>/parse_scripts
 
 Example:
-scp prereq-deploy-cortx-cloud.sh root@192.168.1.1:/home/
+scp prereq-deploy-cortx-cloud.sh <user>@192.168.1.1:/home/
+scp solution.yaml <user>@192.168.1.1:/home/
+mkdir -p /home/parse_scripts
+scp -r ./parse_scripts/* <user>@192.168.1.1:/home/parse_scripts
 
 2. Run prerequisite script on all worker nodes, and untainted master node that allows
    scheduling. "<disk-partition>" is a required input to run this script. This disk
