@@ -99,4 +99,9 @@ solution:
     cortxcontrol: centos:7
     cortxdataprov: centos:7
     cortxdata: centos:7
-    cortxsupport: centos:7
+    openldap: ghcr.io/seagate/symas-openldap:standalone
+    consul: hashicorp/consul:1.10.2
+    kafka: bitnami/kafka
+    zookeeper: bitnami/zookeeper
+    gluster: docker.io/gluster/gluster-centos
+    rancher: rancher/local-path-provisioner:v0.0.20
