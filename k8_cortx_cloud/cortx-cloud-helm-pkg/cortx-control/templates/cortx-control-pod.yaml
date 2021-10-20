@@ -61,6 +61,33 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+        - name: cortx-fsm-motr
+          image: {{ .Values.cortxcontrol.image }}
+          imagePullPolicy: IfNotPresent
+          command: 
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services fsm --config yaml:///etc/cortx/cluster.conf;
+          volumeMounts:
+            - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            - name: {{ .Values.cortxgluster.pv.name }}
+              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: /etc/cortx/solution/secret
+              readOnly: true
+            {{- end }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxcontrol.name }}
         - name: cortx-bg-producer
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
