@@ -564,7 +564,7 @@ else
 fi
 
 # Check Pods
-num_items=$(($num_replicas*2))
+num_items=$(($num_replicas))
 count=0
 printf "${INFO}| Checking Pods |${NC}\n"
 while IFS= read -r line; do
@@ -579,7 +579,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pods | grep 'consul-')"
+done <<< "$(kubectl get pods | grep 'consul-server-')"
 
 if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
