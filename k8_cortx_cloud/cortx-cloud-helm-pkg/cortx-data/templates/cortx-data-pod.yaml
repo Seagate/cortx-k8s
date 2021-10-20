@@ -49,7 +49,11 @@ spec:
         - name: cortx-s3-haproxy
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
+          command: 
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/s3/bin/s3_start --service haproxy -c yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -83,7 +87,11 @@ spec:
         - name: cortx-s3-auth-server
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
+          command: 
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/s3/bin/s3_start --service s3authserver -c yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -117,8 +125,11 @@ spec:
               value: {{ $.Values.cortxdata.name }}
             - name: S3_INDEX
               value: {{ printf "%d" (add 1 $i) | quote }}
-          command: ["/bin/sh", "-c"]
-          args: ["echo $S3_INDEX > /root/testing; /bin/sleep 3650d"]
+          command: 
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/s3/bin/s3_start --service s3server --index $S3_INDEX -c yaml:///etc/cortx/cluster.conf;
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
@@ -141,7 +152,11 @@ spec:
         - name: cortx-motr-hax
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
+          command: 
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -199,7 +214,11 @@ spec:
         - name: cortx-motr-confd
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -228,7 +247,16 @@ spec:
         - name: {{ printf "cortx-motr-ios-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ $.Values.cortxdata.name }}
+            - name: IO_INDEX
+              value: {{ printf "%d" (add 1 $i) | quote }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range $.Files.Lines $.Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -250,16 +278,17 @@ spec:
               mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ $.Values.cortxdata.name }}
           ports:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
         {{- end }}
         - name: cortx-s3-bg-consumer
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sleep", "3650d"]
+          command: 
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/s3/bin/s3_start --service s3bgconsumer -c yaml:///etc/cortx/cluster.conf;
           volumeDevices:
             {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}

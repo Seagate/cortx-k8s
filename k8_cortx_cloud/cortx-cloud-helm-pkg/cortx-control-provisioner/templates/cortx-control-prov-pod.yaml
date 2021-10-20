@@ -36,7 +36,7 @@ spec:
       - /bin/sh
     args: 
       - -c
-      - sleep $(shuf -i 5-10 -n 1)s
+      - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
     volumeMounts:
       - name: {{ .Values.cortxcontrolprov.cfgmap.volmountname }}
         mountPath: {{ .Values.cortxcontrolprov.cfgmap.mountpath }}
