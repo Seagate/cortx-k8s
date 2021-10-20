@@ -62,7 +62,7 @@ solution:
           d1:
             device: /dev/sdg
             size: 5Gi
-          d1:
+          d2:
             device: /dev/sdh
             size: 5Gi
   nodes:
