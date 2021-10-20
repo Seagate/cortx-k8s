@@ -6,3 +6,4 @@ openldap:
   nodelistinfo: node-list-info.txt
   numreplicas: 3
   password: seagate1
+  image: ghcr.io/seagate/symas-openldap:standalone

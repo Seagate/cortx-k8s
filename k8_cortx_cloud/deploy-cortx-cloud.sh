@@ -1,6 +1,15 @@
 #!/bin/bash
 
+solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
+
+# Check if the file exists
+if [ ! -f $solution_yaml ]
+then
+    echo "ERROR: $solution_yaml does not exist"
+    exit 1
+fi
+
 
 # Delete old "node-list-info.txt" file
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
@@ -33,12 +42,12 @@ printf "Number of worker nodes detected: $num_worker_nodes\n"
 
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
+    echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
 }
 
 function extractBlock()
 {
-    echo "$(./parse_scripts/yaml_extract_block.sh solution.yaml $1)"
+    echo "$(./parse_scripts/yaml_extract_block.sh $solution_yaml $1)"
 }
 
 namespace=$(parseSolution 'solution.namespace')
@@ -120,7 +129,7 @@ do
     if [[ "${#parsed_dev_array[@]}" != "${#parsed_size_array[@]}" ]]
     then
         printf "\nStorage sizes are not defined for all of the storage devices\n"
-        printf "in the 'solution.yaml' file\n"
+        printf "in the $solution_yaml file\n"
         exit 1
     fi
 
@@ -181,8 +190,12 @@ then
     kubectl create -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
 fi
 
+image=$(parseSolution 'solution.images.consul')
+image=$(echo $image | cut -f2 -d'>')
+
 helm install "consul" hashicorp/consul \
     --set global.name="consul" \
+    --set global.image=$image \
     --set server.storageClass=$storage_class \
     --set server.replicas=$num_consul_replicas
 
@@ -192,6 +205,8 @@ printf "######################################################\n"
 
 openldap_password=$(parseSolution 'solution.3rdparty.openldap.password')
 openldap_password=$(echo $openldap_password | cut -f2 -d'>')
+image=$(parseSolution 'solution.images.openldap')
+image=$(echo $image | cut -f2 -d'>')
 
 helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set openldap.servicename="openldap-svc" \
@@ -199,7 +214,8 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set openldap.storagesize="5Gi" \
     --set openldap.nodelistinfo="node-list-info.txt" \
     --set openldap.numreplicas=$num_openldap_replicas \
-    --set openldap.password=$openldap_password
+    --set openldap.password=$openldap_password \
+    --set openldap.image=$image
 
 # Wait for all openLDAP pods to be ready
 printf "\nWait for openLDAP PODs to be ready"
@@ -349,10 +365,14 @@ printf "########################################################\n"
 first_node_name=${node_name_list[0]}
 first_node_selector=${node_selector_list[0]}
 
+image=$(parseSolution 'solution.images.gluster')
+image=$(echo $image | cut -f2 -d'>')
+
 helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster \
     --set cortxgluster.name="gluster-$first_node_name" \
     --set cortxgluster.nodename=$first_node_selector \
     --set cortxgluster.service.name="cortx-gluster-svc-$first_node_name" \
+    --set cortxgluster.image=$image \
     --set cortxgluster.storagesize="1Gi" \
     --set cortxgluster.storageclass="cortx-gluster-storage" \
     --set cortxgluster.pv.path=$gluster_vol \
@@ -663,14 +683,14 @@ printf "########################################################\n"
 # in the "auto-gen-secret" folder
 secret_auto_gen_path="$cfgmap_path/auto-gen-secret"
 mkdir -p $secret_auto_gen_path
-output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets.name")
+output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets.name")
 IFS=';' read -r -a parsed_secret_name_array <<< "$output"
 for secret_name in "${parsed_secret_name_array[@]}"
 do
     secret_fname=$(echo $secret_name | cut -f2 -d'>')
     yaml_content_path=$(echo $secret_name | cut -f1 -d'>')
     yaml_content_path=${yaml_content_path/.name/".content"}
-    secrets="$(./parse_scripts/yaml_extract_block.sh solution.yaml $yaml_content_path 2)"
+    secrets="$(./parse_scripts/yaml_extract_block.sh $solution_yaml $yaml_content_path 2)"
 
     new_secret_gen_file="$secret_auto_gen_path/$secret_fname.yaml"
     cp "$cfgmap_path/templates/secret-template.yaml" $new_secret_gen_file

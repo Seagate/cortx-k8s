@@ -1,8 +1,17 @@
 #!/bin/bash
 
+solution_yaml=${1:-'solution.yaml'}
+
+# Check if the file exists
+if [ ! -f $solution_yaml ]
+then
+    echo "ERROR: $solution_yaml does not exist"
+    exit 1
+fi
+
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
+    echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
 }
 
 namespace=$(parseSolution 'solution.namespace')

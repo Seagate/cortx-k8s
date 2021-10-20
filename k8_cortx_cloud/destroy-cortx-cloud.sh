@@ -1,5 +1,14 @@
 #!/bin/bash
 
+solution_yaml=${1:-'solution.yaml'}
+
+# Check if the file exists
+if [ ! -f $solution_yaml ]
+then
+    echo "ERROR: $solution_yaml does not exist"
+    exit 1
+fi
+
 pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
@@ -8,7 +17,7 @@ openldap_pvc="openldap-data"
 
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
+    echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
 }
 
 namespace=$(parseSolution 'solution.namespace')
@@ -235,7 +244,7 @@ helm uninstall "openldap"
 printf "########################################################\n"
 printf "# Delete Secrets                                       #\n"
 printf "########################################################\n"
-output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets*.name")
+output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets*.name")
 IFS=';' read -r -a parsed_secret_name_array <<< "$output"
 for secret_name in "${parsed_secret_name_array[@]}"
 do
