@@ -15,7 +15,12 @@ solution:
     cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
     cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
     cortxdata: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxsupport: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+    openldap: ghcr.io/seagate/symas-openldap:standalone
+    consul: hashicorp/consul:1.10.0
+    kafka: bitnami/kafka
+    zookeeper: bitnami/zookeeper
+    gluster: docker.io/gluster/gluster-centos
+    rancher: rancher/local-path-provisioner:v0.0.20
   3rdparty:
     openldap:
       password: seagate1
@@ -66,13 +71,5 @@ solution:
         system: /mnt/fs-local-volume/
     node2:
       name: node-2
-      devices:
-        system: /mnt/fs-local-volume/
-    node3:
-      name: node-3
-      devices:
-        system: /mnt/fs-local-volume/
-    node4:
-      name: node-4
       devices:
         system: /mnt/fs-local-volume/

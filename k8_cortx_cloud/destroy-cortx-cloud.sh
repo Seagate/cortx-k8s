@@ -1,17 +1,23 @@
 #!/bin/bash
 
+solution_yaml=${1:-'solution.yaml'}
+
+# Check if the file exists
+if [ ! -f $solution_yaml ]
+then
+    echo "ERROR: $solution_yaml does not exist"
+    exit 1
+fi
+
 pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
 pv_filter="pvc"
 openldap_pvc="openldap-data"
 
-#################################################################
-# Create files that contain disk partitions on the worker nodes
-#################################################################
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
+    echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
 }
 
 namespace=$(parseSolution 'solution.namespace')
@@ -133,7 +139,8 @@ do
     printf "=================================================================================\n"
     printf "Stop and delete GlusterFS volume: $gluster_node_name                             \n"
     printf "=================================================================================\n"
-
+    kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
+        'rm -rf /etc/gluster/* /etc/gluster/.glusterfs/'        
     if [[ "$count" == 0 ]]; then
         first_gluster_node_name=$gluster_node_name
         echo y | kubectl exec --namespace=$namespace -i $gluster_node_name -- gluster volume stop $gluster_vol
@@ -238,7 +245,7 @@ helm uninstall "openldap"
 printf "########################################################\n"
 printf "# Delete Secrets                                       #\n"
 printf "########################################################\n"
-output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets*.name")
+output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets*.name")
 IFS=';' read -r -a parsed_secret_name_array <<< "$output"
 for secret_name in "${parsed_secret_name_array[@]}"
 do
