@@ -126,6 +126,7 @@ fi
 # Prep for GlusterFS deployment
 yum install glusterfs-fuse -y
 mkdir -p $fs_mount_path/etc/gluster
+mkdir -p $fs_mount_path/etc/gluster/var/log/cortx
 mkdir -p $fs_mount_path/var/log/glusterfs
 mkdir -p $fs_mount_path/var/lib/glusterd
 
