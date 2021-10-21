@@ -26,12 +26,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.cortxcontrol.service.nodeport.name }}
+  name: {{ .Values.cortxcontrol.service.loadbal.name }}
   namespace: {{ .Values.namespace }}
 spec:
+  type: LoadBalancer
   selector:
     app: {{ .Values.cortxcontrol.name }}
-  type: NodePort
   ports:
-  - port: 8081
-    nodePort: 32102
+  - name: cotrx-control-8081
+    port: 8081

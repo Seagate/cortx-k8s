@@ -1,10 +1,8 @@
 ###############################################
 # Rancher Local Path Provisioner Requirements #
 ###############################################
-1. Mount disk partition specified in the "solution.yaml" file in
-   "solution.nodes.nodeX.devices.system" and create a directory for Rancher
-   local path provisioner on each worker node, and untained master node that
-   allows scheduling:
+1. Create a directory for Rancher local path provisioner on each worker node, and 
+   untained master node that allows scheduling:
 mkdir -p /mnt/fs-local-volume/local-path-provisioner
 mkfs.ext4 <disk-partition>
 mount -t ext4 <disk-partition> /mnt/fs-local-volume

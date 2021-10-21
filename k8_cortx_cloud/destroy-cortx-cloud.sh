@@ -53,18 +53,15 @@ do
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
     for dev in "${parsed_dev_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            device=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_file_path ]]; then
-                printf "\n" >> $data_prov_file_path
-            fi
-            if [[ -s $data_file_path ]]; then
-                printf "\n" >> $data_file_path
-            fi
-            printf $device >> $data_prov_file_path
-            printf $device >> $data_file_path
+        device=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_file_path ]]; then
+            printf "\n" >> $data_prov_file_path
         fi
+        if [[ -s $data_file_path ]]; then
+            printf "\n" >> $data_file_path
+        fi
+        printf $device >> $data_prov_file_path
+        printf $device >> $data_file_path
     done
 done
 
@@ -262,8 +259,11 @@ printf "########################################################\n"
 printf "# Delete Consul                                        #\n"
 printf "########################################################\n"
 helm delete consul
-# kubectl delete -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
+
+rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/rancher-provisioner"
+rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
+kubectl delete -f $rancher_prov_file
+rm -rf $rancher_prov_path
 
 printf "########################################################\n"
 printf "# Delete Persistent Volume Claims                      #\n"
