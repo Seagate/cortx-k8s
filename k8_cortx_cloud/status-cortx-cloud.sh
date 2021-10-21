@@ -120,21 +120,21 @@ else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
 fi
 
-# Check services node port
+# Check services load balance
 count=0
-printf "${INFO}| Checking Services: Node Port |${NC}\n"
+printf "${INFO}| Checking Services: Load Balancer |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
     if [[ "${status[0]}" != "" ]]; then
         printf "${status[0]}..."
-        if [[ "${status[1]}" != "NodePort" ]]; then
+        if [[ "${status[1]}" != "LoadBalancer" ]]; then
             printf "${FAILED}FAILED${NC}\n"
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get services --namespace=$namespace | grep 'cortx-control-nodeport-')"
+done <<< "$(kubectl get services --namespace=$namespace | grep 'cortx-control-loadbal-')"
 
 if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -266,8 +266,18 @@ fi
 #########################################################################################
 # 3rd Party
 #########################################################################################
-nodes_names=$(parseSolution 'solution.nodes.node*.name')
-num_nodes=$(echo $nodes_names | grep -o '>' | wc -l)
+while IFS= read -r line; do
+    IFS=" " read -r -a node_name <<< "$line"
+    if [[ "$node_name" != "NAME" ]]; then
+        output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
+        if [[ "$output" == "" ]]; then
+            node_list_str="$num_worker_nodes $node_name"
+            num_worker_nodes=$((num_worker_nodes+1))
+        fi
+    fi
+done <<< "$(kubectl get nodes)"
+
+num_nodes=$num_worker_nodes
 max_replicas=3
 num_replicas=$num_nodes
 if [[ "$num_nodes" -gt "$max_replicas" ]]; then

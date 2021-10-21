@@ -8,8 +8,8 @@ cortxcontrol:
       name: cortx-control-clusterip-svc
     headless:
       name: cortx-control-headless-svc
-    nodeport:
-      name: cortx-control-nodeport-svc
+    loadbal:
+      name: cortx-control-loadbal-svc
   cfgmap:
     mountpath: /etc/cortx/solution
     name: cortx-control-cfgmap001
