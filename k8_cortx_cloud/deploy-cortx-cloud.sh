@@ -176,12 +176,24 @@ if [[ "$num_worker_nodes" -gt "$max_consul_inst" ]]; then
     num_consul_replicas=$max_consul_inst
 fi
 
+# Extract storage provisioner path from the "solution.yaml" file
+filter='solution.common.storage_provisioner_path'
+parse_storage_prov_output=$(parseSolution $filter)
+# Get the storage provisioner var from the tuple
+storage_prov_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
+
 # Add the HashiCorp Helm Repository:
 helm repo add hashicorp https://helm.releases.hashicorp.com
 if [[ $storage_class == "local-path" ]]
 then
     printf "Install Rancher Local Path Provisioner"
-    kubectl create -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
+    rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/rancher-provisioner"
+    mkdir -p $rancher_prov_path
+    rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
+    cp $(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml $rancher_prov_file
+    ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
+
+    kubectl create -f $rancher_prov_file
 fi
 
 image=$(parseSolution 'solution.images.consul')
@@ -308,7 +320,7 @@ log_storage=$(echo $log_storage | cut -f2 -d'>')
 # GlusterFS
 gluster_vol="myvol"
 gluster_folder="/etc/gluster"
-gluster_etc_path="/mnt/fs-local-volume/$gluster_folder"
+gluster_etc_path="$storage_prov_path/$gluster_folder"
 gluster_pv_name="gluster-default-volume"
 gluster_pvc_name="gluster-claim"
 
@@ -373,8 +385,8 @@ helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster
     --set cortxgluster.pv.name=$gluster_pv_name \
     --set cortxgluster.pvc.name=$gluster_pvc_name \
     --set cortxgluster.hostpath.etc=$gluster_etc_path \
-    --set cortxgluster.hostpath.logs="/mnt/fs-local-volume/var/log/glusterfs" \
-    --set cortxgluster.hostpath.config="/mnt/fs-local-volume/var/lib/glusterd" \
+    --set cortxgluster.hostpath.logs="$storage_prov_path/var/log/glusterfs" \
+    --set cortxgluster.hostpath.config="$storage_prov_path/var/lib/glusterd" \
     --set namespace=$namespace
 num_nodes=1
 
