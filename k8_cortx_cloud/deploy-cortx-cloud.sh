@@ -135,34 +135,28 @@ do
 
     for dev in "${parsed_dev_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            device=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_file_path ]]; then
-                printf "\n" >> $data_prov_file_path
-            fi
-            if [[ -s $data_file_path ]]; then
-                printf "\n" >> $data_file_path
-            fi
-            printf $device >> $data_prov_file_path
-            printf $device >> $data_file_path
+        device=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_file_path ]]; then
+            printf "\n" >> $data_prov_file_path
         fi
+        if [[ -s $data_file_path ]]; then
+            printf "\n" >> $data_file_path
+        fi
+        printf $device >> $data_prov_file_path
+        printf $device >> $data_file_path
     done
 
     for dev in "${parsed_size_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            size=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_storage_size_file_path ]]; then
-                printf "\n" >> $data_prov_storage_size_file_path
-            fi
-            if [[ -s $data_storage_size_file_path ]]; then
-                printf "\n" >> $data_storage_size_file_path
-            fi
-            printf $size >> $data_prov_storage_size_file_path
-            printf $size >> $data_storage_size_file_path
+        size=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_storage_size_file_path ]]; then
+            printf "\n" >> $data_prov_storage_size_file_path
         fi
+        if [[ -s $data_storage_size_file_path ]]; then
+            printf "\n" >> $data_storage_size_file_path
+        fi
+        printf $size >> $data_prov_storage_size_file_path
+        printf $size >> $data_storage_size_file_path
     done
 done
 
@@ -203,7 +197,7 @@ printf "######################################################\n"
 printf "# Deploy openLDAP                                     \n"
 printf "######################################################\n"
 
-openldap_password=$(parseSolution 'solution.3rdparty.openldap.password')
+openldap_password=$(parseSolution 'solution.secrets.content.openldap_admin_secret')
 openldap_password=$(echo $openldap_password | cut -f2 -d'>')
 image=$(parseSolution 'solution.images.openldap')
 image=$(echo $image | cut -f2 -d'>')
@@ -853,7 +847,7 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.image=$cortxcontrol_image \
     --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
     --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
-    --set cortxcontrol.nodeport.name="cortx-control-nodeport-svc" \
+    --set cortxcontrol.loadbal.name="cortx-control-loadbal-svc" \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrol.cfgmap.volmountname="config001" \

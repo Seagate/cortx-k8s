@@ -1,34 +1,29 @@
 ###############################################
 # Local block storage requirements            #
 ###############################################
-1. Update the "solution.yaml" file to have correct node names in
+1. Update the "solution.yaml" file to have correct worker node names in
    "solution.nodes.nodeX.name" (ensure this field match the 'NAME' field
-   from the output of 'kubectl get nodes'), devices, and a list of worker
-   nodes. The info in this file is used to create persistent volumes and
-   persistent volume claims for CORTX Provisioner and CORTX Data.
+   from the output of 'kubectl get nodes'), devices in the "storage.cvg*".
+   This info is used to create persistent volumes and persistent volume
+   claims for CORTX Provisioner and CORTX Data.
 
-Note: "solution.nodes.nodeX.devices.system" is the mount point/directory used
-by "Rancher Local Path Provisioner". Currently the script doesn't mount this
-disk partition on each worker node automatically and it's required that the user
-has to mount it manually as instructed below.
+Note: "solution.common.storage_provisioner_path" is the mount point/directory used
+by "Rancher Local Path Provisioner". The user must follow the
+"Run prerequisite deployment script" section on each of the worker nodes in the
+cluster
 
 ###############################################
 # Run prerequisite deployment script          #
 ###############################################
-1. Copy "prereq-deploy-cortx-cloud.sh" script to all worker nodes, and untainted master
-   node that allows scheduling:
+1. Install the entire content of "k8_cortx_cloud" on both master node and all worker
+   nodes. The directory structure must be maintained.
 
-scp prereq-deploy-cortx-cloud.sh root@<worker-node-IP-address>:<path-to-prereq-script>
+2. Run prerequisite script on all worker nodes in the cluster, and untainted master node
+   that allows scheduling. "<disk>" is a required input to run this script. This disk
+   should NOT be any of the devices listed in "solution.storage.cvg*" in the "solution.yaml"
+   file:
 
-Example:
-scp prereq-deploy-cortx-cloud.sh root@192.168.1.1:/home/
-
-2. Run prerequisite script on all worker nodes, and untainted master node that allows
-   scheduling. "<disk-partition>" is a required input to run this script. This disk
-   partition should NOT match any devices listed in "solution.storage.cvg*" in the
-   "solution.yaml" file:
-
-./prereq-deploy-cortx-cloud.sh <disk-partition>
+./prereq-deploy-cortx-cloud.sh <disk>
 
 Example:
 ./prereq-deploy-cortx-cloud.sh /dev/sdb
@@ -95,13 +90,13 @@ The images can be changed by modifying the solution.yaml file section solution.i
 solution:
   namespace: default
   images:
-    cortxcontrolprov: centos:7
-    cortxcontrol: centos:7
-    cortxdataprov: centos:7
-    cortxdata: centos:7
-    openldap: ghcr.io/seagate/symas-openldap:standalone
-    consul: hashicorp/consul:1.10.2
-    kafka: bitnami/kafka
-    zookeeper: bitnami/zookeeper
-    gluster: docker.io/gluster/gluster-centos
-    rancher: rancher/local-path-provisioner:v0.0.20
+   cortxcontrolprov: centos:7
+   cortxcontrol: centos:7
+   cortxdataprov: centos:7
+   cortxdata: centos:7
+   openldap: ghcr.io/seagate/symas-openldap:standalone
+   consul: hashicorp/consul:1.10.0
+   kafka: bitnami/kafka:3.0.0-debian-10-r7
+   zookeeper: zookeeper:3.7.0-debian-10-r182
+   gluster: docker.io/gluster/gluster-centos:latest
+   rancher: rancher/local-path-provisioner:v0.0.20

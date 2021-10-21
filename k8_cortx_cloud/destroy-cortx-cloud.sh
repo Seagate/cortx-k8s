@@ -53,18 +53,15 @@ do
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
     for dev in "${parsed_dev_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            device=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_file_path ]]; then
-                printf "\n" >> $data_prov_file_path
-            fi
-            if [[ -s $data_file_path ]]; then
-                printf "\n" >> $data_file_path
-            fi
-            printf $device >> $data_prov_file_path
-            printf $device >> $data_file_path
+        device=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_file_path ]]; then
+            printf "\n" >> $data_prov_file_path
         fi
+        if [[ -s $data_file_path ]]; then
+            printf "\n" >> $data_file_path
+        fi
+        printf $device >> $data_prov_file_path
+        printf $device >> $data_file_path
     done
 done
 
