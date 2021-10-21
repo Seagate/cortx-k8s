@@ -135,34 +135,28 @@ do
 
     for dev in "${parsed_dev_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            device=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_file_path ]]; then
-                printf "\n" >> $data_prov_file_path
-            fi
-            if [[ -s $data_file_path ]]; then
-                printf "\n" >> $data_file_path
-            fi
-            printf $device >> $data_prov_file_path
-            printf $device >> $data_file_path
+        device=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_file_path ]]; then
+            printf "\n" >> $data_prov_file_path
         fi
+        if [[ -s $data_file_path ]]; then
+            printf "\n" >> $data_file_path
+        fi
+        printf $device >> $data_prov_file_path
+        printf $device >> $data_file_path
     done
 
     for dev in "${parsed_size_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            size=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_storage_size_file_path ]]; then
-                printf "\n" >> $data_prov_storage_size_file_path
-            fi
-            if [[ -s $data_storage_size_file_path ]]; then
-                printf "\n" >> $data_storage_size_file_path
-            fi
-            printf $size >> $data_prov_storage_size_file_path
-            printf $size >> $data_storage_size_file_path
+        size=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_storage_size_file_path ]]; then
+            printf "\n" >> $data_prov_storage_size_file_path
         fi
+        if [[ -s $data_storage_size_file_path ]]; then
+            printf "\n" >> $data_storage_size_file_path
+        fi
+        printf $size >> $data_prov_storage_size_file_path
+        printf $size >> $data_storage_size_file_path
     done
 done
 
@@ -182,12 +176,24 @@ if [[ "$num_worker_nodes" -gt "$max_consul_inst" ]]; then
     num_consul_replicas=$max_consul_inst
 fi
 
+# Extract storage provisioner path from the "solution.yaml" file
+filter='solution.common.storage_provisioner_path'
+parse_storage_prov_output=$(parseSolution $filter)
+# Get the storage provisioner var from the tuple
+storage_prov_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
+
 # Add the HashiCorp Helm Repository:
 helm repo add hashicorp https://helm.releases.hashicorp.com
 if [[ $storage_class == "local-path" ]]
 then
     printf "Install Rancher Local Path Provisioner"
-    kubectl create -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
+    rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/rancher-provisioner"
+    mkdir -p $rancher_prov_path
+    rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
+    cp $(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml $rancher_prov_file
+    ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
+
+    kubectl create -f $rancher_prov_file
 fi
 
 image=$(parseSolution 'solution.images.consul')
@@ -203,7 +209,7 @@ printf "######################################################\n"
 printf "# Deploy openLDAP                                     \n"
 printf "######################################################\n"
 
-openldap_password=$(parseSolution 'solution.3rdparty.openldap.password')
+openldap_password=$(parseSolution 'solution.secrets.content.openldap_admin_secret')
 openldap_password=$(echo $openldap_password | cut -f2 -d'>')
 image=$(parseSolution 'solution.images.openldap')
 image=$(echo $image | cut -f2 -d'>')
@@ -314,7 +320,7 @@ log_storage=$(echo $log_storage | cut -f2 -d'>')
 # GlusterFS
 gluster_vol="myvol"
 gluster_folder="/etc/gluster"
-gluster_etc_path="/mnt/fs-local-volume/$gluster_folder"
+gluster_etc_path="$storage_prov_path/$gluster_folder"
 gluster_pv_name="gluster-default-volume"
 gluster_pvc_name="gluster-claim"
 
@@ -379,8 +385,8 @@ helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster
     --set cortxgluster.pv.name=$gluster_pv_name \
     --set cortxgluster.pvc.name=$gluster_pvc_name \
     --set cortxgluster.hostpath.etc=$gluster_etc_path \
-    --set cortxgluster.hostpath.logs="/mnt/fs-local-volume/var/log/glusterfs" \
-    --set cortxgluster.hostpath.config="/mnt/fs-local-volume/var/lib/glusterd" \
+    --set cortxgluster.hostpath.logs="$storage_prov_path/var/log/glusterfs" \
+    --set cortxgluster.hostpath.config="$storage_prov_path/var/lib/glusterd" \
     --set namespace=$namespace
 num_nodes=1
 
@@ -853,7 +859,7 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.image=$cortxcontrol_image \
     --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
     --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
-    --set cortxcontrol.nodeport.name="cortx-control-nodeport-svc" \
+    --set cortxcontrol.loadbal.name="cortx-control-loadbal-svc" \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrol.cfgmap.volmountname="config001" \

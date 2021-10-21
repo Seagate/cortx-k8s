@@ -1,6 +1,6 @@
 #!/bin/bash
 
-disk_partition=$1
+disk=$1
 solution_yaml=${2:-'solution.yaml'}
 
 # Check if the file exists
@@ -17,7 +17,7 @@ function parseSolution()
 
 fs_mount_path="/mnt/fs-local-volume"
 
-if [[ "$disk_partition" == "" ]]
+if [[ "$disk" == "" ]]
 then
     echo "Invalid input paramters"
     echo "./prereq-deploy-cortx-cloud.sh <disk-partition>"
@@ -114,13 +114,25 @@ printf "####################################################\n"
 printf "# Prep for CORTX deployment                         \n"
 printf "####################################################\n"
 # Prep for Rancher Local Path Provisioner deployment
+echo "Create folder '$fs_mount_path/local-path-provisioner'"
 mkdir -p $fs_mount_path/local-path-provisioner
+count=0
+while true; do
+    if [[ -d $fs_mount_path/local-path-provisioner || $count -gt 5 ]]; then
+        break
+    else
+        echo "Create folder '$fs_mount_path/local-path-provisioner' failed. Retry..."
+        mkdir -p $fs_mount_path/local-path-provisioner
+    fi
+    count=$((count+1))
+    sleep 1s
+done
 
 if [[ $(findmnt -m $fs_mount_path) ]];then
     echo "$fs_mount_path already mounted..."
 else
-    echo y | mkfs.ext4 $disk_partition
-    mount -t ext4 $disk_partition $fs_mount_path
+    echo y | mkfs.ext4 $disk
+    mount -t ext4 $disk $fs_mount_path
 fi
 
 # Prep for GlusterFS deployment
