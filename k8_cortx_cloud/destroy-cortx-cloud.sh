@@ -259,8 +259,11 @@ printf "########################################################\n"
 printf "# Delete Consul                                        #\n"
 printf "########################################################\n"
 helm delete consul
-# kubectl delete -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
+
+rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/rancher-provisioner"
+rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
+kubectl delete -f $rancher_prov_file
+rm -rf $rancher_prov_path
 
 printf "########################################################\n"
 printf "# Delete Persistent Volume Claims                      #\n"
