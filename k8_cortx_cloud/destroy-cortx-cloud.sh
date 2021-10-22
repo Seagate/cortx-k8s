@@ -109,8 +109,6 @@ printf "########################################################\n"
 printf "# Delete CORTX GlusterFS                                \n"
 printf "########################################################\n"
 gluster_vol="myvol"
-gluster_folder="/etc/gluster"
-pod_ctr_mount_path="/mnt/fs-local-volume/$gluster_folder"
 
 # Build Gluster endpoint array
 gluster_ep_array=[]
