@@ -201,7 +201,11 @@ spec:
         - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
+          {{- if eq $.Values.cortxdata.image  "centos:7" }}          
           command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command: ["/bin/sleep", "3650d"]
+          {{- end }}
           volumeDevices:
             {{- range $.Files.Lines $.Values.cortxdata.mountblkinfo }}
             - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
