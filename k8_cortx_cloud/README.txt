@@ -50,18 +50,33 @@ Shared glusterFS folder on the worker nodes and inside the Pod containers is loc
 ###########################################################
 # Replacing a dummy container with real CORTX container   #
 ###########################################################
-See the following example from CORTX Data helm chart, replace the image and
-command section hightlighted with "<<===" with the relevant CORTX container
-commands required for the entrypoint. An "args" section also can
-be added to provide additional arguments.
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+The Helm charts work with both "dummy" and "CORTX ALL" containers. 
+If image is centos:7 helm runs in "dummy" mode any other name runs "CORTX ALL" mode
+
+{- if eq $.Values.cortxdata.image  "centos:7" }}  # DO NOT CHANGE
+command: ["/bin/sleep", "3650d"]                  # DO NOT CHANGE 
+{{- else }}                                       # DO NOT CHANGE
+command: ["/bin/sleep", "3650d"]    #<<=========================== REPLACE THIS WITH THE CORTX ENTRY POINT 
+{{- end }}                                        # DO NOT CHANGE
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+See the following example from CORTX Data helm chart, replace the command section
+hightlighted with "<<===" with the relevant CORTX container commands required for
+the entrypoint. An "args" section also can be added to provide additional arguments.
 
 ./k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-data/templates/cortx-data-pod.yaml
 
 containers:
-- name: cortx-s3-server
+- name: cortx-s3-haproxy
    image: {{ .Values.cortxdata.image }}
    imagePullPolicy: IfNotPresent
-   command: ["/bin/sleep", "3650d"]    <<===
+   {- if eq $.Values.cortxdata.image  "centos:7" }}  # DO NOT CHANGE
+   command: ["/bin/sleep", "3650d"]                  # DO NOT CHANGE 
+   {{- else }}                                       # DO NOT CHANGE
+   command: ["/bin/sleep", "3650d"]    #<<=========================== REPLACE THIS WITH THE CORTX ENTRY POINT 
+   {{- end }}                                        # DO NOT CHANGE
    volumeDevices:
    {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
    - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -90,13 +105,13 @@ The images can be changed by modifying the solution.yaml file section solution.i
 solution:
   namespace: default
   images:
-   cortxcontrolprov: centos:7
-   cortxcontrol: centos:7
-   cortxdataprov: centos:7
-   cortxdata: centos:7
+   cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+   cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+   cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+   cortxdata: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
    openldap: ghcr.io/seagate/symas-openldap:standalone
    consul: hashicorp/consul:1.10.0
    kafka: bitnami/kafka:3.0.0-debian-10-r7
-   zookeeper: zookeeper:3.7.0-debian-10-r182
+   zookeeper: bitnami/zookeeper:3.7.0-debian-10-r182
    gluster: docker.io/gluster/gluster-centos:latest
    rancher: rancher/local-path-provisioner:v0.0.20

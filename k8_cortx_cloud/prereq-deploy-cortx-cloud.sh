@@ -113,6 +113,15 @@ sysctl -w vm.max_map_count=30000000;
 printf "####################################################\n"
 printf "# Prep for CORTX deployment                         \n"
 printf "####################################################\n"
+
+if [[ $(findmnt -m $fs_mount_path) ]];then
+    echo "$fs_mount_path already mounted..."
+else
+    mkdir -p $fs_mount_path
+    echo y | mkfs.ext4 $disk
+    mount -t ext4 $disk $fs_mount_path
+fi
+
 # Prep for Rancher Local Path Provisioner deployment
 echo "Create folder '$fs_mount_path/local-path-provisioner'"
 mkdir -p $fs_mount_path/local-path-provisioner
@@ -127,13 +136,6 @@ while true; do
     count=$((count+1))
     sleep 1s
 done
-
-if [[ $(findmnt -m $fs_mount_path) ]];then
-    echo "$fs_mount_path already mounted..."
-else
-    echo y | mkfs.ext4 $disk
-    mount -t ext4 $disk $fs_mount_path
-fi
 
 # Prep for GlusterFS deployment
 yum install glusterfs-fuse -y

@@ -11,10 +11,10 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+    cortxcontrolprov: centos:7
+    cortxcontrol: centos:7
+    cortxdataprov: centos:7
+    cortxdata: centos:7
     openldap: ghcr.io/seagate/symas-openldap:standalone
     consul: hashicorp/consul:1.10.0
     kafka: bitnami/kafka:3.0.0-debian-10-r7
