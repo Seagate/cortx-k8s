@@ -3,7 +3,7 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      openldap_admin_secret: seagate2
+      openldap_admin_secret: seagate1
       kafka_admin_secret: Seagate@123
       consul_admin_secret: Seagate@123
       common_admin_secret: Seagate@123
@@ -11,10 +11,10 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrolprov: centos:7
-    cortxcontrol: centos:7
-    cortxdataprov: centos:7
-    cortxdata: centos:7
+    cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+    cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
     openldap: ghcr.io/seagate/symas-openldap:standalone
     consul: hashicorp/consul:1.10.0
     kafka: bitnami/kafka:3.0.0-debian-10-r7
@@ -32,12 +32,12 @@ solution:
       num_inst: 2
       start_port_num: 28051
     motr:
-      num_client_inst: 1
+      num_client_inst: 0
       start_port_num: 29000
     storage_sets:
       name: storage-set-1
       durability:
-        sns: 8+7+0
+        sns: 1+0+0
         dix: 1+0+0
   storage:
     cvg1:

@@ -41,9 +41,15 @@ spec:
     imagePullPolicy: IfNotPresent        
     command: 
       - /bin/sh
+    {{- if eq .Values.cortxdataprov.image  "centos:7" }}
     args: 
       - -c
       - sleep $(shuf -i 5-10 -n 1)s
+    {{- else }}
+    args: 
+      - -c
+      - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
+    {{- end }}
     volumeDevices:
       {{- range .Files.Lines .Values.cortxdataprov.mountblkinfo }}
       - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
