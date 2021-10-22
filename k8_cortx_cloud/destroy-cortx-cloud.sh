@@ -137,7 +137,9 @@ do
     printf "Stop and delete GlusterFS volume: $gluster_node_name                             \n"
     printf "=================================================================================\n"
     kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
-        'rm -rf /etc/gluster/* /etc/gluster/.glusterfs/'        
+        'rm -rf /etc/gluster/* /etc/gluster/.glusterfs/'
+    kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
+        'mkdir -p /etc/gluster/var/log/cortx'
     if [[ "$count" == 0 ]]; then
         first_gluster_node_name=$gluster_node_name
         echo y | kubectl exec --namespace=$namespace -i $gluster_node_name -- gluster volume stop $gluster_vol
