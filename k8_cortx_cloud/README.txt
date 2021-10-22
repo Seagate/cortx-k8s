@@ -100,6 +100,6 @@ solution:
    openldap: ghcr.io/seagate/symas-openldap:standalone
    consul: hashicorp/consul:1.10.0
    kafka: bitnami/kafka:3.0.0-debian-10-r7
-   zookeeper: zookeeper:3.7.0-debian-10-r182
+   zookeeper: bitnami/zookeeper:3.7.0-debian-10-r182
    gluster: docker.io/gluster/gluster-centos:latest
    rancher: rancher/local-path-provisioner:v0.0.20
