@@ -50,18 +50,21 @@ Shared glusterFS folder on the worker nodes and inside the Pod containers is loc
 ###########################################################
 # Replacing a dummy container with real CORTX container   #
 ###########################################################
-See the following example from CORTX Data helm chart, replace the image and
-command section hightlighted with "<<===" with the relevant CORTX container
-commands required for the entrypoint. An "args" section also can
-be added to provide additional arguments.
+See the following example from CORTX Data helm chart, replace the command section
+hightlighted with "<<===" with the relevant CORTX container commands required for
+the entrypoint. An "args" section also can be added to provide additional arguments.
 
 ./k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-data/templates/cortx-data-pod.yaml
 
 containers:
-- name: cortx-s3-server
+- name: cortx-s3-haproxy
    image: {{ .Values.cortxdata.image }}
    imagePullPolicy: IfNotPresent
+   {{- if eq $.Values.cortxdata.image  "centos:7" }}          
+   command: ["/bin/sleep", "3650d"]
+   {{- else }}
    command: ["/bin/sleep", "3650d"]    <<===
+   {{- end }}
    volumeDevices:
    {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
    - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}

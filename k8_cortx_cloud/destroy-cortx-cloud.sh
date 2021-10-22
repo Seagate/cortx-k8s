@@ -260,7 +260,7 @@ printf "# Delete Consul                                        #\n"
 printf "########################################################\n"
 helm delete consul
 
-rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/rancher-provisioner"
+rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
 rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
 kubectl delete -f $rancher_prov_file
 rm -rf $rancher_prov_path
