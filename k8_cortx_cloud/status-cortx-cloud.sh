@@ -555,7 +555,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=$namespace | grep '3rd-party-openldap')"
+done <<< "$(kubectl get pvc | grep '3rd-party-openldap')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -568,7 +568,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=$namespace | grep '3rd-party-openldap')"
+done <<< "$(kubectl get pv | grep '3rd-party-openldap')"
 
 if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -686,7 +686,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=$namespace | grep 'kafka-')"
+done <<< "$(kubectl get pvc | grep 'kafka-')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -699,7 +699,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=$namespace | grep 'kafka-')"
+done <<< "$(kubectl get pv | grep 'kafka-')"
 
 if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -817,7 +817,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=$namespace | grep 'zookeeper-')"
+done <<< "$(kubectl get pvc | grep 'zookeeper-')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -830,7 +830,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=$namespace | grep 'zookeeper-')"
+done <<< "$(kubectl get pv | grep 'zookeeper-')"
 
 if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -948,7 +948,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=$namespace | grep 'consul-server-')"
+done <<< "$(kubectl get pvc | grep 'consul-server-')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -961,7 +961,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=$namespace | grep 'consul-server-')"
+done <<< "$(kubectl get pv | grep 'consul-server-')"
 
 if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
