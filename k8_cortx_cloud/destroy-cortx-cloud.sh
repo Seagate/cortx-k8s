@@ -1,17 +1,23 @@
 #!/bin/bash
 
+solution_yaml=${1:-'solution.yaml'}
+
+# Check if the file exists
+if [ ! -f $solution_yaml ]
+then
+    echo "ERROR: $solution_yaml does not exist"
+    exit 1
+fi
+
 pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
 pv_filter="pvc"
 openldap_pvc="openldap-data"
 
-#################################################################
-# Create files that contain disk partitions on the worker nodes
-#################################################################
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
+    echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
 }
 
 namespace=$(parseSolution 'solution.namespace')
@@ -47,18 +53,15 @@ do
     IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
     for dev in "${parsed_dev_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            device=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_file_path ]]; then
-                printf "\n" >> $data_prov_file_path
-            fi
-            if [[ -s $data_file_path ]]; then
-                printf "\n" >> $data_file_path
-            fi
-            printf $device >> $data_prov_file_path
-            printf $device >> $data_file_path
+        device=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_file_path ]]; then
+            printf "\n" >> $data_prov_file_path
         fi
+        if [[ -s $data_file_path ]]; then
+            printf "\n" >> $data_file_path
+        fi
+        printf $device >> $data_prov_file_path
+        printf $device >> $data_file_path
     done
 done
 
@@ -106,8 +109,6 @@ printf "########################################################\n"
 printf "# Delete CORTX GlusterFS                                \n"
 printf "########################################################\n"
 gluster_vol="myvol"
-gluster_folder="/etc/gluster"
-pod_ctr_mount_path="/mnt/fs-local-volume/$gluster_folder"
 
 # Build Gluster endpoint array
 gluster_ep_array=[]
@@ -133,7 +134,10 @@ do
     printf "=================================================================================\n"
     printf "Stop and delete GlusterFS volume: $gluster_node_name                             \n"
     printf "=================================================================================\n"
-
+    kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
+        'rm -rf /etc/gluster/* /etc/gluster/.glusterfs/'
+    kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
+        'mkdir -p /etc/gluster/var/log/cortx'
     if [[ "$count" == 0 ]]; then
         first_gluster_node_name=$gluster_node_name
         echo y | kubectl exec --namespace=$namespace -i $gluster_node_name -- gluster volume stop $gluster_vol
@@ -238,7 +242,7 @@ helm uninstall "openldap"
 printf "########################################################\n"
 printf "# Delete Secrets                                       #\n"
 printf "########################################################\n"
-output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets*.name")
+output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets*.name")
 IFS=';' read -r -a parsed_secret_name_array <<< "$output"
 for secret_name in "${parsed_secret_name_array[@]}"
 do
@@ -255,8 +259,11 @@ printf "########################################################\n"
 printf "# Delete Consul                                        #\n"
 printf "########################################################\n"
 helm delete consul
-# kubectl delete -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-kubectl delete -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
+
+rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
+rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
+kubectl delete -f $rancher_prov_file
+rm -rf $rancher_prov_path
 
 printf "########################################################\n"
 printf "# Delete Persistent Volume Claims                      #\n"

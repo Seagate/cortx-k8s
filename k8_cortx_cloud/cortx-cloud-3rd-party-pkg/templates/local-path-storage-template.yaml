@@ -104,7 +104,7 @@ data:
       "nodePathMap":[
         {
           "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
-          "paths":["/mnt/fs-local-volume/local-path-provisioner"]
+          "paths":["<<.Values.rancher.host_path>>"]
         }
       ]
     }

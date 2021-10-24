@@ -4,6 +4,7 @@ cortxgluster:
   nodename: node-1
   storagesize: 1Gi
   storageclass: cortx-gluster-storage
+  image: docker.io/gluster/gluster-centos
   service:
     name: cortx-gluster-svc
   pv:

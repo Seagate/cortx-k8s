@@ -1,6 +1,15 @@
 #!/bin/bash
 
+solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
+
+# Check if the file exists
+if [ ! -f $solution_yaml ]
+then
+    echo "ERROR: $solution_yaml does not exist"
+    exit 1
+fi
+
 
 # Delete old "node-list-info.txt" file
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
@@ -33,12 +42,12 @@ printf "Number of worker nodes detected: $num_worker_nodes\n"
 
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh solution.yaml $1)"
+    echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
 }
 
 function extractBlock()
 {
-    echo "$(./parse_scripts/yaml_extract_block.sh solution.yaml $1)"
+    echo "$(./parse_scripts/yaml_extract_block.sh $solution_yaml $1)"
 }
 
 namespace=$(parseSolution 'solution.namespace')
@@ -120,40 +129,34 @@ do
     if [[ "${#parsed_dev_array[@]}" != "${#parsed_size_array[@]}" ]]
     then
         printf "\nStorage sizes are not defined for all of the storage devices\n"
-        printf "in the 'solution.yaml' file\n"
+        printf "in the $solution_yaml file\n"
         exit 1
     fi
 
     for dev in "${parsed_dev_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            device=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_file_path ]]; then
-                printf "\n" >> $data_prov_file_path
-            fi
-            if [[ -s $data_file_path ]]; then
-                printf "\n" >> $data_file_path
-            fi
-            printf $device >> $data_prov_file_path
-            printf $device >> $data_file_path
+        device=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_file_path ]]; then
+            printf "\n" >> $data_prov_file_path
         fi
+        if [[ -s $data_file_path ]]; then
+            printf "\n" >> $data_file_path
+        fi
+        printf $device >> $data_prov_file_path
+        printf $device >> $data_file_path
     done
 
     for dev in "${parsed_size_array[@]}"
     do
-        if [[ "$dev" != *"system"* ]]
-        then
-            size=$(echo $dev | cut -f2 -d'>')
-            if [[ -s $data_prov_storage_size_file_path ]]; then
-                printf "\n" >> $data_prov_storage_size_file_path
-            fi
-            if [[ -s $data_storage_size_file_path ]]; then
-                printf "\n" >> $data_storage_size_file_path
-            fi
-            printf $size >> $data_prov_storage_size_file_path
-            printf $size >> $data_storage_size_file_path
+        size=$(echo $dev | cut -f2 -d'>')
+        if [[ -s $data_prov_storage_size_file_path ]]; then
+            printf "\n" >> $data_prov_storage_size_file_path
         fi
+        if [[ -s $data_storage_size_file_path ]]; then
+            printf "\n" >> $data_storage_size_file_path
+        fi
+        printf $size >> $data_prov_storage_size_file_path
+        printf $size >> $data_storage_size_file_path
     done
 done
 
@@ -173,16 +176,35 @@ if [[ "$num_worker_nodes" -gt "$max_consul_inst" ]]; then
     num_consul_replicas=$max_consul_inst
 fi
 
+# Extract storage provisioner path from the "solution.yaml" file
+filter='solution.common.storage_provisioner_path'
+parse_storage_prov_output=$(parseSolution $filter)
+# Get the storage provisioner var from the tuple
+storage_prov_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
+
 # Add the HashiCorp Helm Repository:
 helm repo add hashicorp https://helm.releases.hashicorp.com
 if [[ $storage_class == "local-path" ]]
 then
     printf "Install Rancher Local Path Provisioner"
-    kubectl create -f cortx-cloud-3rd-party-pkg/local-path-storage.yaml
+    rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
+    # Clean up auto gen Rancher Provisioner folder in case it still exists and was not
+    # clearned up previously by the destroy-cortx-cloud script.
+    rm -rf $rancher_prov_path
+    mkdir -p $rancher_prov_path
+    rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
+    cp $(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml $rancher_prov_file
+    ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
+
+    kubectl create -f $rancher_prov_file
 fi
+
+image=$(parseSolution 'solution.images.consul')
+image=$(echo $image | cut -f2 -d'>')
 
 helm install "consul" hashicorp/consul \
     --set global.name="consul" \
+    --set global.image=$image \
     --set server.storageClass=$storage_class \
     --set server.replicas=$num_consul_replicas
 
@@ -190,8 +212,10 @@ printf "######################################################\n"
 printf "# Deploy openLDAP                                     \n"
 printf "######################################################\n"
 
-openldap_password=$(parseSolution 'solution.3rdparty.openldap.password')
+openldap_password=$(parseSolution 'solution.secrets.content.openldap_admin_secret')
 openldap_password=$(echo $openldap_password | cut -f2 -d'>')
+image=$(parseSolution 'solution.images.openldap')
+image=$(echo $image | cut -f2 -d'>')
 
 helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set openldap.servicename="openldap-svc" \
@@ -199,7 +223,8 @@ helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
     --set openldap.storagesize="5Gi" \
     --set openldap.nodelistinfo="node-list-info.txt" \
     --set openldap.numreplicas=$num_openldap_replicas \
-    --set openldap.password=$openldap_password
+    --set openldap.password=$openldap_password \
+    --set openldap.image=$image
 
 # Wait for all openLDAP pods to be ready
 printf "\nWait for openLDAP PODs to be ready"
@@ -298,7 +323,7 @@ log_storage=$(echo $log_storage | cut -f2 -d'>')
 # GlusterFS
 gluster_vol="myvol"
 gluster_folder="/etc/gluster"
-gluster_etc_path="/mnt/fs-local-volume/$gluster_folder"
+gluster_etc_path="$storage_prov_path/$gluster_folder"
 gluster_pv_name="gluster-default-volume"
 gluster_pvc_name="gluster-claim"
 
@@ -349,18 +374,22 @@ printf "########################################################\n"
 first_node_name=${node_name_list[0]}
 first_node_selector=${node_selector_list[0]}
 
+image=$(parseSolution 'solution.images.gluster')
+image=$(echo $image | cut -f2 -d'>')
+
 helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster \
     --set cortxgluster.name="gluster-$first_node_name" \
     --set cortxgluster.nodename=$first_node_selector \
     --set cortxgluster.service.name="cortx-gluster-svc-$first_node_name" \
+    --set cortxgluster.image=$image \
     --set cortxgluster.storagesize="1Gi" \
     --set cortxgluster.storageclass="cortx-gluster-storage" \
     --set cortxgluster.pv.path=$gluster_vol \
     --set cortxgluster.pv.name=$gluster_pv_name \
     --set cortxgluster.pvc.name=$gluster_pvc_name \
     --set cortxgluster.hostpath.etc=$gluster_etc_path \
-    --set cortxgluster.hostpath.logs="/mnt/fs-local-volume/var/log/glusterfs" \
-    --set cortxgluster.hostpath.config="/mnt/fs-local-volume/var/lib/glusterd" \
+    --set cortxgluster.hostpath.logs="$storage_prov_path/var/log/glusterfs" \
+    --set cortxgluster.hostpath.config="$storage_prov_path/var/lib/glusterd" \
     --set namespace=$namespace
 num_nodes=1
 
@@ -663,14 +692,14 @@ printf "########################################################\n"
 # in the "auto-gen-secret" folder
 secret_auto_gen_path="$cfgmap_path/auto-gen-secret"
 mkdir -p $secret_auto_gen_path
-output=$(./parse_scripts/parse_yaml.sh solution.yaml "solution.secrets.name")
+output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets.name")
 IFS=';' read -r -a parsed_secret_name_array <<< "$output"
 for secret_name in "${parsed_secret_name_array[@]}"
 do
     secret_fname=$(echo $secret_name | cut -f2 -d'>')
     yaml_content_path=$(echo $secret_name | cut -f1 -d'>')
     yaml_content_path=${yaml_content_path/.name/".content"}
-    secrets="$(./parse_scripts/yaml_extract_block.sh solution.yaml $yaml_content_path 2)"
+    secrets="$(./parse_scripts/yaml_extract_block.sh $solution_yaml $yaml_content_path 2)"
 
     new_secret_gen_file="$secret_auto_gen_path/$secret_fname.yaml"
     cp "$cfgmap_path/templates/secret-template.yaml" $new_secret_gen_file
@@ -833,7 +862,7 @@ helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
     --set cortxcontrol.image=$cortxcontrol_image \
     --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
     --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
-    --set cortxcontrol.nodeport.name="cortx-control-nodeport-svc" \
+    --set cortxcontrol.loadbal.name="cortx-control-loadbal-svc" \
     --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
     --set cortxcontrol.cfgmap.name="cortx-cfgmap" \
     --set cortxcontrol.cfgmap.volmountname="config001" \

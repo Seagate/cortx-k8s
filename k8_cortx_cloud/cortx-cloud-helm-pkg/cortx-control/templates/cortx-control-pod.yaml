@@ -41,7 +41,42 @@ spec:
         - name: cortx-free-space-monitor
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
+          {{- if eq .Values.cortxcontrol.image "centos:7" }}      
           command: ["/bin/sleep", "3650d"]
+          {{- else }}     
+          command: ["/bin/sleep", "3650d"]
+          {{- end }}
+          volumeMounts:
+            - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
+            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            - name: {{ .Values.cortxgluster.pv.name }}
+              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: /etc/cortx/solution/secret
+              readOnly: true
+            {{- end }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxcontrol.name }}
+        - name: cortx-fsm-motr
+          image: {{ .Values.cortxcontrol.image }}
+          imagePullPolicy: IfNotPresent
+          {{- if eq .Values.cortxcontrol.image "centos:7" }}          
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command: 
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services fsm --config yaml:///etc/cortx/cluster.conf;
+          {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
@@ -91,11 +126,15 @@ spec:
         - name: cortx-bg-producer
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
+          {{- if eq .Values.cortxcontrol.image "centos:7" }}          
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
           command: 
             - /bin/sh
           args:
             - -c
             - /opt/seagate/cortx/s3/bin/s3_start --service s3bgproducer -c yaml:///etc/cortx/cluster.conf;
+          {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
@@ -118,11 +157,15 @@ spec:
         - name: cortx-csm-agent
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
+          {{- if eq .Values.cortxcontrol.image "centos:7" }}          
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
           command: 
             - /bin/sh
           args:
             - -c
             - /usr/bin/csm_agent start -c yaml:///etc/cortx/cluster.conf;
+          {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
