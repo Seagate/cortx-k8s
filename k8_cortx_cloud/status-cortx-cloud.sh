@@ -317,6 +317,7 @@ fi
 
 # Check services load balance
 count=0
+num_load_bal=1
 printf "${INFO}| Checking Services: Load Balancer |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -331,7 +332,7 @@ while IFS= read -r line; do
     fi
 done <<< "$(kubectl get services --namespace=$namespace | grep 'cortx-data-loadbal-')"
 
-if [[ $num_nodes -eq $count ]]; then
+if [[ $num_load_bal -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
