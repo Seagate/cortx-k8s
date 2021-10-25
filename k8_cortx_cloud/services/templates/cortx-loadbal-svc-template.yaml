@@ -10,6 +10,7 @@ spec:
   - name: cotrx-control-8081
     port: 8081
     targetPort: 8081
+    nodePort: 31169
   externalIPs:    
   <<.Values.loadbal.control.externalips>>
 ---
@@ -26,17 +27,21 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 80
+      nodePort: 31170
     - name: cortx-s3-server002-tcp
       protocol: TCP
       port: 443
       targetPort: 443
+      nodePort: 31171
     - name: cortx-s3-iam001-tcp
       protocol: TCP
       port: 9080
       targetPort: 9080
+      nodePort: 31172
     - name: cortx-s3-iam002-tcp
       protocol: TCP
       port: 9443
       targetPort: 9443
+      nodePort: 31173
   externalIPs:
   <<.Values.loadbal.data.externalips>>
