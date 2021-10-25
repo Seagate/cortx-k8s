@@ -661,29 +661,49 @@ rm -rf $node_info_folder
 
 # Create config maps
 auto_gen_path="$cfgmap_path/auto-gen-cfgmap"
-kubectl create configmap "cortx-cfgmap" \
-    --namespace=$namespace \
-    --from-file=$auto_gen_path
+kubectl_cmd_output=$(kubectl create configmap "cortx-cfgmap" \
+                    --namespace=$namespace \
+                    --from-file=$auto_gen_path)
+if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
+    printf "Exit early. Create config map 'cortx-cfgmap' failed with error:\n$kubectl_cmd_output\n"
+    exit 1
+fi
+echo $kubectl_cmd_output
 
 # Create data machine ID config maps
 for i in "${!node_name_list[@]}"; do
     auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}/data"
-    kubectl create configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}" \
-        --namespace=$namespace \
-        --from-file=$auto_gen_cfgmap_path
+    kubectl_cmd_output=$(kubectl create configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}" \
+                        --namespace=$namespace \
+                        --from-file=$auto_gen_cfgmap_path)
+    if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
+        printf "Exit early. Create config map 'cortx-data-machine-id-cfgmap-${node_name_list[i]}' failed with error:\n$kubectl_cmd_output\n"
+        exit 1
+    fi
 done
+echo $kubectl_cmd_output
 
 # Create control machine ID config maps
 auto_gen_control_path="$cfgmap_path/auto-gen-control"
-kubectl create configmap "cortx-control-machine-id-cfgmap" \
-    --namespace=$namespace \
-    --from-file=$auto_gen_control_path
+kubectl_cmd_output=$(kubectl create configmap "cortx-control-machine-id-cfgmap" \
+                    --namespace=$namespace \
+                    --from-file=$auto_gen_control_path)
+if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
+    printf "Exit early. Create config map 'cortx-control-machine-id-cfgmap' failed with error:\n$kubectl_cmd_output\n"
+    exit 1
+fi
+echo $kubectl_cmd_output
 
 # Create SSL cert config map
 ssl_cert_path="$cfgmap_path/ssl-cert"
-kubectl create configmap "cortx-ssl-cert-cfgmap" \
-    --namespace=$namespace \
-    --from-file=$ssl_cert_path
+kubectl_cmd_output=$(kubectl create configmap "cortx-ssl-cert-cfgmap" \
+                    --namespace=$namespace \
+                    --from-file=$ssl_cert_path)
+if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
+    printf "Exit early. Create config map 'cortx-ssl-cert-cfgmap' failed with error:\n$kubectl_cmd_output\n"
+    exit 1
+fi
+echo $kubectl_cmd_output
 
 printf "########################################################\n"
 printf "# Deploy CORTX Secrets                                  \n"
@@ -706,7 +726,13 @@ do
     ./parse_scripts/subst.sh $new_secret_gen_file "secret.name" "$secret_fname"
     ./parse_scripts/subst.sh $new_secret_gen_file "secret.content" "$secrets"
     
-    kubectl create -f $new_secret_gen_file --namespace=$namespace
+    kubectl_cmd_output=$(kubectl create -f $new_secret_gen_file --namespace=$namespace 2>&1)
+
+    if [[ "$kubectl_cmd_output" == *"BadRequest"* ]]; then
+        printf "Exit early. Create secret failed with error:\n$kubectl_cmd_output\n"
+        exit 1
+    fi
+    echo $kubectl_cmd_output
 
     control_prov_secret_path="./cortx-cloud-helm-pkg/cortx-control-provisioner/secret-info.txt"
     control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
@@ -774,6 +800,10 @@ while true; do
     if [[ $node_count -eq $count ]]; then
         break
     else
+        if [[ "${pod_status[2]}" == "Error" ]]; then
+            echo "\n'${pod_status[0]}' pod deployment did not complete. Exit early."
+            exit 1
+        fi
         printf "."
     fi
     sleep 1s
@@ -834,6 +864,10 @@ while true; do
     if [[ $node_count -eq $count ]]; then
         break
     else
+        if [[ "${pod_status[2]}" == "Error" ]]; then
+            echo "\n'${pod_status[0]}' pod deployment did not complete. Exit early."
+            exit 1
+        fi
         printf "."
     fi
     sleep 1s
@@ -893,6 +927,10 @@ while true; do
     if [[ $num_nodes -eq $count ]]; then
         break
     else
+        if [[ "${pod_status[2]}" == "Error" ]]; then
+            echo "\n'${pod_status[0]}' pod deployment did not complete. Exit early."
+            exit 1
+        fi
         printf "."
     fi
     sleep 1s
@@ -954,6 +992,10 @@ while true; do
     if [[ $num_nodes -eq $count ]]; then
         break
     else
+        if [[ "${pod_status[2]}" == "Error" ]]; then
+            echo "\n'${pod_status[0]}' pod deployment did not complete. Exit early."
+            exit 1
+        fi
         printf "."
     fi
     sleep 1s
