@@ -801,7 +801,7 @@ while true; do
         break
     else
         if [[ "${pod_status[2]}" == "Error" ]]; then
-            echo "\n'${pod_status[0]}' pod deployment did not complete. Exit early."
+            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
             exit 1
         fi
         printf "."
@@ -865,7 +865,7 @@ while true; do
         break
     else
         if [[ "${pod_status[2]}" == "Error" ]]; then
-            echo "\n'${pod_status[0]}' pod deployment did not complete. Exit early."
+            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
             exit 1
         fi
         printf "."
@@ -928,7 +928,7 @@ while true; do
         break
     else
         if [[ "${pod_status[2]}" == "Error" ]]; then
-            echo "\n'${pod_status[0]}' pod deployment did not complete. Exit early."
+            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
             exit 1
         fi
         printf "."
@@ -993,7 +993,7 @@ while true; do
         break
     else
         if [[ "${pod_status[2]}" == "Error" ]]; then
-            echo "\n'${pod_status[0]}' pod deployment did not complete. Exit early."
+            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
             exit 1
         fi
         printf "."
