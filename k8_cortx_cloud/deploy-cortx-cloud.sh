@@ -794,16 +794,16 @@ while true; do
         if [[ "${pod_status[2]}" != "Completed" ]]; then
             break
         fi
+        if [[ "${pod_status[2]}" == "Error" ]]; then
+            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+            exit 1
+        fi
         count=$((count+1))
     done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-provisioner-pod')"
 
     if [[ $node_count -eq $count ]]; then
         break
     else
-        if [[ "${pod_status[2]}" == "Error" ]]; then
-            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-            exit 1
-        fi
         printf "."
     fi
     sleep 1s
@@ -858,16 +858,16 @@ while true; do
         if [[ "${pod_status[2]}" != "Completed" ]]; then
             break
         fi
+        if [[ "${pod_status[2]}" == "Error" ]]; then
+            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+            exit 1
+        fi
         count=$((count+1))
     done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-provisioner-pod-')"
 
     if [[ $node_count -eq $count ]]; then
         break
     else
-        if [[ "${pod_status[2]}" == "Error" ]]; then
-            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-            exit 1
-        fi
         printf "."
     fi
     sleep 1s
@@ -921,16 +921,16 @@ while true; do
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
         fi
+        if [[ "${pod_status[2]}" == "Error" ]]; then
+            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+            exit 1
+        fi
         count=$((count+1))
     done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
 
     if [[ $num_nodes -eq $count ]]; then
         break
     else
-        if [[ "${pod_status[2]}" == "Error" ]]; then
-            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-            exit 1
-        fi
         printf "."
     fi
     sleep 1s
@@ -986,16 +986,16 @@ while true; do
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             break
         fi
+        if [[ "${pod_status[2]}" == "Error" ]]; then
+            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+            exit 1
+        fi
         count=$((count+1))
     done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-pod-')"
 
     if [[ $num_nodes -eq $count ]]; then
         break
     else
-        if [[ "${pod_status[2]}" == "Error" ]]; then
-            printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-            exit 1
-        fi
         printf "."
     fi
     sleep 1s
