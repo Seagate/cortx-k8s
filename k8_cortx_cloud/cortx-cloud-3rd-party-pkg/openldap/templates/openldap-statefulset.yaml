@@ -41,6 +41,8 @@ spec:
           args:
             - "--rootdnpassword"
             - {{ .Values.openldap.password }}
+            - --log_dir
+            - /var/log/3rd-party
   volumeClaimTemplates:
   - metadata:
       name: etc-3rd-party

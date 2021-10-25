@@ -54,30 +54,3 @@ spec:
   clusterIP: None
   selector:
     app: {{ .Values.cortxdata.name }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Values.cortxdata.service.loadbal.name }}
-  namespace: {{ .Values.namespace }}
-spec:
-  type: LoadBalancer
-  selector:
-    app: {{ .Values.cortxdata.name }}
-  ports:
-    - name: cortx-s3-server001-tcp
-      protocol: TCP
-      port: 80
-      targetPort: 80
-    - name: cortx-s3-server002-tcp
-      protocol: TCP
-      port: 443
-      targetPort: 443
-    - name: cortx-s3-iam001-tcp
-      protocol: TCP
-      port: 9080
-      targetPort: 9080
-    - name: cortx-s3-iam002-tcp
-      protocol: TCP
-      port: 9443
-      targetPort: 9443
