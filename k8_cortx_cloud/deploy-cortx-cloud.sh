@@ -1013,15 +1013,11 @@ cp services/templates/cortx-loadbal-svc-template.yaml services/cortx-loadbal-svc
 
 # Get the external IPs for control from the solution and apply them to the service
 lb_ctl_extips=$(parseSolution 'solution.common.loadbal.control.externalips.*')
-echo $lb_ctl_extips
 IFS=';' read -r -a parsed_ip_array <<< "$lb_ctl_extips"
 output=""
 for ip_element in "${parsed_ip_array[@]}"
 do
     ip_addr=$(echo $ip_element | cut -f2 -d'>')
-
-    echo $ip_addr
-
     if [ "$output" == "" ]
     then
         output="- ""$ip_addr"
@@ -1033,15 +1029,11 @@ done
 
 # Get the external IPs for data from the solution and apply them to the service
 lb_data_extips=$(parseSolution 'solution.common.loadbal.data.externalips.*')
-echo $lb_ctl_extips
 IFS=';' read -r -a parsed_ip_array <<< "$lb_data_extips"
 output=""
 for ip_element in "${parsed_ip_array[@]}"
 do
     ip_addr=$(echo $ip_element | cut -f2 -d'>')
-
-    echo $ip_addr
-
     if [ "$output" == "" ]
     then
         output="- ""$ip_addr"
