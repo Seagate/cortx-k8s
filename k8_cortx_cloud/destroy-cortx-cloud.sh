@@ -80,8 +80,8 @@ printf "########################################################\n"
 printf "# Delete Services                                       \n"
 printf "########################################################\n"
 kubectl delete service cortx-io-svc --namespace=$namespace
-kubectl delete service cortx-loadbal-data-svc --namespace=$namespace
-kubectl delete service cortx-loadbal-control-svc --namespace=$namespace
+kubectl delete service cortx-data-loadbal-svc --namespace=$namespace
+kubectl delete service cortx-control-loadbal-svc --namespace=$namespace
 rm services/cortx-loadbal-svc.yaml
 
 cortx_io_svc_ingress=$(parseSolution 'solution.common.cortx_io_svc_ingress')
