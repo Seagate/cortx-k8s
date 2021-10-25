@@ -376,13 +376,15 @@ first_node_selector=${node_selector_list[0]}
 
 image=$(parseSolution 'solution.images.gluster')
 image=$(echo $image | cut -f2 -d'>')
+gluster_size=$(parseSolution 'solution.common.glusterfs.size')
+gluster_size=$(echo $gluster_size | cut -f2 -d'>')
 
 helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster \
     --set cortxgluster.name="gluster-$first_node_name" \
     --set cortxgluster.nodename=$first_node_selector \
     --set cortxgluster.service.name="cortx-gluster-svc-$first_node_name" \
     --set cortxgluster.image=$image \
-    --set cortxgluster.storagesize="1Gi" \
+    --set cortxgluster.storagesize=$gluster_size \
     --set cortxgluster.storageclass="cortx-gluster-storage" \
     --set cortxgluster.pv.path=$gluster_vol \
     --set cortxgluster.pv.name=$gluster_pv_name \

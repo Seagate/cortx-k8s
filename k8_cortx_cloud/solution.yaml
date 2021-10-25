@@ -46,6 +46,8 @@ solution:
       durability:
         sns: 1+0+0
         dix: 1+0+0
+    glusterfs:
+      size: 5Gi
   storage:
     cvg1:
       name: cvg-01
