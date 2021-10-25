@@ -1007,6 +1007,51 @@ printf "# Deploy Services                                       \n"
 printf "########################################################\n"
 kubectl apply -f services/cortx-io-svc.yaml --namespace=$namespace
 
+cp services/templates/cortx-loadbal-svc-template.yaml services/cortx-loadbal-svc.yaml
+
+# Get the external IPs for control from the solution and apply them to the service
+lb_ctl_extips=$(parseSolution 'solution.common.loadbal.control.externalips.*')
+echo $lb_ctl_extips
+IFS=';' read -r -a parsed_ip_array <<< "$lb_ctl_extips"
+output=""
+for ip_element in "${parsed_ip_array[@]}"
+do
+    ip_addr=$(echo $ip_element | cut -f2 -d'>')
+
+    echo $ip_addr
+
+    if [ "$output" == "" ]
+    then
+        output="- ""$ip_addr"
+    else
+        output="$output"$'\n'"- ""$ip_addr"
+    fi
+done
+./parse_scripts/yaml_insert_block.sh "services/cortx-loadbal-svc.yaml" "$output" 2 "loadbal.control.externalips"
+
+# Get the external IPs for data from the solution and apply them to the service
+lb_data_extips=$(parseSolution 'solution.common.loadbal.data.externalips.*')
+echo $lb_ctl_extips
+IFS=';' read -r -a parsed_ip_array <<< "$lb_data_extips"
+output=""
+for ip_element in "${parsed_ip_array[@]}"
+do
+    ip_addr=$(echo $ip_element | cut -f2 -d'>')
+
+    echo $ip_addr
+
+    if [ "$output" == "" ]
+    then
+        output="- ""$ip_addr"
+    else
+        output="$output"$'\n'"- ""$ip_addr"
+    fi
+done
+
+./parse_scripts/yaml_insert_block.sh "services/cortx-loadbal-svc.yaml" "$output" 2 "loadbal.data.externalips"
+
+kubectl apply -f services/cortx-loadbal-svc.yaml --namespace=$namespace
+
 cortx_io_svc_ingress=$(parseSolution 'solution.common.cortx_io_svc_ingress')
 cortx_io_svc_ingress=$(echo $cortx_io_svc_ingress | cut -f2 -d'>')
 if [ "$cortx_io_svc_ingress" == "true" ]
