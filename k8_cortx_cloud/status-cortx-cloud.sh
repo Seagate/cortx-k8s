@@ -863,8 +863,31 @@ else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
 fi
 
+# Check DaemonSet
+num_items=1
+count=0
+printf "${INFO}| Checking DaemonSet |${NC}\n"
+while IFS= read -r line; do
+    IFS=" " read -r -a status <<< "$line"
+    if [[ "${status[0]}" != "" ]]; then
+        printf "${status[0]}..."
+        if [[ "${status[3]}" != "$num_worker_nodes" ]]; then
+            printf "${FAILED}FAILED${NC}\n"
+        else
+            printf "${PASSED}PASSED${NC}\n"
+            count=$((count+1))
+        fi
+    fi
+done <<< "$(kubectl get daemonsets | grep 'consul')"
+
+if [[ $num_items -eq $count ]]; then
+    printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
+else
+    printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+fi
+
 # Check Pods
-num_items=$(($num_replicas))
+num_items=$(($num_replicas+$num_worker_nodes))
 count=0
 printf "${INFO}| Checking Pods |${NC}\n"
 while IFS= read -r line; do
@@ -879,7 +902,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pods | grep 'consul-server-')"
+done <<< "$(kubectl get pods | grep 'consul-')"
 
 if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
