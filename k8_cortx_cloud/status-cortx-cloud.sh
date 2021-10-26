@@ -317,7 +317,7 @@ fi
 
 # Check services load balance
 count=0
-num_load_bal=1
+num_load_bal=$num_nodes
 printf "${INFO}| Checking Services: Load Balancer |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
