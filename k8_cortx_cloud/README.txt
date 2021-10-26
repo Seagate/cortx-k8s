@@ -23,21 +23,34 @@ cluster
    should NOT be any of the devices listed in "solution.storage.cvg*" in the "solution.yaml"
    file:
 
-./prereq-deploy-cortx-cloud.sh <disk>
+./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
 
 Example:
 ./prereq-deploy-cortx-cloud.sh /dev/sdb
+or
+./prereq-deploy-cortx-cloud.sh /dev/sdb solution_dummy.yaml
+
+NOTE:
+<solution-file> is an optional input to run "prereq-deploy-cortx-cloud.sh" script. Make sure to use
+the same solution file for pre-req, deploy and destroy scripts (in the below section). The default
+<solution-file> is "solution.yaml".
 
 ###############################################
 # Deploy and destroy CORTX cloud              #
 ###############################################
 1. Deploy CORTX cloud:
-./deploy-cortx-cloud.sh
+./deploy-cortx-cloud.sh [<solution-file>]
 
 2. Destroy CORTX cloud:
-./destroy-cortx-cloud.sh
+./destroy-cortx-cloud.sh [<solution-file>] [--force|-f]
+
+Example:
+./destroy-cortx-cloud.sh solution.yaml --force
 
 NOTE:
+<solution-file> is an optional input to run deploy and destroy scripts. Make sure to use the same
+solution file for both deploy and destroy scripts. The default <solution-file> is "solution.yaml"
+
 Rancher Local Path location on worker node:
 /mnt/fs-local-volume/local-path-provisioner/pvc-<UID>_default_cortx-fs-local-pvc-<node-name>
 
