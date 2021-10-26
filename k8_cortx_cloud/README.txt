@@ -42,7 +42,10 @@ the same solution file for pre-req, deploy and destroy scripts (in the below sec
 ./deploy-cortx-cloud.sh [<solution-file>]
 
 2. Destroy CORTX cloud:
-./destroy-cortx-cloud.sh [<solution-file>]
+./destroy-cortx-cloud.sh [<solution-file>] [--force|-f]
+
+Example:
+./destroy-cortx-cloud.sh solution.yaml --force
 
 NOTE:
 <solution-file> is an optional input to run deploy and destroy scripts. Make sure to use the same
