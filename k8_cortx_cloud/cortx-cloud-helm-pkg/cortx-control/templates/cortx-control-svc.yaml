@@ -22,3 +22,18 @@ spec:
   clusterIP: None
   selector:
     app: {{ .Values.cortxcontrol.name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cortxcontrol.service.loadbal.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  type: LoadBalancer
+  selector:
+    app: {{ .Values.cortxcontrol.name }}
+  ports:
+  - name: cotrx-control-8081
+    port: 8081
+    targetPort: 8081
+    nodePort: 31169
