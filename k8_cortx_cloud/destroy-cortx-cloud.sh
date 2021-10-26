@@ -1,6 +1,16 @@
 #!/bin/bash
 
 solution_yaml=${1:-'solution.yaml'}
+force_delete=${2:-''}
+
+if [[ "$solution_yaml" == "--force" || "$solution_yaml" == "-f" ]]; then
+    temp=$force_delete
+    force_delete=$solution_yaml
+    solution_yaml=$temp
+    if [[ "$solution_yaml" == "" ]]; then
+        solution_yaml="solution.yaml"
+    fi
+fi
 
 # Check if the file exists
 if [ ! -f $solution_yaml ]
@@ -148,8 +158,10 @@ do
     count=$((count+1))
 done
 
-first_node=${node_name_list[0]}
-helm uninstall "cortx-gluster-$first_node"
+while IFS= read -r line; do
+    IFS=" " read -r -a my_array <<< "$line"
+    helm uninstall ${my_array[0]}
+done <<< "$(helm ls | grep 'cortx-gluster')"
 
 printf "######################################################\n"
 printf "# Delete CORTX Local Block Storage                    \n"
@@ -168,7 +180,7 @@ for i in "${!node_selector_list[@]}"; do
 done
 
 printf "######################################################\n"
-printf "# Delete Persistent Volume Claims                     \n"
+printf "# Delete Persistent Volume                            \n"
 printf "######################################################\n"
 while IFS= read -r line; do
     if [[ $line != *"master"* && $line != *"AGE"* ]]
@@ -176,6 +188,9 @@ while IFS= read -r line; do
         IFS=" " read -r -a pvc_line <<< "$line"
         if [[ "${pvc_line[5]}" == *"cortx-"* && "${pvc_line[5]}" != *"openldap"* ]]; then
             printf "Removing ${pvc_line[0]}\n"
+            if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
+                kubectl patch pv ${pvc_line[0]} -p '{"metadata":{"finalizers":null}}'
+            fi
             kubectl delete pv ${pvc_line[0]}
         fi
     fi
@@ -273,6 +288,9 @@ echo $volume_claims
 for volume_claim in $volume_claims
 do
     printf "Removing $volume_claim\n"
+    if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
+        kubectl patch pvc $volume_claim -p '{"metadata":{"finalizers":null}}'
+    fi
     kubectl delete pvc $volume_claim
 done
 
@@ -282,6 +300,9 @@ if [[ $namespace != 'default' ]]; then
     for volume_claim in $volume_claims
     do
         printf "Removing $volume_claim\n"
+        if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
+            kubectl patch pvc $volume_claim -p '{"metadata":{"finalizers":null}}'
+        fi
         kubectl delete pvc $volume_claim
     done
 fi
@@ -293,7 +314,10 @@ persistent_volumes=$(kubectl get pv --namespace=default | grep -E "$pvc_consul_f
 echo $persistent_volumes
 for persistent_volume in $persistent_volumes
 do
-    printf "Removing $persistent_volume\n"
+    printf "Removing $persistent_volume\n"    
+    if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
+        kubectl patch pvc $persistent_volume -p '{"metadata":{"finalizers":null}}'
+    fi
     kubectl delete pv $persistent_volume
 done
 
@@ -302,10 +326,28 @@ if [[ $namespace != 'default' ]]; then
     echo $persistent_volumes
     for persistent_volume in $persistent_volumes
     do
-        printf "Removing $persistent_volume\n"
+        printf "Removing $persistent_volume\n"        
+        if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
+            kubectl patch pvc $persistent_volume -p '{"metadata":{"finalizers":null}}'
+        fi
         kubectl delete pv $persistent_volume
     done
 fi
+
+print_header=true
+helm_ls_header=true
+while IFS= read -r line; do
+    IFS=" " read -r -a my_array <<< "$line"
+    if [[ "$helm_ls_header" = true ]]; then
+        helm_ls_header=false
+        continue
+    fi
+    if [[ "$print_header" = true ]]; then
+        printf "Helm chart cleanup:\n"
+        print_header=false
+    fi
+    helm uninstall ${my_array[0]}
+done <<< "$(helm ls | grep 'consul\|cortx\|kafka\|openldap\|zookeeper')"
 
 # Delete CORTX namespace
 if [[ "$namespace" != "default" ]]; then
