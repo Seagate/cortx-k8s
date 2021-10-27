@@ -24,7 +24,7 @@ solution:
   common:
     cortx_io_svc_ingress: false
     storage_provisioner_path: /mnt/fs-local-volume
-    storage:
+    container_path:
       local: /etc/cortx
       shared: /share
       log: /share/var/log/cortx
@@ -53,16 +53,52 @@ solution:
           d1:
             device: /dev/sdd
             size: 5Gi
+          d2:
+            device: /dev/sde
+            size: 5Gi
+          d3:
+            device: /dev/sdf
+            size: 5Gi
+          d4:
+            device: /dev/sdg
+            size: 5Gi
+          d5:
+            device: /dev/sdh
+            size: 5Gi
+          d6:
+            device: /dev/sdi
+            size: 5Gi
+          d7:
+            device: /dev/sdj
+            size: 5Gi
     cvg2:
       name: cvg-02
       type: ios
       devices:
         metadata:
-          device: /dev/sde
+          device: /dev/sdk
           size: 5Gi
         data:
           d1:
-            device: /dev/sdf
+            device: /dev/sdl
+            size: 5Gi
+          d2:
+            device: /dev/sdm
+            size: 5Gi
+          d3:
+            device: /dev/sdn
+            size: 5Gi
+          d4:
+            device: /dev/sdo
+            size: 5Gi
+          d5:
+            device: /dev/sdp
+            size: 5Gi
+          d6:
+            device: /dev/sdq
+            size: 5Gi
+          d7:
+            device: /dev/sdr
             size: 5Gi
   nodes:
     node1:
