@@ -10,12 +10,6 @@ then
     exit 1
 fi
 
-# Extract storage provisioner path from the "solution.yaml" file
-filter='solution.common.storage_provisioner_path'
-parse_storage_prov_output=$(parseSolution $filter)
-# Get the storage provisioner var from the tuple
-fs_mount_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
-
 if [[ "$disk" == "" ]]
 then
     echo "Invalid input paramters"
@@ -160,6 +154,12 @@ function prepOpenLdapDeployment()
     mkdir -p /var/data/3rd-party
     mkdir -p /var/log/3rd-party
 }
+
+# Extract storage provisioner path from the "solution.yaml" file
+filter='solution.common.storage_provisioner_path'
+parse_storage_prov_output=$(parseSolution $solution_yaml $filter)
+# Get the storage provisioner var from the tuple
+fs_mount_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
 
 cleanupFolders
 increaseResources
