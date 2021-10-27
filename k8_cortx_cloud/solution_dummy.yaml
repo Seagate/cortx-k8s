@@ -24,7 +24,7 @@ solution:
   common:
     cortx_io_svc_ingress: false
     storage_provisioner_path: /mnt/fs-local-volume
-    storage:
+    container_path:
       local: /etc/cortx
       shared: /share
       log: /share/var/log/cortx

@@ -1,3 +1,13 @@
+
+###############################################
+# Install helm                                #
+###############################################
+1. Install helm on the master node:
+
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
 ###############################################
 # Local block storage requirements            #
 ###############################################
@@ -15,20 +25,26 @@ cluster
 ###############################################
 # Run prerequisite deployment script          #
 ###############################################
-1. Install the entire content of "k8_cortx_cloud" on both master node and all worker
-   nodes. The directory structure must be maintained.
+1. Copy "prereq-deploy-cortx-cloud.sh" script, and the solution yaml file to all worker nodes:
+
+scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
+scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-prereq-script>
+
+Example:
+scp prereq-deploy-cortx-cloud.sh root@192.168.1.1:/home/
+scp solution.yaml root@192.168.1.1:/home/
 
 2. Run prerequisite script on all worker nodes in the cluster, and untainted master node
    that allows scheduling. "<disk>" is a required input to run this script. This disk
    should NOT be any of the devices listed in "solution.storage.cvg*" in the "solution.yaml"
    file:
 
-./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
+sudo ./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
 
 Example:
-./prereq-deploy-cortx-cloud.sh /dev/sdb
+sudo ./prereq-deploy-cortx-cloud.sh /dev/sdb
 or
-./prereq-deploy-cortx-cloud.sh /dev/sdb solution_dummy.yaml
+sudo ./prereq-deploy-cortx-cloud.sh /dev/sdb solution_dummy.yaml
 
 NOTE:
 <solution-file> is an optional input to run "prereq-deploy-cortx-cloud.sh" script. Make sure to use
@@ -39,13 +55,13 @@ the same solution file for pre-req, deploy and destroy scripts (in the below sec
 # Deploy and destroy CORTX cloud              #
 ###############################################
 1. Deploy CORTX cloud:
-./deploy-cortx-cloud.sh [<solution-file>]
+sudo ./deploy-cortx-cloud.sh [<solution-file>]
 
 2. Destroy CORTX cloud:
-./destroy-cortx-cloud.sh [<solution-file>] [--force|-f]
+sudo ./destroy-cortx-cloud.sh [<solution-file>] [--force|-f]
 
 Example:
-./destroy-cortx-cloud.sh solution.yaml --force
+sudo ./destroy-cortx-cloud.sh solution.yaml --force
 
 NOTE:
 <solution-file> is an optional input to run deploy and destroy scripts. Make sure to use the same
@@ -128,3 +144,6 @@ solution:
    zookeeper: bitnami/zookeeper:3.7.0-debian-10-r182
    gluster: docker.io/gluster/gluster-centos:latest
    rancher: rancher/local-path-provisioner:v0.0.20
+
+NOTE: These images can be pre-downloaded on all worker nodes and untainted master node that
+allows scheduling to avoid deployment failure due to docker pull rate limits.
