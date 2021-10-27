@@ -177,8 +177,6 @@ fi
 ##########################################################
 function deployRancherProvisioner()
 {
-    storage_class=$1
-    storage_prov_path=$2
     # Add the HashiCorp Helm Repository:
     helm repo add hashicorp https://helm.releases.hashicorp.com
     if [[ $storage_class == "local-path" ]]
@@ -199,8 +197,6 @@ function deployRancherProvisioner()
 
 function deployConsul()
 {
-    storage_class=$1
-    num_consul_replicas=$2
     printf "######################################################\n"
     printf "# Deploy Consul                                       \n"
     printf "######################################################\n"
@@ -216,7 +212,6 @@ function deployConsul()
 
 function deployOpenLDAP()
 {
-    num_openldap_replicas=$1
     printf "######################################################\n"
     printf "# Deploy openLDAP                                     \n"
     printf "######################################################\n"
@@ -265,8 +260,6 @@ function deployOpenLDAP()
 
 function deployZookeeper()
 {
-    storage_class=$1
-    num_kafka_replicas=$2
     printf "######################################################\n"
     printf "# Deploy Zookeeper                                    \n"
     printf "######################################################\n"
@@ -282,9 +275,6 @@ function deployZookeeper()
 
 function deployKafka()
 {
-    num_worker_nodes=$1
-    storage_class=$2
-    num_kafka_replicas=$3
     printf "######################################################\n"
     printf "# Deploy Kafka                                        \n"
     printf "######################################################\n"
@@ -328,9 +318,6 @@ function deployKafka()
 ##########################################################
 function deployCortxLocalBlockStorage()
 {
-    node_selector_list=$1
-    node_name_list=$2
-    namespace=$3
     printf "######################################################\n"
     printf "# Deploy CORTX Local Block Storage                    \n"
     printf "######################################################\n"
@@ -374,14 +361,6 @@ function deployCortxLocalBlockStorage()
 
 function deployCortxGlusterFS()
 {
-    node_name_list=$1
-    node_selector_list=$2
-    gluster_vol=$3
-    gluster_pv_name=$4
-    gluster_pvc_name=$5
-    gluster_etc_path=$6
-    storage_prov_path=$7
-    namespace=$8
     printf "########################################################\n"
     printf "# Deploy CORTX GlusterFS                                \n"
     printf "########################################################\n"
@@ -499,7 +478,6 @@ function deployCortxGlusterFS()
 
 function deleteStaleAutoGenFolders()
 {
-    node_name_list=$1
     # Delete all stale auto gen folders
     rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-cfgmap
     rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-control
@@ -513,10 +491,6 @@ function deleteStaleAutoGenFolders()
 
 function deployCortxConfigMap()
 {
-    cfgmap_path=$1
-    node_name_list=$2
-    cvg_index_list=$3
-    namespace=$4
     printf "########################################################\n"
     printf "# Deploy CORTX Configmap                                \n"
     printf "########################################################\n"
@@ -719,9 +693,6 @@ function deployCortxConfigMap()
 
 function deployCortxSecrets()
 {
-    cfgmap_path=$1
-    solution_yaml=$2
-    namespace=$3
     printf "########################################################\n"
     printf "# Deploy CORTX Secrets                                  \n"
     printf "########################################################\n"
@@ -776,11 +747,6 @@ function deployCortxSecrets()
 
 function deployCortxControlProvisioner()
 {
-    gluster_pv_name=$1
-    gluster_pvc_name=$2
-    shared_storage=$3
-    local_storage=$4
-    namespace=$5
     printf "########################################################\n"
     printf "# Deploy CORTX Control Provisioner                      \n"
     printf "########################################################\n"
@@ -841,13 +807,6 @@ function deployCortxControlProvisioner()
 
 function deployCortxDataProvisioner()
 {
-    node_selector_list=$1
-    node_name_list=$2
-    gluster_pv_name=$3
-    gluster_pvc_name=$4
-    shared_storage=$5
-    local_storage=$6
-    namespace=$7
     printf "########################################################\n"
     printf "# Deploy CORTX Data Provisioner                              \n"
     printf "########################################################\n"
@@ -920,9 +879,6 @@ function deployCortxDataProvisioner()
 
 function deployCortxControl()
 {
-    local_storage=$1
-    shared_storage=$2
-    namespace=$3
     printf "########################################################\n"
     printf "# Deploy CORTX Control                                  \n"
     printf "########################################################\n"
@@ -980,14 +936,6 @@ function deployCortxControl()
 
 function deployCortxData()
 {
-    node_selector_list=$1
-    node_name_list=$2
-    gluster_pv_name=$3
-    gluster_pvc_name=$4
-    shared_storage=$5
-    local_storage=$6
-    cvg_index_list=$7
-    namespace=$8
     printf "########################################################\n"
     printf "# Deploy CORTX Data                                     \n"
     printf "########################################################\n"
@@ -1056,7 +1004,6 @@ function deployCortxData()
 
 function deployCortxServices()
 {
-    namespace=$1
     printf "########################################################\n"
     printf "# Deploy Services                                       \n"
     printf "########################################################\n"
@@ -1072,7 +1019,6 @@ function deployCortxServices()
 
 function deleteCortxProvisioners()
 {
-    namespace=$1
     printf "########################################################\n"
     printf "# Delete CORTX Data provisioner                         \n"
     printf "########################################################\n"
@@ -1126,11 +1072,11 @@ if [[ "$num_worker_nodes" -gt "$max_kafka_inst" ]]; then
     num_kafka_replicas=$max_kafka_inst
 fi
 
-deployRancherProvisioner $storage_class $storage_prov_path
-deployConsul $storage_class $num_consul_replicas
-deployOpenLDAP $num_openldap_replicas
-deployZookeeper $storage_class $num_kafka_replicas
-deployKafka $num_worker_nodes $storage_class $num_kafka_replicas
+deployRancherProvisioner
+deployConsul
+deployOpenLDAP
+deployZookeeper
+deployKafka
 
 ##########################################################
 # Deploy CORTX cloud
@@ -1166,15 +1112,15 @@ for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
     count=$((count+1))
 done
 
-deployCortxLocalBlockStorage $node_selector_list $node_name_list $namespace
-deployCortxGlusterFS $node_name_list $node_selector_list $gluster_vol $gluster_pv_name $gluster_pvc_name $gluster_etc_path $storage_prov_path $namespace
-deleteStaleAutoGenFolders $node_name_list
-deployCortxConfigMap $cfgmap_path $node_name_list $cvg_index_list $namespace
-deployCortxSecrets $cfgmap_path $solution_yaml $namespace
-deployCortxControlProvisioner $gluster_pv_name $gluster_pvc_name $shared_storage $local_storage $namespace
-deployCortxDataProvisioner $node_selector_list $node_name_list $gluster_pv_name $gluster_pvc_name $shared_storage $local_storage $namespace
-deployCortxControl $local_storage $shared_storage $namespace
-deployCortxData $node_selector_list $node_name_list $gluster_pv_name $gluster_pvc_name $shared_storage $local_storage $cvg_index_list $namespace
-deployCortxServices $namespace
-deleteCortxProvisioners $namespace
+deployCortxLocalBlockStorage
+deployCortxGlusterFS
+deleteStaleAutoGenFolders
+deployCortxConfigMap
+deployCortxSecrets
+deployCortxControlProvisioner
+deployCortxDataProvisioner
+deployCortxControl
+deployCortxData
+deployCortxServices
+deleteCortxProvisioners
 cleanup
