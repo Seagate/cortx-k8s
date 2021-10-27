@@ -10,7 +10,11 @@ then
     exit 1
 fi
 
-fs_mount_path="/mnt/fs-local-volume"
+# Extract storage provisioner path from the "solution.yaml" file
+filter='solution.common.storage_provisioner_path'
+parse_storage_prov_output=$(parseSolution $filter)
+# Get the storage provisioner var from the tuple
+fs_mount_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
 
 if [[ "$disk" == "" ]]
 then
@@ -92,87 +96,6 @@ function parseSolution()
     echo $OUTPUT
 }
 
-function installHelm()
-{
-    printf "####################################################\n"
-    printf "# Install helm                                      \n"
-    printf "####################################################\n"
-    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-    chmod 700 get_helm.sh
-    ./get_helm.sh
-}
-
-function pullRequiredDockerImages()
-{
-    printf "####################################################\n"
-    printf "# Pull required docker images                       \n"
-    printf "####################################################\n"
-    # pull docker 3rd party images
-
-    image=$(parseSolution $solution_yaml 'solution.images.cortxcontrolprov')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.cortxcontrol')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.cortxdataprov')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.cortxdata')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.openldap')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.consul')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.kafka')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.zookeeper')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.gluster')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    image=$(parseSolution $solution_yaml 'solution.images.rancher')
-    image=$(echo $image | cut -f2 -d'>')
-    if [[ "$(docker images -q $image 2> /dev/null)" == "" ]]; then
-        docker pull $image
-    fi
-
-    # Pull the latest busybox image
-    docker pull busybox
-}
-
 function cleanupFolders()
 {
     printf "####################################################\n"
@@ -238,8 +161,6 @@ function prepOpenLdapDeployment()
     mkdir -p /var/log/3rd-party
 }
 
-installHelm
-pullRequiredDockerImages
 cleanupFolders
 increaseResources
 prepCortxDeployment

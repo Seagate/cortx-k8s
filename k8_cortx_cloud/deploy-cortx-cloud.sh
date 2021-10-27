@@ -534,9 +534,9 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $(extractBlock 'solution.common.storage.local')
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $(extractBlock 'solution.common.storage.shared')
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $(extractBlock 'solution.common.storage.log')
+        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
+        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $shared_storage
+        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $log_storage
         # Generate node file with type storage_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
         cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
@@ -903,9 +903,9 @@ function deployCortxControl()
         --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc" \
         --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
-        --set cortxgluster.pv.name="gluster-default-name" \
+        --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$shared_storage \
-        --set cortxgluster.pvc.name="gluster-claim" \
+        --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set namespace=$namespace
 
     printf "\nWait for CORTX Control to be ready"
@@ -1082,11 +1082,11 @@ deployKafka
 # Deploy CORTX cloud
 ##########################################################
 # Get the storage paths to use
-local_storage=$(parseSolution 'solution.common.storage.local')
+local_storage=$(parseSolution 'solution.common.container_path.local')
 local_storage=$(echo $local_storage | cut -f2 -d'>')
-shared_storage=$(parseSolution 'solution.common.storage.shared')
+shared_storage=$(parseSolution 'solution.common.container_path.shared')
 shared_storage=$(echo $shared_storage | cut -f2 -d'>')
-log_storage=$(parseSolution 'solution.common.storage.log')
+log_storage=$(parseSolution 'solution.common.container_path.log')
 log_storage=$(echo $log_storage | cut -f2 -d'>')
 
 # GlusterFS
