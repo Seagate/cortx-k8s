@@ -55,6 +55,7 @@ fi
 helm install "consul" hashicorp/consul \
     --set global.name="consul" \
     --set server.storageClass=$storage_class \
+    --set ui.enabled=false \
     --set server.replicas=$num_consul_replicas
 
 printf "######################################################\n"
