@@ -912,7 +912,7 @@ else
 fi
 
 # Check services cluster IP
-num_items=2
+num_items=1
 count=0
 printf "${INFO}| Checking Services: Cluster IP |${NC}\n"
 while IFS= read -r line; do
