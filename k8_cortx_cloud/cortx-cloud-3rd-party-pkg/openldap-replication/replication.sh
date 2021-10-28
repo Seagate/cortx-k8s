@@ -45,7 +45,7 @@ done
 for i in "${pod_arr[@]}"
 do
   retry_count=1
-  while [ ! -z "$(kubectl exec -it $i -- ldapsearch -w $ROOTDN_PASSWORD -x -D cn=admin,cn=config -b cn=config -h localhost 2>/dev/null | grep -o "Can't contact LDAP server (-1)")" ]
+  while [ ! -z "$(kubectl exec -it $i -- ldapsearch -w $ROOTDN_PASSWORD -x -D cn=admin,cn=config -b cn=config -h localhost 2>/dev/null | grep -o "Can't contact LDAP server (-1)")" ] || [[ "$(kubectl exec -it $i -- ldapsearch -w $ROOTDN_PASSWORD -x -D cn=admin,cn=config -b olcOverlay={1}ppolicy,olcDatabase={2}mdb,cn=config -h localhost 2>/dev/null | grep numEntries:* | awk '{print $3}' | tr -d '\r')" != "1" ]]
   do
     if [ $retry_count -eq 11 ]
     then
