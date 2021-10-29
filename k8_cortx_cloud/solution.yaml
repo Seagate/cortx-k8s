@@ -15,7 +15,7 @@ solution:
     cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
     cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
     cortxdata: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    openldap: ghcr.io/seagate/symas-openldap:standalone
+    openldap: ghcr.io/seagate/symas-openldap:2.4.58
     consul: hashicorp/consul:1.10.0
     kafka: bitnami/kafka:3.0.0-debian-10-r7
     zookeeper: bitnami/zookeeper:3.7.0-debian-10-r182
