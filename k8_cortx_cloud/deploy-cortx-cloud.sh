@@ -256,7 +256,9 @@ function deployOpenLDAP()
     printf "Setup OpenLDAP replication                                 \n"
     printf "===========================================================\n"
     # Run replication script
-    ./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword $openldap_password
+    if [[ $num_openldap_replicas -gt 1 ]]; then
+        ./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword $openldap_password
+    fi
 }
 
 function deployZookeeper()
