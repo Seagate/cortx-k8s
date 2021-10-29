@@ -341,11 +341,6 @@ function deleteConsul()
     printf "# Delete Consul                                        #\n"
     printf "########################################################\n"
     helm delete consul
-
-    rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
-    rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
-    kubectl delete -f $rancher_prov_file
-    rm -rf $rancher_prov_path
 }
 
 function waitFor3rdPartyToTerminate()
@@ -433,6 +428,14 @@ function delete3rdPartyPVs()
     fi
 }
 
+function deleteStorageProvisioner()
+{
+    rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
+    rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
+    kubectl delete -f $rancher_prov_file
+    rm -rf $rancher_prov_path
+}
+
 function helmChartCleanup()
 {
     print_header=true
@@ -504,6 +507,7 @@ delete3rdPartyPVs
 #############################################################
 # Clean up
 #############################################################
+deleteStorageProvisioner
 helmChartCleanup
 deleteCortxNamespace
 cleanup
