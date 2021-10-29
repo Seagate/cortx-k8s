@@ -395,7 +395,7 @@ function delete3rdPartyPVs()
     do
         printf "Removing $persistent_volume\n"    
         if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
-            kubectl patch pvc $persistent_volume -p '{"metadata":{"finalizers":null}}'
+            kubectl patch pv $persistent_volume -p '{"metadata":{"finalizers":null}}'
         fi
         kubectl delete pv $persistent_volume
     done
@@ -406,11 +406,8 @@ function delete3rdPartyPVs()
         for persistent_volume in $persistent_volumes
         do
             printf "Removing $persistent_volume\n"        
-            if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then            
-                get_finalizer=$(kubectl get pv gluster-default-volume -o custom-columns=Finalizers:.metadata.finalizers)
-                if [[ "$get_finalizer" == *"protection"* ]]; then
-                    kubectl patch pvc $persistent_volume -p '{"metadata":{"finalizers":null}}'
-                fi
+            if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
+                kubectl patch pv $persistent_volume -p '{"metadata":{"finalizers":null}}'
             fi
             kubectl delete pv $persistent_volume
         done
