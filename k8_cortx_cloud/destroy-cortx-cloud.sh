@@ -168,6 +168,47 @@ function deleteGlusterfs()
         IFS=" " read -r -a my_array <<< "$line"
         helm uninstall ${my_array[0]}
     done <<< "$(helm ls | grep 'cortx-gluster')"
+    
+    printf "\nWait for GlusterFS to terminate"
+    while true; do
+        count=0
+        glusterfs="$(kubectl get pods --namespace=$namespace | grep 'gluster' 2>&1)"
+        while IFS= read -r line; do
+            if [[ "$line" == *"gluster"* ]]; then
+                count=$((count+1))
+            fi
+        done <<< "${glusterfs}"
+
+        if [[ $count -eq 0 ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 1s
+    done
+    printf "\n\n"
+}
+
+function waitForCortxPodsToTerminate()
+{
+    printf "\nWait for CORTX Pods to terminate"
+    while true; do
+        count=0
+        cortx_pods="$(kubectl get pods --namespace=$namespace | grep 'cortx' 2>&1)"
+        while IFS= read -r line; do
+            if [[ "$line" == *"cortx"* ]]; then
+                count=$((count+1))
+            fi
+        done <<< "${cortx_pods}"
+
+        if [[ $count -eq 0 ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 1s
+    done
+    printf "\n\n"
 }
 
 function deleteCortxLocalBlockStorage()
@@ -198,7 +239,7 @@ function deleteCortxPVs()
         if [[ $line != *"master"* && $line != *"AGE"* ]]
         then
             IFS=" " read -r -a pvc_line <<< "$line"
-            if [[ "${pvc_line[5]}" == *"cortx-"* && "${pvc_line[5]}" != *"openldap"* ]]; then
+            if [[ "${pvc_line[5]}" == *"cortx-data-fs-local"* || "${pvc_line[5]}" == *"cortx-control-fs-local"* ]]; then
                 printf "Removing ${pvc_line[0]}\n"
                 if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
                     kubectl patch pv ${pvc_line[0]} -p '{"metadata":{"finalizers":null}}'
@@ -307,6 +348,31 @@ function deleteConsul()
     rm -rf $rancher_prov_path
 }
 
+function waitFor3rdPartyToTerminate()
+{
+    printf "\nWait for 3rd party to terminate"
+    while true; do
+        count=0
+        pods="$(kubectl get pods 2>&1)"
+        while IFS= read -r line; do
+            if [[ "$line" == *"kafka"* || \
+                 "$line" == *"zookeeper"* || \
+                 "$line" == *"openldap"* || \
+                 "$line" == *"consul"* ]]; then
+                count=$((count+1))
+            fi
+        done <<< "${pods}"
+
+        if [[ $count -eq 0 ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 1s
+    done
+    printf "\n\n"
+}
+
 function delete3rdPartyPVCs()
 {
     printf "########################################################\n"
@@ -348,7 +414,7 @@ function delete3rdPartyPVs()
     do
         printf "Removing $persistent_volume\n"    
         if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
-            kubectl patch pvc $persistent_volume -p '{"metadata":{"finalizers":null}}'
+            kubectl patch pv $persistent_volume -p '{"metadata":{"finalizers":null}}'
         fi
         kubectl delete pv $persistent_volume
     done
@@ -360,7 +426,7 @@ function delete3rdPartyPVs()
         do
             printf "Removing $persistent_volume\n"        
             if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
-                kubectl patch pvc $persistent_volume -p '{"metadata":{"finalizers":null}}'
+                kubectl patch pv $persistent_volume -p '{"metadata":{"finalizers":null}}'
             fi
             kubectl delete pv $persistent_volume
         done
@@ -418,6 +484,7 @@ deleteCortxData
 deleteCortxServices
 deleteCortxControl
 deleteCortxProvisioners
+waitForCortxPodsToTerminate
 deleteGlusterfs
 deleteCortxLocalBlockStorage
 deleteCortxPVs
@@ -430,6 +497,7 @@ deleteKafkaZookeper
 deleteOpenLdap
 deleteSecrets
 deleteConsul
+waitFor3rdPartyToTerminate
 delete3rdPartyPVCs
 delete3rdPartyPVs
 
