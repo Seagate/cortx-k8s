@@ -168,6 +168,25 @@ function deleteGlusterfs()
         IFS=" " read -r -a my_array <<< "$line"
         helm uninstall ${my_array[0]}
     done <<< "$(helm ls | grep 'cortx-gluster')"
+    
+    printf "\nWait for GlusterFS to terminate"
+    while true; do
+        count=0
+        glusterfs="$(kubectl get pods --namespace=$namespace | grep 'gluster' 2>&1)"
+        while IFS= read -r line; do
+            if [[ "$line" == *"gluster"* ]]; then
+                count=$((count+1))
+            fi
+        done <<< "${glusterfs}"
+
+        if [[ $count -eq 0 ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 1s
+    done
+    printf "\n\n"
 }
 
 function waitForCortxPodsToTerminate()
@@ -175,9 +194,9 @@ function waitForCortxPodsToTerminate()
     printf "\nWait for CORTX Pods to terminate"
     while true; do
         count=0
-        cortx_pods="$(kubectl get pods --namespace=$namespace | grep 'cortx\|gluster' 2>&1)"
+        cortx_pods="$(kubectl get pods --namespace=$namespace | grep 'cortx' 2>&1)"
         while IFS= read -r line; do
-            if [[ "$line" == *"cortx"* || "$line" == *"gluster"* ]]; then
+            if [[ "$line" == *"cortx"* ]]; then
                 count=$((count+1))
             fi
         done <<< "${cortx_pods}"
@@ -465,8 +484,8 @@ deleteCortxData
 deleteCortxServices
 deleteCortxControl
 deleteCortxProvisioners
-deleteGlusterfs
 waitForCortxPodsToTerminate
+deleteGlusterfs
 deleteCortxLocalBlockStorage
 deleteCortxPVs
 deleteCortxConfigmap
