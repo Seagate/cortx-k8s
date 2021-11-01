@@ -505,6 +505,10 @@ function deployCortxGlusterFS()
         kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume create $gluster_vol $first_gluster_ip:$gluster_folder force
     fi
 
+    # Disable gluster health check. If this is not disabled and this check fails, the file system exported by
+    # the brick is not usable anymore and the brick process (glusterfsd) logs a warning and exits
+    kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume set $gluster_vol storage.health-check-interval 0
+
     # Start gluster volume
     echo y | kubectl exec -i $first_gluster_node_name --namespace=$namespace --namespace=$namespace -- gluster volume start $gluster_vol
 }
