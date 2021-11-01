@@ -269,11 +269,36 @@ function deployZookeeper()
     # Add Zookeeper and Kafka Repository
     helm repo add bitnami https://charts.bitnami.com/bitnami
 
+    image=$(parseSolution 'solution.images.zookeeper')
+    image=$(echo $image | cut -f2 -d'>')
+
     helm install zookeeper bitnami/zookeeper \
+        --set image.tag=$image \
         --set replicaCount=$num_kafka_replicas \
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
         --set global.storageClass=$storage_class
+
+    printf "\nWait for Zookeeper to be ready before starting kafka"
+    while true; do
+        count=0
+        while IFS= read -r line; do
+            IFS=" " read -r -a pod_status <<< "$line"
+            IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
+            if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+                count=$((count+1))
+                break
+            fi
+        done <<< "$(kubectl get pods -A | grep 'zookeeper')"
+
+        if [[ $count -eq 0 ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 1s
+    done
+    printf "\n\n"
 }
 
 function deployKafka()
@@ -281,8 +306,13 @@ function deployKafka()
     printf "######################################################\n"
     printf "# Deploy Kafka                                        \n"
     printf "######################################################\n"
+
+    image=$(parseSolution 'solution.images.kafka')
+    image=$(echo $image | cut -f2 -d'>')
+    
     helm install kafka bitnami/kafka \
         --set zookeeper.enabled=false \
+        --set image.tag=$image \
         --set replicaCount=$num_kafka_replicas \
         --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
         --set global.storageClass=$storage_class \
