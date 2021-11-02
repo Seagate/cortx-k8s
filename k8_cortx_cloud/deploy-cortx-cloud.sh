@@ -570,6 +570,7 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
         ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
+        ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $shared_storage
