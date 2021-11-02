@@ -189,6 +189,9 @@ function deployRancherProvisioner()
         mkdir -p $rancher_prov_path
         rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
         cp $(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml $rancher_prov_file
+        image=$(parseSolution 'solution.images.rancher')
+        image=$(echo $image | cut -f2 -d'>')
+        ./parse_scripts/subst.sh $rancher_prov_file "rancher.image" $image
         ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
 
         kubectl create -f $rancher_prov_file
