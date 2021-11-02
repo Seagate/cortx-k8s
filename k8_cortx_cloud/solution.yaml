@@ -15,22 +15,22 @@ solution:
     cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
     cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
     cortxdata: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    openldap: ghcr.io/seagate/symas-openldap:standalone
+    openldap: ghcr.io/seagate/symas-openldap:2.4.58
     consul: hashicorp/consul:1.10.0
-    kafka: bitnami/kafka:3.0.0-debian-10-r7
-    zookeeper: bitnami/zookeeper:3.7.0-debian-10-r182
+    kafka: 3.0.0-debian-10-r7
+    zookeeper: 3.7.0-debian-10-r182
     gluster: docker.io/gluster/gluster-centos:latest
     rancher: rancher/local-path-provisioner:v0.0.20
   common:
-    cortx_io_svc_ingress: false
     storage_provisioner_path: /mnt/fs-local-volume
-    storage:
+    container_path:
       local: /etc/cortx
       shared: /share
       log: /share/var/log/cortx
     s3:
       num_inst: 2
       start_port_num: 28051
+      max_start_timeout: 240
     motr:
       num_client_inst: 0
       start_port_num: 29000
@@ -53,16 +53,52 @@ solution:
           d1:
             device: /dev/sdd
             size: 5Gi
+          d2:
+            device: /dev/sde
+            size: 5Gi
+          d3:
+            device: /dev/sdf
+            size: 5Gi
+          d4:
+            device: /dev/sdg
+            size: 5Gi
+          d5:
+            device: /dev/sdh
+            size: 5Gi
+          d6:
+            device: /dev/sdi
+            size: 5Gi
+          d7:
+            device: /dev/sdj
+            size: 5Gi
     cvg2:
       name: cvg-02
       type: ios
       devices:
         metadata:
-          device: /dev/sde
+          device: /dev/sdk
           size: 5Gi
         data:
           d1:
-            device: /dev/sdf
+            device: /dev/sdl
+            size: 5Gi
+          d2:
+            device: /dev/sdm
+            size: 5Gi
+          d3:
+            device: /dev/sdn
+            size: 5Gi
+          d4:
+            device: /dev/sdo
+            size: 5Gi
+          d5:
+            device: /dev/sdp
+            size: 5Gi
+          d6:
+            device: /dev/sdq
+            size: 5Gi
+          d7:
+            device: /dev/sdr
             size: 5Gi
   nodes:
     node1:

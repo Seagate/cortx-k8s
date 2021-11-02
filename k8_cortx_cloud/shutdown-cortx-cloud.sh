@@ -18,7 +18,7 @@ namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo $namespace | cut -f2 -d'>')
 
 printf "########################################################\n"
-printf "# Shutdown CORTX Data                                   \n"
+printf "# Shutdown CORTX Control                                \n"
 printf "########################################################\n"
 
 while IFS= read -r line; do

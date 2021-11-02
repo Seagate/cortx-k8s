@@ -36,7 +36,7 @@ fi
 # Check if the file exists
 if [ ! -f $INPUT_YAML_FILE ]
 then
-    echo "ERROR: $YAML_FILE_TO_MOD does not exist"
+    echo "ERROR: $INPUT_YAML_FILE does not exist"
     exit 1
 fi
 
