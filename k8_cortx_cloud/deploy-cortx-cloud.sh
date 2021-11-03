@@ -302,6 +302,7 @@ function deployZookeeper()
         sleep 1s
     done
     printf "\n\n"
+    sleep 2s
 }
 
 function deployKafka()
