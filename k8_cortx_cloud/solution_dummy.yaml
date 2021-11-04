@@ -40,6 +40,10 @@ solution:
         dix: 1+0+0
     glusterfs:
       size: 5Gi
+      volume: myvol
+      host_path: /etc/gluster
+      pv_name: gluster-default-volume
+      pvc_name: gluster-claim
   storage:
     cvg1:
       name: cvg-01
