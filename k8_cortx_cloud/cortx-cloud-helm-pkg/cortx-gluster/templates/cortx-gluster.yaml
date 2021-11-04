@@ -17,6 +17,7 @@ spec:
       labels:
         app: {{ .Values.cortxgluster.name }}
     spec:
+      serviceAccountName: {{ .Values.cortxgluster.serviceaccountname }}
       containers:
         - image: {{ .Values.cortxgluster.image }}
           imagePullPolicy: IfNotPresent

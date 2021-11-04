@@ -17,6 +17,7 @@ spec:
         name: cortx-data
     spec:
       hostname: {{ .Values.cortxdata.service.headless.name }}
+      serviceAccountName: {{ .Values.cortxdata.serviceaccountname }}
       volumes:
         - name: {{ .Values.cortxdata.cfgmap.volmountname }}
           configMap:
@@ -88,6 +89,8 @@ spec:
           - containerPort: 9080
           - containerPort: 9443
           - containerPort: 28049
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: cortx-s3-auth-server
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -160,6 +163,8 @@ spec:
             {{- end }}          
           ports:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.s3.startportnum) }}
+          securityContext:
+            allowPrivilegeEscalation: false
         {{- end }}
         - name: cortx-motr-hax
           image: {{ .Values.cortxdata.image }}
@@ -230,6 +235,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ $.Values.cortxdata.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         {{- end }}
         - name: cortx-motr-confd
           image: {{ .Values.cortxdata.image }}
@@ -308,6 +315,8 @@ spec:
             {{- end }}
           ports:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+          securityContext:
+            allowPrivilegeEscalation: false
         {{- end }}
         - name: cortx-s3-bg-consumer
           image: {{ .Values.cortxdata.image }}
@@ -345,3 +354,5 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
+          securityContext:
+            allowPrivilegeEscalation: false

@@ -5,6 +5,7 @@ cortxdataprov:
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
   secretinfo: secret-info.txt
+  serviceaccountname: cortx-sa
   service:
     clusterip:
       name: cortx-data-clusterip-svc

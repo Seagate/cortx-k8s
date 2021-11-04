@@ -7,6 +7,7 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   hostname: {{ .Values.cortxcontrolprov.service.headless.name }}
+  serviceAccountName: {{ .Values.cortxcontrolprov.serviceaccountname }}
   volumes:
     - name: {{ .Values.cortxcontrolprov.cfgmap.volmountname }}
       configMap:

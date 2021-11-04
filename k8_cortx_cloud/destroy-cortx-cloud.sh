@@ -454,12 +454,22 @@ function helmChartCleanup()
     done <<< "$(helm ls | grep 'consul\|cortx\|kafka\|openldap\|zookeeper')"
 }
 
+function deleteKubernetesPrereqs()
+{
+    printf "########################################################\n"
+    printf "# Delete Cortx Kubernetes Prereqs                      #\n"
+    printf "########################################################\n"
+    helm delete cortx-platform
+}
+
 function deleteCortxNamespace()
 {
     # Delete CORTX namespace
     if [[ "$namespace" != "default" ]]; then
-        kubectl delete namespace $namespace
+        #kubectl delete namespace $namespace
+        helm delete cortx-ns
     fi
+
 }
 
 function cleanup()
@@ -509,5 +519,6 @@ delete3rdPartyPVs
 #############################################################
 deleteStorageProvisioner
 helmChartCleanup
+deleteKubernetesPrereqs
 deleteCortxNamespace
 cleanup
