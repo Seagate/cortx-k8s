@@ -510,7 +510,7 @@ function deployCortxGlusterFS()
         else
             kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster peer probe $gluster_ep_ip
         fi
-        replica_list+="$gluster_ep_ip:$gluster_folder "
+        replica_list+="$gluster_ep_ip:/etc/gluster "
         count=$((count+1))
     done
 
@@ -522,7 +522,7 @@ function deployCortxGlusterFS()
     else
         # Add gluster volume
         kubectl_cmd_output=$(kubectl exec -i $first_gluster_node_name --namespace=$namespace -- \
-                            gluster volume create $gluster_vol $first_gluster_ip:$gluster_folder force 2>&1)
+                            gluster volume create $gluster_vol $first_gluster_ip:/etc/gluster force 2>&1)
         if [[ "$kubectl_cmd_output" == *"failed"* ]]; then
             printf "Exit early. Glusterfs volume create failed with error:\n$kubectl_cmd_output\n"
             exit 1
@@ -1146,7 +1146,7 @@ if [[ "$num_worker_nodes" -gt "$max_kafka_inst" ]]; then
     num_kafka_replicas=$max_kafka_inst
 fi
 
-if [[ ${#namespace_list[@]} -le 1 && "$found_match_nsp" = true ]]; then
+if [[ (${#namespace_list[@]} -le 1 && "$found_match_nsp" = true) || "$namespace" == "default" ]]; then
     deployRancherProvisioner
     deployConsul
     deployOpenLDAP
@@ -1167,8 +1167,7 @@ log_storage=$(echo $log_storage | cut -f2 -d'>')
 
 # GlusterFS
 gluster_vol="myvol-""$namespace"
-gluster_folder="/etc/gluster-""$namespace"
-gluster_etc_path="$storage_prov_path/$gluster_folder"
+gluster_etc_path="$storage_prov_path/etc/gluster-$namespace"
 gluster_pv_name="gluster-volume-""$namespace"
 gluster_pvc_name="gluster-claim-""$namespace"
 

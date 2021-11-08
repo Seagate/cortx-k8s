@@ -161,7 +161,9 @@ parse_storage_prov_output=$(parseSolution $solution_yaml $filter)
 # Get the storage provisioner var from the tuple
 fs_mount_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
 
-gluster_folder=$(extractBlock 'solution.common.glusterfs.host_path')
+namespace=$(parseSolution $solution_yaml 'solution.namespace')
+namespace=$(echo $namespace | cut -f2 -d'>')
+gluster_folder="/etc/gluster-$namespace"
 
 cleanupFolders
 increaseResources

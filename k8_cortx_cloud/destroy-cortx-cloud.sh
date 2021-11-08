@@ -169,14 +169,13 @@ function deleteGlusterfs()
         gluster_ep_ip=${my_array[5]}
         gluster_node_name=${my_array[0]}
         gluster_vol="myvol-""$namespace"
-        gluster_folder="/etc/gluster-""$namespace"
         printf "=================================================================================\n"
         printf "Stop and delete GlusterFS volume: $gluster_node_name                             \n"
         printf "=================================================================================\n"
         kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
-            'rm -rf $gluster_folder/* $gluster_folder/.glusterfs/'
+            "rm -rf /etc/gluster/* /etc/gluster/.glusterfs/"
         kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
-            'mkdir -p $gluster_folder/var/log/cortx'
+            "mkdir -p /etc/gluster/var/log/cortx"
         if [[ "$count" == 0 ]]; then
             first_gluster_node_name=$gluster_node_name
             echo y | kubectl exec --namespace=$namespace -i $gluster_node_name -- gluster volume stop $gluster_vol
@@ -441,7 +440,7 @@ function delete3rdPartyPVs()
     printf "########################################################\n"
     printf "# Delete Persistent Volumes                            #\n"
     printf "########################################################\n"
-    persistent_volumes=$(kubectl get pv --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
+    persistent_volumes=$(kubectl get pv --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|cortx|3rd-party" | cut -f1 -d " ")
     echo $persistent_volumes
     for persistent_volume in $persistent_volumes
     do
@@ -453,7 +452,7 @@ function delete3rdPartyPVs()
     done
 
     if [[ $namespace != 'default' ]]; then
-        persistent_volumes=$(kubectl get pv --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter" | cut -f1 -d " ")
+        persistent_volumes=$(kubectl get pv --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|cortx|3rd-party" | cut -f1 -d " ")
         echo $persistent_volumes
         for persistent_volume in $persistent_volumes
         do
@@ -545,7 +544,7 @@ for np in "${namespace_list[@]}"; do
     fi
 done
 
-if [[ ${#namespace_list[@]} -le 1 && "$found_match_np" = true ]]; then
+if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
     deleteKafkaZookeper
     deleteOpenLdap
     deleteConsul
@@ -557,7 +556,7 @@ fi
 #############################################################
 # Clean up
 #############################################################
-if [[ ${#namespace_list[@]} -le 1 && "$found_match_np" = true ]]; then
+if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
     deleteStorageProvisioner
     helmChartCleanup
 fi
