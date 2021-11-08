@@ -168,13 +168,15 @@ function deleteGlusterfs()
         IFS=" " read -r -a my_array <<< "$gluster_ep"
         gluster_ep_ip=${my_array[5]}
         gluster_node_name=${my_array[0]}
+        gluster_vol="myvol-""$namespace"
+        gluster_folder="/etc/gluster-""$namespace"
         printf "=================================================================================\n"
         printf "Stop and delete GlusterFS volume: $gluster_node_name                             \n"
         printf "=================================================================================\n"
         kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
-            'rm -rf /etc/gluster/* /etc/gluster/.glusterfs/'
+            'rm -rf $gluster_folder/* $gluster_folder/.glusterfs/'
         kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
-            'mkdir -p /etc/gluster/var/log/cortx'
+            'mkdir -p $gluster_folder/var/log/cortx'
         if [[ "$count" == 0 ]]; then
             first_gluster_node_name=$gluster_node_name
             echo y | kubectl exec --namespace=$namespace -i $gluster_node_name -- gluster volume stop $gluster_vol
@@ -519,7 +521,7 @@ function cleanup()
 #############################################################
 # Destroy CORTX Cloud
 #############################################################
-gluster_vol=$(extractBlock 'solution.common.glusterfs.volume')
+gluster_vol="myvol-""$namespace"
 
 deleteCortxData
 deleteCortxServices

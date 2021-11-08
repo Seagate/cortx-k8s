@@ -1166,11 +1166,11 @@ log_storage=$(parseSolution 'solution.common.container_path.log')
 log_storage=$(echo $log_storage | cut -f2 -d'>')
 
 # GlusterFS
-gluster_vol=$(extractBlock 'solution.common.glusterfs.volume')
-gluster_folder=$(extractBlock 'solution.common.glusterfs.host_path')
+gluster_vol="myvol-""$namespace"
+gluster_folder="/etc/gluster-""$namespace"
 gluster_etc_path="$storage_prov_path/$gluster_folder"
-gluster_pv_name=$(extractBlock 'solution.common.glusterfs.pv_name')
-gluster_pvc_name=$(extractBlock 'solution.common.glusterfs.pvc_name')
+gluster_pv_name="gluster-volume-""$namespace"
+gluster_pvc_name="gluster-claim-""$namespace"
 
 # Default path to CORTX configmap
 cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
