@@ -1073,9 +1073,6 @@ function deployCortxData()
             fi
             count=$((count+1))
         done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-pod-')"
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
