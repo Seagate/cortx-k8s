@@ -10,6 +10,16 @@ then
     exit 1
 fi
 
+# Validate the "solution.yaml" file against the "solution_check.yaml" file
+while IFS= read -r line; do
+    echo "$line"
+    if [[ "$line" != *"Validate solution file result"* ]]; then
+        continue
+    fi
+    if [[ "$line" == *"failed"* ]]; then
+        exit 1
+    fi
+done <<< "$(./solution_validation/solution_validation-script.sh $solution_yaml)"
 
 # Delete old "node-list-info.txt" file
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
