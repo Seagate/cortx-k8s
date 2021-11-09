@@ -225,6 +225,9 @@ function deployRancherProvisioner()
         mkdir -p $rancher_prov_path
         rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
         cp $(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml $rancher_prov_file
+        image=$(parseSolution 'solution.images.rancher')
+        image=$(echo $image | cut -f2 -d'>')
+        ./parse_scripts/subst.sh $rancher_prov_file "rancher.image" $image
         ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
 
         kubectl create -f $rancher_prov_file
@@ -335,6 +338,7 @@ function deployZookeeper()
         sleep 1s
     done
     printf "\n\n"
+    sleep 2s
 }
 
 function deployKafka()
@@ -455,7 +459,6 @@ function deployCortxGlusterFS()
         --set cortxgluster.hostpath.etc=$gluster_etc_path \
         --set cortxgluster.hostpath.logs="$storage_prov_path/var/log/glusterfs" \
         --set cortxgluster.hostpath.config="$storage_prov_path/var/lib/glusterd" \
-        --set cortxgluster.serviceaccountname="$serviceAccountName" \
         --set namespace=$namespace
     num_nodes=1
 
@@ -1070,6 +1073,9 @@ function deployCortxData()
             fi
             count=$((count+1))
         done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-pod-')"
+            fi
+            count=$((count+1))
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
