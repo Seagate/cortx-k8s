@@ -1,7 +1,7 @@
 #!/bin/bash
 
 solution_yaml=${1:-'solution.yaml'}
-solution_chk_yaml='./solution_validation/solution_check.yaml'
+solution_chk_yaml='./solution_validation_scripts/solution_check.yaml'
 
 function parseSolution()
 {
@@ -213,7 +213,7 @@ for val in "${sns_val_array[@]}"; do
 done
 
 if [[ "$sns_total" -gt "$total_num_data_dev" ]]; then    
-    result_str="The sum of SNS ($sns_total) is greater than the total number of data disks in the cluster ($total_num_data_dev)"
+    result_str="The sum of SNS ($sns_total) is greater than the total number of data disks ($total_num_data_dev) in the cluster"
     result="failed"
 fi
 
@@ -230,7 +230,7 @@ for val in "${dix_val_array[@]}"; do
 done
 
 if [[ "$dix_total" -gt "$total_num_nodes" ]]; then    
-    result_str="The sum of DIX ($dix_total) is greater than the total number of worker nodes in the cluster ($total_num_nodes)"
+    result_str="The sum of DIX ($dix_total) is greater than the total number of worker nodes ($total_num_nodes) in the cluster"
     result="failed"
 fi
 
