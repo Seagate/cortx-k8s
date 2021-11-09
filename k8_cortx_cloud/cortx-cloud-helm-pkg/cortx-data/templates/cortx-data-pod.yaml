@@ -127,6 +127,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxdata.s3.numinst|int) }}
         - name: {{ printf "cortx-s3-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
@@ -202,6 +204,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxdata.motr.numclientinst|int) }}
         - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
@@ -274,6 +278,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
         - name: {{ printf "cortx-motr-ios-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
