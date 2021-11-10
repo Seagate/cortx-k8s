@@ -172,7 +172,6 @@ done
 
 # Create CORTX namespace
 if [[ "$namespace" != "default" ]]; then
-    #kubectl create namespace $namespace
 
     helm install "cortx-ns" cortx-cloud-helm-pkg/cortx-platform \
         --set namespace.create="true" \

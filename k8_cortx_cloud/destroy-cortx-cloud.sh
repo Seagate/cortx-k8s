@@ -466,7 +466,6 @@ function deleteCortxNamespace()
 {
     # Delete CORTX namespace
     if [[ "$namespace" != "default" ]]; then
-        #kubectl delete namespace $namespace
         helm delete cortx-ns
     fi
 
