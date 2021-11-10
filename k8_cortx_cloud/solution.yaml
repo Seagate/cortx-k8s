@@ -26,7 +26,7 @@ solution:
     container_path:
       local: /etc/cortx
       shared: /share
-      log: /share/var/log/cortx
+      log: /etc/cortx/log
     s3:
       num_inst: 2
       start_port_num: 28051
