@@ -37,6 +37,39 @@ spec:
           secret:
             secretName: {{ printf "%s" . }}
         {{- end }}
+      initContainers:
+      - name: cortx-setup
+        image: {{ .Values.cortxcontrol.image }}
+        imagePullPolicy: IfNotPresent        
+        command: 
+          - /bin/sh
+        {{- if eq .Values.cortxcontrol.image "centos:7" }}
+        args: 
+          - -c
+          - sleep $(shuf -i 5-10 -n 1)s
+        {{- else }}
+        args: 
+          - -c
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
+        {{- end }}
+        volumeMounts:
+          - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+            mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+          - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+            mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
+          - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+            mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+          - name: {{ .Values.cortxgluster.pv.name }}
+            mountPath: {{ .Values.cortxgluster.pv.mountpath }}
+          - name: local-path-pv
+            mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+          {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
+          - name: {{ printf "%s" . }}
+            mountPath: /etc/cortx/solution/secret
+            readOnly: true
+          {{- end }}
+        ports:
+        - containerPort: 5050
       containers:
         - name: cortx-free-space-monitor
           image: {{ .Values.cortxcontrol.image }}

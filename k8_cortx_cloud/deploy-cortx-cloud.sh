@@ -1152,8 +1152,8 @@ deployCortxGlusterFS
 deleteStaleAutoGenFolders
 deployCortxConfigMap
 deployCortxSecrets
-deployCortxControlProvisioner
-deployCortxDataProvisioner
+#deployCortxControlProvisioner
+#deployCortxDataProvisioner
 deployCortxControl
 deployCortxData
 deployCortxServices
