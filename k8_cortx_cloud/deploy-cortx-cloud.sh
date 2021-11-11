@@ -217,6 +217,9 @@ function deployRancherProvisioner()
         mkdir -p $rancher_prov_path
         rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
         cp $(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml $rancher_prov_file
+        image=$(parseSolution 'solution.images.rancher')
+        image=$(echo $image | cut -f2 -d'>')
+        ./parse_scripts/subst.sh $rancher_prov_file "rancher.image" $image
         ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
 
         kubectl create -f $rancher_prov_file
@@ -327,6 +330,7 @@ function deployZookeeper()
         sleep 1s
     done
     printf "\n\n"
+    sleep 2s
 }
 
 function deployKafka()
@@ -611,6 +615,7 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
         ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
+        ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $shared_storage

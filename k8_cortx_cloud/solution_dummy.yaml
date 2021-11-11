@@ -26,10 +26,11 @@ solution:
     container_path:
       local: /etc/cortx
       shared: /share
-      log: /share/var/log/cortx
+      log: /etc/cortx/log
     s3:
       num_inst: 2
       start_port_num: 28051
+      max_start_timeout: 240
     motr:
       num_client_inst: 0
       start_port_num: 29000

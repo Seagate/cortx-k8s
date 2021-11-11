@@ -19,6 +19,7 @@ metadata:
   name: {{ .Values.cortxdataprov.service.headless.name }}
   namespace: {{ .Values.namespace }}
 spec:
+  publishNotReadyAddresses: true
   clusterIP: None
   selector:
     app: {{ .Values.cortxdataprov.name }}
