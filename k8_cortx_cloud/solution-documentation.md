@@ -36,6 +36,7 @@ the CORTX cloud.
         can be either local or share.
    
    * S3:
+
       (Placeholder for CORTX to provide info)
 
       * Number of S3 instances (solution.common.s3.num_inst): The number of S3 containers in the
@@ -44,6 +45,7 @@ the CORTX cloud.
         S3 container in the CORTX data pod.
    
    * MOTR:
+
       (Placeholder for CORTX to provide info)
 
       * Number of MOTR client instances (solution.common.motr.num_client_inst): The number of MOTR
@@ -52,6 +54,7 @@ the CORTX cloud.
         MOTR container in the CORTX data pod.
 
    * Storage sets:
+   
       (Placeholder for CORTX to provide info)
 
       * Storage set name (solution.common.storage_sets.name): (Placeholder for CORTX to provide info)
