@@ -88,8 +88,9 @@ for element in "${my_array[@]}"; do
 
     if [[ "$found" = false && "${element_array[1]}" == "required" ]]; then
         # Find all the number in the string and replace it with "*".
-        temp_regex=$(echo "$sol_chk_e" | sed -e 's/\([0-9]\+\)/*/g')
-        result_str="Failed to find $temp_regex in the solution file"
+        temp_regex=$(echo "$element" | sed -e 's/\([0-9]\+\)/*/g')
+        temp_regex_val=$(echo $temp_regex | cut -f1 -d'>')
+        result_str="Failed to find '$temp_regex_val' in the solution file"
         result="failed"
     fi
 done
@@ -130,7 +131,8 @@ for sol_chk_e in "${solution_chk_cvg_var_list[@]}"; do
     if [[ "$found" = false ]]; then
         # Find all the number in the string and replace it with "*".
         temp_regex=$(echo "$sol_chk_e" | sed -e 's/\([0-9]\+\)/*/g')
-        result_str="Failed to find $temp_regex in the solution file"
+        temp_regex_val=$(echo $temp_regex | cut -f1 -d'>')
+        result_str="Failed to find '$temp_regex_val' in the solution file"
         result="failed"
         break
     fi
@@ -187,7 +189,8 @@ for sol_chk_e in "${solution_chk_node[@]}"; do
     if [[ "$found" = false ]]; then
         # Find all the number in the string and replace it with "*".
         temp_regex=$(echo "$sol_chk_e" | sed -e 's/\([0-9]\+\)/*/g')
-        result_str="Failed to find $temp_regex in the solution file"
+        temp_regex_val=$(echo $temp_regex | cut -f1 -d'>')
+        result_str="Failed to find '$temp_regex_val' in the solution file"
         result="failed"
         break
     fi
