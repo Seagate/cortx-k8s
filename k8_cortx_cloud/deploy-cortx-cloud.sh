@@ -19,7 +19,7 @@ while IFS= read -r line; do
     if [[ "$line" == *"failed"* ]]; then
         exit 1
     fi
-done <<< "$(./solution_validation_scripts/solution_validation.sh $solution_yaml)"
+done <<< "$(./solution_validation_scripts/solution-validation.sh $solution_yaml)"
 
 # Delete old "node-list-info.txt" file
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete

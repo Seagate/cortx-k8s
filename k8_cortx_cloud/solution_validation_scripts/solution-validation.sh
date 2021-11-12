@@ -1,7 +1,7 @@
 #!/bin/bash
 
 solution_yaml=${1:-'solution.yaml'}
-solution_chk_yaml='./solution_validation_scripts/solution_check.yaml'
+solution_chk_yaml='./solution_validation_scripts/solution-check.yaml'
 
 function parseSolution()
 {
