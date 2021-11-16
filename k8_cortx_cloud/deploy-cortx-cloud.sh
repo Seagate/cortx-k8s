@@ -238,6 +238,47 @@ function deployKubernetesPrereqs()
 ##########################################################
 # Deploy CORTX 3rd party
 ##########################################################
+function deployMetalLB()
+{
+    metallb_svc_name=$(parseSolution 'solution.common.metallb.svc_name')
+
+    if [ "${metallb_svc_name}" != "" ]; then
+        printf "Deploying Metal Load Balancer"
+
+        helm repo add metallb https://metallb.github.io/metallb
+        cp services/metal-load-balancer/templates/values.yaml services/metal-load-balancer/values.yaml
+
+        metallb_svc_name=$(echo $metallb_svc_name | cut -f2 -d'>')
+
+        metallb_name=$(parseSolution 'solution.common.metallb.name')
+        metallb_name=$(echo $metallb_name | cut -f2 -d'>')
+
+        metallb_protocol=$(parseSolution 'solution.common.metallb.protocol')
+        metallb_protocol=$(echo $metallb_protocol | cut -f2 -d'>')
+
+        metallb_addresses=$(parseSolution 'solution.common.metallb.addresses.*')
+        IFS=';' read -r -a metallb_addresses_array <<< "$metallb_addresses"
+
+        output=""
+        for ip_address in "${metallb_addresses_array[@]}"
+        do
+        ip_addr=$(echo $ip_address | cut -f2 -d'>')
+        if [ "$output" == "" ]
+        then
+            output="- ""$ip_addr"
+        else
+            output="$output"$'\n'"- ""$ip_addr"
+        fi
+        done
+
+        ./parse_scripts/yaml_insert_block.sh "services/metal-load-balancer/values.yaml" "$metallb_name" 2 "loadbal.name"
+        ./parse_scripts/yaml_insert_block.sh "services/metal-load-balancer/values.yaml" "$metallb_protocol" 2 "loadbal.protocol"
+        ./parse_scripts/yaml_insert_block.sh "services/metal-load-balancer/values.yaml" "$output" 4 "loadbal.addresses"
+
+        helm install "${metallb_svc_name}" metallb/metallb -f services/metal-load-balancer/values.yaml
+    fi
+}
+
 function deployRancherProvisioner()
 {
     # Add the HashiCorp Helm Repository:

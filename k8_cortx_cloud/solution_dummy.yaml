@@ -21,6 +21,15 @@ solution:
     zookeeper: 3.7.0-debian-10-r182
     rancher: rancher/local-path-provisioner:v0.0.20
   common:
+    metallb:
+      svc_name: cortx-metal-lb
+      name: default
+      protocol: layer2
+      addresses:
+        ip1: 198.51.100.0/24
+        ip2: 198.52.100.0/24
+        ip3: 198.53.100.0/24
+        ip4: 198.54.100.0/24
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
       local: /etc/cortx

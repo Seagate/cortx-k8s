@@ -1,0 +1,6 @@
+configInline:
+  address-pools:
+  - name: <<.Values.loadbal.name>>
+    protocol: <<.Values.loadbal.protocol>>
+    addresses:
+    <<.Values.loadbal.addresses>>

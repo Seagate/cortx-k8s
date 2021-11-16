@@ -235,6 +235,18 @@ function deleteCortxConfigmap()
 #############################################################
 # Destroy CORTX 3rd party functions
 #############################################################
+function deleteMetalLB()
+{
+    metallb_svc_name=$(parseSolution 'solution.common.metallb.svc_name')
+    if [ "${metallb_svc_name}" != "" ]; then
+        metallb_svc_name=$(echo $metallb_svc_name | cut -f2 -d'>')
+        printf "########################################################\n"
+        printf "# Delete Metal LB                                       \n"
+        printf "########################################################\n"
+        helm uninstall "${metallb_svc_name}"
+    fi
+}
+
 function deleteKafkaZookeper()
 {
     printf "########################################################\n"
@@ -480,6 +492,7 @@ for np in "${namespace_list[@]}"; do
 done
 
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
+    deleteMetalLB
     deleteKafkaZookeper
     deleteOpenLdap
     deleteConsul
