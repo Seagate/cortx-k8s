@@ -800,9 +800,6 @@ function deployCortxControlProvisioner()
         --set cortxcontrolprov.image=$cortxcontrolprov_image \
         --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc" \
         --set cortxcontrolprov.service.headless.name="cortx-control-headless-svc" \
-        --set cortxgluster.pv.name=$gluster_pv_name \
-        --set cortxgluster.pv.mountpath=$shared_storage \
-        --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxcontrolprov.cfgmap.name="cortx-cfgmap" \
         --set cortxcontrolprov.cfgmap.volmountname="config001" \
         --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx/solution" \
@@ -865,9 +862,6 @@ function deployCortxDataProvisioner()
             --set cortxdataprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
             --set cortxdataprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdataprov.service.headless.name="cortx-data-headless-svc-$node_name" \
-            --set cortxgluster.pv.name=$gluster_pv_name \
-            --set cortxgluster.pv.mountpath=$shared_storage \
-            --set cortxgluster.pvc.name=$gluster_pvc_name \
             --set cortxdataprov.cfgmap.name="cortx-cfgmap" \
             --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
             --set cortxdataprov.cfgmap.mountpath="/etc/cortx/solution" \
@@ -945,9 +939,6 @@ function deployCortxControl()
         --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc" \
         --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
-        --set cortxgluster.pv.name=$gluster_pv_name \
-        --set cortxgluster.pv.mountpath=$shared_storage \
-        --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set namespace=$namespace
 
     printf "\nWait for CORTX Control to be ready"
@@ -997,9 +988,6 @@ function deployCortxData()
             --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
             --set cortxdata.service.loadbal.name="cortx-data-loadbal-svc-$node_name" \
-            --set cortxgluster.pv.name=$gluster_pv_name \
-            --set cortxgluster.pv.mountpath=$shared_storage \
-            --set cortxgluster.pvc.name=$gluster_pvc_name \
             --set cortxdata.cfgmap.name="cortx-cfgmap" \
             --set cortxdata.cfgmap.volmountname="config001-$node_name" \
             --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
@@ -1148,7 +1136,7 @@ for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
 done
 
 deployCortxLocalBlockStorage
-deployCortxGlusterFS
+#deployCortxGlusterFS
 deleteStaleAutoGenFolders
 deployCortxConfigMap
 deployCortxSecrets
