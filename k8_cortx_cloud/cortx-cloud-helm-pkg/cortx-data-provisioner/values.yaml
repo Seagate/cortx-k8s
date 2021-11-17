@@ -4,6 +4,7 @@ cortxdataprov:
   image: centos:7
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
+  nodelistinfo: node-list-info.txt
   secretinfo: secret-info.txt
   service:
     clusterip:

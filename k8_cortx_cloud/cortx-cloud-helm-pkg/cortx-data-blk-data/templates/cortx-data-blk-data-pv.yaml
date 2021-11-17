@@ -1,18 +1,33 @@
+# Loop through the node list info file which contains the following example:
+# 0 node-1
+# 1 node-2
+{{- range $line := .Files.Lines .Values.cortxblkdata.nodelistinfo }}
+{{- $parts := split " " . }}
+{{- $index := $parts._0 }}
+{{- $nodename := $parts._1 }}
+# Loop through the mounted block info file which contains the following:
+# /dev/sdc 100Gi
+# /dev/sdd 100Gi
+{{- range $mntblkinfoline := $.Files.Lines $.Values.cortxblkdata.mountblkinfo }}
+{{- $mntblkparts := split " " . }}
+{{- $localpath := $mntblkparts._0 }}
+{{- $mountblksize := $mntblkparts._1 }}
+{{- $disk := (base $localpath) }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Values.cortxblkdata.storage.pv.name }}
-  namespace: {{ .Values.namespace }}
+  name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
+  namespace: {{ $.Values.namespace }}
 spec:
   capacity:
-    storage: {{ .Values.cortxblkdata.storage.size }}
+    storage: {{ $mountblksize }}
   accessModes:
     - ReadWriteMany
-  volumeMode: {{ .Values.cortxblkdata.storage.volumemode }}
-  storageClassName: {{ .Values.cortxblkdata.storageclass }}
+  volumeMode: {{ $.Values.cortxblkdata.storage.volumemode }}
+  storageClassName: {{ $.Values.cortxblkdata.storageclass }}
   persistentVolumeReclaimPolicy: Retain
   local:
-    path: {{ .Values.cortxblkdata.storage.localpath }}
+    path: {{ $localpath }}
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -20,4 +35,21 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - {{ .Values.cortxblkdata.nodename }}
+          - {{ $nodename }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "cortx-data-%s-pvc-%s" $disk $index }}
+  namespace: {{ $.Values.namespace }}
+spec:
+  accessModes:
+  - ReadWriteMany
+  volumeMode: {{ $.Values.cortxblkdata.storage.volumemode }}
+  storageClassName: {{ $.Values.cortxblkdata.storageclass }}
+  resources:
+     requests:
+       storage: {{ $mountblksize }}
+---
+{{- end }}
+{{- end }}

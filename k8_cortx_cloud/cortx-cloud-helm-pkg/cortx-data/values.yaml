@@ -4,6 +4,7 @@ cortxdata:
   image: centos:7
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
+  nodelistinfo: node-list-info.txt
   secretinfo: secret-info.txt
   s3:
     numinst: 2
