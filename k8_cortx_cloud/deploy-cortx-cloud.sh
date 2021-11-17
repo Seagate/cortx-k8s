@@ -200,7 +200,7 @@ function deployKubernetesPrereqs()
         --set rbacRoleBinding.create="true" \
         --set serviceAccount.create="true" \
         --set serviceAccount.name="$serviceAccountName" \
-        --set networkPolicy.create="true" \
+        --set networkPolicy.create="false" \
         --set namespace.name="$namespace" \
         -n $namespace
 
