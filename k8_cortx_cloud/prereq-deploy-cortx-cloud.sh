@@ -1,7 +1,16 @@
 #!/bin/bash
 
-disk=$1
+disk=${1:-''}
 solution_yaml=${2:-'solution.yaml'}
+
+if [[ "$disk" == *".yaml"* ]]; then
+    temp=$disk
+    disk=$solution_yaml
+    solution_yaml=$temp
+    if [[ "$disk" == "solution.yaml" ]]; then
+        disk=""
+    fi
+fi
 
 # Check if the file exists
 if [ ! -f $solution_yaml ]
@@ -10,10 +19,16 @@ then
     exit 1
 fi
 
-if [[ "$disk" == "" ]]
+get_nodes=$(kubectl get nodes 2>&1)
+is_master_node=true
+if [[ "$get_nodes" == *"was refused"* ]]; then
+    is_master_node=false
+fi
+
+if [[ "$disk" == "" && "$is_master_node" = false ]]
 then
     echo "Invalid input paramters"
-    echo "./prereq-deploy-cortx-cloud.sh <disk-partition>"
+    echo "./prereq-deploy-cortx-cloud.sh <disk-partition> [<solution-yaml-file>]"
     exit 1
 fi
 
@@ -39,7 +54,7 @@ function parseSolution()
     # Check that all of the required parameters have been passed in
     if [ "$solution_yaml" == "" ]
     then
-        echo "Invalid input paramters"
+        echo "Invalid input parameters"
         echo "<input yaml file>             = $solution_yaml"
         echo "[<yaml path filter> OPTIONAL] = $2"
         exit 1
@@ -155,6 +170,16 @@ function prepOpenLdapDeployment()
     mkdir -p /var/log/3rd-party
 }
 
+function installHelm()
+{
+    printf "####################################################\n"
+    printf "# Install helm                                      \n"
+    printf "####################################################\n"
+    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    chmod 700 get_helm.sh
+    ./get_helm.sh
+}
+
 # Extract storage provisioner path from the "solution.yaml" file
 filter='solution.common.storage_provisioner_path'
 parse_storage_prov_output=$(parseSolution $solution_yaml $filter)
@@ -165,8 +190,16 @@ namespace=$(parseSolution $solution_yaml 'solution.namespace')
 namespace=$(echo $namespace | cut -f2 -d'>')
 gluster_folder="/etc/gluster-$namespace"
 
-cleanupFolders
-increaseResources
-prepCortxDeployment
-prepGlusterfsDeployment
-prepOpenLdapDeployment
+# Install helm this is a master node
+if [[ "$is_master_node" = true ]]; then
+    installHelm
+fi
+
+# Perform the following functions if the 'disk' is provided
+if [[ "$disk" != "" ]]; then
+    cleanupFolders
+    increaseResources
+    prepCortxDeployment
+    prepGlusterfsDeployment
+    prepOpenLdapDeployment
+fi
