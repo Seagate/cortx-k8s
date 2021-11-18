@@ -142,78 +142,6 @@ function deleteCortxProvisioners()
     helm uninstall "cortx-control-provisioner-$namespace" -n $namespace
 }
 
-function deleteGlusterfs()
-{
-    printf "########################################################\n"
-    printf "# Delete CORTX GlusterFS                                \n"
-    printf "########################################################\n"
-    # Build Gluster endpoint array
-    gluster_ep_array=[]
-    count=0
-    while IFS= read -r line; do
-        if [[ $line == *"gluster-"* ]]
-        then
-            IFS=" " read -r -a my_array <<< "$line"
-            gluster_ep_array[count]=$line
-            count=$((count+1))
-        fi
-    done <<< "$(kubectl get pods -o wide --namespace=$namespace | grep 'gluster-')"
-
-    # Loop through all gluster endpoint array and find endoint IP address
-    # and gluster node name
-    count=0
-    first_gluster_node_name=''
-    for gluster_ep in "${gluster_ep_array[@]}"
-    do
-        IFS=" " read -r -a my_array <<< "$gluster_ep"
-        gluster_ep_ip=${my_array[5]}
-        gluster_node_name=${my_array[0]}
-        gluster_vol="myvol-""$namespace"
-        printf "=================================================================================\n"
-        printf "Stop and delete GlusterFS volume: $gluster_node_name                             \n"
-        printf "=================================================================================\n"
-        kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
-            "rm -rf /etc/gluster/* /etc/gluster/.glusterfs/"
-        kubectl exec --namespace=$namespace -i $gluster_node_name -- bash -c \
-            "mkdir -p /etc/gluster/var/log/cortx"
-        if [[ "$count" == 0 ]]; then
-            first_gluster_node_name=$gluster_node_name
-            echo y | kubectl exec --namespace=$namespace -i $gluster_node_name -- gluster volume stop $gluster_vol
-            echo y | kubectl exec --namespace=$namespace -i $gluster_node_name -- gluster volume delete $gluster_vol
-        else
-            echo y | kubectl exec --namespace=$namespace -i $first_gluster_node_name -- gluster peer detach $gluster_ep_ip
-        fi
-        count=$((count+1))
-    done
-
-    first_node_name=${node_name_list[0]}
-    while IFS= read -r line; do
-        IFS=" " read -r -a my_array <<< "$line"
-        if [[ "${my_array[0]}" == "cortx-gluster-$first_node_name-$namespace" ]]; then
-            helm uninstall ${my_array[0]} -n $namespace
-        fi
-    done <<< "$(helm ls -A | grep 'cortx-gluster')"
-    
-    printf "\nWait for GlusterFS to terminate"
-    while true; do
-        count=0
-        glusterfs="$(kubectl get pods --namespace=$namespace | grep 'gluster' 2>&1)"
-        while IFS= read -r line; do
-            if [[ "$line" == *"gluster"* ]]; then
-                count=$((count+1))
-            fi
-        done <<< "${glusterfs}"
-
-        if [[ $count -eq 0 ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-}
-
 function waitForCortxPodsToTerminate()
 {
     printf "\nWait for CORTX Pods to terminate"
@@ -503,7 +431,7 @@ function deleteCortxNamespace()
 {
     # Delete CORTX namespace
     if [[ "$namespace" != "default" ]]; then
-        helm delete cortx-ns
+        helm delete cortx-ns-$namespace
     fi
 
 }
@@ -529,7 +457,6 @@ function cleanup()
 #############################################################
 # Destroy CORTX Cloud
 #############################################################
-gluster_vol="myvol-""$namespace"
 
 deleteCortxData
 deleteCortxServices
@@ -537,7 +464,6 @@ deleteCortxControl
 deleteCortxProvisioners
 waitForCortxPodsToTerminate
 deleteSecrets
-deleteGlusterfs
 deleteCortxLocalBlockStorage
 deleteCortxPVs
 deleteCortxConfigmap
@@ -565,10 +491,11 @@ fi
 #############################################################
 # Clean up
 #############################################################
+deleteKubernetesPrereqs
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
     deleteStorageProvisioner
-    helmChartCleanup
-    deleteKubernetesPrereqs
+    
+    helmChartCleanup    
 fi
 deleteCortxNamespace
 cleanup

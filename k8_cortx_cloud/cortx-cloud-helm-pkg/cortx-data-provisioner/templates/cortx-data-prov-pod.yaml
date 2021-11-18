@@ -25,9 +25,6 @@ spec:
       persistentVolumeClaim:
         claimName: {{ printf "cortx-data-%s-pvc-%s" $basepath $nodename }}
     {{- end }}
-    - name: {{ .Values.cortxgluster.pv.name }}
-      persistentVolumeClaim:
-        claimName: {{ .Values.cortxgluster.pvc.name }}
     - name: local-path-pv
       persistentVolumeClaim:
         claimName: {{ .Values.cortxdataprov.localpathpvc.name }}
@@ -63,8 +60,6 @@ spec:
         mountPath: {{ .Values.cortxdataprov.sslcfgmap.mountpath }}
       - name: {{ .Values.cortxdataprov.machineid.volmountname }}
         mountPath: {{ .Values.cortxdataprov.machineid.mountpath }}
-      - name: {{ .Values.cortxgluster.pv.name }}
-        mountPath: {{ .Values.cortxgluster.pv.mountpath }}
       - name: local-path-pv
         mountPath: {{ .Values.cortxdataprov.localpathpvc.mountpath }}
       {{- range .Files.Lines .Values.cortxdataprov.secretinfo }}

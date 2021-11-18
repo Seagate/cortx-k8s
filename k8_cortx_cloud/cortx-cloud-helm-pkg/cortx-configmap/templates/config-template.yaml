@@ -27,7 +27,6 @@ cortx:
       admin: admin
       secret: common_admin_secret
     storage:
-      shared: <<.Values.cortx.common.storage.shared>>
       local: <<.Values.cortx.common.storage.local>>
       log: <<.Values.cortx.common.storage.log>>
       config: <<.Values.cortx.common.storage.local>>

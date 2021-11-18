@@ -73,9 +73,6 @@ Rancher Local Path location on worker node:
 Rancher Local Path mount point in all Pod containers (CORTX Provisioners, Data, Control):
 /data
 
-Shared glusterFS folder on the worker nodes and inside the Pod containers is located at:
-/mnt/fs-local-volume/etc/gluster/
-
 ###########################################################
 # Replacing a dummy container with real CORTX container   #
 ###########################################################
@@ -116,8 +113,6 @@ containers:
       mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
    - name: {{ .Values.cortxdata.machineid.volmountname }}
       mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-   - name: {{ .Values.cortxgluster.pv.name }}
-      mountPath: {{ .Values.cortxgluster.pv.mountpath }}
    - name: local-path-pv
       mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
    env:
@@ -142,7 +137,6 @@ solution:
    consul: hashicorp/consul:1.10.0
    kafka: bitnami/kafka:3.0.0-debian-10-r7
    zookeeper: bitnami/zookeeper:3.7.0-debian-10-r182
-   gluster: docker.io/gluster/gluster-centos:latest
    rancher: rancher/local-path-provisioner:v0.0.20
 
 NOTE: These images can be pre-downloaded on all worker nodes and untainted master node that

@@ -183,7 +183,7 @@ done
 # Create CORTX namespace
 if [[ "$namespace" != "default" ]]; then
 
-    helm install "cortx-ns" cortx-cloud-helm-pkg/cortx-platform \
+    helm install "cortx-ns-$namespace" cortx-cloud-helm-pkg/cortx-platform \
         --set namespace.create="true" \
         --set namespace.name="$namespace"
 
@@ -460,139 +460,6 @@ function deployCortxLocalBlockStorage()
     done
 }
 
-function deployCortxGlusterFS()
-{
-    printf "########################################################\n"
-    printf "# Deploy CORTX GlusterFS                                \n"
-    printf "########################################################\n"
-    # Deploy GlusterFS
-    first_node_name=${node_name_list[0]}
-    first_node_selector=${node_selector_list[0]}
-
-    image=$(parseSolution 'solution.images.gluster')
-    image=$(echo $image | cut -f2 -d'>')
-    gluster_size=$(parseSolution 'solution.common.glusterfs.size')
-    gluster_size=$(echo $gluster_size | cut -f2 -d'>')
-
-    helm install "cortx-gluster-$first_node_name-$namespace" cortx-cloud-helm-pkg/cortx-gluster \
-        --set cortxgluster.name="gluster-$first_node_name" \
-        --set cortxgluster.nodename=$first_node_selector \
-        --set cortxgluster.service.name="cortx-gluster-svc-$first_node_name" \
-        --set cortxgluster.image=$image \
-        --set cortxgluster.storagesize=$gluster_size \
-        --set cortxgluster.storageclass="cortx-gluster-storage-$namespace" \
-        --set cortxgluster.pv.path=$gluster_vol \
-        --set cortxgluster.pv.name=$gluster_pv_name \
-        --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxgluster.hostpath.etc=$gluster_etc_path \
-        --set cortxgluster.hostpath.logs="$storage_prov_path/var/log/glusterfs" \
-        --set cortxgluster.hostpath.config="$storage_prov_path/var/lib/glusterd" \
-        --set namespace=$namespace \
-        -n $namespace
-    num_nodes=1
-
-    printf "\nWait for GlusterFS endpoint to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a service_status <<< "$line"
-            if [[ "${service_status[1]}" == "<none>" ]]; then
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get endpoints --namespace=$namespace | grep 'gluster-')"
-
-        if [[ $num_nodes -eq $count ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n"
-
-    printf "Wait for GlusterFS pod to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
-            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'gluster-')"
-
-        if [[ $num_nodes -eq $count ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-
-    # Build Gluster endpoint array
-    gluster_ep_array=[]
-    count=0
-    while IFS= read -r line; do
-        gluster_ep_array[count]=$line
-        count=$((count+1))
-    done <<< "$(kubectl get pods --namespace=$namespace -o wide | grep 'gluster-')"
-
-    gluster_and_host_name_arr=[]
-    # Loop through all gluster endpoint array and find endoint IP address
-    # and gluster node name
-    count=0
-    first_gluster_node_name=''
-    first_gluster_ip=''
-    replica_list=''
-    for gluster_ep in "${gluster_ep_array[@]}"
-    do
-        IFS=" " read -r -a my_array <<< "$gluster_ep"
-        gluster_ep_ip=${my_array[5]}
-        gluster_node_name=${my_array[0]}
-        gluster_and_host_name_arr[count]="${gluster_ep_ip} ${gluster_node_name}"
-        if [[ "$count" == 0 ]]; then
-            first_gluster_node_name=$gluster_node_name
-            first_gluster_ip=$gluster_ep_ip
-        else
-            kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster peer probe $gluster_ep_ip
-        fi
-        replica_list+="$gluster_ep_ip:/etc/gluster "
-        count=$((count+1))
-    done
-
-    len_array=${#gluster_ep_array[@]}
-    if [[ ${#gluster_ep_array[@]} -ge 2 ]]
-    then
-        # Create replica gluster volumes
-        kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume create $gluster_vol replica $len_array $replica_list force
-    else
-        # Add gluster volume
-        kubectl_cmd_output=$(kubectl exec -i $first_gluster_node_name --namespace=$namespace -- \
-                            gluster volume create $gluster_vol $first_gluster_ip:/etc/gluster force 2>&1)
-        if [[ "$kubectl_cmd_output" == *"failed"* ]]; then
-            printf "Exit early. Glusterfs volume create failed with error:\n$kubectl_cmd_output\n"
-            exit 1
-        fi
-        echo "$kubectl_cmd_output"
-    fi
-
-    # Disable gluster health check. If this is not disabled and this check fails, the file system exported by
-    # the brick is not usable anymore and the brick process (glusterfsd) logs a warning and exits
-    kubectl_cmd_output=$(kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume set $gluster_vol storage.health-check-interval 0 2>&1)
-
-    if [[ "$kubectl_cmd_output" == *"failed"* ]]; then
-        printf "Exit early. Glusterfs volume set health check interval failed with error:\n$kubectl_cmd_output\n"
-        exit 1
-    fi
-    echo "$kubectl_cmd_output"
-
-    # Start gluster volume
-    echo y | kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume start $gluster_vol
-}
-
 function deleteStaleAutoGenFolders()
 {
     # Delete all stale auto gen folders
@@ -653,7 +520,6 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $shared_storage
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $log_storage
         # Generate node file with type storage_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
@@ -877,9 +743,6 @@ function deployCortxControlProvisioner()
         --set cortxcontrolprov.image=$cortxcontrolprov_image \
         --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc" \
         --set cortxcontrolprov.service.headless.name="cortx-control-headless-svc" \
-        --set cortxgluster.pv.name=$gluster_pv_name \
-        --set cortxgluster.pv.mountpath=$shared_storage \
-        --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxcontrolprov.cfgmap.name="cortx-cfgmap-$namespace" \
         --set cortxcontrolprov.cfgmap.volmountname="config001" \
         --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx/solution" \
@@ -945,9 +808,6 @@ function deployCortxDataProvisioner()
             --set cortxdataprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
             --set cortxdataprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdataprov.service.headless.name="cortx-data-headless-svc-$node_name" \
-            --set cortxgluster.pv.name=$gluster_pv_name \
-            --set cortxgluster.pv.mountpath=$shared_storage \
-            --set cortxgluster.pvc.name=$gluster_pvc_name \
             --set cortxdataprov.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
             --set cortxdataprov.cfgmap.mountpath="/etc/cortx/solution" \
@@ -1027,9 +887,6 @@ function deployCortxControl()
         --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
         --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
-        --set cortxgluster.pv.name=$gluster_pv_name \
-        --set cortxgluster.pv.mountpath=$shared_storage \
-        --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxcontrol.serviceaccountname="$serviceAccountName" \
         --set namespace=$namespace \
         -n $namespace
@@ -1081,9 +938,6 @@ function deployCortxData()
             --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
             --set cortxdata.service.loadbal.name="cortx-data-loadbal-svc-$node_name" \
-            --set cortxgluster.pv.name=$gluster_pv_name \
-            --set cortxgluster.pv.mountpath=$shared_storage \
-            --set cortxgluster.pvc.name=$gluster_pvc_name \
             --set cortxdata.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxdata.cfgmap.volmountname="config001-$node_name" \
             --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
@@ -1220,16 +1074,9 @@ fi
 # Get the storage paths to use
 local_storage=$(parseSolution 'solution.common.container_path.local')
 local_storage=$(echo $local_storage | cut -f2 -d'>')
-shared_storage=$(parseSolution 'solution.common.container_path.shared')
-shared_storage=$(echo $shared_storage | cut -f2 -d'>')
 log_storage=$(parseSolution 'solution.common.container_path.log')
 log_storage=$(echo $log_storage | cut -f2 -d'>')
 
-# GlusterFS
-gluster_vol="myvol-""$namespace"
-gluster_etc_path="$storage_prov_path/etc/gluster-$namespace"
-gluster_pv_name="gluster-volume-""$namespace"
-gluster_pvc_name="gluster-claim-""$namespace"
 
 # Default path to CORTX configmap
 cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
@@ -1248,7 +1095,6 @@ for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
 done
 
 deployCortxLocalBlockStorage
-deployCortxGlusterFS
 deleteStaleAutoGenFolders
 deployCortxConfigMap
 deployCortxSecrets
