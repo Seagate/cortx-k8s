@@ -13,6 +13,16 @@ then
     exit 1
 fi
 
+# Validate the "solution.yaml" file against the "solution_check.yaml" file
+while IFS= read -r line; do
+    echo "$line"
+    if [[ "$line" != *"Validate solution file result"* ]]; then
+        continue
+    fi
+    if [[ "$line" == *"failed"* ]]; then
+        exit 1
+    fi
+done <<< "$(./solution_validation_scripts/solution-validation.sh $solution_yaml)"
 
 # Delete old "node-list-info.txt" file
 find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
@@ -178,6 +188,24 @@ if [[ "$namespace" != "default" ]]; then
         --set namespace.name="$namespace"
 
 fi
+
+count=0
+namespace_list=[]
+namespace_index=0
+while IFS= read -r line; do
+    if [[ $count -eq 0 ]]; then
+        count=$((count+1))
+        continue
+    fi    
+    IFS=" " read -r -a my_array <<< "$line"
+    if [[ "${my_array[0]}" != *"kube-"* \
+            && "${my_array[0]}" != "default" \
+            && "${my_array[0]}" != "local-path-storage" ]]; then
+        namespace_list[$namespace_index]=${my_array[0]}
+        namespace_index=$((namespace_index+1))
+    fi
+    count=$((count+1))
+done <<< "$(kubectl get namespaces)"
 
 ##########################################################
 # Deploy CORTX k8s pre-reqs
@@ -413,8 +441,8 @@ function deployCortxLocalBlockStorage()
             mount_base_dir=$( echo "$mount_path" | sed -e 's/\/.*\///g')
             count_str=$(printf "%03d" $count)
             count=$((count+1))
-            helm_name1="cortx-data-blk-data$count_str-$node_name"
-            storage_class_name1="local-blk-storage$count_str-$node_name"
+            helm_name1="cortx-data-blk-data$count_str-$node_name-$namespace"
+            storage_class_name1="local-blk-storage$count_str-$node_name-$namespace"
             pvc1_name="cortx-data-$mount_base_dir-pvc-$node_name"
             pv1_name="cortx-data-$mount_base_dir-pv-$node_name"
             helm install $helm_name1 cortx-cloud-helm-pkg/cortx-data-blk-data \
@@ -425,7 +453,8 @@ function deployCortxLocalBlockStorage()
                 --set cortxblkdata.storage.pvc.name=$pvc1_name \
                 --set cortxblkdata.storage.pv.name=$pv1_name \
                 --set cortxblkdata.storage.volumemode="Block" \
-                --set namespace=$namespace
+                --set namespace=$namespace \
+                -n $namespace
             size_count=$((size_count+1))
         done < "$file_path"
     done
@@ -445,20 +474,21 @@ function deployCortxGlusterFS()
     gluster_size=$(parseSolution 'solution.common.glusterfs.size')
     gluster_size=$(echo $gluster_size | cut -f2 -d'>')
 
-    helm install "cortx-gluster-$first_node_name" cortx-cloud-helm-pkg/cortx-gluster \
+    helm install "cortx-gluster-$first_node_name-$namespace" cortx-cloud-helm-pkg/cortx-gluster \
         --set cortxgluster.name="gluster-$first_node_name" \
         --set cortxgluster.nodename=$first_node_selector \
         --set cortxgluster.service.name="cortx-gluster-svc-$first_node_name" \
         --set cortxgluster.image=$image \
         --set cortxgluster.storagesize=$gluster_size \
-        --set cortxgluster.storageclass="cortx-gluster-storage" \
+        --set cortxgluster.storageclass="cortx-gluster-storage-$namespace" \
         --set cortxgluster.pv.path=$gluster_vol \
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxgluster.hostpath.etc=$gluster_etc_path \
         --set cortxgluster.hostpath.logs="$storage_prov_path/var/log/glusterfs" \
         --set cortxgluster.hostpath.config="$storage_prov_path/var/lib/glusterd" \
-        --set namespace=$namespace
+        --set namespace=$namespace \
+        -n $namespace
     num_nodes=1
 
     printf "\nWait for GlusterFS endpoint to be ready"
@@ -466,11 +496,11 @@ function deployCortxGlusterFS()
         count=0
         while IFS= read -r line; do
             IFS=" " read -r -a service_status <<< "$line"
-            if [[ "${service_status[2]}" == "<none>" ]]; then
+            if [[ "${service_status[1]}" == "<none>" ]]; then
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get endpoints -A | grep 'gluster-')"
+        done <<< "$(kubectl get endpoints --namespace=$namespace | grep 'gluster-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
@@ -486,12 +516,12 @@ function deployCortxGlusterFS()
         count=0
         while IFS= read -r line; do
             IFS=" " read -r -a pod_status <<< "$line"
-            IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
-            if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get pods -A | grep 'gluster-')"
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'gluster-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
@@ -506,10 +536,9 @@ function deployCortxGlusterFS()
     gluster_ep_array=[]
     count=0
     while IFS= read -r line; do
-        IFS=" " read -r -a my_array <<< "$line"
         gluster_ep_array[count]=$line
         count=$((count+1))
-    done <<< "$(kubectl get pods -A -o wide | grep 'gluster-')"
+    done <<< "$(kubectl get pods --namespace=$namespace -o wide | grep 'gluster-')"
 
     gluster_and_host_name_arr=[]
     # Loop through all gluster endpoint array and find endoint IP address
@@ -521,8 +550,8 @@ function deployCortxGlusterFS()
     for gluster_ep in "${gluster_ep_array[@]}"
     do
         IFS=" " read -r -a my_array <<< "$gluster_ep"
-        gluster_ep_ip=${my_array[6]}
-        gluster_node_name=${my_array[1]}
+        gluster_ep_ip=${my_array[5]}
+        gluster_node_name=${my_array[0]}
         gluster_and_host_name_arr[count]="${gluster_ep_ip} ${gluster_node_name}"
         if [[ "$count" == 0 ]]; then
             first_gluster_node_name=$gluster_node_name
@@ -530,7 +559,7 @@ function deployCortxGlusterFS()
         else
             kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster peer probe $gluster_ep_ip
         fi
-        replica_list+="$gluster_ep_ip:$gluster_folder "
+        replica_list+="$gluster_ep_ip:/etc/gluster "
         count=$((count+1))
     done
 
@@ -541,27 +570,39 @@ function deployCortxGlusterFS()
         kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume create $gluster_vol replica $len_array $replica_list force
     else
         # Add gluster volume
-        kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume create $gluster_vol $first_gluster_ip:$gluster_folder force
+        kubectl_cmd_output=$(kubectl exec -i $first_gluster_node_name --namespace=$namespace -- \
+                            gluster volume create $gluster_vol $first_gluster_ip:/etc/gluster force 2>&1)
+        if [[ "$kubectl_cmd_output" == *"failed"* ]]; then
+            printf "Exit early. Glusterfs volume create failed with error:\n$kubectl_cmd_output\n"
+            exit 1
+        fi
+        echo "$kubectl_cmd_output"
     fi
 
     # Disable gluster health check. If this is not disabled and this check fails, the file system exported by
     # the brick is not usable anymore and the brick process (glusterfsd) logs a warning and exits
-    kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume set $gluster_vol storage.health-check-interval 0
+    kubectl_cmd_output=$(kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume set $gluster_vol storage.health-check-interval 0 2>&1)
+
+    if [[ "$kubectl_cmd_output" == *"failed"* ]]; then
+        printf "Exit early. Glusterfs volume set health check interval failed with error:\n$kubectl_cmd_output\n"
+        exit 1
+    fi
+    echo "$kubectl_cmd_output"
 
     # Start gluster volume
-    echo y | kubectl exec -i $first_gluster_node_name --namespace=$namespace --namespace=$namespace -- gluster volume start $gluster_vol
+    echo y | kubectl exec -i $first_gluster_node_name --namespace=$namespace -- gluster volume start $gluster_vol
 }
 
 function deleteStaleAutoGenFolders()
 {
     # Delete all stale auto gen folders
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-cfgmap
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-control
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-secret
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/node-info
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/storage-info
+    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-cfgmap-$namespace
+    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-control-$namespace
+    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-secret-$namespace
+    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/node-info-$namespace
+    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/storage-info-$namespace
     for i in "${!node_name_list[@]}"; do
-        rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name_list[i]}
+        rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name_list[i]}-$namespace
     done
 }
 
@@ -571,17 +612,17 @@ function deployCortxConfigMap()
     printf "# Deploy CORTX Configmap                                \n"
     printf "########################################################\n"
     # Create node template folder
-    node_info_folder="$cfgmap_path/node-info"
+    node_info_folder="$cfgmap_path/node-info-$namespace"
     mkdir -p $node_info_folder
 
     # Create storage template folder
-    storage_info_folder="$cfgmap_path/storage-info"
+    storage_info_folder="$cfgmap_path/storage-info-$namespace"
     mkdir -p $storage_info_folder
     storage_info_temp_folder="$storage_info_folder/temp_folder"
     mkdir -p $storage_info_temp_folder
 
     # Create auto-gen config folder
-    auto_gen_path="$cfgmap_path/auto-gen-cfgmap"
+    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-$namespace"
     mkdir -p $auto_gen_path
 
     # Generate config files
@@ -624,7 +665,7 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "storage_node"
         
         # Create data machine id file
-        auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}/data"
+        auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data"
         mkdir -p $auto_gen_node_path
         echo $uuid_str > $auto_gen_node_path/id
     done
@@ -639,7 +680,7 @@ function deployCortxConfigMap()
     ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
 
     # Create control machine id file
-    auto_gen_control_path="$cfgmap_path/auto-gen-control"
+    auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
     mkdir -p $auto_gen_control_path
     echo $uuid_str > $auto_gen_control_path/id        
 
@@ -649,7 +690,7 @@ function deployCortxConfigMap()
     # Insert all node info stored in "node-info" folder into "cluster.yaml" file
     cluster_uuid=$(UUID=$(uuidgen); echo ${UUID//-/})
     extract_output=""
-    node_info_folder="$cfgmap_path/node-info"
+    node_info_folder="$cfgmap_path/node-info-$namespace"
     ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
 
     # Populate the storage set info
@@ -664,7 +705,7 @@ function deployCortxConfigMap()
     ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.durability.sns" $storage_set_dur_sns
     ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.durability.dix" $storage_set_dur_dix
 
-    for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info/*; do
+    for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info-$namespace/*; do
         if [ "$extract_output" == "" ]
         then
             extract_output="$(./parse_scripts/yaml_extract_block.sh $fname)"
@@ -703,11 +744,11 @@ function deployCortxConfigMap()
         extract_output="$(./parse_scripts/yaml_extract_block.sh $storage_cvg_data_auto_gen_file)"
         ./parse_scripts/yaml_insert_block.sh "$storage_info_gen_file" "$extract_output" 4 "cortx.data.dev_partition"
     done
-    # Remove "storage-info/temp_folder"
+    # Remove "storage-info-<namespace>/temp_folder"
     rm -rf $storage_info_temp_folder
-    # Insert data device info stored in 'storage-info' folder into 'cluster-storage-node.yaml' file
+    # Insert data device info stored in 'storage-info-<namespace>' folder into 'cluster-storage-node.yaml' file
     extract_output=""
-    for fname in ./cortx-cloud-helm-pkg/cortx-configmap/storage-info/*; do
+    for fname in ./cortx-cloud-helm-pkg/cortx-configmap/storage-info-$namespace/*; do
         if [ "$extract_output" == "" ]
         then
             extract_output="$(./parse_scripts/yaml_extract_block.sh $fname)"
@@ -717,52 +758,53 @@ function deployCortxConfigMap()
     done
     ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 4 "cluster.storage_list"
 
-    # Delete node-info folder
-    node_info_folder="$cfgmap_path/node-info"
-    rm -rf $node_info_folder
+    # Delete node-info-<namespace> folder
+    rm -rf "$cfgmap_path/node-info-$namespace"
+    # Delete storage-info-<namespace> folder
+    rm -rf "$cfgmap_path/storage-info-$namespace"
 
     # Create config maps
-    auto_gen_path="$cfgmap_path/auto-gen-cfgmap"
-    kubectl_cmd_output=$(kubectl create configmap "cortx-cfgmap" \
+    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-$namespace"
+    kubectl_cmd_output=$(kubectl create configmap "cortx-cfgmap-$namespace" \
                         --namespace=$namespace \
                         --from-file=$auto_gen_path)
     if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-        printf "Exit early. Create config map 'cortx-cfgmap' failed with error:\n$kubectl_cmd_output\n"
+        printf "Exit early. Create config map 'cortx-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
         exit 1
     fi
     echo $kubectl_cmd_output
 
     # Create data machine ID config maps
     for i in "${!node_name_list[@]}"; do
-        auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}/data"
-        kubectl_cmd_output=$(kubectl create configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}" \
+        auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace/data"
+        kubectl_cmd_output=$(kubectl create configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}-$namespace" \
                             --namespace=$namespace \
                             --from-file=$auto_gen_cfgmap_path)
         if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-            printf "Exit early. Create config map 'cortx-data-machine-id-cfgmap-${node_name_list[i]}' failed with error:\n$kubectl_cmd_output\n"
+            printf "Exit early. Create config map 'cortx-data-machine-id-cfgmap-${node_name_list[i]}-$namespace' failed with error:\n$kubectl_cmd_output\n"
             exit 1
         fi
     done
     echo $kubectl_cmd_output
 
     # Create control machine ID config maps
-    auto_gen_control_path="$cfgmap_path/auto-gen-control"
-    kubectl_cmd_output=$(kubectl create configmap "cortx-control-machine-id-cfgmap" \
+    auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
+    kubectl_cmd_output=$(kubectl create configmap "cortx-control-machine-id-cfgmap-$namespace" \
                         --namespace=$namespace \
                         --from-file=$auto_gen_control_path)
     if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-        printf "Exit early. Create config map 'cortx-control-machine-id-cfgmap' failed with error:\n$kubectl_cmd_output\n"
+        printf "Exit early. Create config map 'cortx-control-machine-id-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
         exit 1
     fi
     echo $kubectl_cmd_output
 
     # Create SSL cert config map
     ssl_cert_path="$cfgmap_path/ssl-cert"
-    kubectl_cmd_output=$(kubectl create configmap "cortx-ssl-cert-cfgmap" \
+    kubectl_cmd_output=$(kubectl create configmap "cortx-ssl-cert-cfgmap-$namespace" \
                         --namespace=$namespace \
                         --from-file=$ssl_cert_path)
     if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-        printf "Exit early. Create config map 'cortx-ssl-cert-cfgmap' failed with error:\n$kubectl_cmd_output\n"
+        printf "Exit early. Create config map 'cortx-ssl-cert-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
         exit 1
     fi
     echo $kubectl_cmd_output
@@ -775,7 +817,7 @@ function deployCortxSecrets()
     printf "########################################################\n"
     # Parse secret from the solution file and create all secret yaml files
     # in the "auto-gen-secret" folder
-    secret_auto_gen_path="$cfgmap_path/auto-gen-secret"
+    secret_auto_gen_path="$cfgmap_path/auto-gen-secret-$namespace"
     mkdir -p $secret_auto_gen_path
     output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets.name")
     IFS=';' read -r -a parsed_secret_name_array <<< "$output"
@@ -830,7 +872,7 @@ function deployCortxControlProvisioner()
     cortxcontrolprov_image=$(parseSolution 'solution.images.cortxcontrolprov')
     cortxcontrolprov_image=$(echo $cortxcontrolprov_image | cut -f2 -d'>')
 
-    helm install "cortx-control-provisioner" cortx-cloud-helm-pkg/cortx-control-provisioner \
+    helm install "cortx-control-provisioner-$namespace" cortx-cloud-helm-pkg/cortx-control-provisioner \
         --set cortxcontrolprov.name="cortx-control-provisioner-pod" \
         --set cortxcontrolprov.image=$cortxcontrolprov_image \
         --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc" \
@@ -838,19 +880,21 @@ function deployCortxControlProvisioner()
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$shared_storage \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
-        --set cortxcontrolprov.cfgmap.name="cortx-cfgmap" \
+        --set cortxcontrolprov.cfgmap.name="cortx-cfgmap-$namespace" \
         --set cortxcontrolprov.cfgmap.volmountname="config001" \
         --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx/solution" \
-        --set cortxcontrolprov.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+        --set cortxcontrolprov.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
         --set cortxcontrolprov.sslcfgmap.volmountname="ssl-config001" \
         --set cortxcontrolprov.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap" \
-        --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc" \
+        --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap-$namespace" \
+        --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
         --set cortxcontrolprov.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrolprov.secretinfo="secret-info.txt" \
         --set cortxcontrolprov.serviceaccountname="$serviceAccountName" \
-        --set namespace=$namespace
+        --set namespace=$namespace \
+        -n $namespace
+
 
     # Check if all Cortx Control Provisioner is up and running
     node_count=1
@@ -894,7 +938,7 @@ function deployCortxDataProvisioner()
     for i in "${!node_selector_list[@]}"; do
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
-        helm install "cortx-data-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-data-provisioner \
+        helm install "cortx-data-provisioner-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data-provisioner \
             --set cortxdataprov.name="cortx-data-provisioner-pod-$node_name" \
             --set cortxdataprov.image=$cortxdataprov_image \
             --set cortxdataprov.nodename=$node_name \
@@ -904,19 +948,20 @@ function deployCortxDataProvisioner()
             --set cortxgluster.pv.name=$gluster_pv_name \
             --set cortxgluster.pv.mountpath=$shared_storage \
             --set cortxgluster.pvc.name=$gluster_pvc_name \
-            --set cortxdataprov.cfgmap.name="cortx-cfgmap" \
+            --set cortxdataprov.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
             --set cortxdataprov.cfgmap.mountpath="/etc/cortx/solution" \
-            --set cortxdataprov.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+            --set cortxdataprov.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
             --set cortxdataprov.sslcfgmap.volmountname="ssl-config001" \
             --set cortxdataprov.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxdataprov.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
+            --set cortxdataprov.machineid.name="cortx-data-machine-id-cfgmap-$node_name-$namespace" \
             --set cortxdataprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdataprov.localpathpvc.mountpath="$local_storage" \
             --set cortxdataprov.localpathpvc.requeststoragesize="1Gi" \
             --set cortxdataprov.secretinfo="secret-info.txt" \
             --set cortxdataprov.serviceaccountname="$serviceAccountName" \
-            --set namespace=$namespace
+            --set namespace=$namespace \
+            -n $namespace
     done
 
     # Check if all OpenLDAP are up and running
@@ -966,27 +1011,28 @@ function deployCortxControl()
 
     num_nodes=1
     # This local path pvc has to match with the one created by CORTX Control Provisioner
-    helm install "cortx-control" cortx-cloud-helm-pkg/cortx-control \
+    helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control-pod" \
         --set cortxcontrol.image=$cortxcontrol_image \
         --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
         --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
         --set cortxcontrol.loadbal.name="cortx-control-loadbal-svc" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
-        --set cortxcontrol.cfgmap.name="cortx-cfgmap" \
+        --set cortxcontrol.cfgmap.name="cortx-cfgmap-$namespace" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
-        --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+        --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
         --set cortxcontrol.sslcfgmap.volmountname="ssl-config001" \
         --set cortxcontrol.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap" \
-        --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc" \
+        --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap-$namespace" \
+        --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
         --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$shared_storage \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
         --set cortxcontrol.serviceaccountname="$serviceAccountName" \
-        --set namespace=$namespace
+        --set namespace=$namespace \
+        -n $namespace
 
     printf "\nWait for CORTX Control to be ready"
     while true; do
@@ -1027,7 +1073,7 @@ function deployCortxData()
         num_nodes=$((num_nodes+1))
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
-        helm install "cortx-data-$node_name" cortx-cloud-helm-pkg/cortx-data \
+        helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
             --set cortxdata.name="cortx-data-pod-$node_name" \
             --set cortxdata.image=$cortxdata_image \
             --set cortxdata.nodename=$node_name \
@@ -1038,13 +1084,13 @@ function deployCortxData()
             --set cortxgluster.pv.name=$gluster_pv_name \
             --set cortxgluster.pv.mountpath=$shared_storage \
             --set cortxgluster.pvc.name=$gluster_pvc_name \
-            --set cortxdata.cfgmap.name="cortx-cfgmap" \
+            --set cortxdata.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxdata.cfgmap.volmountname="config001-$node_name" \
             --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
-            --set cortxdata.sslcfgmap.name="cortx-ssl-cert-cfgmap" \
+            --set cortxdata.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
             --set cortxdata.sslcfgmap.volmountname="ssl-config001" \
             --set cortxdata.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name" \
+            --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name-$namespace" \
             --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="$local_storage" \
             --set cortxdata.motr.numclientinst=$(extractBlock 'solution.common.motr.num_client_inst') \
@@ -1054,7 +1100,8 @@ function deployCortxData()
             --set cortxdata.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="$serviceAccountName" \
-            --set namespace=$namespace
+            --set namespace=$namespace \
+            -n $namespace
     done
 
     printf "\nWait for CORTX Data to be ready"
@@ -1122,7 +1169,7 @@ function cleanup()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
 
-    rm -rf "$cfgmap_path/auto-gen-secret"
+    rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
 }
 
 ##########################################################
@@ -1133,6 +1180,14 @@ deployKubernetesPrereqs
 ##########################################################
 # Deploy CORTX 3rd party
 ##########################################################
+found_match_nsp=false
+for np in "${namespace_list[@]}"; do
+    if [[ "$np" == "$namespace" ]]; then
+        found_match_nsp=true
+        break
+    fi
+done
+
 # Extract storage provisioner path from the "solution.yaml" file
 filter='solution.common.storage_provisioner_path'
 parse_storage_prov_output=$(parseSolution $filter)
@@ -1151,11 +1206,13 @@ if [[ "$num_worker_nodes" -gt "$max_kafka_inst" ]]; then
     num_kafka_replicas=$max_kafka_inst
 fi
 
-deployRancherProvisioner
-deployConsul
-deployOpenLDAP
-deployZookeeper
-deployKafka
+if [[ (${#namespace_list[@]} -le 1 && "$found_match_nsp" = true) || "$namespace" == "default" ]]; then
+    deployRancherProvisioner
+    deployConsul
+    deployOpenLDAP
+    deployZookeeper
+    deployKafka
+fi
 
 ##########################################################
 # Deploy CORTX cloud
@@ -1169,11 +1226,10 @@ log_storage=$(parseSolution 'solution.common.container_path.log')
 log_storage=$(echo $log_storage | cut -f2 -d'>')
 
 # GlusterFS
-gluster_vol="myvol"
-gluster_folder="/etc/gluster"
-gluster_etc_path="$storage_prov_path/$gluster_folder"
-gluster_pv_name="gluster-default-volume"
-gluster_pvc_name="gluster-claim"
+gluster_vol="myvol-""$namespace"
+gluster_etc_path="$storage_prov_path/etc/gluster-$namespace"
+gluster_pv_name="gluster-volume-""$namespace"
+gluster_pvc_name="gluster-claim-""$namespace"
 
 # Default path to CORTX configmap
 cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
