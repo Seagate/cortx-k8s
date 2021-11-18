@@ -56,11 +56,6 @@ spec:
             - -c
             - /opt/seagate/cortx/s3/bin/s3_start --service haproxy -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
-          volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
@@ -98,11 +93,6 @@ spec:
             - -c
             - /opt/seagate/cortx/s3/bin/s3_start --service s3authserver -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
-          volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
@@ -171,11 +161,6 @@ spec:
             - -c
             - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
           {{- end }}
-          volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
@@ -204,11 +189,6 @@ spec:
           {{- else }}
           command: ["/bin/sleep", "3650d"]
           {{- end }}
-          volumeDevices:
-            {{- range $.Files.Lines $.Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
@@ -241,11 +221,6 @@ spec:
             - -c
             - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf;
           {{- end }}
-          volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
@@ -319,11 +294,6 @@ spec:
             - -c
             - /opt/seagate/cortx/s3/bin/s3_start --service s3bgconsumer -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
-          volumeDevices:
-            {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
-            {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
