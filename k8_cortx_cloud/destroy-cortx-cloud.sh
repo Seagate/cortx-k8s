@@ -503,7 +503,7 @@ function deleteCortxNamespace()
 {
     # Delete CORTX namespace
     if [[ "$namespace" != "default" ]]; then
-        helm delete cortx-ns
+        helm delete cortx-ns-$namespace
     fi
 
 }
@@ -565,10 +565,11 @@ fi
 #############################################################
 # Clean up
 #############################################################
+deleteKubernetesPrereqs
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
     deleteStorageProvisioner
-    helmChartCleanup
-    deleteKubernetesPrereqs
+    
+    helmChartCleanup    
 fi
 deleteCortxNamespace
 cleanup
