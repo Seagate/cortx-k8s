@@ -45,3 +45,27 @@ networkPolicy:
     podAppLabel: cortx-control-pod
   cortxData:
     podNameLabel: cortx-data
+
+cortxData:
+  s3:
+    numInst: 2
+    ### cortx-s3-xxx (for HA Proxy)
+    startHaProxyPortNum: 28051
+    ### cortx-s3-xxx (for Motr RPC)
+    startMotrRpcPortNum: 4001
+  motr:
+    numClientInst: 1
+    numIosInst: 1
+    startPortNum: 29000
+    ### cortx-motr-ios-xxx (= [3001, 3001 + numClientInst) )
+    startMotrIosPortNum: 3001
+    ### cortx-motr-confd (= startMotrIosPort + numIosInst)
+    startMotrConfdPortNum: 3002
+    ### cortx-motr-app (= [5001, 5001 + numClientInst) )
+    startMotrAppPortNum: 5001
+    ### cortx-motr-hax
+    startMotrHaxPortNum: 2001
+
+
+    
+

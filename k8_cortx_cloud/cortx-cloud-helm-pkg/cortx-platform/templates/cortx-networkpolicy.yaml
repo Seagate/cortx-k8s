@@ -28,6 +28,10 @@ spec:
         port: 9443
       - protocol: TCP
         port: 28049
+      - protocol: TCP
+        port: 28071
+      - protocol: TCP
+        port: 28092
 
 ---
 
@@ -50,10 +54,10 @@ spec:
         matchLabels:
           name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
     ports:
+    {{- range $i := until (.Values.cortxData.s3.numInst | int) }}
       - protocol: TCP
-        port: 28051
-      - protocol: TCP
-        port: 28052
+        port: {{ printf "%d" (add $i $.Values.cortxData.s3.startHaProxyPortNum)  }}
+    {{- end }}
 
 ---
 
@@ -76,10 +80,10 @@ spec:
         matchLabels:
           name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
     ports:
+    {{- range $i := until (.Values.cortxData.motr.numIosInst | int) }}
       - protocol: TCP
-        port: 29000
-      - protocol: TCP
-        port: 29001
+        port: {{ printf "%d" (add $i $.Values.cortxData.motr.startPortNum) }}
+    {{- end }}
 
 ---
 
@@ -127,16 +131,20 @@ spec:
           name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
     ports:
       - protocol: TCP
-        port: 2001
+        port: {{ .Values.cortxData.motr.startMotrHaxPortNum }}
+    {{- range $i := until (.Values.cortxData.motr.numIosInst | int) }}
       - protocol: TCP
-        port: 3001
+        port: {{ printf "%d" (add $i $.Values.cortxData.motr.startMotrIosPortNum)  }}
+    {{- end }}
       - protocol: TCP
-        port: 3002
+        port: {{ printf "%d" (add .Values.cortxData.motr.startMotrIosPortNum .Values.cortxData.motr.numIosInst)  }}     
+    {{- range $i := until (.Values.cortxData.s3.numInst | int) }}
       - protocol: TCP
-        port: 3003      
+        port: {{ printf "%d" (add $i $.Values.cortxData.s3.startMotrRpcPortNum) }}
+    {{- end }}
+    {{- range $i := until (.Values.cortxData.motr.numClientInst | int) }}
       - protocol: TCP
-        port: 4001      
-      - protocol: TCP
-        port: 4002
+        port: {{ printf "%d" (add $i $.Values.cortxData.motr.startMotrAppPortNum) }}
+    {{- end }}
 
 {{- end }}
