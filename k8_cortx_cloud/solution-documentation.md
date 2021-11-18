@@ -60,9 +60,6 @@ the CORTX cloud.
       * Storage set name (solution.common.storage_sets.name): (Placeholder for CORTX to provide info)
       * SNS durability (solution.common.storage_sets.durability.sns): (Placeholder for CORTX to provide info)
       * DIX durability (solution.common.storage_sets.durability.dix): (Placeholder for CORTX to provide info)
-   
-   * GlusterFS size (solution.common.glusterfs.size): The size required for shared storage (To be removed
-     in near future).
 
 ## 5. Storage (solution.storage)
    The metadata and data drives are defined in this section. All the drives must be the same across all
