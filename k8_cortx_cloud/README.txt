@@ -79,13 +79,13 @@ Rancher Local Path mount point in all Pod containers (CORTX Provisioners, Data, 
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 The Helm charts work with both "dummy" and "CORTX ALL" containers. 
-If image is centos:7 helm runs in "dummy" mode any other name runs "CORTX ALL" mode
+If image is ghcr.io/seagate/centos:7 helm runs in "dummy" mode any other name runs "CORTX ALL" mode
 
-{- if eq $.Values.cortxdata.image  "centos:7" }}  # DO NOT CHANGE
-command: ["/bin/sleep", "3650d"]                  # DO NOT CHANGE 
-{{- else }}                                       # DO NOT CHANGE
+{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}  # DO NOT CHANGE
+command: ["/bin/sleep", "3650d"]                                  # DO NOT CHANGE 
+{{- else }}                                                       # DO NOT CHANGE
 command: ["/bin/sleep", "3650d"]    #<<=========================== REPLACE THIS WITH THE CORTX ENTRY POINT 
-{{- end }}                                        # DO NOT CHANGE
+{{- end }}                                                        # DO NOT CHANGE
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 See the following example from CORTX Data helm chart, replace the command section
@@ -98,11 +98,11 @@ containers:
 - name: cortx-s3-haproxy
    image: {{ .Values.cortxdata.image }}
    imagePullPolicy: IfNotPresent
-   {- if eq $.Values.cortxdata.image  "centos:7" }}  # DO NOT CHANGE
-   command: ["/bin/sleep", "3650d"]                  # DO NOT CHANGE 
-   {{- else }}                                       # DO NOT CHANGE
+   {- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}  # DO NOT CHANGE
+   command: ["/bin/sleep", "3650d"]                                  # DO NOT CHANGE 
+   {{- else }}                                                       # DO NOT CHANGE
    command: ["/bin/sleep", "3650d"]    #<<=========================== REPLACE THIS WITH THE CORTX ENTRY POINT 
-   {{- end }}                                        # DO NOT CHANGE
+   {{- end }}                                                        # DO NOT CHANGE
    volumeDevices:
    {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
    - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}

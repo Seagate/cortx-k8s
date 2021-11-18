@@ -55,9 +55,11 @@ function savePodDetail()
 function getInnerLogs()
 {
   path="/var/cortx/support_bundle"
-  name="logs-${date}-${1}"
-  logs_output=$(kubectl exec ${1} -- cortx_support_bundle generate -t file://${path} -b ${name} -m ${name})
-  kubectl cp $1:$path/$name ./${logs_folder}
+  name="bundle-logs-${1}-${date}"
+  printf "\n ⭐ Generating support-bundle logs for pod: ${1}\n"
+  kubectl exec ${1} --namespace="${namespace}" -- cortx_support_bundle generate -t file://${path} -b ${name} -m ${name}
+  kubectl cp $1:$path/$name $logs_folder/$name
+  tar rf $logs_folder.tar $logs_folder/$name
   kubectl exec ${1} --namespace="${namespace}" -- bash -c "rm -rf ${path}"
 }
 
