@@ -183,7 +183,7 @@ done
 # Create CORTX namespace
 if [[ "$namespace" != "default" ]]; then
 
-    helm install "cortx-ns" cortx-cloud-helm-pkg/cortx-platform \
+    helm install "cortx-ns-$namespace" cortx-cloud-helm-pkg/cortx-platform \
         --set namespace.create="true" \
         --set namespace.name="$namespace"
 
