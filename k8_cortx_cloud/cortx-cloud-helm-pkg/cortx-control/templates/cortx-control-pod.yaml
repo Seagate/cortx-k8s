@@ -16,6 +16,7 @@ spec:
         app: {{ .Values.cortxcontrol.name }}
     spec:
       hostname: {{ .Values.cortxcontrol.service.headless.name }}
+      serviceAccountName: {{ .Values.cortxcontrol.serviceaccountname }}
       volumes:
         - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
           configMap:
@@ -65,6 +66,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: cortx-fsm-motr
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
@@ -96,6 +99,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: cortx-bg-producer
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
@@ -127,6 +132,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: cortx-csm-agent
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
@@ -160,3 +167,5 @@ spec:
               value: {{ .Values.cortxcontrol.name }}
           ports:
           - containerPort: 8081
+          securityContext:
+            allowPrivilegeEscalation: false

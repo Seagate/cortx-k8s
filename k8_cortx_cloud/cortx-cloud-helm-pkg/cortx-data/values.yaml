@@ -5,6 +5,7 @@ cortxdata:
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
   secretinfo: secret-info.txt
+  serviceaccountname: cortx-sa
   s3:
     numinst: 2
     startportnum: 28051

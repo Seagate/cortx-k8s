@@ -3,6 +3,9 @@
 solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
 
+##TODO Extract from solution.yaml ? 
+serviceAccountName=cortx-sa
+
 # Check if the file exists
 if [ ! -f $solution_yaml ]
 then
@@ -179,7 +182,11 @@ done
 
 # Create CORTX namespace
 if [[ "$namespace" != "default" ]]; then
-    kubectl create namespace $namespace
+
+    helm install "cortx-ns" cortx-cloud-helm-pkg/cortx-platform \
+        --set namespace.create="true" \
+        --set namespace.name="$namespace"
+
 fi
 
 count=0
@@ -199,6 +206,34 @@ while IFS= read -r line; do
     fi
     count=$((count+1))
 done <<< "$(kubectl get namespaces)"
+
+##########################################################
+# Deploy CORTX k8s pre-reqs
+##########################################################
+function deployKubernetesPrereqs()
+{
+
+    ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
+    ## in the same chart as Namespace-scoped objects.
+    podSecurityPolicyName="cortx-baseline"
+    createPodSecurityPolicy="true"
+    output=$(kubectl get psp --no-headers $podSecurityPolicyName 2>/dev/null | wc -l)
+    if [[ "$output" == "1" ]]; then
+        createPodSecurityPolicy="false"
+    fi
+
+    helm install "cortx-platform" cortx-cloud-helm-pkg/cortx-platform \
+        --set podSecurityPolicy.create="$createPodSecurityPolicy" \
+        --set rbacRole.create="true" \
+        --set rbacRoleBinding.create="true" \
+        --set serviceAccount.create="true" \
+        --set serviceAccount.name="$serviceAccountName" \
+        --set networkPolicy.create="false" \
+        --set namespace.name="$namespace" \
+        -n $namespace
+
+}
+
 
 ##########################################################
 # Deploy CORTX 3rd party
@@ -856,8 +891,10 @@ function deployCortxControlProvisioner()
         --set cortxcontrolprov.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrolprov.secretinfo="secret-info.txt" \
+        --set cortxcontrolprov.serviceaccountname="$serviceAccountName" \
         --set namespace=$namespace \
         -n $namespace
+
 
     # Check if all Cortx Control Provisioner is up and running
     node_count=1
@@ -922,6 +959,7 @@ function deployCortxDataProvisioner()
             --set cortxdataprov.localpathpvc.mountpath="$local_storage" \
             --set cortxdataprov.localpathpvc.requeststoragesize="1Gi" \
             --set cortxdataprov.secretinfo="secret-info.txt" \
+            --set cortxdataprov.serviceaccountname="$serviceAccountName" \
             --set namespace=$namespace \
             -n $namespace
     done
@@ -992,6 +1030,7 @@ function deployCortxControl()
         --set cortxgluster.pv.name=$gluster_pv_name \
         --set cortxgluster.pv.mountpath=$shared_storage \
         --set cortxgluster.pvc.name=$gluster_pvc_name \
+        --set cortxcontrol.serviceaccountname="$serviceAccountName" \
         --set namespace=$namespace \
         -n $namespace
 
@@ -1060,6 +1099,7 @@ function deployCortxData()
             --set cortxdata.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
             --set cortxdata.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
+            --set cortxdata.serviceaccountname="$serviceAccountName" \
             --set namespace=$namespace \
             -n $namespace
     done
@@ -1131,6 +1171,11 @@ function cleanup()
 
     rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
 }
+
+##########################################################
+# Deploy Kubernetes prerequisite configurations
+##########################################################
+deployKubernetesPrereqs
 
 ##########################################################
 # Deploy CORTX 3rd party

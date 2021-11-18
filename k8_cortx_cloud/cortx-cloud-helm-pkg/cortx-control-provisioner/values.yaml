@@ -3,6 +3,7 @@ cortxcontrolprov:
   name: cortx-control-prov-pod
   image: centos:7
   secretinfo: secret-info.txt
+  serviceaccountname: cortx-sa
   service:
     clusterip:
       name: cortx-control-clusterip-svc

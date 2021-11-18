@@ -1,6 +1,7 @@
 namespace: default
 cortxgluster:
   name: gluster
+  serviceaccountname: cortx-sa
   nodename: node-1
   storagesize: 1Gi
   storageclass: cortx-gluster-storage
