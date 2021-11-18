@@ -327,6 +327,17 @@ function deployOpenLDAP()
     fi
 }
 
+function splitDockerImage()
+{
+    IFS='/' read -ra image <<< "$1"
+    tag="${image[2]}"
+    IFS=':' read -ra tag <<< "$tag"
+    registry="${image[0]}"
+    repository="${image[1]}"
+    repository="${repository}/${tag[0]}"
+    tag="${tag[1]}"
+}
+
 function deployZookeeper()
 {
     printf "######################################################\n"
@@ -337,9 +348,13 @@ function deployZookeeper()
 
     image=$(parseSolution 'solution.images.zookeeper')
     image=$(echo $image | cut -f2 -d'>')
+    splitDockerImage "${image}"
+    printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
 
     helm install zookeeper bitnami/zookeeper \
-        --set image.tag=$image \
+        --set image.tag=$tag \
+        --set image.registry=$registry \
+        --set image.repository=$repository \
         --set replicaCount=$num_kafka_replicas \
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
@@ -376,10 +391,14 @@ function deployKafka()
 
     image=$(parseSolution 'solution.images.kafka')
     image=$(echo $image | cut -f2 -d'>')
+    splitDockerImage "${image}"
+    printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
     
     helm install kafka bitnami/kafka \
         --set zookeeper.enabled=false \
-        --set image.tag=$image \
+        --set image.tag=$tag \
+        --set image.registry=$registry \
+        --set image.repository=$repository \
         --set replicaCount=$num_kafka_replicas \
         --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
         --set global.storageClass=$storage_class \

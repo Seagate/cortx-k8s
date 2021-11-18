@@ -32,7 +32,7 @@ spec:
     imagePullPolicy: IfNotPresent        
     command: 
       - /bin/sh
-    {{- if eq .Values.cortxcontrolprov.image "centos:7" }}
+    {{- if eq .Values.cortxcontrolprov.image "ghcr.io/seagate/centos:7" }}
     args: 
       - -c
       - sleep $(shuf -i 5-10 -n 1)s
