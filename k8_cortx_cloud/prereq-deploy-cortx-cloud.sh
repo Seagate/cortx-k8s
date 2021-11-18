@@ -113,7 +113,6 @@ function cleanupFolders()
     # cleanup
     rm -rf /etc/3rd-party/openldap /var/data/3rd-party/*
     rm -rf $fs_mount_path/local-path-provisioner/*
-    rm -rf $fs_mount_path/etc/gluster/var/log/cortx/*
 }
 
 function increaseResources()
@@ -152,16 +151,6 @@ function prepCortxDeployment()
     done
 }
 
-function prepGlusterfsDeployment()
-{
-    # Prep for GlusterFS deployment
-    yum install glusterfs-fuse -y
-    mkdir -p $fs_mount_path/$gluster_folder
-    mkdir -p $fs_mount_path/$gluster_folder/var/log/cortx
-    mkdir -p $fs_mount_path/var/log/glusterfs
-    mkdir -p $fs_mount_path/var/lib/glusterd
-}
-
 function prepOpenLdapDeployment()
 {
     # Prep for OpenLDAP deployment
@@ -188,7 +177,6 @@ fs_mount_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
 
 namespace=$(parseSolution $solution_yaml 'solution.namespace')
 namespace=$(echo $namespace | cut -f2 -d'>')
-gluster_folder="/etc/gluster-$namespace"
 
 # Install helm this is a master node
 if [[ "$is_master_node" = true ]]; then
@@ -200,6 +188,5 @@ if [[ "$disk" != "" ]]; then
     cleanupFolders
     increaseResources
     prepCortxDeployment
-    prepGlusterfsDeployment
     prepOpenLdapDeployment
 fi

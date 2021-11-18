@@ -18,9 +18,6 @@ spec:
     - name: {{ .Values.cortxcontrolprov.machineid.volmountname }}
       configMap:
         name: {{ .Values.cortxcontrolprov.machineid.name }}
-    - name: {{ .Values.cortxgluster.pv.name }}
-      persistentVolumeClaim:
-        claimName: {{ .Values.cortxgluster.pvc.name }}
     - name: local-path-pv
       persistentVolumeClaim:
         claimName: {{ .Values.cortxcontrolprov.localpathpvc.name }}
@@ -51,8 +48,6 @@ spec:
         mountPath: {{ .Values.cortxcontrolprov.sslcfgmap.mountpath }}
       - name: {{ .Values.cortxcontrolprov.machineid.volmountname }}
         mountPath: {{ .Values.cortxcontrolprov.machineid.mountpath }}
-      - name: {{ .Values.cortxgluster.pv.name }}
-        mountPath: {{ .Values.cortxgluster.pv.mountpath }}
       - name: local-path-pv
         mountPath: {{ .Values.cortxcontrolprov.localpathpvc.mountpath }}
       {{- range .Files.Lines .Values.cortxcontrolprov.secretinfo }}
