@@ -156,8 +156,8 @@ function prepGlusterfsDeployment()
 {
     # Prep for GlusterFS deployment
     yum install glusterfs-fuse -y
-    mkdir -p $fs_mount_path/etc/gluster
-    mkdir -p $fs_mount_path/etc/gluster/var/log/cortx
+    mkdir -p $fs_mount_path/$gluster_folder
+    mkdir -p $fs_mount_path/$gluster_folder/var/log/cortx
     mkdir -p $fs_mount_path/var/log/glusterfs
     mkdir -p $fs_mount_path/var/lib/glusterd
 }
@@ -185,6 +185,10 @@ filter='solution.common.storage_provisioner_path'
 parse_storage_prov_output=$(parseSolution $solution_yaml $filter)
 # Get the storage provisioner var from the tuple
 fs_mount_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
+
+namespace=$(parseSolution $solution_yaml 'solution.namespace')
+namespace=$(echo $namespace | cut -f2 -d'>')
+gluster_folder="/etc/gluster-$namespace"
 
 # Install helm this is a master node
 if [[ "$is_master_node" = true ]]; then
