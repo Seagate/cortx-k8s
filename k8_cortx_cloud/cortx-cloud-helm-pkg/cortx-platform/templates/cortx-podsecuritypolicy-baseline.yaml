@@ -48,7 +48,6 @@ spec:
     - 'flocker'
     - 'gcePersistentDisk'
     - 'gitRepo'
-    - 'glusterfs'
     - 'iscsi'
     - 'nfs'
     - 'photonPersistentDisk'
