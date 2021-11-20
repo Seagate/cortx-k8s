@@ -304,7 +304,7 @@ At this stage the environment should look like on this picture:
     <img src="pics/cortx-aws-k8s-after-installation.jpg">
  </p>
 
-Test that all pods are running and that CORTX is ready
+#### 3.5.1 Test that all pods are running and that CORTX is ready
 ```
 
 ssh $SSH_FLAGS centos@$ClusterControlPlaneIP
