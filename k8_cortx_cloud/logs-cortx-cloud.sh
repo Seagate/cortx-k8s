@@ -58,6 +58,7 @@ function getInnerLogs()
   name="logs-${date}-${1}"
   logs_output=$(kubectl exec ${1} -- cortx_support_bundle generate -t file://${path} -b ${name} -m ${name})
   kubectl cp $1:$path/$name ./${logs_folder}
+  tar rf $logs_folder.tar ./${logs_folder}
   kubectl exec ${1} --namespace="${namespace}" -- bash -c "rm -rf ${path}"
 }
 
