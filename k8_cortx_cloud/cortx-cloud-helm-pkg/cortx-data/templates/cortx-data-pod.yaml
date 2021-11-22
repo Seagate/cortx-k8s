@@ -15,7 +15,9 @@ spec:
       labels:
         app: {{ .Values.cortxdata.name }}
         name: cortx-data
-    {{- $nodename := (.Values.cortxdata.nodename) }}
+    {{- $nodeselector := (.Values.cortxdata.nodeselector) }}
+    {{- $nodeparts := split "." $nodeselector }}
+    {{- $nodename := $nodeparts._0 }}
     spec:
       hostname: {{ .Values.cortxdata.service.headless.name }}
       volumes:
@@ -481,4 +483,4 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
       nodeSelector:
-        kubernetes.io/hostname: {{ .Values.cortxdata.nodename }}
+        kubernetes.io/hostname: {{ .Values.cortxdata.nodeselector }}

@@ -819,7 +819,7 @@ function deployCortxControlProvisioner()
 function deployCortxDataProvisioner()
 {
     printf "########################################################\n"
-    printf "# Deploy CORTX Data Provisioner                              \n"
+    printf "# Deploy CORTX Data Provisioner                         \n"
     printf "########################################################\n"
     cortxdataprov_image=$(parseSolution 'solution.images.cortxdataprov')
     cortxdataprov_image=$(echo $cortxdataprov_image | cut -f2 -d'>')
@@ -830,7 +830,7 @@ function deployCortxDataProvisioner()
         helm install "cortx-data-provisioner-$node_name" cortx-cloud-helm-pkg/cortx-data-provisioner \
             --set cortxdataprov.name="cortx-data-provisioner-pod-$node_name" \
             --set cortxdataprov.image=$cortxdataprov_image \
-            --set cortxdataprov.nodename=$node_name \
+            --set cortxdataprov.nodeselector=$node_selector \
             --set cortxdataprov.mountblkinfo="mnt-blk-info.txt" \
             --set cortxdataprov.nodelistinfo="node-list-info.txt" \
             --set cortxdataprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
@@ -964,7 +964,7 @@ function deployCortxData()
         helm install "cortx-data-$node_name" cortx-cloud-helm-pkg/cortx-data \
             --set cortxdata.name="cortx-data-pod-$node_name" \
             --set cortxdata.image=$cortxdata_image \
-            --set cortxdata.nodename=$node_name \
+            --set cortxdata.nodeselector=$node_selector \
             --set cortxdata.mountblkinfo="mnt-blk-info.txt" \
             --set cortxdata.nodelistinfo="node-list-info.txt" \
             --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \

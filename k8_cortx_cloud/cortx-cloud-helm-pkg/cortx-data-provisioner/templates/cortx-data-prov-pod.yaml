@@ -17,7 +17,9 @@ spec:
     - name: {{ .Values.cortxdataprov.machineid.volmountname }}
       configMap:
         name: {{ .Values.cortxdataprov.machineid.name }}
-    {{- $nodename := (.Values.cortxdataprov.nodename) }}
+    {{- $nodeselector := (.Values.cortxdataprov.nodeselector) }}
+    {{- $nodeparts := split "." $nodeselector }}
+    {{- $nodename := $nodeparts._0 }}
     # Loop through the node list info file which contains the following example:
     # 0 node-1
     # 1 node-2
@@ -108,4 +110,4 @@ spec:
     - containerPort: 5050
   restartPolicy: Never
   nodeSelector:
-    kubernetes.io/hostname: {{ .Values.cortxdataprov.nodename }}
+    kubernetes.io/hostname: {{ .Values.cortxdataprov.nodeselector }}
