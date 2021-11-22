@@ -178,36 +178,6 @@ else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
 fi
 
-# Check storage shared
-count=0
-num_pvs_pvcs=2
-printf "${INFO}| Checking Storage: Shared [PVCs/PVs] |${NC}\n"
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "$line"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PVC: ${status[0]}..."
-        if [[ "${status[1]}" != "Bound" ]]; then
-            printf "${FAILED}FAILED${NC}\n"
-        else
-            printf "${PASSED}PASSED${NC}\n"
-            count=$((count+1))
-        fi
-    fi
-done <<< "$(kubectl get pvc --namespace=$namespace | grep 'gluster-claim')"
-
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "$line"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PV: ${status[5]}..."
-        if [[ "${status[4]}" != "Bound" ]]; then
-            printf "${FAILED}FAILED${NC}\n"
-        else
-            printf "${PASSED}PASSED${NC}\n"
-            count=$((count+1))
-        fi
-    fi
-done <<< "$(kubectl get pv --namespace=$namespace | grep 'gluster-claim')"
-
 if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
@@ -367,42 +337,6 @@ while IFS= read -r line; do
         fi
     fi
 done <<< "$(kubectl get pv --namespace=$namespace | grep 'cortx-data-fs-local-pvc')"
-
-if [[ $num_pvs_pvcs -eq $count ]]; then
-    printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
-else
-    printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
-fi
-
-# Check storage shared
-count=0
-num_pvs_pvcs=2
-printf "${INFO}| Checking Storage: Shared [PVCs/PVs] |${NC}\n"
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "$line"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PVC: ${status[0]}..."
-        if [[ "${status[1]}" != "Bound" ]]; then
-            printf "${FAILED}FAILED${NC}\n"
-        else
-            printf "${PASSED}PASSED${NC}\n"
-            count=$((count+1))
-        fi
-    fi
-done <<< "$(kubectl get pvc --namespace=$namespace | grep 'gluster-claim')"
-
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "$line"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PV: ${status[5]}..."
-        if [[ "${status[4]}" != "Bound" ]]; then
-            printf "${FAILED}FAILED${NC}\n"
-        else
-            printf "${PASSED}PASSED${NC}\n"
-            count=$((count+1))
-        fi
-    fi
-done <<< "$(kubectl get pv --namespace=$namespace | grep 'gluster-claim')"
 
 if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"

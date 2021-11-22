@@ -7,6 +7,7 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   hostname: {{ .Values.cortxdataprov.service.headless.name }}
+  serviceAccountName: {{ .Values.cortxdataprov.serviceaccountname }}
   volumes:
     - name: {{ .Values.cortxdataprov.cfgmap.volmountname }}
       configMap:
@@ -42,9 +43,6 @@ spec:
     {{- end }}
     {{- end }}
     {{- end }}
-    - name: {{ .Values.cortxgluster.pv.name }}
-      persistentVolumeClaim:
-        claimName: {{ .Values.cortxgluster.pvc.name }}
     - name: local-path-pv
       persistentVolumeClaim:
         claimName: {{ .Values.cortxdataprov.localpathpvc.name }}
@@ -59,7 +57,7 @@ spec:
     imagePullPolicy: IfNotPresent        
     command: 
       - /bin/sh
-    {{- if eq .Values.cortxdataprov.image  "centos:7" }}
+    {{- if eq .Values.cortxdataprov.image  "ghcr.io/seagate/centos:7" }}
     args: 
       - -c
       - sleep $(shuf -i 5-10 -n 1)s
@@ -97,8 +95,6 @@ spec:
         mountPath: {{ .Values.cortxdataprov.sslcfgmap.mountpath }}
       - name: {{ .Values.cortxdataprov.machineid.volmountname }}
         mountPath: {{ .Values.cortxdataprov.machineid.mountpath }}
-      - name: {{ .Values.cortxgluster.pv.name }}
-        mountPath: {{ .Values.cortxgluster.pv.mountpath }}
       - name: local-path-pv
         mountPath: {{ .Values.cortxdataprov.localpathpvc.mountpath }}
       {{- range .Files.Lines .Values.cortxdataprov.secretinfo }}
