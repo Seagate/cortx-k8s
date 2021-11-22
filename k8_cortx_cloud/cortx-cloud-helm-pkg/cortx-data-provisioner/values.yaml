@@ -2,8 +2,9 @@ namespace: default
 cortxdataprov:
   name: cortx-data-prov-pod
   image: ghcr.io/seagate/centos:7
-  nodename: node-1
+  nodeselector: node-1
   mountblkinfo: mnt-blk-info.txt
+  nodelistinfo: node-list-info.txt
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   service:

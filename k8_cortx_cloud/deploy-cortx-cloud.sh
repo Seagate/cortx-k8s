@@ -109,8 +109,14 @@ if [[ $num_tainted_worker_nodes -gt 0 || $num_not_found_nodes -gt 0 ]]; then
     fi
 fi
 
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+# Delete disk & node info files from folders: cortx-data-blk-data, cortx-data,
+# cortx-data-provisioner
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "node-list-*" -delete
 
 # Create files consist of drives per node and files consist of drive sizes.
 # These files are used by the helm charts to deploy cortx provisioners and
@@ -118,67 +124,60 @@ find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
 node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
 count=0
-# Loop the var val tuple array
+
+mnt_blk_info_fname="mnt-blk-info.txt"
+node_list_info_fname="node-list-info.txt"
+cortx_blk_data_mnt_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/$mnt_blk_info_fname
+cortx_blk_data_node_list_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/$node_list_info_fname
+
+count=0
 for var_val_element in "${parsed_var_val_array[@]}"
 do
     node_name=$(echo $var_val_element | cut -f2 -d'>')
     node_selector_list[count]=$node_name
     shorter_node_name=$(echo $node_name | cut -f1 -d'.')
     node_name_list[count]=$shorter_node_name
-    count=$((count+1))
-    file_name="mnt-blk-info-$shorter_node_name.txt"
-    file_name_storage_size="mnt-blk-storage-size-$shorter_node_name.txt"
-    data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
-    data_prov_storage_size_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name_storage_size
-    data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
-    data_storage_size_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name_storage_size
 
     # Get the node var from the tuple
-    node=$(echo $var_val_element | cut -f3 -d'.')
-
-    # Get the devices from the solution
-    filter="solution.storage.cvg*.devices*.device"
-    parsed_dev_output=$(parseSolution $filter)
-    IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
-
-    # Get the sizes from the solution
-    filter="solution.storage.cvg*.devices*.size"
-    parsed_size_output=$(parseSolution $filter)
-    IFS=';' read -r -a parsed_size_array <<< "$parsed_size_output"
-
-    if [[ "${#parsed_dev_array[@]}" != "${#parsed_size_array[@]}" ]]
-    then
-        printf "\nStorage sizes are not defined for all of the storage devices\n"
-        printf "in the $solution_yaml file\n"
-        exit 1
+    node_info_str="$count $node_name"
+    if [[ -s $cortx_blk_data_node_list_info_path ]]; then
+        printf "\n" >> $cortx_blk_data_node_list_info_path
     fi
+    printf "$node_info_str" >> $cortx_blk_data_node_list_info_path
 
-    for dev in "${parsed_dev_array[@]}"
-    do
-        device=$(echo $dev | cut -f2 -d'>')
-        if [[ -s $data_prov_file_path ]]; then
-            printf "\n" >> $data_prov_file_path
-        fi
-        if [[ -s $data_file_path ]]; then
-            printf "\n" >> $data_file_path
-        fi
-        printf $device >> $data_prov_file_path
-        printf $device >> $data_file_path
-    done
-
-    for dev in "${parsed_size_array[@]}"
-    do
-        size=$(echo $dev | cut -f2 -d'>')
-        if [[ -s $data_prov_storage_size_file_path ]]; then
-            printf "\n" >> $data_prov_storage_size_file_path
-        fi
-        if [[ -s $data_storage_size_file_path ]]; then
-            printf "\n" >> $data_storage_size_file_path
-        fi
-        printf $size >> $data_prov_storage_size_file_path
-        printf $size >> $data_storage_size_file_path
-    done
+    count=$((count+1))
 done
+
+# Copy cluster node info file from CORTX local block helm to CORTX data and CORTX data provisioner
+cp $cortx_blk_data_node_list_info_path $(pwd)/cortx-cloud-helm-pkg/cortx-data
+cp $cortx_blk_data_node_list_info_path $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner
+
+# Get the devices from the solution
+filter="solution.storage.cvg*.devices*.device"
+parsed_dev_output=$(parseSolution $filter)
+IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
+
+# Get the sizes from the solution
+filter="solution.storage.cvg*.devices*.size"
+parsed_size_output=$(parseSolution $filter)
+IFS=';' read -r -a parsed_size_array <<< "$parsed_size_output"
+
+# Write disk info (device name and size) to files (for cortx local blk storage and cortx data)
+for index in "${!parsed_dev_array[@]}"
+do
+    device=$(echo ${parsed_dev_array[$index]} | cut -f2 -d'>')
+    size=$(echo ${parsed_size_array[$index]} | cut -f2 -d'>')
+    mnt_blk_info="$device $size"
+    
+    if [[ -s $cortx_blk_data_mnt_info_path ]]; then
+        printf "\n" >> $cortx_blk_data_mnt_info_path
+    fi
+    printf "$mnt_blk_info" >> $cortx_blk_data_mnt_info_path
+done
+
+# Copy device info file from CORTX local block helm to CORTX data and CORTX data provisioner
+cp $cortx_blk_data_mnt_info_path $(pwd)/cortx-cloud-helm-pkg/cortx-data
+cp $cortx_blk_data_mnt_info_path $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner
 
 # Create CORTX namespace
 if [[ "$namespace" != "default" ]]; then
@@ -440,43 +439,13 @@ function deployCortxLocalBlockStorage()
     printf "######################################################\n"
     printf "# Deploy CORTX Local Block Storage                    \n"
     printf "######################################################\n"
-    for i in "${!node_selector_list[@]}"; do
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-
-        storage_size_file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-storage-size-$node_name.txt"
-        storage_size=[]
-        size_count=0
-        while IFS=' ' read -r size || [[ -n "$size" ]]; do
-            storage_size[size_count]=$size
-            size_count=$((size_count+1))        
-        done < "$storage_size_file_path"
-
-
-        file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-info-$node_name.txt"
-        count=001
-        size_count=0
-        while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
-            mount_base_dir=$( echo "$mount_path" | sed -e 's/\/.*\///g')
-            count_str=$(printf "%03d" $count)
-            count=$((count+1))
-            helm_name1="cortx-data-blk-data$count_str-$node_name-$namespace"
-            storage_class_name1="local-blk-storage$count_str-$node_name-$namespace"
-            pvc1_name="cortx-data-$mount_base_dir-pvc-$node_name"
-            pv1_name="cortx-data-$mount_base_dir-pv-$node_name"
-            helm install $helm_name1 cortx-cloud-helm-pkg/cortx-data-blk-data \
-                --set cortxblkdata.nodename=$node_selector \
-                --set cortxblkdata.storage.localpath=$mount_path \
-                --set cortxblkdata.storage.size=${storage_size[size_count]} \
-                --set cortxblkdata.storageclass=$storage_class_name1 \
-                --set cortxblkdata.storage.pvc.name=$pvc1_name \
-                --set cortxblkdata.storage.pv.name=$pv1_name \
-                --set cortxblkdata.storage.volumemode="Block" \
-                --set namespace=$namespace \
-                -n $namespace
-            size_count=$((size_count+1))
-        done < "$file_path"
-    done
+    helm install "cortx-data-blk-data-$namespace" cortx-cloud-helm-pkg/cortx-data-blk-data \
+        --set cortxblkdata.storageclass="cortx-local-blk-storage-$namespace" \
+        --set cortxblkdata.nodelistinfo="node-list-info.txt" \
+        --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
+        --set cortxblkdata.storage.volumemode="Block" \
+        --set namespace=$namespace \
+        -n $namespace
 }
 
 function deleteStaleAutoGenFolders()
@@ -812,7 +781,7 @@ function deployCortxControlProvisioner()
 function deployCortxDataProvisioner()
 {
     printf "########################################################\n"
-    printf "# Deploy CORTX Data Provisioner                              \n"
+    printf "# Deploy CORTX Data Provisioner                         \n"
     printf "########################################################\n"
     cortxdataprov_image=$(parseSolution 'solution.images.cortxdataprov')
     cortxdataprov_image=$(echo $cortxdataprov_image | cut -f2 -d'>')
@@ -823,8 +792,9 @@ function deployCortxDataProvisioner()
         helm install "cortx-data-provisioner-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data-provisioner \
             --set cortxdataprov.name="cortx-data-provisioner-pod-$node_name" \
             --set cortxdataprov.image=$cortxdataprov_image \
-            --set cortxdataprov.nodename=$node_name \
-            --set cortxdataprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
+            --set cortxdataprov.nodeselector=$node_selector \
+            --set cortxdataprov.mountblkinfo="mnt-blk-info.txt" \
+            --set cortxdataprov.nodelistinfo="node-list-info.txt" \
             --set cortxdataprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdataprov.service.headless.name="cortx-data-headless-svc-$node_name" \
             --set cortxdataprov.cfgmap.name="cortx-cfgmap-$namespace" \
@@ -842,6 +812,8 @@ function deployCortxDataProvisioner()
             --set namespace=$namespace \
             -n $namespace
     done
+
+    ## TODO: fix cortxdataprov.localpathpvc.requeststoragesize="1Gi". Get the value from solution.yaml??
 
     # Check if all OpenLDAP are up and running
     node_count="${#node_selector_list[@]}"
@@ -952,8 +924,9 @@ function deployCortxData()
         helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
             --set cortxdata.name="cortx-data-pod-$node_name" \
             --set cortxdata.image=$cortxdata_image \
-            --set cortxdata.nodename=$node_name \
-            --set cortxdata.mountblkinfo="mnt-blk-info-$node_name.txt" \
+            --set cortxdata.nodeselector=$node_selector \
+            --set cortxdata.mountblkinfo="mnt-blk-info.txt" \
+            --set cortxdata.nodelistinfo="node-list-info.txt" \
             --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
             --set cortxdata.service.loadbal.name="cortx-data-loadbal-svc-$node_name" \
@@ -1035,14 +1008,19 @@ function cleanup()
     # and the node info
     #################################################################
     find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
 
     rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
+
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "node-list-*" -delete
 }
 
 ##########################################################

@@ -15,6 +15,9 @@ spec:
       labels:
         app: {{ .Values.cortxdata.name }}
         name: cortx-data
+    {{- $nodeselector := (.Values.cortxdata.nodeselector) }}
+    {{- $nodeparts := split "." $nodeselector }}
+    {{- $nodename := $nodeparts._0 }}
     spec:
       hostname: {{ .Values.cortxdata.service.headless.name }}
       serviceAccountName: {{ .Values.cortxdata.serviceaccountname }}
@@ -28,12 +31,27 @@ spec:
         - name: {{ .Values.cortxdata.machineid.volmountname }}
           configMap:
             name: {{ .Values.cortxdata.machineid.name }}
-        {{- $nodename := (.Values.cortxdata.nodename) }}
-        {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-        {{- $basepath := (base .) }}
-        - name: {{ printf "cortx-data-%s-pv-%s" $basepath $nodename }}
+        # Loop through the node list info file which contains the following example:
+        # 0 node-1
+        # 1 node-2
+        {{- range $line := .Files.Lines .Values.cortxdata.nodelistinfo }}
+        {{- $parts := split " " . }}
+        {{- $index := $parts._0 }}
+        {{- $parsednodename := $parts._1 }}
+        # Loop through the mounted block info file which contains the following:
+        # /dev/sdc 5Gi
+        # /dev/sdd 5Gi
+        {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
+        {{- $mntblkparts := split " " . }}
+        {{- $localpath := $mntblkparts._0 }}
+        {{- $mountblksize := $mntblkparts._1 }}
+        {{- $disk := (base $localpath) }}
+        {{- if eq $parsednodename $nodename }}
+        - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
           persistentVolumeClaim:
-            claimName: {{ printf "cortx-data-%s-pvc-%s" $basepath $nodename }}
+            claimName: {{ printf "cortx-data-%s-pvc-%s" $disk $index }}
+        {{- end }}
+        {{- end }}
         {{- end }}
         - name: local-path-pv
           persistentVolumeClaim:
@@ -259,9 +277,26 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf;
           {{- end }}
           volumeDevices:
-            {{- range $.Files.Lines $.Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
+            # Loop through the node list info file which contains the following example:
+            # 0 node-1
+            # 1 node-2
+            {{- range $line := $.Files.Lines $.Values.cortxdata.nodelistinfo }}
+            {{- $parts := split " " . }}
+            {{- $index := $parts._0 }}
+            {{- $parsednodename := $parts._1 }}
+            # Loop through the mounted block info file which contains the following:
+            # /dev/sdc 5Gi
+            # /dev/sdd 5Gi
+            {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
+            {{- $mntblkparts := split " " . }}
+            {{- $localpath := $mntblkparts._0 }}
+            {{- $mountblksize := $mntblkparts._1 }}
+            {{- $disk := (base $localpath) }}
+            {{- if eq $parsednodename $nodename }}
+            - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
+              devicePath: {{ $localpath }}
+            {{- end }}
+            {{- end }}
             {{- end }}
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
@@ -313,3 +348,5 @@ spec:
               value: {{ .Values.cortxdata.name }}
           securityContext:
             allowPrivilegeEscalation: false
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.cortxdata.nodeselector }}

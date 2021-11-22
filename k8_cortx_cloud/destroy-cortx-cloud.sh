@@ -169,18 +169,7 @@ function deleteCortxLocalBlockStorage()
     printf "######################################################\n"
     printf "# Delete CORTX Local Block Storage                    \n"
     printf "######################################################\n"
-    for i in "${!node_selector_list[@]}"; do
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-        file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-info-$node_name.txt"
-        count=001
-        while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
-            count_str=$(printf "%03d" $count)
-            count=$((count+1))
-            helm_name1="cortx-data-blk-data$count_str-$node_name-$namespace"
-            helm uninstall $helm_name1 -n $namespace
-        done < "$file_path"
-    done
+    helm uninstall "cortx-data-blk-data-$namespace" -n $namespace
 }
 
 function deleteCortxPVs()
@@ -452,6 +441,13 @@ function cleanup()
         rm $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
         rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
     done
+    
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "node-list-*" -delete
 }
 
 #############################################################
