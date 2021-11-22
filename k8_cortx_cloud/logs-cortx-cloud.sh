@@ -1,8 +1,11 @@
 #!/bin/bash
 
+SCRIPT=$(readlink -f "$0")
+DIR=$(dirname "$SCRIPT")
+
 function parseSolution()
 {
-  echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
+  echo "$($DIR/parse_scripts/parse_yaml.sh $DIR/$solution_yaml $1)"
 }
 
 date=$(date +%F_%H-%M)
