@@ -35,7 +35,7 @@ function saveLogs()
   if [ "${logs_output}" != "" ]; then
     echo "================= Logs of ${1} =================" > $log_file
     printf "\n${logs_output}" >> $log_file
-    tar rf $logs_folder.tar $log_file
+    tar rf $logs_folder.tar.gz $log_file
     rm $log_file
   fi
 }
@@ -47,7 +47,7 @@ function savePodDetail()
   if [ "${logs_output}" != "" ]; then
     echo "================= Detail of ${1} =================" > $log_file
     printf "\n${logs_output}" >> $log_file
-    tar rf $logs_folder.tar $log_file
+    tar rf $logs_folder.tar.gz $log_file
     rm $log_file
   fi
 }
@@ -58,7 +58,7 @@ function getInnerLogs()
   name="logs-${date}-${1}"
   logs_output=$(kubectl exec ${1} -- cortx_support_bundle generate -t file://${path} -b ${name} -m ${name})
   kubectl cp $1:$path/$name ./${logs_folder}
-  tar rf $logs_folder.tar ./${logs_folder}
+  tar rf $logs_folder.tar.gz ./${logs_folder}
   kubectl exec ${1} --namespace="${namespace}" -- bash -c "rm -rf ${path}"
 }
 
@@ -94,6 +94,6 @@ while IFS= read -r line; do
 
 done <<< "$(kubectl get pods)"
 
-printf "\n\n📦 \"$logs_folder.tar\" file generated"
+printf "\n\n📦 \"$logs_folder.tar.gz\" file generated"
 rm -rf ${logs_folder}
 printf "\n✔️  All done\n\n"
