@@ -24,14 +24,18 @@ The following environment should exist in AWS prior to further deployment:
 ## 2. Kubernetes cluster provisioning
 
 CORTX requires Kubernetes cluster for installation.
- - Every node must have at least 8 cores and 16 GB of RAM. 
+ - Every node must have at least 8 cores and 16 GB of RAM.
+   - this configuration is sufficient for up to 5 nodes clusters
+   - clusters with higher amount of nodes may require more powerful servers (15 nodes cluster was tested using 36 cores / 72 GB of RAM instances)
  - While there should be no dependencies on the underlying OS this procedure was tested with CentOS 7.9 and Kubernetes 1.22
  - In the current release, every node should have the following storage configuration:
    - OS disk (in the example below we'll provision 50GB)
-   - Disk for 3rd party applications required for normal CORTX installation (25GB in this procedure)
+   - Disk for 3rd party applications required for normal CORTX installation (25GB in this procedure).
+     This disk is used also to store various CORTX logs - for a long-running clusters under heavy load we recommend at least 50GB of capacity for this disk
    - Disk for internal logs (currently not in use, 25GB in the example below)
    - Disks for customers' data and metadata. In this demo we'll provision 2 disks for metadata and 4 disks for data (25GB each)
    - Disks layout (device names and sizes) must be identical on all nodes in the cluster
+ - Clock on all nodes must be in sync
 
 This procedure was tested within the following limits:
 - Number of nodes in the cluster: 1 - 15
@@ -294,7 +298,13 @@ ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "cd cortx-k8s/k8_cortx_cloud/; ./de
 
 ```
 <b> This step completes CORTX installation </b>
-Test that all pods are running and that CORTX is ready
+
+At this stage the environment should look like on this picture:
+ <p align="center">
+    <img src="pics/cortx-aws-k8s-after-installation.jpg">
+ </p>
+
+#### 3.5.1 Test that all pods are running and that CORTX is ready
 ```
 
 ssh $SSH_FLAGS centos@$ClusterControlPlaneIP
@@ -306,15 +316,35 @@ kubectl exec -i $DataPod -c cortx-motr-hax -- hctl status
 ```
 In the hctl status output validate that all services are "started". It may take several minutes for s3server instances to move from "offline" to "started"
 
-#### 3.5.1 Destroy CORTX cluster
-Note: to rollback step 3.5 and destroy the CORTX cluster run:
+After this step proceed to section 4 - Using CORTX
+
+If the pods are not coming up correctly or some of the hctl status services never switch to "started" - check solutions.yaml. Typos or mistakes in that file will result in a deployment failure.
+
+### 3.6 Destroy CORTX cluster
+To rollback step 3.5 and destroy the CORTX cluster run:
 ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "cd cortx-k8s/k8_cortx_cloud/; ./destroy-cortx-cloud.sh"
 
-At this stage the environment should look like on this picture:
- <p align="center">
-    <img src="pics/cortx-aws-k8s-after-installation.jpg">
- </p>
+### 3.7 Stop CORTX cluster
+Make sure no IO is coming to the cluster before stopping it
+```
+cd cortx-k8s/k8_cortx_cloud/
+./shutdown-cortx-cloud.sh
+```
 
+### 3.8 Start CORTX cluster
+In the current version the cluster will restart without IO errors only if there was no IO coming to the cluster prior to shutdown. This behavior will be improved in the future versions.
+
+```
+cd cortx-k8s/k8_cortx_cloud/
+./start-cortx-cloud.sh
+```
+
+### 3.0 Collect debug information for support
+The following command may take several minutes. It will generate logs-cortx-cloud tar file for support
+```
+cd cortx-k8s/k8_cortx_cloud/
+./logs-cortx-cloud.sh
+```
 
 ## 4 Using CORTX
 We recommend to run the following commands on the Kubernetes control plane node
