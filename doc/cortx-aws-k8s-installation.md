@@ -339,7 +339,7 @@ cd cortx-k8s/k8_cortx_cloud/
 ./start-cortx-cloud.sh
 ```
 
-### 3.0 Collect debug information for support
+### 3.9 Collect debug information for support
 The following command may take several minutes. It will generate logs-cortx-cloud tar file for support
 ```
 cd cortx-k8s/k8_cortx_cloud/
