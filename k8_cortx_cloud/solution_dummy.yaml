@@ -27,6 +27,7 @@ solution:
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
       local: /etc/cortx
+      shared: /share
       log: /etc/cortx/log
     s3:
       num_inst: 2
