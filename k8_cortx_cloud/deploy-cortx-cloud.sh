@@ -539,15 +539,13 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
+        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $shared_storage
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $log_storage
 
-        ## Updates for UDX-6755 ##
         image=$(parseSolution 'solution.images.cortxdata')
         image=$(echo $image | cut -f2 -d'>')
         splitDockerImage "${image}"
-        #printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.release.version" $tag
-        ## End updates for UDX-6755 ##
 
         # Generate node file with type storage_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
@@ -1102,6 +1100,8 @@ fi
 # Get the storage paths to use
 local_storage=$(parseSolution 'solution.common.container_path.local')
 local_storage=$(echo $local_storage | cut -f2 -d'>')
+shared_storage=$(parseSolution 'solution.common.container_path.shared')
+shared_storage=$(echo $shared_storage | cut -f2 -d'>')
 log_storage=$(parseSolution 'solution.common.container_path.log')
 log_storage=$(echo $log_storage | cut -f2 -d'>')
 
