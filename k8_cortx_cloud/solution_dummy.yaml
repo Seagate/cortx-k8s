@@ -15,6 +15,8 @@ solution:
     cortxcontrol: ghcr.io/seagate/centos:7
     cortxdataprov: ghcr.io/seagate/centos:7
     cortxdata: ghcr.io/seagate/centos:7
+    cortxserver: ghcr.io/seagate/centos:7
+    cortxha: ghcr.io/seagate/centos:7
     openldap: ghcr.io/seagate/symas-openldap:2.4.58
     consul: ghcr.io/seagate/consul:1.10.0
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7

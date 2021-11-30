@@ -1,21 +1,30 @@
 namespace: default
-cortxdataprov:
-  name: cortx-data-prov-pod
+cortxha:
+  name: cortx-ha-pod
   image: ghcr.io/seagate/centos:7
-  nodeselector: node-1
-  mountblkinfo: mnt-blk-info.txt
-  nodelistinfo: node-list-info.txt
+  # nodeselector: node-1  # TODO: remove
+  # mountblkinfo: mnt-blk-info.txt
+  # nodelistinfo: node-list-info.txt
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
+  # s3:
+  #   numinst: 2
+  #   startportnum: 28051
+  # motr:
+  #   numclientinst: 1
+  #   startportnum: 29000
+  #   numiosinst: 1
   service:
     clusterip:
-      name: cortx-data-clusterip-svc
+      name: cortx-ha-clusterip-svc
     headless:
-      name: cortx-data-headless-svc
+      name: cortx-ha-headless-svc
+    loadbal:
+      name: cortx-ha-loadbal-svc
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-provisioner-cfgmap
+    name: cortx-ha-cfgmap
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
@@ -23,7 +32,7 @@ cortxdataprov:
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config
-    name:  cortx-data-machine-id-cfgmap
+    name:  cortx-ha-machine-id-cfgmap
   localpathpvc:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container

@@ -42,7 +42,7 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
+# find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete # TODO: remove
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
@@ -57,7 +57,7 @@ do
     node_name_list[count]=$shorter_node_name
     count=$((count+1))
     file_name="mnt-blk-info-$shorter_node_name.txt"
-    data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
+    # data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name # TODO: remove
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 
     # Get the node var from the tuple
@@ -101,6 +101,26 @@ done <<< "$(kubectl get namespaces)"
 #############################################################
 # Destroy CORTX Cloud functions
 #############################################################
+function deleteCortxHa()
+{
+    printf "########################################################\n"
+    printf "# Delete CORTX HA                                       \n"
+    printf "########################################################\n"
+    for i in "${!node_selector_list[@]}"; do
+        helm uninstall "cortx-ha-$namespace" -n $namespace
+    done
+}
+
+function deleteCortxServer()
+{
+    printf "########################################################\n"
+    printf "# Delete CORTX Server                                   \n"
+    printf "########################################################\n"
+    for i in "${!node_selector_list[@]}"; do
+        helm uninstall "cortx-server-${node_name_list[$i]}-$namespace" -n $namespace
+    done
+}
+
 function deleteCortxData()
 {
     printf "########################################################\n"
@@ -127,20 +147,20 @@ function deleteCortxControl()
     helm uninstall "cortx-control-$namespace" -n $namespace
 }
 
-function deleteCortxProvisioners()
-{
-    printf "########################################################\n"
-    printf "# Delete CORTX Data provisioner                         \n"
-    printf "########################################################\n"
-    for i in "${!node_selector_list[@]}"; do
-        helm uninstall "cortx-data-provisioner-${node_name_list[$i]}-$namespace" -n $namespace
-    done
+# function deleteCortxProvisioners()    # TODO: remove
+# {
+#     printf "########################################################\n"
+#     printf "# Delete CORTX Data provisioner                         \n"
+#     printf "########################################################\n"
+#     for i in "${!node_selector_list[@]}"; do
+#         helm uninstall "cortx-data-provisioner-${node_name_list[$i]}-$namespace" -n $namespace
+#     done
 
-    printf "########################################################\n"
-    printf "# Delete CORTX Control provisioner                      \n"
-    printf "########################################################\n"
-    helm uninstall "cortx-control-provisioner-$namespace" -n $namespace
-}
+#     printf "########################################################\n"
+#     printf "# Delete CORTX Control provisioner                      \n"
+#     printf "########################################################\n"
+#     helm uninstall "cortx-control-provisioner-$namespace" -n $namespace
+# }
 
 function waitForCortxPodsToTerminate()
 {
@@ -205,11 +225,19 @@ function deleteCortxConfigmap()
         rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
 
     done
+    # Delete server machine id config maps
+    for i in "${!node_name_list[@]}"; do
+        kubectl delete configmap "cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
+        rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
+
+    done
     # Delete control machine id config map
     kubectl delete configmap "cortx-control-machine-id-cfgmap-$namespace" --namespace=$namespace
     rm -rf "$cfgmap_path/auto-gen-control-$namespace"
+    # Delete HA machine id config map
+    kubectl delete configmap "cortx-ha-machine-id-cfgmap-$namespace" --namespace=$namespace
+    rm -rf "$cfgmap_path/auto-gen-ha-$namespace"
     # Delete CORTX config maps
-    # rm -rf "$cfgmap_path/auto-gen-cfgmap-$namespace"
     kubectl delete configmap "cortx-cfgmap-$namespace" --namespace=$namespace
     rm -rf "$cfgmap_path/auto-gen-cfgmap-$namespace"
 
@@ -272,10 +300,12 @@ function deleteSecrets()
         kubectl delete secret $secret_name --namespace=$namespace
     done
 
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
+    
+    # find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "secret-*" -delete  # TODO: remove
+    # find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "secret-*" -delete
 }
 
 function deleteConsul()
@@ -438,7 +468,7 @@ function cleanup()
         node_name=$(echo $var_val_element | cut -f2 -d'>')
         shorter_node_name=$(echo $node_name | cut -f1 -d'.')
         file_name="mnt-blk-info-$shorter_node_name.txt"
-        rm $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
+        # rm $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name  # TODO: remove
         rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
     done
     
@@ -446,18 +476,19 @@ function cleanup()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "node-list-*" -delete
+    # find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete     # TODO: remove
+    # find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "node-list-*" -delete
 }
 
 #############################################################
 # Destroy CORTX Cloud
 #############################################################
-
+deleteCortxHa
+deleteCortxServer
 deleteCortxData
 deleteCortxServices
 deleteCortxControl
-deleteCortxProvisioners
+# deleteCortxProvisioners       # TODO: remove
 waitForCortxPodsToTerminate
 deleteSecrets
 deleteCortxLocalBlockStorage

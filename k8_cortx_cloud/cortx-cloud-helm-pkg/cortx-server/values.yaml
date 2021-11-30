@@ -1,18 +1,24 @@
 namespace: default
-cortxcontrolprov:
-  name: cortx-control-prov-pod
+cortxserver:
+  name: cortx-server-pod
   image: ghcr.io/seagate/centos:7
+  nodeselector: node-1
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
+  s3:
+    numinst: 2
+    startportnum: 28051
   service:
     clusterip:
-      name: cortx-control-clusterip-svc
+      name: cortx-server-clusterip-svc
     headless:
-      name: cortx-control-headless-svc
+      name: cortx-server-headless-svc
+    loadbal:
+      name: cortx-server-loadbal-svc
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-cfgmap
+    name: cortx-server-cfgmap
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
@@ -20,8 +26,8 @@ cortxcontrolprov:
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config
-    name:  cortx-control-machine-id-cfgmap
+    name:  cortx-server-machine-id-cfgmap
   localpathpvc:
-    name: cortx-fs-local-pvc
+    name: cortx-fs-server-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi

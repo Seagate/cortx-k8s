@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.cortxha.name }}
+  name: {{ .Values.cortxha.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.cortxha.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cortxha.name }}
+        name: cortx-ha
+    spec:
+      hostname: {{ .Values.cortxha.service.headless.name }}
+      serviceAccountName: {{ .Values.cortxha.serviceaccountname }}
+      volumes:
+        - name: {{ .Values.cortxha.cfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxha.cfgmap.name }}
+        - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxha.sslcfgmap.name }}
+        - name: {{ .Values.cortxha.machineid.volmountname }}
+          configMap:
+            name: {{ .Values.cortxha.machineid.name }}
+        - name: local-path-pv
+          persistentVolumeClaim:
+            claimName: {{ .Values.cortxha.localpathpvc.name }}
+        {{- range .Files.Lines .Values.cortxha.secretinfo }}
+        - name: {{ printf "%s" . }}
+          secret:
+            secretName: {{ printf "%s" . }}
+        {{- end }}
+      initContainers:
+      - name: cortx-setup
+        image: {{ .Values.cortxha.image }}
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+        {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
+        args:
+          - -c
+          - sleep $(shuf -i 5-10 -n 1)s
+        {{- else }}
+        args:
+          - -c
+          - sleep $(shuf -i 5-10 -n 1)s
+        {{- end }}
+        volumeMounts:
+          - name: {{ .Values.cortxha.cfgmap.volmountname }}
+            mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
+          - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+            mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
+          - name: {{ .Values.cortxha.machineid.volmountname }}
+            mountPath: {{ .Values.cortxha.machineid.mountpath }}
+          - name: local-path-pv
+            mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+          {{- range .Files.Lines .Values.cortxha.secretinfo }}
+          - name: {{ printf "%s" . }}
+            mountPath: /etc/cortx/solution/secret
+            readOnly: true
+          {{- end }}
+        ports:
+        - containerPort: 5050
+      containers:
+        - name: cortx-ha-action-service
+          image: {{ .Values.cortxha.image }}
+          imagePullPolicy: IfNotPresent
+          {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command: ["/bin/sleep", "3650d"]
+          {{- end }}
+          volumeMounts:
+            - name: {{ .Values.cortxha.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
+            - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
+            - name: {{ .Values.cortxha.machineid.volmountname }}
+              mountPath: {{ .Values.cortxha.machineid.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxha.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: /etc/cortx/solution/secret
+              readOnly: true
+            {{- end }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxha.name }}
+          # TODO: need to remove ports???
+          # ports:
+          # - containerPort: 8090
+          securityContext:
+            allowPrivilegeEscalation: false
+        - name: cortx-monitor
+          image: {{ .Values.cortxha.image }}
+          imagePullPolicy: IfNotPresent
+          {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command: ["/bin/sleep", "3650d"]
+          {{- end }}
+          volumeMounts:
+            - name: {{ .Values.cortxha.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
+            - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
+            - name: {{ .Values.cortxha.machineid.volmountname }}
+              mountPath: {{ .Values.cortxha.machineid.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxha.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: /etc/cortx/solution/secret
+              readOnly: true
+            {{- end }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxha.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
+        - name: cortx-event-analyzer
+          image: {{ .Values.cortxha.image }}
+          imagePullPolicy: IfNotPresent
+          {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
+          {{- end }}
+          volumeMounts:
+            - name: {{ .Values.cortxha.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
+            - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
+            - name: {{ .Values.cortxha.machineid.volmountname }}
+              mountPath: {{ .Values.cortxha.machineid.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxha.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: /etc/cortx/solution/secret
+              readOnly: true
+            {{- end }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxha.name }}
+          securityContext:
+            allowPrivilegeEscalation: false

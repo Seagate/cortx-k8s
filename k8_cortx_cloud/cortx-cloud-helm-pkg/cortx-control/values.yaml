@@ -1,7 +1,7 @@
 namespace: default
 cortxcontrol:
   name: cortx-control
-  image: centos:7
+  image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   service:
@@ -26,3 +26,4 @@ cortxcontrol:
   localpathpvc:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
+    requeststoragesize: 1Gi
