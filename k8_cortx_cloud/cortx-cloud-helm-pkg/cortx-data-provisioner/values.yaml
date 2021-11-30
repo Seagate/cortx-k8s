@@ -1,10 +1,11 @@
 namespace: default
 cortxdataprov:
   name: cortx-data-prov-pod
-  image: centos:7
+  image: ghcr.io/seagate/centos:7
   nodename: node-1
   mountblkinfo: mnt-blk-info.txt
   secretinfo: secret-info.txt
+  serviceaccountname: cortx-sa
   service:
     clusterip:
       name: cortx-data-clusterip-svc
@@ -26,9 +27,3 @@ cortxdataprov:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
-cortxgluster:
-  pv:
-    name: gluster-default-volume
-    mountpath: /mnt/fs-local-volume/etc/gluster/test_folder/ # This is the mount path in the container
-  pvc:
-    name: gluster-claim

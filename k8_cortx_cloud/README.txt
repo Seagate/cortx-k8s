@@ -73,22 +73,19 @@ Rancher Local Path location on worker node:
 Rancher Local Path mount point in all Pod containers (CORTX Provisioners, Data, Control):
 /data
 
-Shared glusterFS folder on the worker nodes and inside the Pod containers is located at:
-/mnt/fs-local-volume/etc/gluster/
-
 ###########################################################
 # Replacing a dummy container with real CORTX container   #
 ###########################################################
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 The Helm charts work with both "dummy" and "CORTX ALL" containers. 
-If image is centos:7 helm runs in "dummy" mode any other name runs "CORTX ALL" mode
+If image is ghcr.io/seagate/centos:7 helm runs in "dummy" mode any other name runs "CORTX ALL" mode
 
-{- if eq $.Values.cortxdata.image  "centos:7" }}  # DO NOT CHANGE
-command: ["/bin/sleep", "3650d"]                  # DO NOT CHANGE 
-{{- else }}                                       # DO NOT CHANGE
+{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}  # DO NOT CHANGE
+command: ["/bin/sleep", "3650d"]                                  # DO NOT CHANGE 
+{{- else }}                                                       # DO NOT CHANGE
 command: ["/bin/sleep", "3650d"]    #<<=========================== REPLACE THIS WITH THE CORTX ENTRY POINT 
-{{- end }}                                        # DO NOT CHANGE
+{{- end }}                                                        # DO NOT CHANGE
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 See the following example from CORTX Data helm chart, replace the command section
@@ -101,11 +98,11 @@ containers:
 - name: cortx-s3-haproxy
    image: {{ .Values.cortxdata.image }}
    imagePullPolicy: IfNotPresent
-   {- if eq $.Values.cortxdata.image  "centos:7" }}  # DO NOT CHANGE
-   command: ["/bin/sleep", "3650d"]                  # DO NOT CHANGE 
-   {{- else }}                                       # DO NOT CHANGE
+   {- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}  # DO NOT CHANGE
+   command: ["/bin/sleep", "3650d"]                                  # DO NOT CHANGE 
+   {{- else }}                                                       # DO NOT CHANGE
    command: ["/bin/sleep", "3650d"]    #<<=========================== REPLACE THIS WITH THE CORTX ENTRY POINT 
-   {{- end }}                                        # DO NOT CHANGE
+   {{- end }}                                                        # DO NOT CHANGE
    volumeDevices:
    {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
    - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
@@ -116,8 +113,6 @@ containers:
       mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
    - name: {{ .Values.cortxdata.machineid.volmountname }}
       mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-   - name: {{ .Values.cortxgluster.pv.name }}
-      mountPath: {{ .Values.cortxgluster.pv.mountpath }}
    - name: local-path-pv
       mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
    env:
@@ -142,7 +137,6 @@ solution:
    consul: hashicorp/consul:1.10.0
    kafka: bitnami/kafka:3.0.0-debian-10-r7
    zookeeper: bitnami/zookeeper:3.7.0-debian-10-r182
-   gluster: docker.io/gluster/gluster-centos:latest
    rancher: rancher/local-path-provisioner:v0.0.20
 
 NOTE: These images can be pre-downloaded on all worker nodes and untainted master node that
