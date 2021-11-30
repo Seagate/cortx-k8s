@@ -5,11 +5,25 @@ DIR=$(dirname "$SCRIPT")
 
 function parseSolution()
 {
-  echo "$($DIR/parse_scripts/parse_yaml.sh $DIR/$solution_yaml $1)"
+  echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
 }
 
 date=$(date +%F_%H-%M)
-solution_yaml=${1:-'solution.yaml'}
+solution_yaml='solution.yaml'
+pods_found=0
+while [ $# -gt 0 ]; do
+  case $1 in
+    -s|--solution-config )
+      declare solution_yaml="$2"
+      ;;
+    -n|--nodename )
+      declare nodename="$2"
+      ;;
+    * )
+      ;;
+  esac
+  shift
+done
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo $namespace | cut -f2 -d'>')
 logs_folder="logs-cortx-cloud-${date}"
@@ -72,6 +86,12 @@ while IFS= read -r line; do
   IFS="/" read -r -a pod <<< "${pod_status[0]}"
 
   if [ "$pod" != "NAME" -a "$status" != "Evicted" ]; then
+    if [ "$nodename" ] && \
+       [ "$nodename" != $(kubectl get pod ${pod} -o jsonpath={.spec.nodeName}) ]; then
+      continue
+    fi
+    pods_found=$((pods_found+1))
+
     if [[ $pod =~ "cortx-control-pod" ]]; then
       containers=$(kubectl get pods ${pod} -n ${namespace} -o jsonpath='{.spec.containers[*].name}')
       containers=($containers)
@@ -98,6 +118,11 @@ while IFS= read -r line; do
 
 done <<< "$(kubectl get pods)"
 
-printf "\n\n📦 \"$logs_folder.tar\" file generated"
+if [ "$nodename" ] && [ "$pods_found" == "0" ]; then
+  printf "\n❌ No pods are running on the node: \"%s\"." $nodename
+  printf "\n   Please try with another nodename.\n"
+else
+  printf "\n\n📦 \"$logs_folder.tar\" file generated"
+fi
 rm -rf ${logs_folder}
 printf "\n✔️  All done\n\n"
