@@ -540,6 +540,15 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $log_storage
+
+        ## Updates for UDX-6755 ##
+        image=$(parseSolution 'solution.images.cortxdata')
+        image=$(echo $image | cut -f2 -d'>')
+        splitDockerImage "${image}"
+        #printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.common.release.version" $tag
+        ## End updates for UDX-6755 ##
+
         # Generate node file with type storage_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
         cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file

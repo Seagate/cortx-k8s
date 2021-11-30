@@ -20,7 +20,9 @@ cortx:
       admin: admin
       secret: consul_admin_secret
   common:
-    product_release: LC
+    release:
+      name: CORTX
+      version: <<.Values.cortx.common.release.version>>
     environment_type: K8
     setup_size: small
     service:
