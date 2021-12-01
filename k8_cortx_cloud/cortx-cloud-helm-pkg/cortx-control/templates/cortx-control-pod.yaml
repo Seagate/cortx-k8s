@@ -16,6 +16,7 @@ spec:
         app: {{ .Values.cortxcontrol.name }}
     spec:
       hostname: {{ .Values.cortxcontrol.service.headless.name }}
+      serviceAccountName: {{ .Values.cortxcontrol.serviceaccountname }}
       volumes:
         - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
           configMap:
@@ -26,9 +27,6 @@ spec:
         - name: {{ .Values.cortxcontrol.machineid.volmountname }}
           configMap:
             name: {{ .Values.cortxcontrol.machineid.name }}
-        - name: {{ .Values.cortxgluster.pv.name }}
-          persistentVolumeClaim:
-              claimName: {{ .Values.cortxgluster.pvc.name }}
         - name: local-path-pv
           persistentVolumeClaim:
             claimName: {{ .Values.cortxcontrol.localpathpvc.name }}
@@ -74,7 +72,7 @@ spec:
         - name: cortx-free-space-monitor
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxcontrol.image "centos:7" }}      
+          {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}      
           command: ["/bin/sleep", "3650d"]
           {{- else }}     
           command: ["/bin/sleep", "3650d"]
@@ -86,8 +84,6 @@ spec:
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.machineid.volmountname }}
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
@@ -98,10 +94,12 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: cortx-fsm-motr
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxcontrol.image "centos:7" }}          
+          {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}          
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command: 
@@ -117,8 +115,6 @@ spec:
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.machineid.volmountname }}
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
@@ -129,10 +125,12 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: cortx-bg-producer
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxcontrol.image "centos:7" }}          
+          {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}          
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command: 
@@ -148,8 +146,6 @@ spec:
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.machineid.volmountname }}
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
@@ -160,10 +156,12 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: cortx-csm-agent
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxcontrol.image "centos:7" }}          
+          {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}          
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command: 
@@ -179,8 +177,6 @@ spec:
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.machineid.volmountname }}
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
-            - name: {{ .Values.cortxgluster.pv.name }}
-              mountPath: {{ .Values.cortxgluster.pv.mountpath }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
@@ -193,3 +189,5 @@ spec:
               value: {{ .Values.cortxcontrol.name }}
           ports:
           - containerPort: 8081
+          securityContext:
+            allowPrivilegeEscalation: false
