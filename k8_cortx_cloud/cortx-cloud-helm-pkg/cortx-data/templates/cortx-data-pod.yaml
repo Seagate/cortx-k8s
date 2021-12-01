@@ -70,8 +70,6 @@ spec:
             mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
           - name: {{ .Values.cortxdata.machineid.volmountname }}
             mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-          - name: {{ .Values.cortxgluster.pv.name }}
-            mountPath: {{ .Values.cortxgluster.pv.mountpath }}
           - name: local-path-pv
             mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           {{- range .Files.Lines .Values.cortxdata.secretinfo }}
