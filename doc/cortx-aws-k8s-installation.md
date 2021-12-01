@@ -410,3 +410,7 @@ chmod +x s3-benchmark
 | Management | cortx-control-clusterip-svc K8s service | tcp/8081
 | S3 | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/443, tcp/80
 | IAM | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/9443
+
+Tested by:
+
+Nov 12, 2021: Rose Wambui (rose.wambui@seagate.com) and Justin Woo (justin.woo@seagate.com) 
