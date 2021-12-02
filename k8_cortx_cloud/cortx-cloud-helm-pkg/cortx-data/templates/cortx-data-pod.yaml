@@ -43,6 +43,42 @@ spec:
           secret:
             secretName: {{ printf "%s" . }}
         {{- end }}
+      initContainers:
+      - name: cortx-setup
+        image: {{ .Values.cortxdata.image }}
+        imagePullPolicy: IfNotPresent        
+        command: 
+          - /bin/sh
+        {{- if eq .Values.cortxdata.image  "centos:7" }}
+        args: 
+          - -c
+          - sleep $(shuf -i 5-10 -n 1)s
+        {{- else }}
+        args: 
+          - -c
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
+        {{- end }}
+        volumeDevices:
+          {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
+          - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
+            devicePath: {{ . }}
+          {{- end }}
+        volumeMounts:
+          - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+            mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
+          - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+            mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
+          - name: {{ .Values.cortxdata.machineid.volmountname }}
+            mountPath: {{ .Values.cortxdata.machineid.mountpath }}
+          - name: local-path-pv
+            mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
+          {{- range .Files.Lines .Values.cortxdata.secretinfo }}
+          - name: {{ printf "%s" . }}
+            mountPath: /etc/cortx/solution/secret
+            readOnly: true
+          {{- end }}
+        ports:
+        - containerPort: 5050
       containers:
         - name: cortx-s3-haproxy
           image: {{ .Values.cortxdata.image }}
