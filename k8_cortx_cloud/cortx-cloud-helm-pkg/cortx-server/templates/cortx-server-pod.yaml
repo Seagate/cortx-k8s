@@ -106,6 +106,8 @@ spec:
           - containerPort: 9080
           - containerPort: 9443
           - containerPort: 28049
+          - containerPort: 28071
+          - containerPort: 28092
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-s3-auth-server
@@ -137,6 +139,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxserver.name }}
+          ports:
+          - containerPort: 28050
           securityContext:
             allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxserver.s3.numinst|int) }}
@@ -205,6 +209,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxserver.name }}
+          ports:
+          - containerPort: 2001
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-s3-bg-handler
