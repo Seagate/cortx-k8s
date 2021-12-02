@@ -43,6 +43,10 @@ spec:
           secret:
             secretName: {{ printf "%s" . }}
         {{- end }}
+        - name: {{ .Values.cortxdata.name }}-node-config
+          configMap:
+            defaultMode: 0700
+            name: {{ .Values.cortxdata.name }}-node-config
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxdata.image }}
@@ -79,6 +83,17 @@ spec:
           {{- end }}
         ports:
         - containerPort: 5050
+      - name: node-config
+        image: {{ .Values.cortxdata.image }}
+        imagePullPolicy: IfNotPresent        
+        command:
+          - /nodeconfig/entrypoint.sh
+        volumeMounts:
+        - name: {{ .Values.cortxdata.name }}-node-config
+          mountPath: /nodeconfig
+          readOnly: true
+        securityContext:
+          privileged: true
       containers:
         - name: cortx-s3-haproxy
           image: {{ .Values.cortxdata.image }}
