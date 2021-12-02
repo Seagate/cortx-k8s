@@ -109,7 +109,6 @@ if [[ $num_tainted_worker_nodes -gt 0 || $num_not_found_nodes -gt 0 ]]; then
     fi
 fi
 
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 
 # Create files consist of drives per node and files consist of drive sizes.
@@ -128,8 +127,6 @@ do
     count=$((count+1))
     file_name="mnt-blk-info-$shorter_node_name.txt"
     file_name_storage_size="mnt-blk-storage-size-$shorter_node_name.txt"
-    data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name
-    data_prov_storage_size_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name_storage_size
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
     data_storage_size_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name_storage_size
 
@@ -156,26 +153,18 @@ do
     for dev in "${parsed_dev_array[@]}"
     do
         device=$(echo $dev | cut -f2 -d'>')
-        if [[ -s $data_prov_file_path ]]; then
-            printf "\n" >> $data_prov_file_path
-        fi
         if [[ -s $data_file_path ]]; then
             printf "\n" >> $data_file_path
         fi
-        printf $device >> $data_prov_file_path
         printf $device >> $data_file_path
     done
 
     for dev in "${parsed_size_array[@]}"
     do
         size=$(echo $dev | cut -f2 -d'>')
-        if [[ -s $data_prov_storage_size_file_path ]]; then
-            printf "\n" >> $data_prov_storage_size_file_path
-        fi
         if [[ -s $data_storage_size_file_path ]]; then
             printf "\n" >> $data_storage_size_file_path
         fi
-        printf $size >> $data_prov_storage_size_file_path
         printf $size >> $data_storage_size_file_path
     done
 done
@@ -444,7 +433,7 @@ function deployCortxLocalBlockStorage()
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
 
-        storage_size_file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-storage-size-$node_name.txt"
+        storage_size_file_path="cortx-cloud-helm-pkg/cortx-data/mnt-blk-storage-size-$node_name.txt"
         storage_size=[]
         size_count=0
         while IFS=' ' read -r size || [[ -n "$size" ]]; do
@@ -453,7 +442,7 @@ function deployCortxLocalBlockStorage()
         done < "$storage_size_file_path"
 
 
-        file_path="cortx-cloud-helm-pkg/cortx-data-provisioner/mnt-blk-info-$node_name.txt"
+        file_path="cortx-cloud-helm-pkg/cortx-data/mnt-blk-info-$node_name.txt"
         count=001
         size_count=0
         while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
@@ -733,157 +722,16 @@ function deployCortxSecrets()
         fi
         echo $kubectl_cmd_output
 
-        control_prov_secret_path="./cortx-cloud-helm-pkg/cortx-control-provisioner/secret-info.txt"
         control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
-        data_prov_secret_path="./cortx-cloud-helm-pkg/cortx-data-provisioner/secret-info.txt"
         data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
-        if [[ -s $control_prov_secret_path ]]; then
-            printf "\n" >> $control_prov_secret_path
-        fi
         if [[ -s $control_secret_path ]]; then
             printf "\n" >> $control_secret_path
-        fi
-        if [[ -s $data_prov_secret_path ]]; then
-            printf "\n" >> $data_prov_secret_path
         fi
         if [[ -s $data_secret_path ]]; then
             printf "\n" >> $data_secret_path
         fi
-        printf "$secret_fname" >> $control_prov_secret_path
         printf "$secret_fname" >> $control_secret_path
-        printf "$secret_fname" >> $data_prov_secret_path
         printf "$secret_fname" >> $data_secret_path
-    done
-}
-
-function deployCortxControlProvisioner()
-{
-    printf "########################################################\n"
-    printf "# Deploy CORTX Control Provisioner                      \n"
-    printf "########################################################\n"
-    cortxcontrolprov_image=$(parseSolution 'solution.images.cortxcontrolprov')
-    cortxcontrolprov_image=$(echo $cortxcontrolprov_image | cut -f2 -d'>')
-
-    helm install "cortx-control-provisioner-$namespace" cortx-cloud-helm-pkg/cortx-control-provisioner \
-        --set cortxcontrolprov.name="cortx-control-provisioner-pod" \
-        --set cortxcontrolprov.image=$cortxcontrolprov_image \
-        --set cortxcontrolprov.service.clusterip.name="cortx-control-clusterip-svc" \
-        --set cortxcontrolprov.service.headless.name="cortx-control-headless-svc" \
-        --set cortxcontrolprov.cfgmap.name="cortx-cfgmap-$namespace" \
-        --set cortxcontrolprov.cfgmap.volmountname="config001" \
-        --set cortxcontrolprov.cfgmap.mountpath="/etc/cortx/solution" \
-        --set cortxcontrolprov.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
-        --set cortxcontrolprov.sslcfgmap.volmountname="ssl-config001" \
-        --set cortxcontrolprov.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxcontrolprov.machineid.name="cortx-control-machine-id-cfgmap-$namespace" \
-        --set cortxcontrolprov.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
-        --set cortxcontrolprov.localpathpvc.mountpath="$local_storage" \
-        --set cortxcontrolprov.localpathpvc.requeststoragesize="1Gi" \
-        --set cortxcontrolprov.secretinfo="secret-info.txt" \
-        --set cortxcontrolprov.serviceaccountname="$serviceAccountName" \
-        --set namespace=$namespace \
-        -n $namespace
-
-
-    # Check if all Cortx Control Provisioner is up and running
-    node_count=1
-    printf "\nWait for CORTX Control Provisioner to complete"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
-            if [[ "${pod_status[2]}" != "Completed" ]]; then
-                if [[ "${pod_status[2]}" == "Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-provisioner-pod')"
-
-        if [[ $node_count -eq $count ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-
-    # Delete CORTX Provisioner Services
-    kubectl delete service "cortx-control-clusterip-svc" --namespace=$namespace
-    kubectl delete service "cortx-control-headless-svc" --namespace=$namespace
-}
-
-function deployCortxDataProvisioner()
-{
-    printf "########################################################\n"
-    printf "# Deploy CORTX Data Provisioner                              \n"
-    printf "########################################################\n"
-    cortxdataprov_image=$(parseSolution 'solution.images.cortxdataprov')
-    cortxdataprov_image=$(echo $cortxdataprov_image | cut -f2 -d'>')
-
-    for i in "${!node_selector_list[@]}"; do
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-        helm install "cortx-data-provisioner-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data-provisioner \
-            --set cortxdataprov.name="cortx-data-provisioner-pod-$node_name" \
-            --set cortxdataprov.image=$cortxdataprov_image \
-            --set cortxdataprov.nodename=$node_name \
-            --set cortxdataprov.mountblkinfo="mnt-blk-info-$node_name.txt" \
-            --set cortxdataprov.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
-            --set cortxdataprov.service.headless.name="cortx-data-headless-svc-$node_name" \
-            --set cortxdataprov.cfgmap.name="cortx-cfgmap-$namespace" \
-            --set cortxdataprov.cfgmap.volmountname="config001-$node_name" \
-            --set cortxdataprov.cfgmap.mountpath="/etc/cortx/solution" \
-            --set cortxdataprov.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
-            --set cortxdataprov.sslcfgmap.volmountname="ssl-config001" \
-            --set cortxdataprov.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxdataprov.machineid.name="cortx-data-machine-id-cfgmap-$node_name-$namespace" \
-            --set cortxdataprov.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
-            --set cortxdataprov.localpathpvc.mountpath="$local_storage" \
-            --set cortxdataprov.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxdataprov.secretinfo="secret-info.txt" \
-            --set cortxdataprov.serviceaccountname="$serviceAccountName" \
-            --set namespace=$namespace \
-            -n $namespace
-    done
-
-    # Check if all OpenLDAP are up and running
-    node_count="${#node_selector_list[@]}"
-
-    printf "\nWait for CORTX Data Provisioner to complete"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
-            if [[ "${pod_status[2]}" != "Completed" ]]; then
-                if [[ "${pod_status[2]}" == "Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-provisioner-pod-')"
-
-        if [[ $node_count -eq $count ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-
-    # Delete CORTX Provisioner Services
-    for i in "${!node_selector_list[@]}"; do
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-        num_nodes=$((num_nodes+1))
-        kubectl delete service "cortx-data-clusterip-svc-$node_name" --namespace=$namespace
-        kubectl delete service "cortx-data-headless-svc-$node_name" --namespace=$namespace
     done
 }
 
@@ -1018,23 +866,6 @@ function deployCortxServices()
     kubectl apply -f services/cortx-io-svc.yaml --namespace=$namespace
 }
 
-function deleteCortxProvisioners()
-{
-    printf "########################################################\n"
-    printf "# Delete CORTX Data provisioner                         \n"
-    printf "########################################################\n"
-    while IFS= read -r line; do
-        IFS=" " read -r -a pod_status <<< "$line"
-        kubectl delete pod "${pod_status[0]}" --namespace=$namespace
-        count=$((count+1))
-    done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-provisioner-pod-')"
-
-    printf "########################################################\n"
-    printf "# Delete CORTX Control provisioner                      \n"
-    printf "########################################################\n"
-    kubectl delete pod cortx-control-provisioner-pod --namespace=$namespace
-}
-
 function cleanup()
 {
     #################################################################
@@ -1042,11 +873,8 @@ function cleanup()
     # and the node info
     #################################################################
     find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
 
     rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
@@ -1126,10 +954,7 @@ deployCortxLocalBlockStorage
 deleteStaleAutoGenFolders
 deployCortxConfigMap
 deployCortxSecrets
-deployCortxControlProvisioner
-deployCortxDataProvisioner
 deployCortxControl
 deployCortxData
 deployCortxServices
-deleteCortxProvisioners
 cleanup

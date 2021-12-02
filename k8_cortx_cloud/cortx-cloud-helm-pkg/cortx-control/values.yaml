@@ -26,3 +26,4 @@ cortxcontrol:
   localpathpvc:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
+    requeststoragesize: 1Gi
