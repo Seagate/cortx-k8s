@@ -743,6 +743,8 @@ function deployCortxControl()
     cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
     cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
 
+    cortxcontrol_machineid=$(cat $cfgmap_path/auto-gen-control-$namespace/id)
+
     num_nodes=1
     # This local path pvc has to match with the one created by CORTX Control Provisioner
     helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
@@ -757,7 +759,7 @@ function deployCortxControl()
         --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
         --set cortxcontrol.sslcfgmap.volmountname="ssl-config001" \
         --set cortxcontrol.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap-$namespace" \
+        --set cortxcontrol.machineid.value="$cortxcontrol_machineid" \
         --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
         --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
