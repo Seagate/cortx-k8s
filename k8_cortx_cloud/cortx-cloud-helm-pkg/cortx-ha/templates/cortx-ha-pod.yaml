@@ -93,9 +93,6 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxha.name }}
-          # TODO: need to remove ports???
-          # ports:
-          # - containerPort: 8090
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-monitor

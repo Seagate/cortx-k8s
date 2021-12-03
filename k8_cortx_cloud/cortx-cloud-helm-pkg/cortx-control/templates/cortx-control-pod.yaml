@@ -173,7 +173,7 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
-          # ports: # TODO: remove
-          # - containerPort: 8081
+          ports:
+          - containerPort: 8081
           securityContext:
             allowPrivilegeEscalation: false

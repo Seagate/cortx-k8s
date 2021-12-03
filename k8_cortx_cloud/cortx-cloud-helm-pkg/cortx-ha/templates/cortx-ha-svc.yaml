@@ -1,18 +1,3 @@
-# apiVersion: v1  # TODO: remove
-# kind: Service
-# metadata:
-#   name: {{ .Values.cortxha.service.clusterip.name }}
-#   namespace: {{ .Values.namespace }}
-# spec:
-#   type: ClusterIP
-#   selector:
-#     app: {{ .Values.cortxha.name }}
-#   ports:
-#     - name: cortx-ha-action-service-tcp
-#       protocol: TCP
-#       port: 8090
-#       targetPort: 8090
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -23,18 +8,3 @@ spec:
   clusterIP: None
   selector:
     app: {{ .Values.cortxha.name }}
----
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: {{ .Values.cortxha.service.loadbal.name }}
-#   namespace: {{ .Values.namespace }}
-# spec:
-#   type: LoadBalancer
-#   selector:
-#     app: {{ .Values.cortxha.name }}
-#   ports:
-#     - name: cortx-ha-8090
-#       protocol: TCP
-#       port: 8090
-#       targetPort: 8090

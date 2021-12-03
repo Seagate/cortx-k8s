@@ -42,7 +42,6 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 
-# find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete # TODO: remove
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
@@ -57,7 +56,6 @@ do
     node_name_list[count]=$shorter_node_name
     count=$((count+1))
     file_name="mnt-blk-info-$shorter_node_name.txt"
-    # data_prov_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name # TODO: remove
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
 
     # Get the node var from the tuple
@@ -69,13 +67,9 @@ do
     for dev in "${parsed_dev_array[@]}"
     do
         device=$(echo $dev | cut -f2 -d'>')
-        if [[ -s $data_prov_file_path ]]; then
-            printf "\n" >> $data_prov_file_path
-        fi
         if [[ -s $data_file_path ]]; then
             printf "\n" >> $data_file_path
         fi
-        printf $device >> $data_prov_file_path
         printf $device >> $data_file_path
     done
 done
@@ -146,21 +140,6 @@ function deleteCortxControl()
     printf "########################################################\n"
     helm uninstall "cortx-control-$namespace" -n $namespace
 }
-
-# function deleteCortxProvisioners()    # TODO: remove
-# {
-#     printf "########################################################\n"
-#     printf "# Delete CORTX Data provisioner                         \n"
-#     printf "########################################################\n"
-#     for i in "${!node_selector_list[@]}"; do
-#         helm uninstall "cortx-data-provisioner-${node_name_list[$i]}-$namespace" -n $namespace
-#     done
-
-#     printf "########################################################\n"
-#     printf "# Delete CORTX Control provisioner                      \n"
-#     printf "########################################################\n"
-#     helm uninstall "cortx-control-provisioner-$namespace" -n $namespace
-# }
 
 function waitForCortxPodsToTerminate()
 {
@@ -303,9 +282,6 @@ function deleteSecrets()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
-    
-    # find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "secret-*" -delete  # TODO: remove
-    # find $(pwd)/cortx-cloud-helm-pkg/cortx-control-provisioner -name "secret-*" -delete
 }
 
 function deleteConsul()
@@ -468,7 +444,6 @@ function cleanup()
         node_name=$(echo $var_val_element | cut -f2 -d'>')
         shorter_node_name=$(echo $node_name | cut -f1 -d'.')
         file_name="mnt-blk-info-$shorter_node_name.txt"
-        # rm $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner/$file_name  # TODO: remove
         rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
     done
     
@@ -476,8 +451,6 @@ function cleanup()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
-    # find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "mnt-blk-*" -delete     # TODO: remove
-    # find $(pwd)/cortx-cloud-helm-pkg/cortx-data-provisioner -name "node-list-*" -delete
 }
 
 #############################################################
@@ -488,7 +461,6 @@ deleteCortxServer
 deleteCortxData
 deleteCortxServices
 deleteCortxControl
-# deleteCortxProvisioners       # TODO: remove
 waitForCortxPodsToTerminate
 deleteSecrets
 deleteCortxLocalBlockStorage
