@@ -806,6 +806,9 @@ function deployCortxData()
         num_nodes=$((num_nodes+1))
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
+
+        cortxdata_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data/id)
+
         helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
             --set cortxdata.name="cortx-data-pod-$node_name" \
             --set cortxdata.image=$cortxdata_image \
@@ -820,7 +823,7 @@ function deployCortxData()
             --set cortxdata.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
             --set cortxdata.sslcfgmap.volmountname="ssl-config001" \
             --set cortxdata.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name-$namespace" \
+            --set cortxdata.machineid.value="$cortxdata_machineid" \
             --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="$local_storage" \
             --set cortxdata.motr.numclientinst=$(extractBlock 'solution.common.motr.num_client_inst') \
