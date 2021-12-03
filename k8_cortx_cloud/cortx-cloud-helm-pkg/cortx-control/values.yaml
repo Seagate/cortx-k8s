@@ -5,8 +5,8 @@ cortxcontrol:
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   service:
-    clusterip:
-      name: cortx-control-clusterip-svc
+    messageserver:
+      name: cortx-control-message-svc
     headless:
       name: cortx-control-headless-svc
     loadbal:

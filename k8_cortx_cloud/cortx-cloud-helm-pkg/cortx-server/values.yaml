@@ -1,6 +1,6 @@
 namespace: default
 cortxserver:
-  name: cortx-server-pod
+  name: cortx-server
   image: ghcr.io/seagate/centos:7
   nodeselector: node-1
   secretinfo: secret-info.txt

@@ -1,6 +1,6 @@
 namespace: default
 cortxha:
-  name: cortx-ha-pod
+  name: cortx-ha
   image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa

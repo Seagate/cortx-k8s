@@ -100,7 +100,11 @@ spec:
           {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
-          command: ["/bin/sleep", "3650d"]
+          command: 
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/utils/bin/utils_server --config yaml:///etc/cortx/cluster.conf;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
@@ -119,6 +123,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          ports:
+          - containerPort: 28300
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-s3-bg-workers
@@ -173,7 +179,5 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
-          ports:
-          - containerPort: 8081
           securityContext:
             allowPrivilegeEscalation: false

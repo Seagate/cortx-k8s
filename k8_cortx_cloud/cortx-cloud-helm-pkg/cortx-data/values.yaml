@@ -1,6 +1,6 @@
 namespace: default
 cortxdata:
-  name: cortx-data-pod
+  name: cortx-data
   image: ghcr.io/seagate/centos:7
   nodeselector: node-1
   mountblkinfo: mnt-blk-info.txt

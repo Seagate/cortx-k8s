@@ -775,9 +775,9 @@ function deployCortxControl()
 
     num_nodes=1
     helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
-        --set cortxcontrol.name="cortx-control-pod" \
+        --set cortxcontrol.name="cortx-control" \
         --set cortxcontrol.image=$cortxcontrol_image \
-        --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
+        --set cortxcontrol.service.messageserver.name="cortx-control-message-svc" \
         --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
         --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
@@ -809,7 +809,7 @@ function deployCortxControl()
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
@@ -835,7 +835,7 @@ function deployCortxData()
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
         helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
-            --set cortxdata.name="cortx-data-pod-$node_name" \
+            --set cortxdata.name="cortx-data-$node_name" \
             --set cortxdata.image=$cortxdata_image \
             --set cortxdata.nodeselector=$node_selector \
             --set cortxdata.mountblkinfo="mnt-blk-info.txt" \
@@ -875,7 +875,7 @@ function deployCortxData()
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-pod-')"
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
@@ -902,7 +902,7 @@ function deployCortxServer()
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
         helm install "cortx-server-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-server \
-            --set cortxserver.name="cortx-server-pod-$node_name" \
+            --set cortxserver.name="cortx-server-$node_name" \
             --set cortxserver.image=$cortxserver_image \
             --set cortxserver.nodeselector=$node_selector \
             --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-$node_name" \
@@ -940,7 +940,7 @@ function deployCortxServer()
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-server-pod-')"
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-server-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
@@ -962,7 +962,7 @@ function deployCortxHa()
 
     num_nodes=1
     helm install "cortx-ha-$namespace" cortx-cloud-helm-pkg/cortx-ha \
-        --set cortxha.name="cortx-ha-pod" \
+        --set cortxha.name="cortx-ha" \
         --set cortxha.image=$cortxha_image \
         --set cortxha.secretinfo="secret-info.txt" \
         --set cortxha.serviceaccountname="$serviceAccountName" \
@@ -996,7 +996,7 @@ function deployCortxHa()
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-ha-pod-')"
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-ha-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
