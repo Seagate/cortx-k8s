@@ -17,6 +17,7 @@ spec:
         {{- if .Values.cortxcontrol.machineid.value }}
         cortx.io/machine-id: {{ .Values.cortxcontrol.machineid.value }}
         {{- end }}
+        cortx.io/service-type: cortx-control
     spec:
       hostname: {{ .Values.cortxcontrol.service.headless.name }}
       serviceAccountName: {{ .Values.cortxcontrol.serviceaccountname }}
