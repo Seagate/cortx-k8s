@@ -49,7 +49,7 @@ spec:
         {{- else }}
         args:
           - -c
-          - sleep $(shuf -i 5-10 -n 1)s
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
         {{- end }}
         volumeMounts:
           - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -74,7 +74,11 @@ spec:
           {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
-          command: ["/bin/sleep", "3650d"]
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/ha/bin/ha_start -s fault_tolerance -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -101,7 +105,11 @@ spec:
           {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
-          command: ["/bin/sleep", "3650d"]
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/ha/bin/ha_start -s health_monitor -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -132,7 +140,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/cortx/cluster.conf	
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}
