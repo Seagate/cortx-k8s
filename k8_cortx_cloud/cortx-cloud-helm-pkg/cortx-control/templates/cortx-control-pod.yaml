@@ -14,6 +14,10 @@ spec:
     metadata:
       labels:
         app: {{ .Values.cortxcontrol.name }}
+        {{- if .Values.cortxcontrol.machineid.value }}
+        cortx.io/machine-id: {{ .Values.cortxcontrol.machineid.value }}
+        {{- end }}
+        cortx.io/service-type: cortx-control
     spec:
       hostname: {{ .Values.cortxcontrol.service.headless.name }}
       serviceAccountName: {{ .Values.cortxcontrol.serviceaccountname }}
@@ -27,6 +31,14 @@ spec:
         - name: {{ .Values.cortxcontrol.machineid.volmountname }}
           configMap:
             name: {{ .Values.cortxcontrol.machineid.name }}
+        {{- if .Values.cortxcontrol.machineid.value }}
+        - name: machine-id
+          downwardAPI:
+            items:
+              - path: "id"
+                fieldRef:
+                  fieldPath: metadata.labels['cortx.io/machine-id']
+        {{- end }}
         - name: local-path-pv
           persistentVolumeClaim:
             claimName: {{ .Values.cortxcontrol.localpathpvc.name }}
@@ -35,6 +47,39 @@ spec:
           secret:
             secretName: {{ printf "%s" . }}
         {{- end }}
+      initContainers:
+      - name: cortx-setup
+        image: {{ .Values.cortxcontrol.image }}
+        imagePullPolicy: IfNotPresent        
+        command: 
+          - /bin/sh
+        {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
+        args: 
+          - -c
+          - sleep $(shuf -i 5-10 -n 1)s
+        {{- else }}
+        args: 
+          - -c
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
+        {{- end }}
+        volumeMounts:
+          - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+            mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+          - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+            mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
+          {{- if .Values.cortxcontrol.machineid.value }}
+          - name: machine-id
+            mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+          {{- end }}
+          - name: local-path-pv
+            mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+          {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
+          - name: {{ printf "%s" . }}
+            mountPath: /etc/cortx/solution/secret
+            readOnly: true
+          {{- end }}
+        ports:
+        - containerPort: 5050
       containers:
         - name: cortx-free-space-monitor
           image: {{ .Values.cortxcontrol.image }}
@@ -49,8 +94,10 @@ spec:
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+            {{- if .Values.cortxcontrol.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
@@ -80,8 +127,10 @@ spec:
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+            {{- if .Values.cortxcontrol.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
@@ -111,8 +160,10 @@ spec:
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+            {{- if .Values.cortxcontrol.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
@@ -142,8 +193,10 @@ spec:
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
             - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxcontrol.machineid.volmountname }}
+            {{- if .Values.cortxcontrol.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}

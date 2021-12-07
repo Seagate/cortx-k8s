@@ -151,7 +151,6 @@ for index in $(seq 1 $num_cvg); do
     cvg_blk_list=$((cvg_blk_list+1))
 done
 
-total_num_data_dev=0
 # Validate data device and size exist in the solution file by checking the number of
 # data.dX.device and the number of data.dX.size are equal
 for sol_chk_e in "${solution_cvg_blk_data_dev[@]}"; do
@@ -165,8 +164,6 @@ for sol_chk_e in "${solution_cvg_blk_data_dev[@]}"; do
         result_str="Missing data size info in 'solution.storage.cvg*.devices.data.d*'"
         result="failed"
     fi
-
-    total_num_data_dev=$((total_num_data_dev+num_data_dev))
 done
 
 if [[ "$result" == "failed" ]]; then
@@ -215,8 +212,11 @@ for val in "${sns_val_array[@]}"; do
     sns_total=$((sns_total+val))
 done
 
-if [[ "$sns_total" -gt "$total_num_data_dev" ]]; then    
-    result_str="The sum of SNS ($sns_total) is greater than the total number of data disks ($total_num_data_dev) in the cluster"
+# The SNS=(N+K+S) should not exceed the total number of CVGs in the cluster (the number
+# of CVGs in the solution file multiplies by the number of worker nodes in the cluster)
+total_num_cvgs_in_cluster=$(($num_cvgs*$total_num_nodes))
+if [[ "$sns_total" -gt "$total_num_cvgs_in_cluster" ]]; then    
+    result_str="The sum of SNS ($sns_total) is greater than the total number of CVGs ($total_num_cvgs_in_cluster) in the cluster"
     result="failed"
 fi
 
