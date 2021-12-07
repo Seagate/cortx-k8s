@@ -4,6 +4,11 @@
 ## Generated using npmjs.com/package/generator-bash
 ##
 
+######
+## TODO
+######
+## 1.1: Investigate more optimal YAML generation via yq
+## 1.2: Determine if we currently can use multiple metadata drives
 
 _SCRIPT_NAME=$0
 _VERSION=0.1.0
@@ -18,6 +23,8 @@ SOLUTION_YAML="solution.yaml"
 NODE_LIST_FILE="UNSET"
 DEVICE_PATHS_FILE="UNSET"
 _VERBOSE=
+
+_YAML_BODY="./tmp-yaml-body.yaml"
 
 # print error message [ execute command ] and exit [ with defined status ]
 error() {
@@ -40,31 +47,43 @@ debug() {
 usage() {
 cat << EOF
 usage: $0 [-v] [-c VALUE] [-d VALUE] [-e VALUE] [-m VALUE] [-n VALUE] [-s VALUE] [-x VALUE] [-y VALUE]
+
+This script requires 'yq' to be available on your PATH. Visit github.com/mikefarah/yq for details.
+
 Options:
--c, --num-cvgs              Number of desired CVGs in the generated cluster
--d, --num-data-drives       Number of desired data drives per CVG
--e, --size-data-drives      Desired size of each data drive
--m, --num-metadata-drives   Number of desired metadata drives per CVG
--n, --size-metadata-drives  Desired size of each metadata drive
--s, --solution-yaml         The path to the solution.yaml file to be used as a template
--x, --node-list-file        The path to the file to use for a list of nodes
--y, --device-path-file      The path to the file to use for a list of device paths
+-c   Number of desired CVGs in the generated cluster
+-d   Number of desired data drives per CVG
+-e   Desired size of each data drive
+-m   Number of desired metadata drives per CVG (Currently hard-coded to 1)
+-n   Desired size of each metadata drive
+-s   The path to the solution.yaml file to be used as a template
+-x   The path to the file to use for a list of nodes
+-y   The path to the file to use for a list of device paths
 
 Flags:
--v, --verbose  Enable verbose mode
+-v   Enable verbose mode
 
 Standard Options:
---help     Show this help
---version  Show script version
+-h   Show this help
+
+Examples:
+
+Generate YAML for 2 CVGs with 1 metadata drive and 52 data drives in each CVG, with both metadata and data drives of size 200Gi each:
+
+    ./generate-cvg-yaml.sh -x test-106-nodes.txt -y test-106-devices.txt -c 2 -d 52 -s "solution9_106.yaml" -e "200Gi" -n "200Gi"
+
 EOF
 }
 
 get_options() {
     _SILENT=
-    _OPTSTRING="${_SILENT}c:d:e:m:n:s:x:y:v-:"
+    _OPTSTRING="${_SILENT}c:d:e:m:n:s:x:y:v-:h"
     while getopts "${_OPTSTRING}" _OPTION
     do
       case "${_OPTION}" in
+        h)
+          usage
+          exit 0;;
         c)
           _ARGSHIFT="${OPTIND}"
           NUM_CVGS=${OPTARG}
@@ -101,140 +120,6 @@ get_options() {
           _ARGSHIFT="${OPTIND}"
           _VERBOSE=1
           ;;
-        -)
-          case "${OPTARG}" in
-            help) usage && exit 0;;
-            version) echo "$_VERSION" && exit 0;;
-            verbose)
-              _VERBOSE=1
-              _ARGSHIFT="${OPTIND}"
-              ;;
-            num-cvgs)
-              eval NUM_CVGS="\$$OPTIND"; OPTIND=$(( OPTIND + 1 ))
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$NUM_CVGS" ] && [ -z "$_SILENT" ]; then
-                error "option requires an argument -- ${OPTARG}" usage 1
-              fi
-              ;;
-            num-cvgs=*)
-              NUM_CVGS=${OPTARG#*=}
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$NUM_CVGS" ] && [ -z "$_SILENT" ]; then
-              _OPTNAME=${OPTARG%=$NUM_CVGS}
-                error "option requires an argument -- ${_OPTNAME}" usage 1
-              fi
-              ;;
-            num-data-drives)
-              eval NUM_DATA_DRIVES="\$$OPTIND"; OPTIND=$(( OPTIND + 1 ))
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$NUM_DATA_DRIVES" ] && [ -z "$_SILENT" ]; then
-                error "option requires an argument -- ${OPTARG}" usage 1
-              fi
-              ;;
-            num-data-drives=*)
-              NUM_DATA_DRIVES=${OPTARG#*=}
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$NUM_DATA_DRIVES" ] && [ -z "$_SILENT" ]; then
-              _OPTNAME=${OPTARG%=$NUM_DATA_DRIVES}
-                error "option requires an argument -- ${_OPTNAME}" usage 1
-              fi
-              ;;
-            size-data-drives)
-              eval SIZE_DATA_DRIVE="\$$OPTIND"; OPTIND=$(( OPTIND + 1 ))
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$SIZE_DATA_DRIVE" ] && [ -z "$_SILENT" ]; then
-                error "option requires an argument -- ${OPTARG}" usage 1
-              fi
-              ;;
-            size-data-drives=*)
-              SIZE_DATA_DRIVE=${OPTARG#*=}
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$SIZE_DATA_DRIVE" ] && [ -z "$_SILENT" ]; then
-              _OPTNAME=${OPTARG%=$SIZE_DATA_DRIVE}
-                error "option requires an argument -- ${_OPTNAME}" usage 1
-              fi
-              ;;
-            num-metadata-drives)
-              eval NUM_METADATA_DRIVES="\$$OPTIND"; OPTIND=$(( OPTIND + 1 ))
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$NUM_METADATA_DRIVES" ] && [ -z "$_SILENT" ]; then
-                error "option requires an argument -- ${OPTARG}" usage 1
-              fi
-              ;;
-            num-metadata-drives=*)
-              NUM_METADATA_DRIVES=${OPTARG#*=}
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$NUM_METADATA_DRIVES" ] && [ -z "$_SILENT" ]; then
-              _OPTNAME=${OPTARG%=$NUM_METADATA_DRIVES}
-                error "option requires an argument -- ${_OPTNAME}" usage 1
-              fi
-              ;;
-            size-metadata-drives)
-              eval SIZE_METADATA_DRIVE="\$$OPTIND"; OPTIND=$(( OPTIND + 1 ))
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$SIZE_METADATA_DRIVE" ] && [ -z "$_SILENT" ]; then
-                error "option requires an argument -- ${OPTARG}" usage 1
-              fi
-              ;;
-            size-metadata-drives=*)
-              SIZE_METADATA_DRIVE=${OPTARG#*=}
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$SIZE_METADATA_DRIVE" ] && [ -z "$_SILENT" ]; then
-              _OPTNAME=${OPTARG%=$SIZE_METADATA_DRIVE}
-                error "option requires an argument -- ${_OPTNAME}" usage 1
-              fi
-              ;;
-            solution-yaml)
-              eval SOLUTION_YAML="\$$OPTIND"; OPTIND=$(( OPTIND + 1 ))
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$SOLUTION_YAML" ] && [ -z "$_SILENT" ]; then
-                error "option requires an argument -- ${OPTARG}" usage 1
-              fi
-              ;;
-            solution-yaml=*)
-              SOLUTION_YAML=${OPTARG#*=}
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$SOLUTION_YAML" ] && [ -z "$_SILENT" ]; then
-              _OPTNAME=${OPTARG%=$SOLUTION_YAML}
-                error "option requires an argument -- ${_OPTNAME}" usage 1
-              fi
-              ;;
-            node-list-file)
-              eval NODE_LIST_FILE="\$$OPTIND"; OPTIND=$(( OPTIND + 1 ))
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$NODE_LIST_FILE" ] && [ -z "$_SILENT" ]; then
-                error "option requires an argument -- ${OPTARG}" usage 1
-              fi
-              ;;
-            node-list-file=*)
-              NODE_LIST_FILE=${OPTARG#*=}
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$NODE_LIST_FILE" ] && [ -z "$_SILENT" ]; then
-              _OPTNAME=${OPTARG%=$NODE_LIST_FILE}
-                error "option requires an argument -- ${_OPTNAME}" usage 1
-              fi
-              ;;
-            device-path-file)
-              eval DEVICE_PATHS_FILE="\$$OPTIND"; OPTIND=$(( OPTIND + 1 ))
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$DEVICE_PATHS_FILE" ] && [ -z "$_SILENT" ]; then
-                error "option requires an argument -- ${OPTARG}" usage 1
-              fi
-              ;;
-            device-path-file=*)
-              DEVICE_PATHS_FILE=${OPTARG#*=}
-              _ARGSHIFT="${OPTIND}"
-              if [ -z "$DEVICE_PATHS_FILE" ] && [ -z "$_SILENT" ]; then
-              _OPTNAME=${OPTARG%=$DEVICE_PATHS_FILE}
-                error "option requires an argument -- ${_OPTNAME}" usage 1
-              fi
-              ;;
-            *)
-              if [ "$OPTERR" = 1 ] && [ -z "$_SILENT" ]; then
-                error "illegal option -- ${OPTARG}" usage 1
-              fi
-              ;;
-            esac;;
        \?)
           # VERBOSE MODE
           # invalid option: _OPTION is set to ? (question-mark) and OPTARG is unset
@@ -306,66 +191,103 @@ init "$@"
 ########################
 ##      MAIN          ##
 ########################
+debug " -- PRE-REQS"
+debug "|"
+
+## Check for proper existence of NODE_LIST_FILE parameter
+debug "|    NODE_LIST_FILE=\"${NODE_LIST_FILE}\""
 if [[ "${NODE_LIST_FILE}" == "UNSET" ]]; then
   error "NODE_LIST_FILE is a required parameter and is unset." 1
 fi
+if [[ ! -f "${NODE_LIST_FILE}" ]]; then
+  error "NODE_LIST_FILE is set but file does not exist." 1
+fi
 
+## Check for proper existence of DEVICE_PATHS_FILE parameter
+debug "|    DEVICE_PATHS_FILE=\"${NODE_LIST_FILE}\""
 if [[ "${DEVICE_PATHS_FILE}" == "UNSET" ]]; then
   error "DEVICE_PATHS_FILE is a required parameter and is unset." 1
 fi
+if [[ ! -f "${DEVICE_PATHS_FILE}" ]]; then
+  error "DEVICE_PATHS_FILE  is set but file does not exist." 1
+fi
 
-##TODO Check for jq/yq pre-reqs
+## Check for jq/yq pre-reqs
+YQ_AVAILABLE="$(which yq)"
+debug "|    YQ_AVAILABLE=\"${YQ_AVAILABLE}\""
+if [[ "${YQ_AVAILABLE}" == "" ]]; then
+  error "'yq' is required for this script to run successfully. Visit github.com/mikefarah/yq for details." 1
+fi
 
-## PARSE NODES
+## Parse nodes
+debug " -- PARSED PARAMETERS"
+debug "|"
+debug "|    NODE_LIST_FILE:"
 NODE_LIST=()
 while IFS= read -r line; do
     NODE_LIST+=($line)
+    debug "|      $line"
 done <<< "$(cat $NODE_LIST_FILE)"
-##TODO Check for empty node list
 
-## PARSE DEVICES
+## Check for empty node list
+if [[ "${#NODE_LIST[@]}" == "0" ]]; then
+  error "Parsed NODE_LIST_FILE contents is empty" 1
+fi
+
+## Parse devices
 DEVICE_PATHS=()
+debug "|"
+debug "|    DEVICE_PATH_FILE:"
 while IFS= read -r line; do
     DEVICE_PATHS+=($line)
+    debug "|      $line"
 done <<< "$(cat $DEVICE_PATHS_FILE)"
-##TODO Check for empty device path list
 
-YAML_BODY="./tmp-yaml-body.yaml"
-rm $YAML_BODY
+## Check for empty device path list
+if [[ "${#DEVICE_PATHS[@]}" == "0" ]]; then
+  error "Parsed DEVICE_PATH_FILE contents is empty" 1
+fi
 
-printf "solution:\n" >> $YAML_BODY
+printf "solution:\n" > $_YAML_BODY
 
 ## GENERATE STORAGE->CVG STANZA
-printf "  storage:\n" >> $YAML_BODY
+_DEVICE_OFFSET=0
+printf "  storage:\n" >> $_YAML_BODY
 for cvg_instance in $(seq $NUM_CVGS); do
-  printf "    cvg%s:\n" $cvg_instance >> $YAML_BODY
-  printf "      name: cvg-%s\n" $cvg_instance >> $YAML_BODY ##TODO front this with 001,002 to 099 to 106 formatting
-  printf "      type: ios\n" >> $YAML_BODY
-  printf "      devices:\n" >> $YAML_BODY
+  printf "    cvg%s:\n" $cvg_instance >> $_YAML_BODY
 
-  ##TODO Determine if we currently can use multiple metadata drives
-  printf "        metadata:\n" >> $YAML_BODY
-  printf "          device: %s\n" ${DEVICE_PATHS[0]} >> $YAML_BODY
-  printf "          size: %s\n" $SIZE_METADATA_DRIVE >> $YAML_BODY
+  ## Front-pad cvg-name with leading zeroes
+  _CVG_NAME=$cvg_instance
+  if [[ "$_CVG_NAME" -lt "10" ]]; then
+    _CVG_NAME="0$cvg_instance"
+  fi
 
-  printf "        data:\n" >> $YAML_BODY
+  printf "      name: cvg-%s\n" $_CVG_NAME >> $_YAML_BODY 
+  printf "      type: ios\n" >> $_YAML_BODY
+  printf "      devices:\n" >> $_YAML_BODY
+
+  ##TODO (1.2) Determine if we currently can use multiple metadata drives
+  printf "        metadata:\n" >> $_YAML_BODY
+  printf "          device: %s\n" ${DEVICE_PATHS[$_DEVICE_OFFSET]} >> $_YAML_BODY
+  ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
+
+  printf "          size: %s\n" $SIZE_METADATA_DRIVE >> $_YAML_BODY
+
+  printf "        data:\n" >> $_YAML_BODY
   for data_instance in $(seq 1 $NUM_DATA_DRIVES); do
-    printf "          d%s:\n" $data_instance >> $YAML_BODY
-    printf "            device: %s\n" ${DEVICE_PATHS[$data_instance]} >> $YAML_BODY
-    printf "            size: %s\n" $SIZE_DATA_DRIVE >> $YAML_BODY
+    printf "          d%s:\n" $data_instance >> $_YAML_BODY
+    printf "            device: %s\n" ${DEVICE_PATHS[$_DEVICE_OFFSET]} >> $_YAML_BODY
+    ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
+
+    printf "            size: %s\n" $SIZE_DATA_DRIVE >> $_YAML_BODY
   done 
 done
 
-## GENERATE NODE STANZA
-printf "  nodes:\n" >> $YAML_BODY
+## Generate Node stanza
+printf "  nodes:\n" >> $_YAML_BODY
 for node_instance in $(seq ${#NODE_LIST[@]}); do
-  printf "    node%s:\n" $node_instance >> $YAML_BODY
-  printf "      name: %s\n" ${NODE_LIST[$node_instance-1]} >> $YAML_BODY
+  printf "    node%s:\n" $node_instance >> $_YAML_BODY
+  printf "      name: %s\n" ${NODE_LIST[$node_instance-1]} >> $_YAML_BODY
 done
 
-#cat $YAML_BODY
-
-yq ea 'del(select(fi==0) | .solution.storage) | del(select(fi==0) | .solution.nodes) | select(fi==0) * select(fi==1)' \
-  ${SOLUTION_YAML} ${YAML_BODY}
-
-rm $YAML_BODY
+yq ea 'del(select(fi==0) | .solution.storage) | del(select(fi==0) | .solution.nodes) | select(fi==0) * select(fi==1)' ${SOLUTION_YAML} ${_YAML_BODY}
