@@ -5,11 +5,22 @@ DIR=$(dirname "$SCRIPT")
 
 function parseSolution()
 {
-  echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
+  echo "$($DIR/parse_scripts/parse_yaml.sh $solution_yaml $1)"
+}
+
+function usage() {
+  echo -e "\n** Script to Collect CORTX Cloud Logs for Support Bundle **\n"
+  echo -e "Usage: \`sh $0 [options]\`\n"
+  echo "Options:"
+  echo "    -s|--solution-config [FILE_PATH] : path of solution configuration file."
+  echo "                                       default file path is $solution_yaml."
+  echo "    -n|--nodename [NODENAME]: collects logs from pods running only on given node".
+  echo "                              collects logs from all the nodes by default."
+  exit 1
 }
 
 date=$(date +%F_%H-%M)
-solution_yaml='solution.yaml'
+solution_yaml="$DIR/solution.yaml"
 pods_found=0
 while [ $# -gt 0 ]; do
   case $1 in
@@ -20,9 +31,11 @@ while [ $# -gt 0 ]; do
       declare nodename="$2"
       ;;
     * )
+      echo "ERROR: Option \"$1\" is not supported."
+      usage
       ;;
   esac
-  shift
+  shift 2
 done
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo $namespace | cut -f2 -d'>')
