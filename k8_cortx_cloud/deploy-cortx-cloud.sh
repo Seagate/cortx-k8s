@@ -263,7 +263,15 @@ function deployConsul()
         --set global.image=$image \
         --set ui.enabled=false \
         --set server.storageClass=$storage_class \
-        --set server.replicas=$num_consul_replicas
+        --set server.replicas=$num_consul_replicas \
+        --set server.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.memory') \
+        --set server.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu') \
+        --set server.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory') \
+        --set server.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu') \
+        --set client.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory') \
+        --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
+        --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
+        --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')
 }
 
 function deployOpenLDAP()
@@ -283,7 +291,11 @@ function deployOpenLDAP()
         --set openldap.nodelistinfo="node-list-info.txt" \
         --set openldap.numreplicas=$num_openldap_replicas \
         --set openldap.password=$openldap_password \
-        --set openldap.image=$image
+        --set openldap.image=$image \
+        --set openldap.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.openldap.resources.requests.memory') \
+        --set openldap.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.openldap.resources.requests.cpu') \
+        --set openldap.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.openldap.resources.limits.memory') \
+        --set openldap.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.openldap.resources.limits.cpu')
 
     # Wait for all openLDAP pods to be ready
     printf "\nWait for openLDAP PODs to be ready"
@@ -347,7 +359,9 @@ function deployZookeeper()
         --set replicaCount=$num_kafka_replicas \
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
-        --set global.storageClass=$storage_class
+        --set global.storageClass=$storage_class \
+        --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory') \
+        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu')
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
     while true; do
@@ -397,7 +411,11 @@ function deployKafka()
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
         --set deleteTopicEnable=true \
-        --set transactionStateLogMinIsr=2
+        --set transactionStateLogMinIsr=2 \
+        --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory') \
+        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu') \
+        --set resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory') \
+        --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu')
 
     printf "\nWait for CORTX 3rd party to be ready"
     while true; do

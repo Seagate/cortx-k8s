@@ -43,6 +43,13 @@ spec:
             - {{ .Values.openldap.password }}
             - --log_dir
             - /var/log/3rd-party
+          resources:
+            requests:
+              memory: {{ .Values.openldap.resources.requests.memory }}
+              cpu: {{ .Values.openldap.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.openldap.resources.limits.memory }}
+              cpu: {{ .Values.openldap.resources.limits.cpu }}
   volumeClaimTemplates:
   - metadata:
       name: etc-3rd-party

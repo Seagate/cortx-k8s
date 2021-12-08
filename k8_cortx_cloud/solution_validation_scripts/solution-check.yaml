@@ -37,6 +37,45 @@ solution:
       durability:
         sns: required
         dix: required
+    resource_allocation:
+      consul:
+        server:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+        client:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+      openldap:
+        resources:
+          requests:
+            memory: required
+            cpu: required
+          limits:
+            memory: required
+            cpu: required
+      zookeeper:
+        resources:
+          requests:
+            memory: required
+            cpu: required
+      kafka:
+        resources:
+          requests:
+            memory: required
+            cpu: required
+          limits:
+            memory: required
+            cpu: required
   storage:
     cvg1:
       name: required
