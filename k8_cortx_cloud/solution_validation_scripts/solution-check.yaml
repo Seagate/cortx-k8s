@@ -40,6 +40,7 @@ solution:
     resource_allocation:
       consul:
         server:
+          storage: required
           resources:
             requests:
               memory: required
@@ -64,11 +65,15 @@ solution:
             memory: required
             cpu: required
       zookeeper:
+        storage_request_size: required
+        data_log_dir_request_size: required
         resources:
           requests:
             memory: required
             cpu: required
       kafka:
+        storage_request_size: required
+        log_persistence_request_size: required
         resources:
           requests:
             memory: required

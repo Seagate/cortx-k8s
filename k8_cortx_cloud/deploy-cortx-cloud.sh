@@ -268,6 +268,7 @@ function deployConsul()
         --set server.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu') \
         --set server.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory') \
         --set server.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu') \
+        --set server.storage=$(extractBlock 'solution.common.resource_allocation.consul.server.storage') \
         --set client.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory') \
         --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
         --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
@@ -361,7 +362,9 @@ function deployZookeeper()
         --set allowAnonymousLogin=true \
         --set global.storageClass=$storage_class \
         --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory') \
-        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu')
+        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu') \
+        --set persistence.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size') \
+        --set persistence.dataLogDir.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size')
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
     while true; do
@@ -415,7 +418,9 @@ function deployKafka()
         --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory') \
         --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu') \
         --set resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory') \
-        --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu')
+        --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu') \
+        --set persistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size') \
+        --set logPersistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size')
 
     printf "\nWait for CORTX 3rd party to be ready"
     while true; do
