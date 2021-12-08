@@ -346,6 +346,8 @@ cd cortx-k8s/k8_cortx_cloud/
 ./logs-cortx-cloud.sh
 ```
 
+**Note:** For more information on installing CORTX click [here](https://www.linkedin.com/posts/gtouret_opensource-sds-kubernetes-activity-6867206757735919616-Hzcq). 
+
 ## 4 Using CORTX
 We recommend to run the following commands on the Kubernetes control plane node
 ```
