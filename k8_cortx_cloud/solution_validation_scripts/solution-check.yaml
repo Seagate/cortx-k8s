@@ -37,6 +37,8 @@ solution:
       durability:
         sns: required
         dix: required
+    external_services:
+      type: required
   storage:
     cvg1:
       name: required
