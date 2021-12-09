@@ -7,10 +7,12 @@ cortxcontrol:
   service:
     clusterip:
       name: cortx-control-clusterip-svc
+      type: ClusterIP
     headless:
       name: cortx-control-headless-svc
     loadbal:
       name: cortx-control-loadbal-svc
+      type: LoadBalancer
   cfgmap:
     mountpath: /etc/cortx/solution
     name: cortx-control-cfgmap001
