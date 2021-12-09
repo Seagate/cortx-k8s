@@ -39,6 +39,8 @@ solution:
       durability:
         sns: 1+0+0
         dix: 1+0+0
+    external_services:
+      type: LoadBalancer
     resource_allocation:
       consul:
         server:

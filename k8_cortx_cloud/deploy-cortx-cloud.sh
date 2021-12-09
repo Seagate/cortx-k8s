@@ -766,6 +766,11 @@ function deployCortxControl()
     cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
     cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
 
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
+    cortxcontrol_machineid=$(cat $cfgmap_path/auto-gen-control-$namespace/id)
+
     num_nodes=1
     # This local path pvc has to match with the one created by CORTX Control Provisioner
     helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
@@ -774,13 +779,14 @@ function deployCortxControl()
         --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
         --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
         --set cortxcontrol.loadbal.name="cortx-control-loadbal-svc" \
+        --set cortxcontrol.loadbal.type="$external_services_type" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxcontrol.cfgmap.name="cortx-cfgmap-$namespace" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
         --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
         --set cortxcontrol.sslcfgmap.volmountname="ssl-config001" \
         --set cortxcontrol.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap-$namespace" \
+        --set cortxcontrol.machineid.value="$cortxcontrol_machineid" \
         --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
         --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
@@ -822,11 +828,17 @@ function deployCortxData()
     cortxdata_image=$(parseSolution 'solution.images.cortxdata')
     cortxdata_image=$(echo $cortxdata_image | cut -f2 -d'>')
 
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
         num_nodes=$((num_nodes+1))
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
+
+        cortxdata_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data/id)
+
         helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
             --set cortxdata.name="cortx-data-pod-$node_name" \
             --set cortxdata.image=$cortxdata_image \
@@ -835,13 +847,14 @@ function deployCortxData()
             --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
             --set cortxdata.service.loadbal.name="cortx-data-loadbal-svc-$node_name" \
+            --set cortxdata.service.loadbal.type="$external_services_type" \
             --set cortxdata.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxdata.cfgmap.volmountname="config001-$node_name" \
             --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
             --set cortxdata.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
             --set cortxdata.sslcfgmap.volmountname="ssl-config001" \
             --set cortxdata.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name-$namespace" \
+            --set cortxdata.machineid.value="$cortxdata_machineid" \
             --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="$local_storage" \
             --set cortxdata.motr.numclientinst=$(extractBlock 'solution.common.motr.num_client_inst') \

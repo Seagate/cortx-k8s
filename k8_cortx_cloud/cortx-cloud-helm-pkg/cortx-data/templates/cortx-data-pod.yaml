@@ -15,6 +15,10 @@ spec:
       labels:
         app: {{ .Values.cortxdata.name }}
         name: cortx-data
+        {{- if .Values.cortxdata.machineid.value }}
+        cortx.io/machine-id: {{ .Values.cortxdata.machineid.value }}
+        {{- end }}
+        cortx.io/service-type: cortx-data
     spec:
       hostname: {{ .Values.cortxdata.service.headless.name }}
       serviceAccountName: {{ .Values.cortxdata.serviceaccountname }}
@@ -35,6 +39,14 @@ spec:
           persistentVolumeClaim:
             claimName: {{ printf "cortx-data-%s-pvc-%s" $basepath $nodename }}
         {{- end }}
+        {{- if .Values.cortxdata.machineid.value }}
+        - name: machine-id
+          downwardAPI:
+            items:
+              - path: "id"
+                fieldRef:
+                  fieldPath: metadata.labels['cortx.io/machine-id']
+        {{- end }}
         - name: local-path-pv
           persistentVolumeClaim:
             claimName: {{ .Values.cortxdata.localpathpvc.name }}
@@ -43,6 +55,10 @@ spec:
           secret:
             secretName: {{ printf "%s" . }}
         {{- end }}
+        - name: {{ .Values.cortxdata.name }}-node-config
+          configMap:
+            defaultMode: 0700
+            name: {{ .Values.cortxdata.name }}-node-config
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxdata.image }}
@@ -68,8 +84,10 @@ spec:
             mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
           - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
             mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-          - name: {{ .Values.cortxdata.machineid.volmountname }}
+          {{- if .Values.cortxdata.machineid.value }}
+          - name: machine-id
             mountPath: {{ .Values.cortxdata.machineid.mountpath }}
+          {{- end }}
           - name: local-path-pv
             mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           {{- range .Files.Lines .Values.cortxdata.secretinfo }}
@@ -79,6 +97,17 @@ spec:
           {{- end }}
         ports:
         - containerPort: 5050
+      - name: node-config
+        image: {{ .Values.cortxdata.image }}
+        imagePullPolicy: IfNotPresent        
+        command:
+          - /nodeconfig/entrypoint.sh
+        volumeMounts:
+        - name: {{ .Values.cortxdata.name }}-node-config
+          mountPath: /nodeconfig
+          readOnly: true
+        securityContext:
+          privileged: true
       containers:
         - name: cortx-s3-haproxy
           image: {{ .Values.cortxdata.image }}
@@ -97,8 +126,10 @@ spec:
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
+            {{- if .Values.cortxdata.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
@@ -134,8 +165,10 @@ spec:
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
+            {{- if .Values.cortxdata.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
@@ -171,8 +204,10 @@ spec:
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
             - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
-            - name: {{ $.Values.cortxdata.machineid.volmountname }}
+            {{- if $.Values.cortxdata.machineid.value }}
+            - name: machine-id
               mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
             {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
@@ -202,8 +237,10 @@ spec:
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
+            {{- if .Values.cortxdata.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
@@ -230,8 +267,10 @@ spec:
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
             - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
-            - name: {{ $.Values.cortxdata.machineid.volmountname }}
+            {{- if $.Values.cortxdata.machineid.value }}
+            - name: machine-id
               mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
             {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
@@ -262,8 +301,10 @@ spec:
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
+            {{- if .Values.cortxdata.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
@@ -304,8 +345,10 @@ spec:
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
             - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
-            - name: {{ $.Values.cortxdata.machineid.volmountname }}
+            {{- if $.Values.cortxdata.machineid.value }}
+            - name: machine-id
               mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
             {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
@@ -335,8 +378,10 @@ spec:
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.machineid.volmountname }}
+            {{- if .Values.cortxdata.machineid.value }}
+            - name: machine-id
               mountPath: {{ .Values.cortxdata.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}

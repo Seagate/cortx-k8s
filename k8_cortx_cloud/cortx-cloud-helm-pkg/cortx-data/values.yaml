@@ -16,10 +16,12 @@ cortxdata:
   service:
     clusterip:
       name: cortx-data-clusterip-svc
+      type: ClusterIP
     headless:
       name: cortx-data-headless-svc
     loadbal:
       name: cortx-data-loadbal-svc
+      type: LoadBalancer
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
@@ -32,6 +34,7 @@ cortxdata:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config
     name:  cortx-data-machine-id-cfgmap
+    value: ""
   localpathpvc:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
