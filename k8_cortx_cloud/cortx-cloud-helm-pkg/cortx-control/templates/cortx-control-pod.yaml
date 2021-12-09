@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ .Values.cortxcontrol.name }}
+        name: cortx-control
         {{- if .Values.cortxcontrol.machineid.value }}
         cortx.io/machine-id: {{ .Values.cortxcontrol.machineid.value }}
         {{- end }}

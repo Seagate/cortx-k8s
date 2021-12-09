@@ -18,6 +18,7 @@ spec:
         {{- if .Values.cortxserver.machineid.value }}
         cortx.io/machine-id: {{ .Values.cortxserver.machineid.value }}
         {{- end }}
+        cortx.io/service-type: cortx-server
     {{- $nodeselector := (.Values.cortxserver.nodeselector) }}
     {{- $nodeparts := split "." $nodeselector }}
     {{- $nodename := $nodeparts._0 }}

@@ -18,6 +18,7 @@ spec:
         cortx.io/machine-id: {{ .Values.cortxha.machineid.value }}
         {{- end }}
         name: cortx-ha
+        cortx.io/service-type: cortx-ha
     spec:
       hostname: {{ .Values.cortxha.service.headless.name }}
       serviceAccountName: {{ .Values.cortxha.serviceaccountname }}
@@ -81,7 +82,7 @@ spec:
         ports:
         - containerPort: 5050
       containers:
-        - name: cortx-ha-action-service
+        - name: cortx-ha-fault-tolerance
           image: {{ .Values.cortxha.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
@@ -114,7 +115,7 @@ spec:
               value: {{ .Values.cortxha.name }}
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-monitor
+        - name: cortx-ha-health-monitor
           image: {{ .Values.cortxha.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
@@ -147,7 +148,7 @@ spec:
               value: {{ .Values.cortxha.name }}
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-event-analyzer
+        - name: cortx-ha-k8s-monitor
           image: {{ .Values.cortxha.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
