@@ -773,6 +773,8 @@ function deployCortxControl()
     cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
     cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
 
+    cortxcontrol_machineid=$(cat $cfgmap_path/auto-gen-control-$namespace/id)
+
     num_nodes=1
     helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control" \
@@ -786,7 +788,7 @@ function deployCortxControl()
         --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
         --set cortxcontrol.sslcfgmap.volmountname="ssl-config001" \
         --set cortxcontrol.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxcontrol.machineid.name="cortx-control-machine-id-cfgmap-$namespace" \
+        --set cortxcontrol.machineid.value="$cortxcontrol_machineid" \
         --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
         --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
         --set cortxcontrol.localpathpvc.requeststoragesize="1Gi" \
@@ -834,6 +836,9 @@ function deployCortxData()
         num_nodes=$((num_nodes+1))
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
+
+        cortxdata_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data/id)
+
         helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
             --set cortxdata.name="cortx-data-$node_name" \
             --set cortxdata.image=$cortxdata_image \
@@ -848,7 +853,7 @@ function deployCortxData()
             --set cortxdata.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
             --set cortxdata.sslcfgmap.volmountname="ssl-config001" \
             --set cortxdata.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxdata.machineid.name="cortx-data-machine-id-cfgmap-$node_name-$namespace" \
+            --set cortxdata.machineid.value="$cortxdata_machineid" \
             --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="$local_storage" \
             --set cortxdata.localpathpvc.requeststoragesize="1Gi" \
@@ -901,6 +906,9 @@ function deployCortxServer()
         num_nodes=$((num_nodes+1))
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
+
+        cortxserver_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/server/id)
+
         helm install "cortx-server-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-server \
             --set cortxserver.name="cortx-server-$node_name" \
             --set cortxserver.image=$cortxserver_image \
@@ -914,7 +922,7 @@ function deployCortxServer()
             --set cortxserver.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
             --set cortxserver.sslcfgmap.volmountname="ssl-config001" \
             --set cortxserver.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxserver.machineid.name="cortx-server-machine-id-cfgmap-$node_name-$namespace" \
+            --set cortxserver.machineid.value="$cortxserver_machineid" \
             --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-$node_name" \
             --set cortxserver.localpathpvc.mountpath="$local_storage" \
             --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
@@ -960,6 +968,8 @@ function deployCortxHa()
     cortxha_image=$(parseSolution 'solution.images.cortxha')
     cortxha_image=$(echo $cortxha_image | cut -f2 -d'>')
 
+    cortxha_machineid=$(cat $cfgmap_path/auto-gen-ha-$namespace/id)
+
     num_nodes=1
     helm install "cortx-ha-$namespace" cortx-cloud-helm-pkg/cortx-ha \
         --set cortxha.name="cortx-ha" \
@@ -975,7 +985,7 @@ function deployCortxHa()
         --set cortxha.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
         --set cortxha.sslcfgmap.volmountname="ssl-config001" \
         --set cortxha.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxha.machineid.name="cortx-ha-machine-id-cfgmap-$namespace" \
+        --set cortxha.machineid.value="$cortxha_machineid" \
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-$namespace" \
         --set cortxha.localpathpvc.mountpath="$local_storage" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
