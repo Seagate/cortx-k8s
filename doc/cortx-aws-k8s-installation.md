@@ -27,7 +27,7 @@ CORTX requires Kubernetes cluster for installation.
  - Every node must have at least 8 cores and 16 GB of RAM.
    - this configuration is sufficient for up to 5 nodes clusters
    - clusters with higher amount of nodes may require more powerful servers (15 nodes cluster was tested using 36 cores / 72 GB of RAM instances)
- - While there should be no dependencies on the underlying OS this procedure was tested with CentOS 7.9 and Kubernetes 1.22
+ - While there should be no dependencies on the underlying OS this procedure was tested with CentOS 7.9 and Kubernetes 1.23
  - In the current release, every node should have the following storage configuration:
    - OS disk (in the example below we'll provision 50GB)
    - Disk for 3rd party applications required for normal CORTX installation (25GB in this procedure).
@@ -156,7 +156,7 @@ for ip in $ClusterIPs; do echo $ip; scp $SSH_FLAGS kubernetes.repo centos@$ip: ;
 cat <<EOF | tee kubeadm-config.yaml
 kind: ClusterConfiguration
 apiVersion: kubeadm.k8s.io/v1beta3
-kubernetesVersion: v1.22.2
+kubernetesVersion: v1.23.0
 networking:
   podSubnet: 192.168.0.0/16
 ---
