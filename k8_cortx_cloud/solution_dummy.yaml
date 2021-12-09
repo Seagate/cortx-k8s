@@ -39,6 +39,8 @@ solution:
       durability:
         sns: 1+0+0
         dix: 1+0+0
+    external_services:
+      type: LoadBalancer
   storage:
     cvg1:
       name: cvg-01
