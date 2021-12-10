@@ -778,8 +778,8 @@ function deployCortxControl()
         --set cortxcontrol.image=$cortxcontrol_image \
         --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
         --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
-        --set cortxcontrol.loadbal.name="cortx-control-loadbal-svc" \
-        --set cortxcontrol.loadbal.type="$external_services_type" \
+        --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
+        --set cortxcontrol.service.loadbal.type="$external_services_type" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxcontrol.cfgmap.name="cortx-cfgmap-$namespace" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
