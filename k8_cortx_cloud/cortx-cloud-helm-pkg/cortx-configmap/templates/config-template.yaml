@@ -17,6 +17,7 @@ cortx:
     consul:
       endpoints:
         - tcp://<<.Values.cortx.external.consul.endpoints>>:8301
+        - http://<<.Values.cortx.external.consul.endpoints>>:8500
       admin: admin
       secret: consul_admin_secret
   common:

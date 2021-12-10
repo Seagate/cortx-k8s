@@ -9,13 +9,21 @@ cluster:
       services:
       - io
     - name: hare
-    - name: s3
       services:
-      - io
-      - auth
-      - bg_consumer
+      - hax
     storage:
     <<.Values.cluster.storage_list>>
+  - name: server_node
+    components:
+      - name: utils
+      - name: hare
+        services:
+        - hax
+      - name: s3
+        services:
+        - io
+        - auth
+        - bg_consumer
   - name: control_node
     components:
     - name: utils
@@ -29,6 +37,10 @@ cluster:
     - name: csm
       services:
       - agent
+  - name: ha_node
+    components:
+    - name: utils
+    - name: ha
   storage_sets:
   - name: <<.Values.cluster.storage_sets.name>>
     durability:

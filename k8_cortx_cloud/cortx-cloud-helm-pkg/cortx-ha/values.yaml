@@ -1,26 +1,20 @@
 namespace: default
-cortxdata:
-  name: cortx-data
+cortxha:
+  name: cortx-ha
   image: ghcr.io/seagate/centos:7
-  nodeselector: node-1
-  mountblkinfo: mnt-blk-info.txt
-  nodelistinfo: node-list-info.txt
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
-  motr:
-    numclientinst: 1
-    startportnum: 29000
-    numiosinst: 1
   service:
     clusterip:
-      name: cortx-data-clusterip-svc
-      type: ClusterIP
+      name: cortx-ha-clusterip-svc
     headless:
-      name: cortx-data-headless-svc
+      name: cortx-ha-headless-svc
+    loadbal:
+      name: cortx-ha-loadbal-svc
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-data-cfgmap
+    name: cortx-ha-cfgmap
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
@@ -28,7 +22,7 @@ cortxdata:
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config
-    name:  cortx-data-machine-id-cfgmap
+    name:  cortx-ha-machine-id-cfgmap
     value: ""
   localpathpvc:
     name: cortx-fs-local-pvc

@@ -19,6 +19,9 @@ spec:
         cortx.io/machine-id: {{ .Values.cortxdata.machineid.value }}
         {{- end }}
         cortx.io/service-type: cortx-data
+    {{- $nodeselector := (.Values.cortxdata.nodeselector) }}
+    {{- $nodeparts := split "." $nodeselector }}
+    {{- $nodename := $nodeparts._0 }}
     spec:
       hostname: {{ .Values.cortxdata.service.headless.name }}
       serviceAccountName: {{ .Values.cortxdata.serviceaccountname }}
@@ -32,12 +35,27 @@ spec:
         - name: {{ .Values.cortxdata.machineid.volmountname }}
           configMap:
             name: {{ .Values.cortxdata.machineid.name }}
-        {{- $nodename := (.Values.cortxdata.nodename) }}
-        {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-        {{- $basepath := (base .) }}
-        - name: {{ printf "cortx-data-%s-pv-%s" $basepath $nodename }}
+        # Loop through the node list info file which contains the following example:
+        # 0 node-1
+        # 1 node-2
+        {{- range $line := .Files.Lines .Values.cortxdata.nodelistinfo }}
+        {{- $parts := split " " . }}
+        {{- $index := $parts._0 }}
+        {{- $parsednodename := $parts._1 }}
+        # Loop through the mounted block info file which contains the following:
+        # /dev/sdc 5Gi
+        # /dev/sdd 5Gi
+        {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
+        {{- $mntblkparts := split " " . }}
+        {{- $localpath := $mntblkparts._0 }}
+        {{- $mountblksize := $mntblkparts._1 }}
+        {{- $disk := (base $localpath) }}
+        {{- if eq $parsednodename $nodename }}
+        - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
           persistentVolumeClaim:
-            claimName: {{ printf "cortx-data-%s-pvc-%s" $basepath $nodename }}
+            claimName: {{ printf "cortx-data-%s-pvc-%s" $disk $index }}
+        {{- end }}
+        {{- end }}
         {{- end }}
         {{- if .Values.cortxdata.machineid.value }}
         - name: machine-id
@@ -75,9 +93,26 @@ spec:
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
         {{- end }}
         volumeDevices:
-          {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-          - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-            devicePath: {{ . }}
+          # Loop through the node list info file which contains the following example:
+          # 0 node-1
+          # 1 node-2
+          {{- range $line := .Files.Lines .Values.cortxdata.nodelistinfo }}
+          {{- $parts := split " " . }}
+          {{- $index := $parts._0 }}
+          {{- $parsednodename := $parts._1 }}
+          # Loop through the mounted block info file which contains the following:
+          # /dev/sdc 5Gi
+          # /dev/sdd 5Gi
+          {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
+          {{- $mntblkparts := split " " . }}
+          {{- $localpath := $mntblkparts._0 }}
+          {{- $mountblksize := $mntblkparts._1 }}
+          {{- $disk := (base $localpath) }}
+          {{- if eq $parsednodename $nodename }}
+          - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
+            devicePath: {{ $localpath }}
+          {{- end }}
+          {{- end }}
           {{- end }}
         volumeMounts:
           - name: {{ .Values.cortxdata.cfgmap.volmountname }}
@@ -109,117 +144,6 @@ spec:
         securityContext:
           privileged: true
       containers:
-        - name: cortx-s3-haproxy
-          image: {{ .Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command: 
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service haproxy -c yaml:///etc/cortx/cluster.conf;
-          {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            {{- if .Values.cortxdata.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
-          ports:
-          - containerPort: 80
-          - containerPort: 443
-          - containerPort: 9080
-          - containerPort: 9443
-          - containerPort: 28049
-          securityContext:
-            allowPrivilegeEscalation: false
-        - name: cortx-s3-auth-server
-          image: {{ .Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command: 
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service s3authserver -c yaml:///etc/cortx/cluster.conf;
-          {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            {{- if .Values.cortxdata.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
-          securityContext:
-            allowPrivilegeEscalation: false
-        {{- range $i := until (.Values.cortxdata.s3.numinst|int) }}
-        - name: {{ printf "cortx-s3-%03d" (add 1 $i) }}
-          image: {{ $.Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ $.Values.cortxdata.name }}
-            - name: S3_INDEX
-              value: {{ printf "%d" (add 1 $i) | quote }}
-          {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command: 
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service s3server --index $S3_INDEX -c yaml:///etc/cortx/cluster.conf;
-          {{- end }}
-          volumeMounts:
-            - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
-              mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
-            {{- if $.Values.cortxdata.machineid.value }}
-            - name: machine-id
-              mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
-            {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}          
-          ports:
-          - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.s3.startportnum) }}
-          securityContext:
-            allowPrivilegeEscalation: false
-        {{- end }}
         - name: cortx-motr-hax
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -251,39 +175,10 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
+          ports:
+          - containerPort: 2001
           securityContext:
             allowPrivilegeEscalation: false
-        {{- range $i := until (.Values.cortxdata.motr.numclientinst|int) }}
-        - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
-          image: {{ $.Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command: ["/bin/sleep", "3650d"]
-          {{- end }}
-          volumeMounts:
-            - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
-              mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
-            {{- if $.Values.cortxdata.machineid.value }}
-            - name: machine-id
-              mountPath: {{ $.Values.cortxdata.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
-            {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ $.Values.cortxdata.name }}
-          securityContext:
-            allowPrivilegeEscalation: false
-        {{- end }}
         - name: cortx-motr-confd
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -315,6 +210,8 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
+          ports:
+          - containerPort: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
@@ -336,9 +233,26 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf;
           {{- end }}
           volumeDevices:
-            {{- range $.Files.Lines $.Values.cortxdata.mountblkinfo }}
-            - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-              devicePath: {{ . }}
+            # Loop through the node list info file which contains the following example:
+            # 0 node-1
+            # 1 node-2
+            {{- range $line := $.Files.Lines $.Values.cortxdata.nodelistinfo }}
+            {{- $parts := split " " . }}
+            {{- $index := $parts._0 }}
+            {{- $parsednodename := $parts._1 }}
+            # Loop through the mounted block info file which contains the following:
+            # /dev/sdc 5Gi
+            # /dev/sdd 5Gi
+            {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
+            {{- $mntblkparts := split " " . }}
+            {{- $localpath := $mntblkparts._0 }}
+            {{- $mountblksize := $mntblkparts._1 }}
+            {{- $disk := (base $localpath) }}
+            {{- if eq $parsednodename $nodename }}
+            - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
+              devicePath: {{ $localpath }}
+            {{- end }}
+            {{- end }}
             {{- end }}
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
@@ -361,36 +275,5 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
         {{- end }}
-        - name: cortx-s3-bg-consumer
-          image: {{ .Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command: 
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service s3bgconsumer -c yaml:///etc/cortx/cluster.conf;
-          {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
-              mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            {{- if .Values.cortxdata.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
-          securityContext:
-            allowPrivilegeEscalation: false
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.cortxdata.nodeselector }}

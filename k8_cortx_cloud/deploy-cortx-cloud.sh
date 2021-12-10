@@ -109,65 +109,70 @@ if [[ $num_tainted_worker_nodes -gt 0 || $num_not_found_nodes -gt 0 ]]; then
     fi
 fi
 
+# Delete disk & node info files from folders: cortx-data-blk-data, cortx-data
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
+find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
 
 # Create files consist of drives per node and files consist of drive sizes.
-# These files are used by the helm charts to deploy cortx provisioners and
-# cortx data. These file will be deleted at the end of this script.
+# These files are used by the helm charts to deploy cortx data. These file 
+# will be deleted at the end of this script.
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
 node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
 count=0
-# Loop the var val tuple array
+
+mnt_blk_info_fname="mnt-blk-info.txt"
+node_list_info_fname="node-list-info.txt"
+cortx_blk_data_mnt_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/$mnt_blk_info_fname
+cortx_blk_data_node_list_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/$node_list_info_fname
+
+count=0
 for var_val_element in "${parsed_var_val_array[@]}"
 do
     node_name=$(echo $var_val_element | cut -f2 -d'>')
     node_selector_list[count]=$node_name
     shorter_node_name=$(echo $node_name | cut -f1 -d'.')
     node_name_list[count]=$shorter_node_name
-    count=$((count+1))
-    file_name="mnt-blk-info-$shorter_node_name.txt"
-    file_name_storage_size="mnt-blk-storage-size-$shorter_node_name.txt"
-    data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
-    data_storage_size_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name_storage_size
 
     # Get the node var from the tuple
-    node=$(echo $var_val_element | cut -f3 -d'.')
-
-    # Get the devices from the solution
-    filter="solution.storage.cvg*.devices*.device"
-    parsed_dev_output=$(parseSolution $filter)
-    IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
-
-    # Get the sizes from the solution
-    filter="solution.storage.cvg*.devices*.size"
-    parsed_size_output=$(parseSolution $filter)
-    IFS=';' read -r -a parsed_size_array <<< "$parsed_size_output"
-
-    if [[ "${#parsed_dev_array[@]}" != "${#parsed_size_array[@]}" ]]
-    then
-        printf "\nStorage sizes are not defined for all of the storage devices\n"
-        printf "in the $solution_yaml file\n"
-        exit 1
+    node_info_str="$count $node_name"
+    if [[ -s $cortx_blk_data_node_list_info_path ]]; then
+        printf "\n" >> $cortx_blk_data_node_list_info_path
     fi
+    printf "$node_info_str" >> $cortx_blk_data_node_list_info_path
 
-    for dev in "${parsed_dev_array[@]}"
-    do
-        device=$(echo $dev | cut -f2 -d'>')
-        if [[ -s $data_file_path ]]; then
-            printf "\n" >> $data_file_path
-        fi
-        printf $device >> $data_file_path
-    done
-
-    for dev in "${parsed_size_array[@]}"
-    do
-        size=$(echo $dev | cut -f2 -d'>')
-        if [[ -s $data_storage_size_file_path ]]; then
-            printf "\n" >> $data_storage_size_file_path
-        fi
-        printf $size >> $data_storage_size_file_path
-    done
+    count=$((count+1))
 done
+
+# Copy cluster node info file from CORTX local block helm to CORTX data
+cp $cortx_blk_data_node_list_info_path $(pwd)/cortx-cloud-helm-pkg/cortx-data
+
+# Get the devices from the solution
+filter="solution.storage.cvg*.devices*.device"
+parsed_dev_output=$(parseSolution $filter)
+IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
+
+# Get the sizes from the solution
+filter="solution.storage.cvg*.devices*.size"
+parsed_size_output=$(parseSolution $filter)
+IFS=';' read -r -a parsed_size_array <<< "$parsed_size_output"
+
+# Write disk info (device name and size) to files (for cortx local blk storage and cortx data)
+for index in "${!parsed_dev_array[@]}"
+do
+    device=$(echo ${parsed_dev_array[$index]} | cut -f2 -d'>')
+    size=$(echo ${parsed_size_array[$index]} | cut -f2 -d'>')
+    mnt_blk_info="$device $size"
+    
+    if [[ -s $cortx_blk_data_mnt_info_path ]]; then
+        printf "\n" >> $cortx_blk_data_mnt_info_path
+    fi
+    printf "$mnt_blk_info" >> $cortx_blk_data_mnt_info_path
+done
+
+# Copy device info file from CORTX local block helm to CORTX data
+cp $cortx_blk_data_mnt_info_path $(pwd)/cortx-cloud-helm-pkg/cortx-data
 
 # Create CORTX namespace
 if [[ "$namespace" != "default" ]]; then
@@ -452,43 +457,13 @@ function deployCortxLocalBlockStorage()
     printf "######################################################\n"
     printf "# Deploy CORTX Local Block Storage                    \n"
     printf "######################################################\n"
-    for i in "${!node_selector_list[@]}"; do
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-
-        storage_size_file_path="cortx-cloud-helm-pkg/cortx-data/mnt-blk-storage-size-$node_name.txt"
-        storage_size=[]
-        size_count=0
-        while IFS=' ' read -r size || [[ -n "$size" ]]; do
-            storage_size[size_count]=$size
-            size_count=$((size_count+1))        
-        done < "$storage_size_file_path"
-
-
-        file_path="cortx-cloud-helm-pkg/cortx-data/mnt-blk-info-$node_name.txt"
-        count=001
-        size_count=0
-        while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
-            mount_base_dir=$( echo "$mount_path" | sed -e 's/\/.*\///g')
-            count_str=$(printf "%03d" $count)
-            count=$((count+1))
-            helm_name1="cortx-data-blk-data$count_str-$node_name-$namespace"
-            storage_class_name1="local-blk-storage$count_str-$node_name-$namespace"
-            pvc1_name="cortx-data-$mount_base_dir-pvc-$node_name"
-            pv1_name="cortx-data-$mount_base_dir-pv-$node_name"
-            helm install $helm_name1 cortx-cloud-helm-pkg/cortx-data-blk-data \
-                --set cortxblkdata.nodename=$node_selector \
-                --set cortxblkdata.storage.localpath=$mount_path \
-                --set cortxblkdata.storage.size=${storage_size[size_count]} \
-                --set cortxblkdata.storageclass=$storage_class_name1 \
-                --set cortxblkdata.storage.pvc.name=$pvc1_name \
-                --set cortxblkdata.storage.pv.name=$pv1_name \
-                --set cortxblkdata.storage.volumemode="Block" \
-                --set namespace=$namespace \
-                -n $namespace
-            size_count=$((size_count+1))
-        done < "$file_path"
-    done
+    helm install "cortx-data-blk-data-$namespace" cortx-cloud-helm-pkg/cortx-data-blk-data \
+        --set cortxblkdata.storageclass="cortx-local-blk-storage-$namespace" \
+        --set cortxblkdata.nodelistinfo="node-list-info.txt" \
+        --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
+        --set cortxblkdata.storage.volumemode="Block" \
+        --set namespace=$namespace \
+        -n $namespace
 }
 
 function deleteStaleAutoGenFolders()
@@ -568,8 +543,21 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-headless-svc-${node_name_list[$i]}"
         ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "storage_node"
         
-        # Create data machine id file
+        # Create data machine id file for cortx data
         auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data"
+        mkdir -p $auto_gen_node_path
+        echo $uuid_str > $auto_gen_node_path/id
+
+        # Generate cluster server node file with type server_node in "node-info" folder
+        cluster_server_node_file="$node_info_folder/cluster-server-node-${node_name_list[$i]}.yaml"
+        cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_server_node_file
+        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.node.name" "cortx-server-headless-svc-${node_name_list[$i]}"
+        uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.pod.uuid" "$uuid_str"
+        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.svc.name" "cortx-server-headless-svc-${node_name_list[$i]}"
+        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.node.type" "server_node"
+        # Create data machine id file for cortx server
+        auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/server"
         mkdir -p $auto_gen_node_path
         echo $uuid_str > $auto_gen_node_path/id
     done
@@ -586,7 +574,20 @@ function deployCortxConfigMap()
     # Create control machine id file
     auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
     mkdir -p $auto_gen_control_path
-    echo $uuid_str > $auto_gen_control_path/id        
+    echo $uuid_str > $auto_gen_control_path/id
+
+    # Generate cluster ha node file with type ha_node in "node-info" folder
+    cluster_ha_node_file="$node_info_folder/cluster-ha-node.yaml"
+    cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_ha_node_file
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.name" "cortx-ha-headless-svc"
+    uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.pod.uuid" "$uuid_str"
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.svc.name" "cortx-ha-headless-svc"
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.type" "ha_node"
+    # Create HA machine id file
+    auto_gen_ha_path="$cfgmap_path/auto-gen-ha-$namespace"
+    mkdir -p $auto_gen_ha_path
+    echo $uuid_str > $auto_gen_ha_path/id
 
     # Copy cluster template
     cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
@@ -691,6 +692,19 @@ function deployCortxConfigMap()
     done
     echo $kubectl_cmd_output
 
+    # Create server machine ID config maps
+    for i in "${!node_name_list[@]}"; do
+        auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace/server"
+        kubectl_cmd_output=$(kubectl create configmap "cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace" \
+                            --namespace=$namespace \
+                            --from-file=$auto_gen_cfgmap_path)
+        if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
+            printf "Exit early. Create config map 'cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace' failed with error:\n$kubectl_cmd_output\n"
+            exit 1
+        fi
+    done
+    echo $kubectl_cmd_output
+
     # Create control machine ID config maps
     auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
     kubectl_cmd_output=$(kubectl create configmap "cortx-control-machine-id-cfgmap-$namespace" \
@@ -698,6 +712,17 @@ function deployCortxConfigMap()
                         --from-file=$auto_gen_control_path)
     if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
         printf "Exit early. Create config map 'cortx-control-machine-id-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
+        exit 1
+    fi
+    echo $kubectl_cmd_output
+
+    # Create HA machine ID config maps
+    auto_gen_ha_path="$cfgmap_path/auto-gen-ha-$namespace"
+    kubectl_cmd_output=$(kubectl create configmap "cortx-ha-machine-id-cfgmap-$namespace" \
+                        --namespace=$namespace \
+                        --from-file=$auto_gen_ha_path)
+    if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
+        printf "Exit early. Create config map 'cortx-ha-machine-id-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
         exit 1
     fi
     echo $kubectl_cmd_output
@@ -747,14 +772,19 @@ function deployCortxSecrets()
 
         control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
         data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
+        server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
         if [[ -s $control_secret_path ]]; then
             printf "\n" >> $control_secret_path
         fi
         if [[ -s $data_secret_path ]]; then
             printf "\n" >> $data_secret_path
         fi
+        if [[ -s $server_secret_path ]]; then
+            printf "\n" >> $server_secret_path
+        fi
         printf "$secret_fname" >> $control_secret_path
         printf "$secret_fname" >> $data_secret_path
+        printf "$secret_fname" >> $server_secret_path
     done
 }
 
@@ -772,14 +802,13 @@ function deployCortxControl()
     cortxcontrol_machineid=$(cat $cfgmap_path/auto-gen-control-$namespace/id)
 
     num_nodes=1
-    # This local path pvc has to match with the one created by CORTX Control Provisioner
     helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
-        --set cortxcontrol.name="cortx-control-pod" \
+        --set cortxcontrol.name="cortx-control" \
         --set cortxcontrol.image=$cortxcontrol_image \
         --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
         --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
-        --set cortxcontrol.loadbal.name="cortx-control-loadbal-svc" \
-        --set cortxcontrol.loadbal.type="$external_services_type" \
+        --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
+        --set cortxcontrol.service.loadbal.type="$external_services_type" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxcontrol.cfgmap.name="cortx-cfgmap-$namespace" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
@@ -789,6 +818,7 @@ function deployCortxControl()
         --set cortxcontrol.machineid.value="$cortxcontrol_machineid" \
         --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
         --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
+        --set cortxcontrol.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
         --set cortxcontrol.serviceaccountname="$serviceAccountName" \
         --set namespace=$namespace \
@@ -808,7 +838,7 @@ function deployCortxControl()
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-pod-')"
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
@@ -828,9 +858,6 @@ function deployCortxData()
     cortxdata_image=$(parseSolution 'solution.images.cortxdata')
     cortxdata_image=$(echo $cortxdata_image | cut -f2 -d'>')
 
-    external_services_type=$(parseSolution 'solution.common.external_services.type')
-    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
-
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
         num_nodes=$((num_nodes+1))
@@ -840,14 +867,13 @@ function deployCortxData()
         cortxdata_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data/id)
 
         helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
-            --set cortxdata.name="cortx-data-pod-$node_name" \
+            --set cortxdata.name="cortx-data-$node_name" \
             --set cortxdata.image=$cortxdata_image \
-            --set cortxdata.nodename=$node_name \
-            --set cortxdata.mountblkinfo="mnt-blk-info-$node_name.txt" \
+            --set cortxdata.nodeselector=$node_selector \
+            --set cortxdata.mountblkinfo="mnt-blk-info.txt" \
+            --set cortxdata.nodelistinfo="node-list-info.txt" \
             --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
-            --set cortxdata.service.loadbal.name="cortx-data-loadbal-svc-$node_name" \
-            --set cortxdata.service.loadbal.type="$external_services_type" \
             --set cortxdata.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxdata.cfgmap.volmountname="config001-$node_name" \
             --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
@@ -857,11 +883,10 @@ function deployCortxData()
             --set cortxdata.machineid.value="$cortxdata_machineid" \
             --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="$local_storage" \
+            --set cortxdata.localpathpvc.requeststoragesize="1Gi" \
             --set cortxdata.motr.numclientinst=$(extractBlock 'solution.common.motr.num_client_inst') \
             --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
             --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
-            --set cortxdata.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
-            --set cortxdata.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="$serviceAccountName" \
             --set namespace=$namespace \
@@ -882,7 +907,137 @@ function deployCortxData()
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-pod-')"
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-')"
+
+        if [[ $num_nodes -eq $count ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 1s
+    done
+    printf "\n\n"
+}
+
+
+function deployCortxServer()
+{
+    printf "########################################################\n"
+    printf "# Deploy CORTX Server                                   \n"
+    printf "########################################################\n"
+    cortxserver_image=$(parseSolution 'solution.images.cortxserver')
+    cortxserver_image=$(echo $cortxserver_image | cut -f2 -d'>')
+
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
+    num_nodes=0
+    for i in "${!node_selector_list[@]}"; do
+        num_nodes=$((num_nodes+1))
+        node_name=${node_name_list[i]}
+        node_selector=${node_selector_list[i]}
+
+        cortxserver_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/server/id)
+
+        helm install "cortx-server-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-server \
+            --set cortxserver.name="cortx-server-$node_name" \
+            --set cortxserver.image=$cortxserver_image \
+            --set cortxserver.nodeselector=$node_selector \
+            --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-$node_name" \
+            --set cortxserver.service.headless.name="cortx-server-headless-svc-$node_name" \
+            --set cortxserver.service.loadbal.name="cortx-server-loadbal-svc-$node_name" \
+            --set cortxserver.service.loadbal.type="$external_services_type" \
+            --set cortxserver.cfgmap.name="cortx-cfgmap-$namespace" \
+            --set cortxserver.cfgmap.volmountname="config001-$node_name" \
+            --set cortxserver.cfgmap.mountpath="/etc/cortx/solution" \
+            --set cortxserver.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+            --set cortxserver.sslcfgmap.volmountname="ssl-config001" \
+            --set cortxserver.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
+            --set cortxserver.machineid.value="$cortxserver_machineid" \
+            --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-$node_name" \
+            --set cortxserver.localpathpvc.mountpath="$local_storage" \
+            --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
+            --set cortxserver.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
+            --set cortxserver.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
+            --set cortxserver.secretinfo="secret-info.txt" \
+            --set cortxserver.serviceaccountname="$serviceAccountName" \
+            --set namespace=$namespace \
+            -n $namespace
+    done
+
+    printf "\nWait for CORTX Server to be ready"
+    while true; do
+        count=0
+        while IFS= read -r line; do
+            IFS=" " read -r -a pod_status <<< "$line"
+            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+                if [[ "${pod_status[2]}" == "Error" ]]; then
+                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+                    exit 1
+                fi
+                break
+            fi
+            count=$((count+1))
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-server-')"
+
+        if [[ $num_nodes -eq $count ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 1s
+    done
+    printf "\n\n"
+}
+
+function deployCortxHa()
+{
+    printf "########################################################\n"
+    printf "# Deploy CORTX HA                                       \n"
+    printf "########################################################\n"
+    cortxha_image=$(parseSolution 'solution.images.cortxha')
+    cortxha_image=$(echo $cortxha_image | cut -f2 -d'>')
+
+    cortxha_machineid=$(cat $cfgmap_path/auto-gen-ha-$namespace/id)
+
+    num_nodes=1
+    helm install "cortx-ha-$namespace" cortx-cloud-helm-pkg/cortx-ha \
+        --set cortxha.name="cortx-ha" \
+        --set cortxha.image=$cortxha_image \
+        --set cortxha.secretinfo="secret-info.txt" \
+        --set cortxha.serviceaccountname="$serviceAccountName" \
+        --set cortxha.service.clusterip.name="cortx-ha-clusterip-svc" \
+        --set cortxha.service.headless.name="cortx-ha-headless-svc" \
+        --set cortxha.service.loadbal.name="cortx-ha-loadbal-svc" \
+        --set cortxha.cfgmap.mountpath="/etc/cortx/solution" \
+        --set cortxha.cfgmap.name="cortx-cfgmap-$namespace" \
+        --set cortxha.cfgmap.volmountname="config001" \
+        --set cortxha.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+        --set cortxha.sslcfgmap.volmountname="ssl-config001" \
+        --set cortxha.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
+        --set cortxha.machineid.value="$cortxha_machineid" \
+        --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-$namespace" \
+        --set cortxha.localpathpvc.mountpath="$local_storage" \
+        --set cortxha.localpathpvc.requeststoragesize="1Gi" \
+        --set namespace=$namespace \
+        -n $namespace
+
+    printf "\nWait for CORTX HA to be ready"
+    while true; do
+        count=0
+        while IFS= read -r line; do
+            IFS=" " read -r -a pod_status <<< "$line"
+            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+                if [[ "${pod_status[2]}" == "Error" ]]; then
+                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+                    exit 1
+                fi
+                break
+            fi
+            count=$((count+1))
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-ha-')"
 
         if [[ $num_nodes -eq $count ]]; then
             break
@@ -909,11 +1064,16 @@ function cleanup()
     # and the node info
     #################################################################
     find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
 
     rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
+
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
 }
 
 ##########################################################
@@ -992,5 +1152,7 @@ deployCortxConfigMap
 deployCortxSecrets
 deployCortxControl
 deployCortxData
+deployCortxServer
 deployCortxServices
+deployCortxHa
 cleanup

@@ -8,10 +8,16 @@ spec:
   selector:
     app: {{ .Values.cortxcontrol.name }}
   ports:
-    - name: cortx-csm-agent-tcp
+    - name: cortx-message-server-28300
+      port: 28300
+      targetPort: 28300
+      protocol: TCP
+    - name: cortx-mgmt-service-tcp
       protocol: TCP
       port: 8081
       targetPort: 8081
+  selector:
+    app: {{ .Values.cortxcontrol.name }}
 ---
 apiVersion: v1
 kind: Service

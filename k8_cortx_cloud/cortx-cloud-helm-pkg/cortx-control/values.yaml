@@ -1,7 +1,7 @@
 namespace: default
 cortxcontrol:
   name: cortx-control
-  image: centos:7
+  image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   service:

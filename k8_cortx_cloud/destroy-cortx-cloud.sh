@@ -95,6 +95,26 @@ done <<< "$(kubectl get namespaces)"
 #############################################################
 # Destroy CORTX Cloud functions
 #############################################################
+function deleteCortxHa()
+{
+    printf "########################################################\n"
+    printf "# Delete CORTX HA                                       \n"
+    printf "########################################################\n"
+    for i in "${!node_selector_list[@]}"; do
+        helm uninstall "cortx-ha-$namespace" -n $namespace
+    done
+}
+
+function deleteCortxServer()
+{
+    printf "########################################################\n"
+    printf "# Delete CORTX Server                                   \n"
+    printf "########################################################\n"
+    for i in "${!node_selector_list[@]}"; do
+        helm uninstall "cortx-server-${node_name_list[$i]}-$namespace" -n $namespace
+    done
+}
+
 function deleteCortxData()
 {
     printf "########################################################\n"
@@ -148,18 +168,7 @@ function deleteCortxLocalBlockStorage()
     printf "######################################################\n"
     printf "# Delete CORTX Local Block Storage                    \n"
     printf "######################################################\n"
-    for i in "${!node_selector_list[@]}"; do
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-        file_path="cortx-cloud-helm-pkg/cortx-data/mnt-blk-info-$node_name.txt"
-        count=001
-        while IFS=' ' read -r mount_path || [[ -n "$mount_path" ]]; do
-            count_str=$(printf "%03d" $count)
-            count=$((count+1))
-            helm_name1="cortx-data-blk-data$count_str-$node_name-$namespace"
-            helm uninstall $helm_name1 -n $namespace
-        done < "$file_path"
-    done
+    helm uninstall "cortx-data-blk-data-$namespace" -n $namespace
 }
 
 function deleteCortxPVs()
@@ -195,11 +204,19 @@ function deleteCortxConfigmap()
         rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
 
     done
+    # Delete server machine id config maps
+    for i in "${!node_name_list[@]}"; do
+        kubectl delete configmap "cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
+        rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
+
+    done
     # Delete control machine id config map
     kubectl delete configmap "cortx-control-machine-id-cfgmap-$namespace" --namespace=$namespace
     rm -rf "$cfgmap_path/auto-gen-control-$namespace"
+    # Delete HA machine id config map
+    kubectl delete configmap "cortx-ha-machine-id-cfgmap-$namespace" --namespace=$namespace
+    rm -rf "$cfgmap_path/auto-gen-ha-$namespace"
     # Delete CORTX config maps
-    # rm -rf "$cfgmap_path/auto-gen-cfgmap-$namespace"
     kubectl delete configmap "cortx-cfgmap-$namespace" --namespace=$namespace
     rm -rf "$cfgmap_path/auto-gen-cfgmap-$namespace"
 
@@ -264,6 +281,7 @@ function deleteSecrets()
 
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
 }
 
 function deleteConsul()
@@ -428,12 +446,18 @@ function cleanup()
         file_name="mnt-blk-info-$shorter_node_name.txt"
         rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
     done
+    
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
 }
 
 #############################################################
 # Destroy CORTX Cloud
 #############################################################
-
+deleteCortxHa
+deleteCortxServer
 deleteCortxData
 deleteCortxServices
 deleteCortxControl
