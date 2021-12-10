@@ -9,13 +9,13 @@ function parseSolution()
 }
 
 function usage() {
-  echo -e "\n** Script to Collect CORTX Cloud Logs for Support Bundle **\n"
-  echo -e "Usage: \`sh $0 [options]\`\n"
-  echo "Options:"
-  echo "    -s|--solution-config [FILE_PATH] : path of solution configuration file."
-  echo "                                       default file path is $solution_yaml."
-  echo "    -n|--nodename [NODENAME]: collects logs from pods running only on given node".
-  echo "                              collects logs from all the nodes by default."
+  echo -e "\n** Generate CORTX Cluster Support Bundle **\n"
+  echo -e "Usage: \`sh $0 [-n NODENAME] [-s SOLUTION_CONFIG_FILE]\`\n"
+  echo "Optional Arguments:"
+  echo "    -s|--solution-config FILE_PATH : path of solution configuration file."
+  echo "                                     default file path is $solution_yaml."
+  echo "    -n|--nodename NODENAME: collects logs from pods running only on given node".
+  echo "                            collects logs from all the nodes by default."
   exit 1
 }
 
@@ -31,7 +31,7 @@ while [ $# -gt 0 ]; do
       declare nodename="$2"
       ;;
     * )
-      echo "ERROR: Option \"$1\" is not supported."
+      echo "ERROR: Unsupported Option \"$1\"."
       usage
       ;;
   esac
@@ -132,8 +132,7 @@ while IFS= read -r line; do
 done <<< "$(kubectl get pods)"
 
 if [ "$nodename" ] && [ "$pods_found" == "0" ]; then
-  printf "\n❌ No pods are running on the node: \"%s\"." $nodename
-  printf "\n   Please try with another nodename.\n"
+  printf "\n❌ No pods are running on the node: \"%s\".\n" $nodename
 else
   printf "\n\n📦 \"$logs_folder.tar\" file generated"
 fi
