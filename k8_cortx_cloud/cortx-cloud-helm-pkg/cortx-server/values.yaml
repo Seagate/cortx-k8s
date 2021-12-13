@@ -15,6 +15,7 @@ cortxserver:
       name: cortx-server-headless-svc
     loadbal:
       name: cortx-server-loadbal-svc
+      type: LoadBalancer
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001

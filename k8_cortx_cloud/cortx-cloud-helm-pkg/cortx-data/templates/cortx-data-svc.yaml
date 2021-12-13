@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.cortxdata.service.clusterip.name }}
   namespace: {{ .Values.namespace }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.cortxdata.service.clusterip.type }}
   selector:
     app: {{ .Values.cortxdata.name }}
   ports:

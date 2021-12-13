@@ -1,14 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.cortxcontrol.service.messageserver.name }}
+  name: {{ .Values.cortxcontrol.service.clusterip.name }}
   namespace: {{ .Values.namespace }}
 spec:
+  type: {{ .Values.cortxcontrol.service.clusterip.type }}
+  selector:
+    app: {{ .Values.cortxcontrol.name }}
   ports:
     - name: cortx-message-server-28300
       port: 28300
       targetPort: 28300
       protocol: TCP
+    - name: cortx-mgmt-service-tcp
+      protocol: TCP
+      port: 8081
+      targetPort: 8081
   selector:
     app: {{ .Values.cortxcontrol.name }}
 ---
@@ -29,7 +36,7 @@ metadata:
   name: {{ .Values.cortxcontrol.service.loadbal.name }}
   namespace: {{ .Values.namespace }}
 spec:
-  type: LoadBalancer
+  type: {{ .Values.cortxcontrol.service.loadbal.type }}
   selector:
     app: {{ .Values.cortxcontrol.name }}
   ports:

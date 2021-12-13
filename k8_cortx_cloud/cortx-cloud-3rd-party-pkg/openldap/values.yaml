@@ -7,3 +7,10 @@ openldap:
   numreplicas: 3
   password: seagate1
   image: ghcr.io/seagate/symas-openldap:standalone
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 2
+    limits:
+      memory: 1Gi
+      cpu: 2

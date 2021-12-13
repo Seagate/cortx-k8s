@@ -268,7 +268,16 @@ function deployConsul()
         --set global.image=$image \
         --set ui.enabled=false \
         --set server.storageClass=$storage_class \
-        --set server.replicas=$num_consul_replicas
+        --set server.replicas=$num_consul_replicas \
+        --set server.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.memory') \
+        --set server.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu') \
+        --set server.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory') \
+        --set server.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu') \
+        --set server.storage=$(extractBlock 'solution.common.resource_allocation.consul.server.storage') \
+        --set client.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory') \
+        --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
+        --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
+        --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')
 }
 
 function deployOpenLDAP()
@@ -288,7 +297,11 @@ function deployOpenLDAP()
         --set openldap.nodelistinfo="node-list-info.txt" \
         --set openldap.numreplicas=$num_openldap_replicas \
         --set openldap.password=$openldap_password \
-        --set openldap.image=$image
+        --set openldap.image=$image \
+        --set openldap.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.openldap.resources.requests.memory') \
+        --set openldap.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.openldap.resources.requests.cpu') \
+        --set openldap.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.openldap.resources.limits.memory') \
+        --set openldap.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.openldap.resources.limits.cpu')
 
     # Wait for all openLDAP pods to be ready
     printf "\nWait for openLDAP PODs to be ready"
@@ -352,7 +365,11 @@ function deployZookeeper()
         --set replicaCount=$num_kafka_replicas \
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
-        --set global.storageClass=$storage_class
+        --set global.storageClass=$storage_class \
+        --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory') \
+        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu') \
+        --set persistence.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size') \
+        --set persistence.dataLogDir.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size')
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
     while true; do
@@ -402,7 +419,13 @@ function deployKafka()
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
         --set deleteTopicEnable=true \
-        --set transactionStateLogMinIsr=2
+        --set transactionStateLogMinIsr=2 \
+        --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory') \
+        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu') \
+        --set resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory') \
+        --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu') \
+        --set persistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size') \
+        --set logPersistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size')
 
     printf "\nWait for CORTX 3rd party to be ready"
     while true; do
@@ -773,15 +796,19 @@ function deployCortxControl()
     cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
     cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
 
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
     cortxcontrol_machineid=$(cat $cfgmap_path/auto-gen-control-$namespace/id)
 
     num_nodes=1
     helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control" \
         --set cortxcontrol.image=$cortxcontrol_image \
-        --set cortxcontrol.service.messageserver.name="cortx-control-message-svc" \
+        --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
         --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
         --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
+        --set cortxcontrol.service.loadbal.type="$external_services_type" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxcontrol.cfgmap.name="cortx-cfgmap-$namespace" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
@@ -901,6 +928,9 @@ function deployCortxServer()
     cortxserver_image=$(parseSolution 'solution.images.cortxserver')
     cortxserver_image=$(echo $cortxserver_image | cut -f2 -d'>')
 
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
         num_nodes=$((num_nodes+1))
@@ -916,6 +946,7 @@ function deployCortxServer()
             --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-$node_name" \
             --set cortxserver.service.headless.name="cortx-server-headless-svc-$node_name" \
             --set cortxserver.service.loadbal.name="cortx-server-loadbal-svc-$node_name" \
+            --set cortxserver.service.loadbal.type="$external_services_type" \
             --set cortxserver.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxserver.cfgmap.volmountname="config001-$node_name" \
             --set cortxserver.cfgmap.mountpath="/etc/cortx/solution" \

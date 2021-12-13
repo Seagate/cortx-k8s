@@ -68,7 +68,7 @@ metadata:
   name: {{ .Values.cortxserver.service.loadbal.name }}
   namespace: {{ .Values.namespace }}
 spec:
-  type: LoadBalancer
+  type: {{ .Values.cortxserver.service.loadbal.type }}
   selector:
     app: {{ .Values.cortxserver.name }}
   ports:
