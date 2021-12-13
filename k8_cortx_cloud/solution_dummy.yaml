@@ -42,7 +42,7 @@ solution:
         sns: 1+0+0
         dix: 1+0+0
     external_services:
-      type: NodePort
+      type: LoadBalancer
     resource_allocation:
       consul:
         server:
