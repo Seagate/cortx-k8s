@@ -83,6 +83,122 @@ solution:
           limits:
             memory: required
             cpu: required
+      cortx_control:
+        capacity_monitor:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        s3_bg_workers:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        mgmt_service:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+      cortx_data:
+        motr_hax:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        motr_confd:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        motr_ios:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+      cortx_server:      
+        s3_haproxy:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        s3_auth_server:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        s3_server:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        motr_hax:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        s3_bg_handler:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+      cortx_ha:
+        ha_fault_tolerance:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        ha_health_monitor:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        ha_k8s_monitor:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
   storage:
     cvg1:
       name: required

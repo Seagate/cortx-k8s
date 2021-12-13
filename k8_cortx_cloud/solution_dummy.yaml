@@ -87,6 +87,122 @@ solution:
           limits:
             memory: 1Gi
             cpu: 250m
+      cortx_control:
+        capacity_monitor:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        s3_bg_workers:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        mgmt_service:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+      cortx_data:
+        motr_hax:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        motr_confd:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        motr_ios:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+      cortx_server:      
+        s3_haproxy:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        s3_auth_server:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        s3_server:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        motr_hax:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        s3_bg_handler:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+      cortx_ha:
+        ha_fault_tolerance:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        ha_health_monitor:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
+        ha_k8s_monitor:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 5Mi
   storage:
     cvg1:
       name: cvg-01

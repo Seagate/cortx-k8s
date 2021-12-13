@@ -821,6 +821,18 @@ function deployCortxControl()
         --set cortxcontrol.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
         --set cortxcontrol.serviceaccountname="$serviceAccountName" \
+        --set cortxcontrol.resource_allocation.capacity_monitor.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_control.capacity_monitor.resources.requests.cpu') \
+        --set cortxcontrol.resource_allocation.capacity_monitor.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_control.capacity_monitor.resources.requests.memory') \
+        --set cortxcontrol.resource_allocation.capacity_monitor.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_control.capacity_monitor.resources.limits.cpu') \
+        --set cortxcontrol.resource_allocation.capacity_monitor.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_control.capacity_monitor.resources.limits.memory') \
+        --set cortxcontrol.resource_allocation.s3_bg_workers.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_control.s3_bg_workers.resources.requests.cpu') \
+        --set cortxcontrol.resource_allocation.s3_bg_workers.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_control.s3_bg_workers.resources.requests.memory') \
+        --set cortxcontrol.resource_allocation.s3_bg_workers.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_control.s3_bg_workers.resources.limits.cpu') \
+        --set cortxcontrol.resource_allocation.s3_bg_workers.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_control.s3_bg_workers.resources.limits.memory') \
+        --set cortxcontrol.resource_allocation.mgmt_service.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_control.mgmt_service.resources.requests.cpu') \
+        --set cortxcontrol.resource_allocation.mgmt_service.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_control.mgmt_service.resources.requests.memory') \
+        --set cortxcontrol.resource_allocation.mgmt_service.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_control.mgmt_service.resources.limits.cpu') \
+        --set cortxcontrol.resource_allocation.mgmt_service.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_control.mgmt_service.resources.limits.memory') \
         --set namespace=$namespace \
         -n $namespace
 
@@ -889,6 +901,18 @@ function deployCortxData()
             --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="$serviceAccountName" \
+            --set cortxdata.resource_allocation.motr_hax.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_hax.resources.requests.cpu') \
+            --set cortxdata.resource_allocation.motr_hax.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_hax.resources.requests.memory') \
+            --set cortxdata.resource_allocation.motr_hax.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_hax.resources.limits.cpu') \
+            --set cortxdata.resource_allocation.motr_hax.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_hax.resources.limits.memory') \
+            --set cortxdata.resource_allocation.motr_confd.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_confd.resources.requests.cpu') \
+            --set cortxdata.resource_allocation.motr_confd.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_confd.resources.requests.memory') \
+            --set cortxdata.resource_allocation.motr_confd.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_confd.resources.limits.cpu') \
+            --set cortxdata.resource_allocation.motr_confd.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_confd.resources.limits.memory') \
+            --set cortxdata.resource_allocation.motr_ios.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_ios.resources.requests.cpu') \
+            --set cortxdata.resource_allocation.motr_ios.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_ios.resources.requests.memory') \
+            --set cortxdata.resource_allocation.motr_ios.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_ios.resources.limits.cpu') \
+            --set cortxdata.resource_allocation.motr_ios.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_data.motr_ios.resources.limits.memory') \
             --set namespace=$namespace \
             -n $namespace
     done
@@ -961,6 +985,26 @@ function deployCortxServer()
             --set cortxserver.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
             --set cortxserver.secretinfo="secret-info.txt" \
             --set cortxserver.serviceaccountname="$serviceAccountName" \
+            --set cortxserver.resource_allocation.s3_haproxy.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_haproxy.resources.requests.cpu') \
+            --set cortxserver.resource_allocation.s3_haproxy.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_haproxy.resources.requests.memory') \
+            --set cortxserver.resource_allocation.s3_haproxy.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_haproxy.resources.limits.cpu') \
+            --set cortxserver.resource_allocation.s3_haproxy.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_haproxy.resources.limits.memory') \
+            --set cortxserver.resource_allocation.s3_auth_server.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_auth_server.resources.requests.cpu') \
+            --set cortxserver.resource_allocation.s3_auth_server.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_auth_server.resources.requests.memory') \
+            --set cortxserver.resource_allocation.s3_auth_server.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_auth_server.resources.limits.cpu') \
+            --set cortxserver.resource_allocation.s3_auth_server.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_auth_server.resources.limits.memory') \
+            --set cortxserver.resource_allocation.s3_server.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_server.resources.requests.cpu') \
+            --set cortxserver.resource_allocation.s3_server.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_server.resources.requests.memory') \
+            --set cortxserver.resource_allocation.s3_server.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_server.resources.limits.cpu') \
+            --set cortxserver.resource_allocation.s3_server.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_server.resources.limits.memory') \
+            --set cortxserver.resource_allocation.motr_hax.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.motr_hax.resources.requests.cpu') \
+            --set cortxserver.resource_allocation.motr_hax.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.motr_hax.resources.requests.memory') \
+            --set cortxserver.resource_allocation.motr_hax.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.motr_hax.resources.limits.cpu') \
+            --set cortxserver.resource_allocation.motr_hax.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.motr_hax.resources.limits.memory') \
+            --set cortxserver.resource_allocation.s3_bg_handler.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_bg_handler.resources.requests.cpu') \
+            --set cortxserver.resource_allocation.s3_bg_handler.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_bg_handler.resources.requests.memory') \
+            --set cortxserver.resource_allocation.s3_bg_handler.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_bg_handler.resources.limits.cpu') \
+            --set cortxserver.resource_allocation.s3_bg_handler.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_server.s3_bg_handler.resources.limits.memory') \
             --set namespace=$namespace \
             -n $namespace
     done
@@ -1020,6 +1064,18 @@ function deployCortxHa()
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-$namespace" \
         --set cortxha.localpathpvc.mountpath="$local_storage" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
+        --set cortxha.resource_allocation.ha_fault_tolerance.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_fault_tolerance.resources.requests.cpu') \
+        --set cortxha.resource_allocation.ha_fault_tolerance.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_fault_tolerance.resources.requests.memory') \
+        --set cortxha.resource_allocation.ha_fault_tolerance.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_fault_tolerance.resources.limits.cpu') \
+        --set cortxha.resource_allocation.ha_fault_tolerance.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_fault_tolerance.resources.limits.memory') \
+        --set cortxha.resource_allocation.ha_health_monitor.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_health_monitor.resources.requests.cpu') \
+        --set cortxha.resource_allocation.ha_health_monitor.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_health_monitor.resources.requests.memory') \
+        --set cortxha.resource_allocation.ha_health_monitor.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_health_monitor.resources.limits.cpu') \
+        --set cortxha.resource_allocation.ha_health_monitor.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_health_monitor.resources.limits.memory') \
+        --set cortxha.resource_allocation.ha_k8s_monitor.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_k8s_monitor.resources.requests.cpu') \
+        --set cortxha.resource_allocation.ha_k8s_monitor.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_k8s_monitor.resources.requests.memory') \
+        --set cortxha.resource_allocation.ha_k8s_monitor.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_k8s_monitor.resources.limits.cpu') \
+        --set cortxha.resource_allocation.ha_k8s_monitor.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_k8s_monitor.resources.limits.memory') \
         --set namespace=$namespace \
         -n $namespace
 

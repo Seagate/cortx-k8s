@@ -109,6 +109,13 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          resources:
+            requests:
+              cpu: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.requests.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.limits.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-message-service
@@ -173,6 +180,13 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxcontrol.name }}
+          resources:
+            requests:
+              cpu: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.requests.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.limits.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-mgmt-service
@@ -208,5 +222,12 @@ spec:
               value: {{ .Values.cortxcontrol.name }}
           ports:
           - containerPort: 8081
+          resources:
+            requests:
+              cpu: {{ .Values.cortxcontrol.resource_allocation.mgmt_service.resources.requests.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.mgmt_service.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxcontrol.resource_allocation.mgmt_service.resources.limits.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.mgmt_service.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false

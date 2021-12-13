@@ -30,3 +30,38 @@ cortxcontrol:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
+  resource_allocation:
+    capacity_monitor:
+      resources:
+        requests:
+          cpu: 125m
+          memory: 64Mi
+        limits:
+          cpu: 250m
+          memory: 128Mi
+    ## TODO: Add message service resources to the solution.yaml, solution_dummy.yaml, ##
+    ## and solution-check.yaml and update cortx-control-pod.yaml                      ##
+    # message_service:
+    #   resources:
+    #     requests:
+    #       cpu: 
+    #       memory: 
+    #     limits:
+    #       cpu: 
+    #       memory: 
+    s3_bg_workers:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    mgmt_service:
+      resources:
+        requests:
+          cpu: 125m
+          memory: 128Mi
+        limits:
+          cpu: 250m
+          memory: 512Mi

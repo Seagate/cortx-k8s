@@ -177,6 +177,13 @@ spec:
               value: {{ .Values.cortxdata.name }}
           ports:
           - containerPort: 2001
+          resources:
+            requests:
+              cpu: {{ .Values.cortxdata.resource_allocation.motr_hax.resources.requests.cpu }}
+              memory: {{ .Values.cortxdata.resource_allocation.motr_hax.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxdata.resource_allocation.motr_hax.resources.limits.cpu }}
+              memory: {{ .Values.cortxdata.resource_allocation.motr_hax.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-motr-confd
@@ -212,6 +219,13 @@ spec:
               value: {{ .Values.cortxdata.name }}
           ports:
           - containerPort: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
+          resources:
+            requests:
+              cpu: {{ .Values.cortxdata.resource_allocation.motr_confd.resources.requests.cpu }}
+              memory: {{ .Values.cortxdata.resource_allocation.motr_confd.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxdata.resource_allocation.motr_confd.resources.limits.cpu }}
+              memory: {{ .Values.cortxdata.resource_allocation.motr_confd.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
@@ -272,6 +286,13 @@ spec:
             {{- end }}
           ports:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+          resources:
+            requests:
+              cpu: {{ $.Values.cortxdata.resource_allocation.motr_ios.resources.requests.cpu }}
+              memory: {{ $.Values.cortxdata.resource_allocation.motr_ios.resources.requests.memory }}
+            limits:
+              cpu: {{ $.Values.cortxdata.resource_allocation.motr_ios.resources.limits.cpu }}
+              memory: {{ $.Values.cortxdata.resource_allocation.motr_ios.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- end }}

@@ -28,3 +28,28 @@ cortxha:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
+  resource_allocation:
+    ha_fault_tolerance:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    ha_health_monitor:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    ha_k8s_monitor:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi

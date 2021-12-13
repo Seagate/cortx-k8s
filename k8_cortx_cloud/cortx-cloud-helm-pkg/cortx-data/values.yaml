@@ -34,3 +34,28 @@ cortxdata:
     name: cortx-fs-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
+  resource_allocation:
+    motr_hax:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+    motr_confd:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    motr_ios:
+      resources:
+        requests:
+          cpu: 2000m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 2Gi

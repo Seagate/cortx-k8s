@@ -113,6 +113,13 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxha.name }}
+          resources:
+            requests:
+              cpu: {{ .Values.cortxha.resource_allocation.ha_fault_tolerance.resources.requests.cpu }}
+              memory: {{ .Values.cortxha.resource_allocation.ha_fault_tolerance.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxha.resource_allocation.ha_fault_tolerance.resources.limits.cpu }}
+              memory: {{ .Values.cortxha.resource_allocation.ha_fault_tolerance.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-health-monitor
@@ -146,6 +153,13 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxha.name }}
+          resources:
+            requests:
+              cpu: {{ .Values.cortxha.resource_allocation.ha_health_monitor.resources.requests.cpu }}
+              memory: {{ .Values.cortxha.resource_allocation.ha_health_monitor.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxha.resource_allocation.ha_health_monitor.resources.limits.cpu }}
+              memory: {{ .Values.cortxha.resource_allocation.ha_health_monitor.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-k8s-monitor
@@ -179,5 +193,12 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxha.name }}
+          resources:
+            requests:
+              cpu: {{ .Values.cortxha.resource_allocation.ha_k8s_monitor.resources.requests.cpu }}
+              memory: {{ .Values.cortxha.resource_allocation.ha_k8s_monitor.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxha.resource_allocation.ha_k8s_monitor.resources.limits.cpu }}
+              memory: {{ .Values.cortxha.resource_allocation.ha_k8s_monitor.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false

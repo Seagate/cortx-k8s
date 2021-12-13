@@ -33,3 +33,44 @@ cortxserver:
     name: cortx-fs-server-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
+  resource_allocation:
+    s3_haproxy:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    s3_auth_server:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    s3_server:
+      resources:
+        requests:
+          cpu: 2000m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 2Gi
+    motr_hax:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 1024Gi
+    s3_bg_handler:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
