@@ -235,7 +235,7 @@ spec:
           - containerPort: 2001
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-s3-bg-handler
+        - name: cortx-s3-bghandler
           image: {{ .Values.cortxserver.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
