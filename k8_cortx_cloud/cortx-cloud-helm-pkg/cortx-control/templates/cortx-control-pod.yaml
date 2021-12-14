@@ -82,7 +82,7 @@ spec:
         ports:
         - containerPort: 5050
       containers:
-        - name: cortx-capacity-monitor
+        - name: cortx-motr-fsm
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
@@ -118,7 +118,7 @@ spec:
               memory: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-message-service
+        - name: cortx-utils-message
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
@@ -153,7 +153,7 @@ spec:
           - containerPort: 28300
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-s3-bg-workers
+        - name: cortx-s3-bgscheduler
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
@@ -189,7 +189,7 @@ spec:
               memory: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-mgmt-service
+        - name: cortx-csm-agent
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
