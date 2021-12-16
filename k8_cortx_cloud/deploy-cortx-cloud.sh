@@ -231,6 +231,7 @@ function deployRancherProvisioner()
 {
     # Add the HashiCorp Helm Repository:
     helm repo add hashicorp https://helm.releases.hashicorp.com
+    helm repo update hashicorp
     if [[ $storage_class == "local-path" ]]
     then
         printf "Install Rancher Local Path Provisioner"
@@ -268,11 +269,24 @@ function deployConsul()
         --set server.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu') \
         --set server.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory') \
         --set server.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu') \
+        --set server.containerSecurityContext.server.allowPrivilegeEscalation=false \
         --set server.storage=$(extractBlock 'solution.common.resource_allocation.consul.server.storage') \
         --set client.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory') \
         --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
         --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
-        --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')
+        --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu') \
+        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false
+
+    # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
+    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
+    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}'
+
+    # Rollout a new deployment version of Consul pods to use updated Service Account settings
+    kubectl rollout restart statefulset/consul-server
+    kubectl rollout restart daemonset/consul
+
+    ##TODO This needs to be maintained during upgrades etc...
+
 }
 
 function deployOpenLDAP()
@@ -347,6 +361,7 @@ function deployZookeeper()
     printf "######################################################\n"
     # Add Zookeeper and Kafka Repository
     helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update bitnami
 
     image=$(parseSolution 'solution.images.zookeeper')
     image=$(echo $image | cut -f2 -d'>')
@@ -364,7 +379,12 @@ function deployZookeeper()
         --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory') \
         --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu') \
         --set persistence.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size') \
-        --set persistence.dataLogDir.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size')
+        --set persistence.dataLogDir.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size') \
+        --set serviceAccount.create=true \
+        --set serviceAccount.name="cortx-zookeeper" \
+        --set serviceAccount.automountServiceAccountToken=false \
+        --set containerSecurityContext.allowPrivilegeEscalation=false \
+        --wait
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
     while true; do
@@ -420,7 +440,14 @@ function deployKafka()
         --set resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory') \
         --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu') \
         --set persistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size') \
-        --set logPersistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size')
+        --set logPersistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size') \
+        --set serviceAccount.create=true \
+        --set serviceAccount.name="cortx-kafka" \
+        --set serviceAccount.automountServiceAccountToken=false \
+        --set serviceAccount.automountServiceAccountToken=false \
+        --set containerSecurityContext.enabled=true \
+        --set containerSecurityContext.allowPrivilegeEscalation=false \
+        --wait
 
     printf "\nWait for CORTX 3rd party to be ready"
     while true; do
