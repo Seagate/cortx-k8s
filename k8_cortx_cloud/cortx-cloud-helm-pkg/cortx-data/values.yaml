@@ -8,7 +8,6 @@ cortxdata:
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   motr:
-    numclientinst: 1
     startportnum: 29000
     numiosinst: 1
   service:

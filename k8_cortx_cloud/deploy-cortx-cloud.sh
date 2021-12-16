@@ -884,7 +884,6 @@ function deployCortxData()
             --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="$local_storage" \
             --set cortxdata.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxdata.motr.numclientinst=$(extractBlock 'solution.common.motr.num_client_inst') \
             --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
             --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
@@ -972,7 +971,7 @@ function deployCortxServer()
             IFS=" " read -r -a pod_status <<< "$line"
             IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
             if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" ]]; then
+                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
                     printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
                     exit 1
                 fi
@@ -1030,7 +1029,7 @@ function deployCortxHa()
             IFS=" " read -r -a pod_status <<< "$line"
             IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
             if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" ]]; then
+                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
                     printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
                     exit 1
                 fi

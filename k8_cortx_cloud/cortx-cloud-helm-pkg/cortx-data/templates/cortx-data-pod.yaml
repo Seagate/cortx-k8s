@@ -90,7 +90,11 @@ spec:
         {{- else }}
         args: 
           - -c
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
+          {{- if .Values.cortxdata.machineid.value }}
+          - /opt/seagate/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          {{- else }}
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          {{- end }}
         {{- end }}
         volumeDevices:
           # Loop through the node list info file which contains the following example:
@@ -130,6 +134,9 @@ spec:
             mountPath: /etc/cortx/solution/secret
             readOnly: true
           {{- end }}
+        env:
+          - name: MACHINE_ID            
+            value: {{ printf "%s" .Values.cortxdata.machineid.value | quote }}
         ports:
         - containerPort: 5050
       - name: node-config
@@ -144,7 +151,7 @@ spec:
         securityContext:
           privileged: true
       containers:
-        - name: cortx-motr-hax
+        - name: cortx-hax
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
@@ -154,7 +161,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/hare_setup start --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
@@ -189,7 +196,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
@@ -215,7 +222,7 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
-        - name: {{ printf "cortx-motr-ios-%03d" (add 1 $i) }}
+        - name: {{ printf "cortx-motr-io-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           env:
@@ -230,7 +237,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
             # Loop through the node list info file which contains the following example:
