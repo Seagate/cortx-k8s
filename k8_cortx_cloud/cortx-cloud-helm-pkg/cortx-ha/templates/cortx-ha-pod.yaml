@@ -22,6 +22,7 @@ spec:
     spec:
       hostname: {{ .Values.cortxha.service.headless.name }}
       serviceAccountName: {{ .Values.cortxha.serviceaccountname }}
+      automountServiceAccountToken: true
       volumes:
         - name: {{ .Values.cortxha.cfgmap.volmountname }}
           configMap:
