@@ -25,15 +25,12 @@ while IFS= read -r line; do
     IFS=" " read -r -a my_array <<< "$line"
     node_name="${my_array[0]}"
     node_status="${my_array[1]}"
-    if [[ "$node_name" == "NAME" && "$node_status" == "STATUS" ]]; then
-        continue
-    fi
 
     if [[ "$node_status" == "NotReady" ]]; then
         not_ready_node_list[$not_ready_node_count]="$node_name"
         not_ready_node_count=$((not_ready_node_count+1))
     fi
-done <<< "$(kubectl get nodes)"
+done <<< "$(kubectl get nodes --no-headers)"
 
 exit_early=false
 if [ $not_ready_node_count -gt 0 ]; then

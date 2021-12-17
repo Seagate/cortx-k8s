@@ -41,10 +41,6 @@ while IFS= read -r line; do
     IFS=" " read -r -a my_array <<< "$line"
     node_name="${my_array[0]}"
     node_status="${my_array[1]}"
-    if [[ "$node_name" == "NAME" && "$node_status" == "STATUS" ]]; then
-        continue
-    fi
-
     if [[ "$node_status" == "NotReady" ]]; then
         not_ready_node_list[$not_ready_node_count]="$node_name"
         not_ready_node_count=$((not_ready_node_count+1))
@@ -65,7 +61,7 @@ while IFS= read -r line; do
         fi
     fi
 
-done <<< "$(kubectl get nodes)"
+done <<< "$(kubectl get nodes --no-headers)"
 printf "Number of worker nodes detected: $num_worker_nodes\n"
 
 
