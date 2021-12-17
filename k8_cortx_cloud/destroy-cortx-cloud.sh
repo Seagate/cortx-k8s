@@ -92,9 +92,21 @@ while IFS= read -r line; do
     count=$((count+1))
 done <<< "$(kubectl get namespaces)"
 
+num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
+
 #############################################################
 # Destroy CORTX Cloud functions
 #############################################################
+function deleteCortxClient()
+{
+    printf "########################################################\n"
+    printf "# Delete CORTX HA                                       \n"
+    printf "########################################################\n"
+    for i in "${!node_selector_list[@]}"; do
+        helm uninstall "cortx-client-${node_name_list[$i]}-$namespace" -n $namespace
+    done
+}
+
 function deleteCortxHa()
 {
     printf "########################################################\n"
@@ -456,6 +468,9 @@ function cleanup()
 #############################################################
 # Destroy CORTX Cloud
 #############################################################
+if [[ $num_motr_client -gt 0 ]]; then
+    deleteCortxClient
+fi
 deleteCortxHa
 deleteCortxServer
 deleteCortxData

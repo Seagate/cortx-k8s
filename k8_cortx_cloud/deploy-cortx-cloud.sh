@@ -1048,6 +1048,73 @@ function deployCortxHa()
     printf "\n\n"
 }
 
+function deployCortxClient()
+{
+    printf "########################################################\n"
+    printf "# Deploy CORTX Client                                   \n"
+    printf "########################################################\n"
+    cortxclient_image=$(parseSolution 'solution.images.cortxclient')
+    cortxclient_image=$(echo $cortxclient_image | cut -f2 -d'>')
+
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
+    num_nodes=0
+    for i in "${!node_selector_list[@]}"; do
+        num_nodes=$((num_nodes+1))
+        node_name=${node_name_list[i]}
+        node_selector=${node_selector_list[i]}
+
+        helm install "cortx-client-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-client \
+            --set cortxclient.name="cortx-client-$node_name" \
+            --set cortxclient.image=$cortxclient_image \
+            --set cortxclient.nodeselector=$node_selector \
+            --set cortxclient.secretinfo="secret-info.txt" \
+            --set cortxclient.serviceaccountname="$serviceAccountName" \
+            --set cortxclient.motr.numclientinst=$num_motr_client \
+            --set cortxclient.service.clusterip.name="cortx-client-clusterip-svc-$node_name" \
+            --set cortxclient.service.headless.name="cortx-client-headless-svc-$node_name" \
+            --set cortxclient.service.loadbal.name="cortx-client-loadbal-svc-$node_name" \
+            --set cortxclient.service.loadbal.type="$external_services_type" \
+            --set cortxclient.cfgmap.name="cortx-cfgmap-$namespace" \
+            --set cortxclient.cfgmap.volmountname="config001-$node_name" \
+            --set cortxclient.cfgmap.mountpath="/etc/cortx/solution" \
+            --set cortxclient.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+            --set cortxclient.sslcfgmap.volmountname="ssl-config001" \
+            --set cortxclient.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
+            --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-$node_name" \
+            --set cortxclient.localpathpvc.mountpath="$local_storage" \
+            --set cortxclient.localpathpvc.requeststoragesize="1Gi" \
+            --set namespace=$namespace \
+            -n $namespace
+    done
+
+    printf "\nWait for CORTX Client to be ready"
+    while true; do
+        count=0
+        while IFS= read -r line; do
+            IFS=" " read -r -a pod_status <<< "$line"
+            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
+                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+                    exit 1
+                fi
+                break
+            fi
+            count=$((count+1))
+        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-client-')"
+
+        if [[ $num_nodes -eq $count ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 1s
+    done
+    printf "\n\n"
+}
+
 function deployCortxServices()
 {
     printf "########################################################\n"
@@ -1145,6 +1212,8 @@ for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
     count=$((count+1))
 done
 
+num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
+
 deployCortxLocalBlockStorage
 deleteStaleAutoGenFolders
 deployCortxConfigMap
@@ -1152,6 +1221,9 @@ deployCortxSecrets
 deployCortxControl
 deployCortxData
 deployCortxServer
-deployCortxServices
 deployCortxHa
+if [[ $num_motr_client -gt 0 ]]; then
+    deployCortxClient
+fi
+deployCortxServices
 cleanup
