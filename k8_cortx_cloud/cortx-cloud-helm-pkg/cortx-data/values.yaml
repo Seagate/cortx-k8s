@@ -35,7 +35,15 @@ cortxdata:
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
   resource_allocation:
-    motr_hax:
+    setup:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+    hax:
       resources:
         requests:
           cpu: 250m
@@ -51,7 +59,7 @@ cortxdata:
         limits:
           cpu: 500m
           memory: 512Mi
-    motr_ios:
+    motr_io:
       resources:
         requests:
           cpu: 2000m

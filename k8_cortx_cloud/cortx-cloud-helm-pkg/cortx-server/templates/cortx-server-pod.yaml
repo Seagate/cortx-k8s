@@ -84,8 +84,15 @@ spec:
           {{- end }}
         ports:
         - containerPort: 5050
+        resources:
+          requests:
+            cpu: {{ .Values.cortxserver.resource_allocation.setup.resources.requests.cpu }}
+            memory: {{ .Values.cortxserver.resource_allocation.setup.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.cortxserver.resource_allocation.setup.resources.limits.cpu }}
+            memory: {{ .Values.cortxserver.resource_allocation.setup.resources.limits.memory }}
       containers:
-        - name: cortx-s3-haproxy
+        - name: cortx-haproxy
           image: {{ .Values.cortxserver.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
@@ -126,14 +133,14 @@ spec:
           - containerPort: 28092
           resources:
             requests:
-              cpu: {{ .Values.cortxserver.resource_allocation.s3_haproxy.resources.requests.cpu }}
-              memory: {{ .Values.cortxserver.resource_allocation.s3_haproxy.resources.requests.memory }}
+              cpu: {{ .Values.cortxserver.resource_allocation.haproxy.resources.requests.cpu }}
+              memory: {{ .Values.cortxserver.resource_allocation.haproxy.resources.requests.memory }}
             limits:
-              cpu: {{ .Values.cortxserver.resource_allocation.s3_haproxy.resources.limits.cpu }}
-              memory: {{ .Values.cortxserver.resource_allocation.s3_haproxy.resources.limits.memory }}
+              cpu: {{ .Values.cortxserver.resource_allocation.haproxy.resources.limits.cpu }}
+              memory: {{ .Values.cortxserver.resource_allocation.haproxy.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-s3-auth-server
+        - name: cortx-authserver
           image: {{ .Values.cortxserver.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
@@ -168,15 +175,15 @@ spec:
           - containerPort: 28050
           resources:
             requests:
-              cpu: {{ .Values.cortxserver.resource_allocation.s3_auth_server.resources.requests.cpu }}
-              memory: {{ .Values.cortxserver.resource_allocation.s3_auth_server.resources.requests.memory }}
+              cpu: {{ .Values.cortxserver.resource_allocation.authserver.resources.requests.cpu }}
+              memory: {{ .Values.cortxserver.resource_allocation.authserver.resources.requests.memory }}
             limits:
-              cpu: {{ .Values.cortxserver.resource_allocation.s3_auth_server.resources.limits.cpu }}
-              memory: {{ .Values.cortxserver.resource_allocation.s3_auth_server.resources.limits.memory }}
+              cpu: {{ .Values.cortxserver.resource_allocation.authserver.resources.limits.cpu }}
+              memory: {{ .Values.cortxserver.resource_allocation.authserver.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxserver.s3.numinst|int) }}
-        - name: {{ printf "cortx-s3-%03d" (add 1 $i) }}
+        - name: {{ printf "cortx-s3server-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxserver.image }}
           imagePullPolicy: IfNotPresent
           env:
@@ -213,15 +220,15 @@ spec:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxserver.s3.startportnum) }}
           resources:
             requests:
-              cpu: {{ $.Values.cortxserver.resource_allocation.s3_server.resources.requests.cpu }}
-              memory: {{ $.Values.cortxserver.resource_allocation.s3_server.resources.requests.memory }}
+              cpu: {{ $.Values.cortxserver.resource_allocation.s3server.resources.requests.cpu }}
+              memory: {{ $.Values.cortxserver.resource_allocation.s3server.resources.requests.memory }}
             limits:
-              cpu: {{ $.Values.cortxserver.resource_allocation.s3_server.resources.limits.cpu }}
-              memory: {{ $.Values.cortxserver.resource_allocation.s3_server.resources.limits.memory }}
+              cpu: {{ $.Values.cortxserver.resource_allocation.s3server.resources.limits.cpu }}
+              memory: {{ $.Values.cortxserver.resource_allocation.s3server.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- end }}
-        - name: cortx-motr-hax
+        - name: cortx-hax
           image: {{ .Values.cortxserver.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
@@ -256,14 +263,14 @@ spec:
           - containerPort: 2001
           resources:
             requests:
-              cpu: {{ .Values.cortxserver.resource_allocation.motr_hax.resources.requests.cpu }}
-              memory: {{ .Values.cortxserver.resource_allocation.motr_hax.resources.requests.memory }}
+              cpu: {{ .Values.cortxserver.resource_allocation.hax.resources.requests.cpu }}
+              memory: {{ .Values.cortxserver.resource_allocation.hax.resources.requests.memory }}
             limits:
-              cpu: {{ .Values.cortxserver.resource_allocation.motr_hax.resources.limits.cpu }}
-              memory: {{ .Values.cortxserver.resource_allocation.motr_hax.resources.limits.memory }}
+              cpu: {{ .Values.cortxserver.resource_allocation.hax.resources.limits.cpu }}
+              memory: {{ .Values.cortxserver.resource_allocation.hax.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-s3-bghandler
+        - name: cortx-bgworker
           image: {{ .Values.cortxserver.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
@@ -292,11 +299,11 @@ spec:
               value: {{ .Values.cortxserver.name }}
           resources:
             requests:
-              cpu: {{ .Values.cortxserver.resource_allocation.s3_bg_handler.resources.requests.cpu }}
-              memory: {{ .Values.cortxserver.resource_allocation.s3_bg_handler.resources.requests.memory }}
+              cpu: {{ .Values.cortxserver.resource_allocation.bgworker.resources.requests.cpu }}
+              memory: {{ .Values.cortxserver.resource_allocation.bgworker.resources.requests.memory }}
             limits:
-              cpu: {{ .Values.cortxserver.resource_allocation.s3_bg_handler.resources.limits.cpu }}
-              memory: {{ .Values.cortxserver.resource_allocation.s3_bg_handler.resources.limits.memory }}
+              cpu: {{ .Values.cortxserver.resource_allocation.bgworker.resources.limits.cpu }}
+              memory: {{ .Values.cortxserver.resource_allocation.bgworker.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
       nodeSelector:

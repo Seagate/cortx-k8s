@@ -84,7 +84,7 @@ solution:
             memory: required
             cpu: required
       cortx_control:
-        capacity_monitor:
+        setup:
           resources:
             requests:
               cpu: required
@@ -92,7 +92,7 @@ solution:
             limits:
               cpu: required
               memory: required
-        s3_bg_workers:
+        motr_fsm:
           resources:
             requests:
               cpu: required
@@ -100,7 +100,23 @@ solution:
             limits:
               cpu: required
               memory: required
-        mgmt_service:
+        utils_message:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        bgscheduler:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        csm_agent:
           resources:
             requests:
               cpu: required
@@ -109,7 +125,15 @@ solution:
               cpu: required
               memory: required
       cortx_data:
-        motr_hax:
+        setup:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        hax:
           resources:
             requests:
               cpu: required
@@ -125,7 +149,7 @@ solution:
             limits:
               cpu: required
               memory: required
-        motr_ios:
+        motr_io:
           resources:
             requests:
               cpu: required
@@ -133,8 +157,8 @@ solution:
             limits:
               cpu: required
               memory: required
-      cortx_server:      
-        s3_haproxy:
+      cortx_server:
+        setup:
           resources:
             requests:
               cpu: required
@@ -142,7 +166,7 @@ solution:
             limits:
               cpu: required
               memory: required
-        s3_auth_server:
+        haproxy:
           resources:
             requests:
               cpu: required
@@ -150,7 +174,7 @@ solution:
             limits:
               cpu: required
               memory: required
-        s3_server:
+        authserver:
           resources:
             requests:
               cpu: required
@@ -158,7 +182,7 @@ solution:
             limits:
               cpu: required
               memory: required
-        motr_hax:
+        s3server:
           resources:
             requests:
               cpu: required
@@ -166,7 +190,15 @@ solution:
             limits:
               cpu: required
               memory: required
-        s3_bg_handler:
+        hax:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
+        bgworker:
           resources:
             requests:
               cpu: required
@@ -175,6 +207,14 @@ solution:
               cpu: required
               memory: required
       cortx_ha:
+        setup:
+          resources:
+            requests:
+              cpu: required
+              memory: required
+            limits:
+              cpu: required
+              memory: required
         ha_fault_tolerance:
           resources:
             requests:

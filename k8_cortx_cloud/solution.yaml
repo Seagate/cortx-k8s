@@ -88,7 +88,15 @@ solution:
             memory: 1Gi
             cpu: 250m
       cortx_control:
-        capacity_monitor:
+        setup:
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+        motr_fsm:
           resources:
             requests:
               cpu: 125m
@@ -96,7 +104,15 @@ solution:
             limits:
               cpu: 250m
               memory: 128Mi
-        s3_bg_workers:
+        utils_message:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+        bgscheduler:
           resources:
             requests:
               cpu: 250m
@@ -104,7 +120,7 @@ solution:
             limits:
               cpu: 500m
               memory: 512Mi
-        mgmt_service:
+        csm_agent:
           resources:
             requests:
               cpu: 125m
@@ -113,7 +129,15 @@ solution:
               cpu: 250m
               memory: 512Mi
       cortx_data:
-        motr_hax:
+        setup:
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+        hax:
           resources:
             requests:
               cpu: 250m
@@ -129,7 +153,7 @@ solution:
             limits:
               cpu: 500m
               memory: 512Mi
-        motr_ios:
+        motr_io:
           resources:
             requests:
               cpu: 2000m
@@ -137,8 +161,16 @@ solution:
             limits:
               cpu: 2000m
               memory: 2Gi
-      cortx_server:      
-        s3_haproxy:
+      cortx_server:
+        setup:
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+        haproxy:
           resources:
             requests:
               cpu: 250m
@@ -146,7 +178,7 @@ solution:
             limits:
               cpu: 500m
               memory: 512Mi
-        s3_auth_server:
+        authserver:
           resources:
             requests:
               cpu: 250m
@@ -154,7 +186,7 @@ solution:
             limits:
               cpu: 500m
               memory: 512Mi
-        s3_server:
+        s3server:
           resources:
             requests:
               cpu: 2000m
@@ -162,7 +194,7 @@ solution:
             limits:
               cpu: 2000m
               memory: 2Gi
-        motr_hax:
+        hax:
           resources:
             requests:
               cpu: 250m
@@ -170,7 +202,7 @@ solution:
             limits:
               cpu: 500m
               memory: 1024Gi
-        s3_bg_handler:
+        bgworker:
           resources:
             requests:
               cpu: 250m
@@ -179,6 +211,14 @@ solution:
               cpu: 500m
               memory: 512Mi
       cortx_ha:
+        setup:
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
         ha_fault_tolerance:
           resources:
             requests:

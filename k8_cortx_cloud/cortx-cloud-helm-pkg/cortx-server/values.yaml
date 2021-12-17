@@ -34,7 +34,15 @@ cortxserver:
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
   resource_allocation:
-    s3_haproxy:
+    setup:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+    haproxy:
       resources:
         requests:
           cpu: 250m
@@ -42,7 +50,7 @@ cortxserver:
         limits:
           cpu: 500m
           memory: 512Mi
-    s3_auth_server:
+    authserver:
       resources:
         requests:
           cpu: 250m
@@ -50,7 +58,7 @@ cortxserver:
         limits:
           cpu: 500m
           memory: 512Mi
-    s3_server:
+    s3server:
       resources:
         requests:
           cpu: 2000m
@@ -58,7 +66,7 @@ cortxserver:
         limits:
           cpu: 2000m
           memory: 2Gi
-    motr_hax:
+    hax:
       resources:
         requests:
           cpu: 250m
@@ -66,7 +74,7 @@ cortxserver:
         limits:
           cpu: 500m
           memory: 1024Gi
-    s3_bg_handler:
+    bgworker:
       resources:
         requests:
           cpu: 250m

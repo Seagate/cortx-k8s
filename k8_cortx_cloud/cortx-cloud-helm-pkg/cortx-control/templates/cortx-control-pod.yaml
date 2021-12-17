@@ -81,6 +81,13 @@ spec:
           {{- end }}
         ports:
         - containerPort: 5050
+        resources:
+          requests:
+            cpu: {{ .Values.cortxcontrol.resource_allocation.setup.resources.requests.cpu }}
+            memory: {{ .Values.cortxcontrol.resource_allocation.setup.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.cortxcontrol.resource_allocation.setup.resources.limits.cpu }}
+            memory: {{ .Values.cortxcontrol.resource_allocation.setup.resources.limits.memory }}
       containers:
         - name: cortx-motr-fsm
           image: {{ .Values.cortxcontrol.image }}
@@ -111,11 +118,11 @@ spec:
               value: {{ .Values.cortxcontrol.name }}
           resources:
             requests:
-              cpu: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.requests.cpu }}
-              memory: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.requests.memory }}
+              cpu: {{ .Values.cortxcontrol.resource_allocation.motr_fsm.resources.requests.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.motr_fsm.resources.requests.memory }}
             limits:
-              cpu: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.limits.cpu }}
-              memory: {{ .Values.cortxcontrol.resource_allocation.capacity_monitor.resources.limits.memory }}
+              cpu: {{ .Values.cortxcontrol.resource_allocation.motr_fsm.resources.limits.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.motr_fsm.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-utils-message
@@ -151,9 +158,16 @@ spec:
               value: {{ .Values.cortxcontrol.name }}
           ports:
           - containerPort: 28300
+          resources:
+            requests:
+              cpu: {{ .Values.cortxcontrol.resource_allocation.utils_message.resources.requests.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.utils_message.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cortxcontrol.resource_allocation.utils_message.resources.limits.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.utils_message.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-s3-bgscheduler
+        - name: cortx-bgscheduler
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
@@ -182,11 +196,11 @@ spec:
               value: {{ .Values.cortxcontrol.name }}
           resources:
             requests:
-              cpu: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.requests.cpu }}
-              memory: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.requests.memory }}
+              cpu: {{ .Values.cortxcontrol.resource_allocation.bgscheduler.resources.requests.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.bgscheduler.resources.requests.memory }}
             limits:
-              cpu: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.limits.cpu }}
-              memory: {{ .Values.cortxcontrol.resource_allocation.s3_bg_workers.resources.limits.memory }}
+              cpu: {{ .Values.cortxcontrol.resource_allocation.bgscheduler.resources.limits.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.bgscheduler.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-csm-agent
@@ -224,10 +238,10 @@ spec:
           - containerPort: 8081
           resources:
             requests:
-              cpu: {{ .Values.cortxcontrol.resource_allocation.mgmt_service.resources.requests.cpu }}
-              memory: {{ .Values.cortxcontrol.resource_allocation.mgmt_service.resources.requests.memory }}
+              cpu: {{ .Values.cortxcontrol.resource_allocation.csm_agent.resources.requests.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.csm_agent.resources.requests.memory }}
             limits:
-              cpu: {{ .Values.cortxcontrol.resource_allocation.mgmt_service.resources.limits.cpu }}
-              memory: {{ .Values.cortxcontrol.resource_allocation.mgmt_service.resources.limits.memory }}
+              cpu: {{ .Values.cortxcontrol.resource_allocation.csm_agent.resources.limits.cpu }}
+              memory: {{ .Values.cortxcontrol.resource_allocation.csm_agent.resources.limits.memory }}
           securityContext:
             allowPrivilegeEscalation: false

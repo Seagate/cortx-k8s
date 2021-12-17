@@ -81,6 +81,13 @@ spec:
           {{- end }}
         ports:
         - containerPort: 5050
+        resources:
+          requests:
+            cpu: {{ .Values.cortxha.resource_allocation.setup.resources.requests.cpu }}
+            memory: {{ .Values.cortxha.resource_allocation.setup.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.cortxha.resource_allocation.setup.resources.limits.cpu }}
+            memory: {{ .Values.cortxha.resource_allocation.setup.resources.limits.memory }}
       containers:
         - name: cortx-ha-fault-tolerance
           image: {{ .Values.cortxha.image }}

@@ -31,7 +31,15 @@ cortxcontrol:
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
   resource_allocation:
-    capacity_monitor:
+    setup:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+    motr_fsm:
       resources:
         requests:
           cpu: 125m
@@ -39,17 +47,15 @@ cortxcontrol:
         limits:
           cpu: 250m
           memory: 128Mi
-    ## TODO: Add message service resources to the solution.yaml, solution_dummy.yaml, ##
-    ## and solution-check.yaml and update cortx-control-pod.yaml                      ##
-    # message_service:
-    #   resources:
-    #     requests:
-    #       cpu: 
-    #       memory: 
-    #     limits:
-    #       cpu: 
-    #       memory: 
-    s3_bg_workers:
+    utils_message:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi 
+    bgscheduler:
       resources:
         requests:
           cpu: 250m
@@ -57,7 +63,7 @@ cortxcontrol:
         limits:
           cpu: 500m
           memory: 512Mi
-    mgmt_service:
+    csm_agent:
       resources:
         requests:
           cpu: 125m
