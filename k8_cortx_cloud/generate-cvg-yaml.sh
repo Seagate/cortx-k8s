@@ -51,14 +51,14 @@ usage: $0 [-v] [-c VALUE] [-d VALUE] [-e VALUE] [-m VALUE] [-n VALUE] [-s VALUE]
 This script requires 'yq' to be available on your PATH. Visit github.com/mikefarah/yq for details.
 
 Options:
--c   Number of desired CVGs in the generated cluster
--d   Number of desired data drives per CVG
--e   Desired size of each data drive
--m   Number of desired metadata drives per CVG (Currently hard-coded to 1)
--n   Desired size of each metadata drive
--s   The path to the solution.yaml file to be used as a template
--x   The path to the file to use for a list of nodes
--y   The path to the file to use for a list of device paths
+-c | --cvgs          Number of desired CVGs in the generated cluster
+-d | --data          Number of desired data drives per CVG
+-e | --datasize      Desired size of each data drive
+-m | --metadata      Number of desired metadata drives per CVG (Currently hard-coded to 1)
+-n | --metadatasize  Desired size of each metadata drive
+-s | --solution      The path to the solution.yaml file to be used as a template
+-x | --nodes         The path to the file to use for a list of nodes
+-y | --devices       The path to the file to use for a list of device paths
 
 Flags:
 -v   Enable verbose mode
@@ -68,94 +68,80 @@ Standard Options:
 
 Examples:
 
-Generate YAML for 2 CVGs with 1 metadata drive and 52 data drives in each CVG, with both metadata and data drives of size 200Gi each:
+Generate YAML for 2 CVGs with 1 metadata drive and 52 data drives in each CVG, with both metadata and data drives of size 200Gi each (these commands are functionally identical):
 
-    ./generate-cvg-yaml.sh -x test-106-nodes.txt -y test-106-devices.txt -c 2 -d 52 -s "solution9_106.yaml" -e "200Gi" -n "200Gi"
+    ./generate-cvg-yaml.sh -x nodes.txt -y devices.txt -c 2 -d 52 -s "solution9_106.yaml" -e "200Gi" -n "200Gi"
+
+    ./generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs 2 --data 52 --solution "solution9_106.yaml" --datasize "200Gi" --metadatasize "200Gi"
 
 EOF
 }
 
+# Referenced via https://betterdev.blog/minimal-safe-bash-script-template/
 get_options() {
-    _SILENT=
-    _OPTSTRING="${_SILENT}c:d:e:m:n:s:x:y:v-:h"
-    while getopts "${_OPTSTRING}" _OPTION
-    do
-      case "${_OPTION}" in
-        h)
-          usage
-          exit 0;;
-        c)
-          _ARGSHIFT="${OPTIND}"
-          NUM_CVGS=${OPTARG}
-          ;;
-        d)
-          _ARGSHIFT="${OPTIND}"
-          NUM_DATA_DRIVES=${OPTARG}
-          ;;
-        e)
-          _ARGSHIFT="${OPTIND}"
-          SIZE_DATA_DRIVE=${OPTARG}
-          ;;
-        m)
-          _ARGSHIFT="${OPTIND}"
-          NUM_METADATA_DRIVES=${OPTARG}
-          ;;
-        n)
-          _ARGSHIFT="${OPTIND}"
-          SIZE_METADATA_DRIVE=${OPTARG}
-          ;;
-        s)
-          _ARGSHIFT="${OPTIND}"
-          SOLUTION_YAML=${OPTARG}
-          ;;
-        x)
-          _ARGSHIFT="${OPTIND}"
-          NODE_LIST_FILE=${OPTARG}
-          ;;
-        y)
-          _ARGSHIFT="${OPTIND}"
-          DEVICE_PATHS_FILE=${OPTARG}
-          ;;
-        v)
-          _ARGSHIFT="${OPTIND}"
-          _VERBOSE=1
-          ;;
-       \?)
-          # VERBOSE MODE
-          # invalid option: _OPTION is set to ? (question-mark) and OPTARG is unset
-          # required argument not found: _OPTION is set to ? (question-mark), OPTARG is unset and an error message is printed
-          [ -z "$_SILENT" ] && usage && exit 1
-          # SILENT MODE
-          # invalid option: _OPTION is set to ? (question-mark) and OPTARG is set to the (invalid) option character
-          [ ! -z "$_SILENT" ] && echo "illegal option -- ${OPTARG}"
-          ;;
-        :)
-          # SILENT MODE
-          # required argument not found: _OPTION is set to : (colon) and OPTARG contains the option-character in question
-          echo "option requires an argument -- ${OPTARG}"
-          ;;
-      esac
-    done
-}
 
-get_arguments() {
-    _ARGS=""
-
-    shift $(( _ARGSHIFT - 1 ))
-
-    for _ARG in $_ARGS
-    do
-      if [ ! -z "$1" ]; then
-        eval "$_ARG=$1"
-      fi
+  while :; do
+    case "${1-}" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -v | --verbose)
+      _VERBOSE=1
       shift
-    done
+      ;;
+    -c | --cvgs) # Number of desired CVGs in the generated cluster
+      NUM_CVGS="${2-}"
+      shift
+      ;;
+    -d | --data) # Number of desired data drives per CVG
+      NUM_DATA_DRIVES="${2-}"
+      shift
+      ;;
+    -e | --datasize) # Desired size of each data drive
+      SIZE_DATA_DRIVE="${2-}"
+      shift
+      ;;
+    -m | --metadata) # Number of desired metadata drives per CVG (Currently hard-coded to 1)
+      #NUM_METADATA_DRIVES="${2-}"
+      NUM_METADATA_DRIVES="1"
+      shift
+      ;;
+    -n | --metadatasize) # Desired size of each metadata drive
+      SIZE_METADATA_DRIVE="${2-}"
+      shift
+      ;;
+    -s | --solution) # The path to the solution.yaml file to be used as a template
+      SOLUTION_YAML="${2-}"
+      shift
+      ;;
+    -x | --nodes) # The path to the file to use for a list of nodes
+      NODE_LIST_FILE="${2-}"
+      shift
+      ;;
+    -y | --devices) # The path to the file to use for a list of device paths
+      DEVICE_PATHS_FILE="${2-}"
+      shift
+      ;;
+    -?*) 
+      error "Unknown option: $1"
+      exit
+      ;;
+    *) break ;;
+    esac
+    shift
+  done
+
+  # check required params and arguments
+  [[ -z "${NODE_LIST_FILE-}" ]] && die "Missing required parameter: --nodes"
+  [[ -z "${DEVICE_PATHS_FILE-}" ]] && die "Missing required parameter: --devices"
+
+  return 0
+
 }
 
 init() {
-    get_options "$@"
-    get_arguments "$@"
-
+   get_options "$@"
 
    # OPTIONS:
    debug " -- OPTIONS"
@@ -194,7 +180,7 @@ init "$@"
 debug " -- PRE-REQS"
 debug "|"
 
-## Check for proper existence of NODE_LIST_FILE parameter
+## Check for proper existence of required NODE_LIST_FILE parameter
 debug "|    NODE_LIST_FILE=\"${NODE_LIST_FILE}\""
 if [[ "${NODE_LIST_FILE}" == "UNSET" ]]; then
   error "NODE_LIST_FILE is a required parameter and is unset." 1
@@ -203,7 +189,7 @@ if [[ ! -f "${NODE_LIST_FILE}" ]]; then
   error "NODE_LIST_FILE is set but file does not exist." 1
 fi
 
-## Check for proper existence of DEVICE_PATHS_FILE parameter
+## Check for proper existence of required DEVICE_PATHS_FILE parameter
 debug "|    DEVICE_PATHS_FILE=\"${NODE_LIST_FILE}\""
 if [[ "${DEVICE_PATHS_FILE}" == "UNSET" ]]; then
   error "DEVICE_PATHS_FILE is a required parameter and is unset." 1
@@ -237,7 +223,7 @@ fi
 ## Parse devices
 DEVICE_PATHS=()
 debug "|"
-debug "|    DEVICE_PATH_FILE:"
+debug "|    DEVICE_PATHS_FILE:"
 while IFS= read -r line; do
     DEVICE_PATHS+=($line)
     debug "|      $line"
@@ -245,7 +231,7 @@ done <<< "$(cat $DEVICE_PATHS_FILE)"
 
 ## Check for empty device path list
 if [[ "${#DEVICE_PATHS[@]}" == "0" ]]; then
-  error "Parsed DEVICE_PATH_FILE contents is empty" 1
+  error "Parsed DEVICE_PATHS_FILE contents is empty" 1
 fi
 
 printf "solution:\n" > $_YAML_BODY
