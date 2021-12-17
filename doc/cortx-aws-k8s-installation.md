@@ -293,6 +293,7 @@ ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "curl -fsSL -o get_helm.sh https://
 ```
 
 ### 3.5 Deploy CORTX
+> **NOTE**: For Motr + Hare only cortx cluster make number of s3 instance as 0 (solution -> common -> s3 -> num_inst) in cortx-k8s/k8_cortx_cloud/solution.yaml
 ```
 ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "cd cortx-k8s/k8_cortx_cloud/; ./deploy-cortx-cloud.sh"
 
