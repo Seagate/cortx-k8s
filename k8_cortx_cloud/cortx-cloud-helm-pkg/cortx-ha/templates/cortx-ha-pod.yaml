@@ -22,6 +22,7 @@ spec:
     spec:
       hostname: {{ .Values.cortxha.service.headless.name }}
       serviceAccountName: {{ .Values.cortxha.serviceaccountname }}
+      automountServiceAccountToken: true
       volumes:
         - name: {{ .Values.cortxha.cfgmap.volmountname }}
           configMap:
@@ -61,7 +62,11 @@ spec:
         {{- else }}
         args:
           - -c
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
+          {{- if .Values.cortxha.machineid.value }}
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          {{- else }}
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          {{- end }}
         {{- end }}
         volumeMounts:
           - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -79,6 +84,9 @@ spec:
             mountPath: /etc/cortx/solution/secret
             readOnly: true
           {{- end }}
+        env:
+          - name: MACHINE_ID            
+            value: {{ printf "%s" .Values.cortxha.machineid.value | quote }}
         ports:
         - containerPort: 5050
         resources:
@@ -179,7 +187,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/cortx/cluster.conf	
+            - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}

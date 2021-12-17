@@ -64,7 +64,11 @@ spec:
         {{- else }}
         args:
           - -c
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf ;
+          {{- if .Values.cortxserver.machineid.value }}
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          {{- else }}
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          {{- end }}
         {{- end }}
         volumeMounts:
           - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -82,6 +86,9 @@ spec:
             mountPath: /etc/cortx/solution/secret
             readOnly: true
           {{- end }}
+        env:
+          - name: MACHINE_ID            
+            value: {{ printf "%s" .Values.cortxserver.machineid.value | quote }}
         ports:
         - containerPort: 5050
         resources:
@@ -102,7 +109,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service haproxy -c yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/s3/bin/s3_start --service haproxy -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -150,7 +157,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service s3authserver -c yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/s3/bin/s3_start --service authserver -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -198,7 +205,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service s3server --index $S3_INDEX -c yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/s3/bin/s3_start --service s3server --index $S3_INDEX -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ $.Values.cortxserver.cfgmap.volmountname }}
@@ -238,7 +245,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/hare_setup start --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -275,8 +282,12 @@ spec:
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
-          {{- else }}          
-          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+          - /opt/seagate/cortx/s3/bin/s3_start --service bgworker -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}

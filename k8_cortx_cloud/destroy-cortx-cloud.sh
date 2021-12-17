@@ -19,6 +19,44 @@ then
     exit 1
 fi
 
+not_ready_node_list=[]
+not_ready_node_count=0
+while IFS= read -r line; do
+    IFS=" " read -r -a my_array <<< "$line"
+    node_name="${my_array[0]}"
+    node_status="${my_array[1]}"
+
+    if [[ "$node_status" == "NotReady" ]]; then
+        not_ready_node_list[$not_ready_node_count]="$node_name"
+        not_ready_node_count=$((not_ready_node_count+1))
+    fi
+done <<< "$(kubectl get nodes --no-headers)"
+
+exit_early=false
+if [ $not_ready_node_count -gt 0 ]; then
+    echo "Number of 'NotReady' worker nodes detected in the cluster: $not_ready_node_count"
+    echo "List of 'NotReady' worker nodes:"
+    for not_ready_node in "${not_ready_node_list[@]}"; do
+        echo "- $not_ready_node"
+    done
+
+    printf "\nContinue CORTX Cloud destruction could lead to unexpeted results.\n"
+    read -p "Do you want to continue (y/n, yes/no)? " reply
+    if [[ "$reply" =~ ^(y|Y)*.(es)$ || "$reply" =~ ^(y|Y)$ ]]; then
+        exit_early=false
+    elif [[ "$reply" =~ ^(n|N)*.(o)$ || "$reply" =~ ^(n|N)$ ]]; then
+        exit_early=true
+    else
+        echo "Invalid response."
+        exit_early=true
+    fi
+fi
+
+if [[ "$exit_early" = true ]]; then
+    echo "Exit script early."
+    exit 1
+fi
+
 pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
@@ -92,9 +130,21 @@ while IFS= read -r line; do
     count=$((count+1))
 done <<< "$(kubectl get namespaces)"
 
+num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
+
 #############################################################
 # Destroy CORTX Cloud functions
 #############################################################
+function deleteCortxClient()
+{
+    printf "########################################################\n"
+    printf "# Delete CORTX HA                                       \n"
+    printf "########################################################\n"
+    for i in "${!node_selector_list[@]}"; do
+        helm uninstall "cortx-client-${node_name_list[$i]}-$namespace" -n $namespace
+    done
+}
+
 function deleteCortxHa()
 {
     printf "########################################################\n"
@@ -456,6 +506,9 @@ function cleanup()
 #############################################################
 # Destroy CORTX Cloud
 #############################################################
+if [[ $num_motr_client -gt 0 ]]; then
+    deleteCortxClient
+fi
 deleteCortxHa
 deleteCortxServer
 deleteCortxData

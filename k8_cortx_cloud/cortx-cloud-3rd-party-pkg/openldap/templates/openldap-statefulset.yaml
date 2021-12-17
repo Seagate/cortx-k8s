@@ -50,6 +50,8 @@ spec:
             limits:
               memory: {{ .Values.openldap.resources.limits.memory }}
               cpu: {{ .Values.openldap.resources.limits.cpu }}
+          securityContext:
+            allowPrivilegeEscalation: false
   volumeClaimTemplates:
   - metadata:
       name: etc-3rd-party
