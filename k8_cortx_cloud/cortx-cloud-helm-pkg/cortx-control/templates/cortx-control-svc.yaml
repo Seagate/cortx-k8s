@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.cortxcontrol.service.clusterip.name }}
   namespace: {{ .Values.namespace }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.cortxcontrol.service.clusterip.type }}
   selector:
     app: {{ .Values.cortxcontrol.name }}
   ports:
@@ -30,7 +30,7 @@ metadata:
   name: {{ .Values.cortxcontrol.service.loadbal.name }}
   namespace: {{ .Values.namespace }}
 spec:
-  type: LoadBalancer
+  type: {{ .Values.cortxcontrol.service.loadbal.type }}
   selector:
     app: {{ .Values.cortxcontrol.name }}
   ports:

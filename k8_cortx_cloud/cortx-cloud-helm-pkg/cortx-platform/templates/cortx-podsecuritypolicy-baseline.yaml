@@ -10,6 +10,8 @@ metadata:
     seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
 spec:
   privileged: false
+  # Required to prevent escalations to root.
+  allowPrivilegeEscalation: false
   # The moby default capability set, minus NET_RAW
   allowedCapabilities:
     - 'CHOWN'

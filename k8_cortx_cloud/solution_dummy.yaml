@@ -39,6 +39,52 @@ solution:
       durability:
         sns: 1+0+0
         dix: 1+0+0
+    external_services:
+      type: LoadBalancer
+    resource_allocation:
+      consul:
+        server:
+          storage: 10Gi
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 100m
+            limits:
+              memory: 100Mi
+              cpu: 100m
+        client:
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 100m
+            limits:
+              memory: 100Mi
+              cpu: 100m
+      openldap:
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 2
+          limits:
+            memory: 1Gi
+            cpu: 2
+      zookeeper:
+        storage_request_size: 9Gi
+        data_log_dir_request_size: 9Gi
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 250m
+      kafka:
+        storage_request_size: 9Gi
+        log_persistence_request_size: 9Gi
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 250m
+          limits:
+            memory: 1Gi
+            cpu: 250m
   storage:
     cvg1:
       name: cvg-01

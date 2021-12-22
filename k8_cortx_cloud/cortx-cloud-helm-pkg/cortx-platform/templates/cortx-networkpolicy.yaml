@@ -139,4 +139,92 @@ spec:
       - protocol: TCP
         port: 4002
 
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.networkPolicy.namePrefix }}cortx-consul-server
+  labels:
+    source-pod: any
+    target-pod: consul-server
+    target-container: consul
+  namespace: {{ .Values.namespace.name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: consul
+      component: server
+  ingress:
+  - from:
+    - podSelector: {}
+    ports:
+      - protocol: TCP
+        port: 8300
+      - protocol: TCP
+        port: 8301
+      - protocol: UDP
+        port: 8301
+      - protocol: TCP
+        port: 8302      
+      - protocol: UDP
+        port: 8302    
+      - protocol: TCP
+        port: 8500
+      - protocol: TCP
+        port: 8600  
+      - protocol: UDP
+        port: 8600
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.networkPolicy.namePrefix }}cortx-consul-dns
+  labels:
+    source-pod: any
+    target-pod: consul-all
+    target-container: any
+  namespace: {{ .Values.namespace.name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: consul
+      hasDNS: "true"
+      release: {{ .Release.Name | quote }}
+  ingress:
+  - from:
+    - podSelector: {}
+    ports:
+      - protocol: TCP
+        port: 53
+      - protocol: UDP
+        port: 53
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.networkPolicy.namePrefix }}cortx-kafka
+  labels:
+    source-pod: any
+    target-pod: kafka
+    target-container: any
+  namespace: {{ .Values.namespace.name }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: kafka
+      app.kubernetes.io/name: kafka
+  ingress:
+  - from:
+    - podSelector: {}
+    ports:
+      - protocol: TCP
+        port: 9092
+      - protocol: TCP
+        port: 9093
+
 {{- end }}
