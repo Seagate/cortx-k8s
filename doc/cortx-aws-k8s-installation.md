@@ -221,7 +221,7 @@ export LogsDevice=`head -1 devices1.txt | awk '{print $1}'`
 #Identify size of the drive, assumes all drives have the same size
 export DiskSize=`tail -1 devices1.txt | awk '{print $2}'`i
 
-grep -v $LogsDevice devices1.txt | awk '{print $1}' > devices.txt
+grep -v $LogsDevice devices1.txt | awk '{print "/dev/"$1}' > devices.txt
 ```
 
 #### 3.2.2 Update solution.yaml
