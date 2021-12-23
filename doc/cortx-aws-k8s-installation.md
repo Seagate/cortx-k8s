@@ -212,7 +212,9 @@ aws ec2 describe-instances --filters Name=tag:Name,Values=$ClusterTag Name=insta
 
 #Generate list of non-OS drives, assume all instances have the same set of drives. 
 ssh $SSH_FLAGS centos@$ClusterControlPlaneIP lsblk | grep -v nvme0n1 | grep nvme | sort | awk '{print $1,$4}' > devices1.txt
+```
 
+```
 #Assign first disk for 3rd party applications and logs
 export LogsDevice=`head -1 devices1.txt | awk '{print $1}'`
 
