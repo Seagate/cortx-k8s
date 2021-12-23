@@ -203,46 +203,38 @@ git clone -b stable https://github.com/Seagate/cortx-k8s.git
 CORTX deployment framework can be configured through a single file  cortx-k8s/k8_cortx_cloud/solution.yaml
 Key configuration changes: list of worker nodes, Kubernetes namespace and disks layout
 
-AWS EC2 instances provisioned on step 2.2 have 2 metadata and 4 data disks defined. Update "storage" section in the cortx-k8s/k8_cortx_cloud/solution.yaml:
+AWS EC2 instances provisioned on step 2.2 have 2 metadata and 4 data disks defined.
+
+#### 3.2.1 Generate lists of nodes and devices
 ```
-  storage:
-    cvg1:
-      name: cvg-01
-      type: ios
-      devices:
-        metadata:
-          device: /dev/nvme1n1
-          size: 25Gi
-        data:
-          d1:
-            device: /dev/nvme2n1
-            size: 25Gi
-          d2:
-            device: /dev/nvme3n1
-            size: 25Gi
-    cvg2:
-      name: cvg-02
-      type: ios
-      devices:
-        metadata:
-          device: /dev/nvme4n1
-          size: 25Gi
-        data:
-          d1:
-            device: /dev/nvme5n1
-            size: 25Gi
-          d2:
-            device: /dev/nvme6n1
-            size: 25Gi
+# Generate list of cluster nodes
+aws ec2 describe-instances --filters Name=tag:Name,Values=$ClusterTag Name=instance-state-name,Values=running --query "Reservations[*].Instances[*].{IP:PrivateDnsName}" --output text > nodes.txt
+
+#Generate list of non-OS drives, assume all instances have the same set of drives. 
+ssh $SSH_FLAGS centos@$ClusterControlPlaneIP lsblk | grep -v nvme0n1 | grep nvme | sort | awk '{print $1,$4}' > devices1.txt
 ```
 
-Update list of the worker nodes in the configuration file. Actual list can be generated using the following command:
-
 ```
-i=0; for name in `aws ec2 describe-instances --filters Name=tag:Name,Values=$ClusterTag Name=instance-state-name,Values=running --query "Reservations[*].Instances[*].{IP:PrivateDnsName}" --output text`; do ((i=i+1)); echo "    node${i}:"; echo "      name: ${name}";  done
+#Assign first disk for 3rd party applications and logs
+export LogsDevice=`head -1 devices1.txt | awk '{print $1}'`
+
+#Identify size of the drive, assumes all drives have the same size
+export DiskSize=`tail -1 devices1.txt | awk '{print $2}'`i
+
+grep -v $LogsDevice devices1.txt | awk '{print "/dev/"$1}' > devices.txt
 ```
 
-#### 3.2.1 Advanced configuration options
+#### 3.2.2 Update solution.yaml
+The following command will configure 2 CVGs with 1 metadata and 2 data drives. Update this command according to the actual configuration. 
+Note: number of CVGs should be equal to the amount of Motr instances (see num_inst parameter in the solution.yaml)
+```
+mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig
+
+# Update list of disks and list of nodes in the solutions.yaml file.
+./cortx-k8s/k8_cortx_cloud/generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs 2 --data 2 --solution ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig  --datasize $DiskSize --metadatasize $DiskSize > ./cortx-k8s/k8_cortx_cloud/solution.yaml
+```
+
+#### 3.2.3 Advanced configuration options
 <details>
   <summary> Click here to get more details about other configuration parameters </summary>
 
@@ -283,7 +275,7 @@ It will configure storage for the 3rd party applications and make additional pre
 AWS EC2 instances provisioned on step 2.2 have 1 disk for 3rd party apps (/dev/nvme7n1)
 
 ```
-for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip "cd cortx-k8s/k8_cortx_cloud; sudo ./prereq-deploy-cortx-cloud.sh /dev/nvme7n1" </dev/null & done
+for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip "cd cortx-k8s/k8_cortx_cloud; sudo ./prereq-deploy-cortx-cloud.sh /dev/$LogsDevice" </dev/null & done
 ```
 
 #### 3.4.1 Install Helm on the cluster control plane
