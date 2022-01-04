@@ -32,29 +32,65 @@ max_consul_inst=3
 max_kafka_inst=3
 num_openldap_replicas=0 # Default the number of actual openldap instances
 num_worker_nodes=0
+not_ready_node_list=[]
+not_ready_node_count=0
 # Create a file consist of a list of node info and up to 'max_openldap_inst'
 # number of nodes. This file is used by OpenLDAP helm chart and will be deleted
 # at the end of this script.
 while IFS= read -r line; do
-    IFS=" " read -r -a node_name <<< "$line"
-    if [[ "$node_name" != "NAME" ]]; then
-        output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
-        if [[ "$output" == "" ]]; then
-            node_list_str="$num_worker_nodes $node_name"
-            num_worker_nodes=$((num_worker_nodes+1))
+    IFS=" " read -r -a my_array <<< "$line"
+    node_name="${my_array[0]}"
+    node_status="${my_array[1]}"
+    if [[ "$node_status" == "NotReady" ]]; then
+        not_ready_node_list[$not_ready_node_count]="$node_name"
+        not_ready_node_count=$((not_ready_node_count+1))
+    fi
 
-            if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
-                num_openldap_replicas=$num_worker_nodes
-                node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
-                if [[ -s $node_list_info_path ]]; then
-                    printf "\n" >> $node_list_info_path
-                fi
-                printf "$node_list_str" >> $node_list_info_path
+    output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
+    if [[ "$output" == "" ]]; then
+        node_list_str="$num_worker_nodes $node_name"
+        num_worker_nodes=$((num_worker_nodes+1))
+
+        if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
+            num_openldap_replicas=$num_worker_nodes
+            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
+            if [[ -s $node_list_info_path ]]; then
+                printf "\n" >> $node_list_info_path
             fi
+            printf "$node_list_str" >> $node_list_info_path
         fi
     fi
-done <<< "$(kubectl get nodes)"
+
+done <<< "$(kubectl get nodes --no-headers)"
 printf "Number of worker nodes detected: $num_worker_nodes\n"
+
+
+# Check for nodes listed in the solution file are in "Ready" state. If not, ask
+# the users whether they want to continue to deploy or exit early
+exit_early=false
+if [ $not_ready_node_count -gt 0 ]; then
+    echo "Number of 'NotReady' worker nodes detected in the cluster: $not_ready_node_count"
+    echo "List of 'NotReady' worker nodes:"
+    for not_ready_node in "${not_ready_node_list[@]}"; do
+        echo "- $not_ready_node"
+    done
+
+    printf "\nContinue CORTX Cloud deployment could lead to unexpeted results.\n"
+    read -p "Do you want to continue (y/n, yes/no)? " reply
+    if [[ "$reply" =~ ^(y|Y)*.(es)$ || "$reply" =~ ^(y|Y)$ ]]; then
+        exit_early=false
+    elif [[ "$reply" =~ ^(n|N)*.(o)$ || "$reply" =~ ^(n|N)$ ]]; then
+        exit_early=true
+    else
+        echo "Invalid response."
+        exit_early=true
+    fi
+fi
+
+if [[ "$exit_early" = true ]]; then
+    echo "Exit script early."
+    exit 1
+fi
 
 function parseSolution()
 {
@@ -231,6 +267,7 @@ function deployRancherProvisioner()
 {
     # Add the HashiCorp Helm Repository:
     helm repo add hashicorp https://helm.releases.hashicorp.com
+    helm repo update hashicorp
     if [[ $storage_class == "local-path" ]]
     then
         printf "Install Rancher Local Path Provisioner"
@@ -263,7 +300,29 @@ function deployConsul()
         --set global.image=$image \
         --set ui.enabled=false \
         --set server.storageClass=$storage_class \
-        --set server.replicas=$num_consul_replicas
+        --set server.replicas=$num_consul_replicas \
+        --set server.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.memory') \
+        --set server.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu') \
+        --set server.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory') \
+        --set server.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu') \
+        --set server.containerSecurityContext.server.allowPrivilegeEscalation=false \
+        --set server.storage=$(extractBlock 'solution.common.resource_allocation.consul.server.storage') \
+        --set client.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory') \
+        --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
+        --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
+        --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu') \
+        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false
+
+    # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
+    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
+    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}'
+
+    # Rollout a new deployment version of Consul pods to use updated Service Account settings
+    kubectl rollout restart statefulset/consul-server
+    kubectl rollout restart daemonset/consul
+
+    ##TODO This needs to be maintained during upgrades etc...
+
 }
 
 function deployOpenLDAP()
@@ -283,7 +342,11 @@ function deployOpenLDAP()
         --set openldap.nodelistinfo="node-list-info.txt" \
         --set openldap.numreplicas=$num_openldap_replicas \
         --set openldap.password=$openldap_password \
-        --set openldap.image=$image
+        --set openldap.image=$image \
+        --set openldap.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.openldap.resources.requests.memory') \
+        --set openldap.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.openldap.resources.requests.cpu') \
+        --set openldap.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.openldap.resources.limits.memory') \
+        --set openldap.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.openldap.resources.limits.cpu')
 
     # Wait for all openLDAP pods to be ready
     printf "\nWait for openLDAP PODs to be ready"
@@ -334,6 +397,7 @@ function deployZookeeper()
     printf "######################################################\n"
     # Add Zookeeper and Kafka Repository
     helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update bitnami
 
     image=$(parseSolution 'solution.images.zookeeper')
     image=$(echo $image | cut -f2 -d'>')
@@ -347,7 +411,16 @@ function deployZookeeper()
         --set replicaCount=$num_kafka_replicas \
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
-        --set global.storageClass=$storage_class
+        --set global.storageClass=$storage_class \
+        --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory') \
+        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu') \
+        --set persistence.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size') \
+        --set persistence.dataLogDir.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size') \
+        --set serviceAccount.create=true \
+        --set serviceAccount.name="cortx-zookeeper" \
+        --set serviceAccount.automountServiceAccountToken=false \
+        --set containerSecurityContext.allowPrivilegeEscalation=false \
+        --wait
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
     while true; do
@@ -397,7 +470,20 @@ function deployKafka()
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
         --set deleteTopicEnable=true \
-        --set transactionStateLogMinIsr=2
+        --set transactionStateLogMinIsr=2 \
+        --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory') \
+        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu') \
+        --set resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory') \
+        --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu') \
+        --set persistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size') \
+        --set logPersistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size') \
+        --set serviceAccount.create=true \
+        --set serviceAccount.name="cortx-kafka" \
+        --set serviceAccount.automountServiceAccountToken=false \
+        --set serviceAccount.automountServiceAccountToken=false \
+        --set containerSecurityContext.enabled=true \
+        --set containerSecurityContext.allowPrivilegeEscalation=false \
+        --wait
 
     printf "\nWait for CORTX 3rd party to be ready"
     while true; do
@@ -743,6 +829,9 @@ function deployCortxControl()
     cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
     cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
 
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
     cortxcontrol_machineid=$(cat $cfgmap_path/auto-gen-control-$namespace/id)
 
     num_nodes=1
@@ -752,7 +841,8 @@ function deployCortxControl()
         --set cortxcontrol.image=$cortxcontrol_image \
         --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
         --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
-        --set cortxcontrol.loadbal.name="cortx-control-loadbal-svc" \
+        --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
+        --set cortxcontrol.service.loadbal.type="$external_services_type" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxcontrol.cfgmap.name="cortx-cfgmap-$namespace" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
@@ -774,7 +864,7 @@ function deployCortxControl()
             IFS=" " read -r -a pod_status <<< "$line"
             IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
             if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" ]]; then
+                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
                     printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
                     exit 1
                 fi
@@ -801,6 +891,9 @@ function deployCortxData()
     cortxdata_image=$(parseSolution 'solution.images.cortxdata')
     cortxdata_image=$(echo $cortxdata_image | cut -f2 -d'>')
 
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
         num_nodes=$((num_nodes+1))
@@ -817,6 +910,7 @@ function deployCortxData()
             --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
             --set cortxdata.service.loadbal.name="cortx-data-loadbal-svc-$node_name" \
+            --set cortxdata.service.loadbal.type="$external_services_type" \
             --set cortxdata.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxdata.cfgmap.volmountname="config001-$node_name" \
             --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
@@ -844,7 +938,7 @@ function deployCortxData()
             IFS=" " read -r -a pod_status <<< "$line"
             IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
             if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" ]]; then
+                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
                     printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
                     exit 1
                 fi

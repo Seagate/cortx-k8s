@@ -16,10 +16,12 @@ cortxdata:
   service:
     clusterip:
       name: cortx-data-clusterip-svc
+      type: ClusterIP
     headless:
       name: cortx-data-headless-svc
     loadbal:
       name: cortx-data-loadbal-svc
+      type: LoadBalancer
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
