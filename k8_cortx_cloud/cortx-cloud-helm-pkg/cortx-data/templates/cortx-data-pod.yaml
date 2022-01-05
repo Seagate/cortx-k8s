@@ -161,7 +161,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare_setup start --config yaml:///etc/cortx/cluster.conf
+            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
@@ -198,6 +198,28 @@ spec:
             - -c
             - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
           {{- end }}
+          volumeDevices:
+            # Loop through the node list info file which contains the following example:
+            # 0 node-1
+            # 1 node-2
+            {{- range $line := .Files.Lines .Values.cortxdata.nodelistinfo }}
+            {{- $parts := split " " . }}
+            {{- $index := $parts._0 }}
+            {{- $parsednodename := $parts._1 }}
+            # Loop through the mounted block info file which contains the following:
+            # /dev/sdc 5Gi
+            # /dev/sdd 5Gi
+            {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
+            {{- $mntblkparts := split " " . }}
+            {{- $localpath := $mntblkparts._0 }}
+            {{- $mountblksize := $mntblkparts._1 }}
+            {{- $disk := (base $localpath) }}
+            {{- if hasPrefix $nodename $parsednodename }}
+            - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
+              devicePath: {{ $localpath }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
