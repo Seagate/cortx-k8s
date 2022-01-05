@@ -251,8 +251,8 @@ spec:
           command:
             - /bin/sh
           args:
-            - -c
-          - /opt/seagate/cortx/s3/bin/s3_start --service bgworker -c yaml:///etc/cortx/cluster.conf
+            - c
+            - /opt/seagate/cortx/s3/bin/s3_start --service bgworker -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
