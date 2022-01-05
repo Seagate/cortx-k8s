@@ -456,6 +456,19 @@ function deployKafka()
     splitDockerImage "${image}"
     printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
     
+    _KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:=1000}
+    _KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:=1000}
+    _KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:=1000}
+
+    TMP_KAFKA_ENVVARS_YAML=tmp-kafka.yaml
+    echo "extraEnvVars:" > $TMP_KAFKA_ENVVARS_YAML
+    echo "- name: KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS" >> $TMP_KAFKA_ENVVARS_YAML
+    echo "  value: \"${_KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS}\"" >> $TMP_KAFKA_ENVVARS_YAML
+    echo "- name: KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS" >> $TMP_KAFKA_ENVVARS_YAML
+    echo "  value: \"${_KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS}\"" >> $TMP_KAFKA_ENVVARS_YAML
+    echo "- name: KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS" >> $TMP_KAFKA_ENVVARS_YAML
+    echo "  value: \"${_KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS}\"" >> $TMP_KAFKA_ENVVARS_YAML
+
     helm install kafka bitnami/kafka \
         --set zookeeper.enabled=false \
         --set image.tag=$tag \
@@ -465,7 +478,7 @@ function deployKafka()
         --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
         --set global.storageClass=$storage_class \
         --set defaultReplicationFactor=$num_kafka_replicas \
-        --set offsetTopicReplicationFactor=$num_kafka_replicas \
+        --set offsetsTopicReplicationFactor=$num_kafka_replicas \
         --set transactionStateLogReplicationFactor=$num_kafka_replicas \
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
@@ -483,7 +496,10 @@ function deployKafka()
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.enabled=true \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
+        --values $TMP_KAFKA_ENVVARS_YAML  \
         --wait
+
+    rm $TMP_KAFKA_ENVVARS_YAML
 
     printf "\nWait for CORTX 3rd party to be ready"
     while true; do
