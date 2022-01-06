@@ -100,7 +100,8 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start -s fault_tolerance -c yaml:///etc/cortx/cluster.conf
+            - /opt/seagate/cortx/ha/bin/ha_start -s fault_tolerance -c yaml:///etc/cortx/cluster.conf;
+              sleep infinity;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -133,7 +134,8 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start -s health_monitor -c yaml:///etc/cortx/cluster.conf
+            - /opt/seagate/cortx/ha/bin/ha_start -s health_monitor -c yaml:///etc/cortx/cluster.conf;
+              sleep infinity;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -166,7 +168,8 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/cortx/cluster.conf
+            - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/cortx/cluster.conf;
+              sleep infinity;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}

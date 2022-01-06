@@ -1068,12 +1068,14 @@ function deployCortxHa()
 
     cortxha_machineid=$(cat $cfgmap_path/auto-gen-ha-$namespace/id)
 
+    ##TOOD: cortxha.serviceaccountname should extract from solution.yaml ?
+
     num_nodes=1
     helm install "cortx-ha-$namespace" cortx-cloud-helm-pkg/cortx-ha \
         --set cortxha.name="cortx-ha" \
         --set cortxha.image=$cortxha_image \
         --set cortxha.secretinfo="secret-info.txt" \
-        --set cortxha.serviceaccountname="$serviceAccountName" \
+        --set cortxha.serviceaccountname="ha-monitor" \
         --set cortxha.service.clusterip.name="cortx-ha-clusterip-svc" \
         --set cortxha.service.headless.name="cortx-ha-headless-svc" \
         --set cortxha.service.loadbal.name="cortx-ha-loadbal-svc" \
