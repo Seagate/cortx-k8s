@@ -24,14 +24,18 @@ The following environment should exist in AWS prior to further deployment:
 ## 2. Kubernetes cluster provisioning
 
 CORTX requires Kubernetes cluster for installation.
- - Every node must have at least 8 cores and 16 GB of RAM. 
- - While there should be no dependencies on the underlying OS this procedure was tested with CentOS 7.9 and Kubernetes 1.22
+ - Every node must have at least 8 cores and 16 GB of RAM.
+   - this configuration is sufficient for up to 5 nodes clusters
+   - clusters with higher amount of nodes may require more powerful servers (15 nodes cluster was tested using 36 cores / 72 GB of RAM instances)
+ - While there should be no dependencies on the underlying OS this procedure was tested with CentOS 7.9 and Kubernetes 1.23
  - In the current release, every node should have the following storage configuration:
    - OS disk (in the example below we'll provision 50GB)
-   - Disk for 3rd party applications required for normal CORTX installation (25GB in this procedure)
+   - Disk for 3rd party applications required for normal CORTX installation (25GB in this procedure).
+     This disk is used also to store various CORTX logs - for a long-running clusters under heavy load we recommend at least 50GB of capacity for this disk
    - Disk for internal logs (currently not in use, 25GB in the example below)
    - Disks for customers' data and metadata. In this demo we'll provision 2 disks for metadata and 4 disks for data (25GB each)
    - Disks layout (device names and sizes) must be identical on all nodes in the cluster
+ - Clock on all nodes must be in sync
 
 This procedure was tested within the following limits:
 - Number of nodes in the cluster: 1 - 15
@@ -152,7 +156,7 @@ for ip in $ClusterIPs; do echo $ip; scp $SSH_FLAGS kubernetes.repo centos@$ip: ;
 cat <<EOF | tee kubeadm-config.yaml
 kind: ClusterConfiguration
 apiVersion: kubeadm.k8s.io/v1beta3
-kubernetesVersion: v1.22.2
+kubernetesVersion: v1.23.0
 networking:
   podSubnet: 192.168.0.0/16
 ---
@@ -193,52 +197,44 @@ At this stage the Kubernetes cluster should be fully operational
 ## 3 Install CORTX 
 ### 3.1 Clone Cortx-K8s framework
 ```
-git clone -b stable git@github.com:Seagate/cortx-k8s.git 
+git clone -b stable https://github.com/Seagate/cortx-k8s.git
 ```
 ### 3.2 Update cluster configuration
 CORTX deployment framework can be configured through a single file  cortx-k8s/k8_cortx_cloud/solution.yaml
 Key configuration changes: list of worker nodes, Kubernetes namespace and disks layout
 
-AWS EC2 instances provisioned on step 2.2 have 2 metadata and 4 data disks defined. Update "storage" section in the cortx-k8s/k8_cortx_cloud/solution.yaml:
+AWS EC2 instances provisioned on step 2.2 have 2 metadata and 4 data disks defined.
+
+#### 3.2.1 Generate lists of nodes and devices
 ```
-  storage:
-    cvg1:
-      name: cvg-01
-      type: ios
-      devices:
-        metadata:
-          device: /dev/nvme1n1
-          size: 25Gi
-        data:
-          d1:
-            device: /dev/nvme2n1
-            size: 25Gi
-          d2:
-            device: /dev/nvme3n1
-            size: 25Gi
-    cvg2:
-      name: cvg-02
-      type: ios
-      devices:
-        metadata:
-          device: /dev/nvme4n1
-          size: 25Gi
-        data:
-          d1:
-            device: /dev/nvme5n1
-            size: 25Gi
-          d2:
-            device: /dev/nvme6n1
-            size: 25Gi
+# Generate list of cluster nodes
+aws ec2 describe-instances --filters Name=tag:Name,Values=$ClusterTag Name=instance-state-name,Values=running --query "Reservations[*].Instances[*].{IP:PrivateDnsName}" --output text > nodes.txt
+
+#Generate list of non-OS drives, assume all instances have the same set of drives. 
+ssh $SSH_FLAGS centos@$ClusterControlPlaneIP lsblk | grep -v nvme0n1 | grep nvme | sort | awk '{print $1,$4}' > devices1.txt
 ```
 
-Update list of the worker nodes in the configuration file. Actual list can be generated using the following command:
-
 ```
-i=0; for name in `aws ec2 describe-instances --filters Name=tag:Name,Values=$ClusterTag Name=instance-state-name,Values=running --query "Reservations[*].Instances[*].{IP:PrivateDnsName}" --output text`; do ((i=i+1)); echo "    node${i}:"; echo "      name: ${name}";  done
+#Assign first disk for 3rd party applications and logs
+export LogsDevice=`head -1 devices1.txt | awk '{print $1}'`
+
+#Identify size of the drive, assumes all drives have the same size
+export DiskSize=`tail -1 devices1.txt | awk '{print $2}'`i
+
+grep -v $LogsDevice devices1.txt | awk '{print "/dev/"$1}' > devices.txt
 ```
 
-#### 3.2.1 Advanced configuration options
+#### 3.2.2 Update solution.yaml
+The following command will configure 2 CVGs with 1 metadata and 2 data drives. Update this command according to the actual configuration. 
+Note: number of CVGs should be equal to the amount of Motr instances (see num_inst parameter in the solution.yaml)
+```
+mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig
+
+# Update list of disks and list of nodes in the solutions.yaml file.
+./cortx-k8s/k8_cortx_cloud/generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs 2 --data 2 --solution ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig  --datasize $DiskSize --metadatasize $DiskSize > ./cortx-k8s/k8_cortx_cloud/solution.yaml
+```
+
+#### 3.2.3 Advanced configuration options
 <details>
   <summary> Click here to get more details about other configuration parameters </summary>
 
@@ -279,7 +275,7 @@ It will configure storage for the 3rd party applications and make additional pre
 AWS EC2 instances provisioned on step 2.2 have 1 disk for 3rd party apps (/dev/nvme7n1)
 
 ```
-for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip "cd cortx-k8s/k8_cortx_cloud; sudo ./prereq-deploy-cortx-cloud.sh /dev/nvme7n1" </dev/null & done
+for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip "cd cortx-k8s/k8_cortx_cloud; sudo ./prereq-deploy-cortx-cloud.sh /dev/$LogsDevice" </dev/null & done
 ```
 
 #### 3.4.1 Install Helm on the cluster control plane
@@ -289,12 +285,19 @@ ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "curl -fsSL -o get_helm.sh https://
 ```
 
 ### 3.5 Deploy CORTX
+> **NOTE**: For Motr + Hare only cortx cluster make number of s3 instance as 0 (solution -> common -> s3 -> num_inst) in cortx-k8s/k8_cortx_cloud/solution.yaml
 ```
 ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "cd cortx-k8s/k8_cortx_cloud/; ./deploy-cortx-cloud.sh"
 
 ```
 <b> This step completes CORTX installation </b>
-Test that all pods are running and that CORTX is ready
+
+At this stage the environment should look like on this picture:
+ <p align="center">
+    <img src="pics/cortx-aws-k8s-after-installation.jpg">
+ </p>
+
+#### 3.5.1 Test that all pods are running and that CORTX is ready
 ```
 
 ssh $SSH_FLAGS centos@$ClusterControlPlaneIP
@@ -306,15 +309,35 @@ kubectl exec -i $DataPod -c cortx-motr-hax -- hctl status
 ```
 In the hctl status output validate that all services are "started". It may take several minutes for s3server instances to move from "offline" to "started"
 
-#### 3.5.1 Destroy CORTX cluster
-Note: to rollback step 3.5 and destroy the CORTX cluster run:
+After this step proceed to section 4 - Using CORTX
+
+If the pods are not coming up correctly or some of the hctl status services never switch to "started" - check solutions.yaml. Typos or mistakes in that file will result in a deployment failure.
+
+### 3.6 Destroy CORTX cluster
+To rollback step 3.5 and destroy the CORTX cluster run:
 ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "cd cortx-k8s/k8_cortx_cloud/; ./destroy-cortx-cloud.sh"
 
-At this stage the environment should look like on this picture:
- <p align="center">
-    <img src="pics/cortx-aws-k8s-after-installation.jpg">
- </p>
+### 3.7 Stop CORTX cluster
+Make sure no IO is coming to the cluster before stopping it
+```
+cd cortx-k8s/k8_cortx_cloud/
+./shutdown-cortx-cloud.sh
+```
 
+### 3.8 Start CORTX cluster
+In the current version the cluster will restart without IO errors only if there was no IO coming to the cluster prior to shutdown. This behavior will be improved in the future versions.
+
+```
+cd cortx-k8s/k8_cortx_cloud/
+./start-cortx-cloud.sh
+```
+
+### 3.9 Collect debug information for support
+The following command may take several minutes. It will generate logs-cortx-cloud tar file for support
+```
+cd cortx-k8s/k8_cortx_cloud/
+./logs-cortx-cloud.sh
+```
 
 ## 4 Using CORTX
 We recommend to run the following commands on the Kubernetes control plane node
@@ -380,3 +403,7 @@ chmod +x s3-benchmark
 | Management | cortx-control-clusterip-svc K8s service | tcp/8081
 | S3 | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/443, tcp/80
 | IAM | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/9443
+
+Tested by:
+
+Nov 12, 2021: Rose Wambui (rose.wambui@seagate.com) and Justin Woo (justin.woo@seagate.com) 
