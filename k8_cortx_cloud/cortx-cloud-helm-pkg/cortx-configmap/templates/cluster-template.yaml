@@ -2,7 +2,7 @@ cluster:
   name: cortx-cluster
   id: <<.Values.cortx.cluster.id>>
   node_types:
-  - name: storage_node
+  - name: data_node
     components:
       - name: utils
       - name: motr

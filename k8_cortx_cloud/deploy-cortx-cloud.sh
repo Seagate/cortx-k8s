@@ -604,7 +604,7 @@ function deployCortxConfigMap()
         uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
         ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
         ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-headless-svc-${node_name_list[$i]}"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "storage_node"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "data_node"
         
         # Create data machine id file for cortx data
         auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data"
