@@ -332,6 +332,7 @@ function deleteSecrets()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
 }
 
 function deleteConsul()

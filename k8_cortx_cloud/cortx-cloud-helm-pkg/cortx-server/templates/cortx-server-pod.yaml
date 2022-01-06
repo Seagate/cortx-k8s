@@ -87,7 +87,7 @@ spec:
             readOnly: true
           {{- end }}
         env:
-          - name: MACHINE_ID            
+          - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxserver.machineid.value | quote }}
         ports:
         - containerPort: 5050
@@ -245,7 +245,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare_setup start --config yaml:///etc/cortx/cluster.conf
+            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -287,7 +287,7 @@ spec:
             - /bin/sh
           args:
             - -c
-          - /opt/seagate/cortx/s3/bin/s3_start --service bgworker -c yaml:///etc/cortx/cluster.conf
+            - /opt/seagate/cortx/s3/bin/s3_start --service bgworker -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}

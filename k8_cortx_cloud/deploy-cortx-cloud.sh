@@ -604,7 +604,7 @@ function deployCortxConfigMap()
         uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
         ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
         ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-headless-svc-${node_name_list[$i]}"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "storage_node"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "data_node"
         
         # Create data machine id file for cortx data
         auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data"
@@ -836,6 +836,7 @@ function deployCortxSecrets()
         control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
         data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
         server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
+        ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
         if [[ -s $control_secret_path ]]; then
             printf "\n" >> $control_secret_path
         fi
@@ -845,9 +846,13 @@ function deployCortxSecrets()
         if [[ -s $server_secret_path ]]; then
             printf "\n" >> $server_secret_path
         fi
+        if [[ -s $ha_secret_path ]]; then
+            printf "\n" >> $ha_secret_path
+        fi
         printf "$secret_fname" >> $control_secret_path
         printf "$secret_fname" >> $data_secret_path
         printf "$secret_fname" >> $server_secret_path
+        printf "$secret_fname" >> $ha_secret_path
     done
 }
 
@@ -1123,12 +1128,14 @@ function deployCortxHa()
 
     cortxha_machineid=$(cat $cfgmap_path/auto-gen-ha-$namespace/id)
 
+    ##TOOD: cortxha.serviceaccountname should extract from solution.yaml ?
+
     num_nodes=1
     helm install "cortx-ha-$namespace" cortx-cloud-helm-pkg/cortx-ha \
         --set cortxha.name="cortx-ha" \
         --set cortxha.image=$cortxha_image \
         --set cortxha.secretinfo="secret-info.txt" \
-        --set cortxha.serviceaccountname="$serviceAccountName" \
+        --set cortxha.serviceaccountname="ha-monitor" \
         --set cortxha.service.clusterip.name="cortx-ha-clusterip-svc" \
         --set cortxha.service.headless.name="cortx-ha-headless-svc" \
         --set cortxha.service.loadbal.name="cortx-ha-loadbal-svc" \
@@ -1158,6 +1165,7 @@ function deployCortxHa()
         --set cortxha.resource_allocation.ha_k8s_monitor.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_k8s_monitor.resources.requests.memory') \
         --set cortxha.resource_allocation.ha_k8s_monitor.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_k8s_monitor.resources.limits.cpu') \
         --set cortxha.resource_allocation.ha_k8s_monitor.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.cortx_ha.ha_k8s_monitor.resources.limits.memory') \
+        --set cortxha.secretinfo="secret-info.txt" \
         --set namespace=$namespace \
         -n $namespace
 
@@ -1272,6 +1280,7 @@ function cleanup()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
 
     rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
 
