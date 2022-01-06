@@ -836,6 +836,7 @@ function deployCortxSecrets()
         control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
         data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
         server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
+        ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
         if [[ -s $control_secret_path ]]; then
             printf "\n" >> $control_secret_path
         fi
@@ -845,9 +846,13 @@ function deployCortxSecrets()
         if [[ -s $server_secret_path ]]; then
             printf "\n" >> $server_secret_path
         fi
+        if [[ -s $ha_secret_path ]]; then
+            printf "\n" >> $ha_secret_path
+        fi
         printf "$secret_fname" >> $control_secret_path
         printf "$secret_fname" >> $data_secret_path
         printf "$secret_fname" >> $server_secret_path
+        printf "$secret_fname" >> $ha_secret_path
     done
 }
 
@@ -1082,6 +1087,7 @@ function deployCortxHa()
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-$namespace" \
         --set cortxha.localpathpvc.mountpath="$local_storage" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
+        --set cortxha.secretinfo="secret-info.txt" \
         --set namespace=$namespace \
         -n $namespace
 
@@ -1196,6 +1202,7 @@ function cleanup()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
 
     rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
 
