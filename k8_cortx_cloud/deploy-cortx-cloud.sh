@@ -414,6 +414,8 @@ function deployZookeeper()
         --set global.storageClass=$storage_class \
         --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory') \
         --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu') \
+        --set resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.memory') \
+        --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.cpu') \
         --set persistence.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size') \
         --set persistence.dataLogDir.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size') \
         --set serviceAccount.create=true \

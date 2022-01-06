@@ -73,6 +73,9 @@ solution:
           requests:
             memory: required
             cpu: required
+          limits:
+            memory: required
+            cpu: required
       kafka:
         storage_request_size: required
         log_persistence_request_size: required
