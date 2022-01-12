@@ -615,6 +615,11 @@ function deployCortxConfigMap()
         splitDockerImage "${image}"
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.release.version" $tag
 
+        # Pass through setup_size parameter
+        ## THIS IS PLACEHOLDER FUNCTION UNTIL PI-6 WHEN WE WILL IMPLEMENT
+        ## PROPER setup_size => container_resource MAPPINGS
+        ./parse_scripts/subst.sh $new_gen_file "cortx.common.setup_size" $(extractBlock 'solution.common.setup_size')
+
         # Generate node file with type storage_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
         cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
