@@ -196,12 +196,12 @@ At this stage the Kubernetes cluster should be fully operational
 
 ## 3 Install CORTX 
 
-**NOTE**: You can opt:-
+**NOTE**: For this setup, you can opt:-
 1.  To use container images hosted on the [repostitory](https://github.com/Seagate/cortx/pkgs/container/cortx-all)
 
-2. Generate the cortx-all container image yourself, follow the guidelines [here](https://github.com/Seagate/cortx/tree/main/doc/community-build/docker/cortx-all)
+2. Generate the cortx-all container image yourself, following the guidelines [here](https://github.com/Seagate/cortx/tree/main/doc/community-build/docker/cortx-all)
 
-    - On bastion host to generate the image.
+    - Generate the image on the bastion host.
 
     - Save the docker image.
       ```
@@ -213,13 +213,13 @@ At this stage the Kubernetes cluster should be fully operational
       ```
     - The image is in a zipped format, load/unzip the image in all the nodes:
 
-     ```
-        for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker load -i cortx-all.tar & done
+      ```
+      for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker load -i cortx-all.tar & done
       ```
     - (Optional) Check if the images are present on all nodes
 
       ```
-        for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker images cortx-all & done
+       for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker images cortx-all & done
       ```
 
 ### 3.1 Clone Cortx-K8s framework
