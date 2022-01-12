@@ -8,7 +8,12 @@
 1. [Reference Architecture](#reference-architecture)
 1. [CORTX on Kubernetes Pre-requisites](#cortx-on-kubernetes-pre-requisites)
 1. [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
-1. [Quick Start](#quick-start)
+1. [Quick Starts](#quick-starts)
+   1. [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
+   1. [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
+   1. [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
+   1. [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
+   1. [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
 1. [Solution YAML Overview](#solution-yaml-overview)
 1. [License](#license)
 
@@ -22,25 +27,114 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 
 ![CORTX on Kubernetes Reference Architecture](./images/cortx-ref-arch-k8s.jpg)
 
-TBD Context
+_TODO_ Context
 ## CORTX on Kubernetes Pre-requisites
-
-TBD
 
 1. [Helm](https://helm.sh/)
 
    CORTX on Kubernetes is provided via Helm Charts. As such, you will need Helm installed locally to deploy CORTX on Kubernetes. You can find the specific installation instructions for your local platform via the [Installing Helm](https://helm.sh/docs/intro/install/) section of the official Helm documentation.
 
-2. [TBD](#tbd)
+2. [_TODO_](#_TODO_)
 
-   TBD
+   _TODO_ Integrate pre-requisites from below and prereq-deploy-cortx-cloud.sh as granularly as possible
 ## Kubernetes Reference Deployments
 
-TBD
+There are numerous ways to install and configure a complete Kubernetes cluster. As long as the pre-requisites in the previous step are all satisfied, CORTX on Kubernetes should deploy successfully.
 
-## Quick Start
+For reference material, we have provided existing Kubernetes deployment models that have been verified to work with CORTX on Kubernetes. These are only provided for reference and are not meant to be explicit deployment constraints.
 
-TBD
+Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster, please open an [Issue](https://github.com/Seagate/cortx-k8s/issues) in this repository for further troubleshooting. 
+
+1. [Seagate Internal Jenkins Job](http://eos-jenkins.mero.colo.seagate.com/job/Cortx-kubernetes/job/setup-kubernetes-cluster/)
+2. [CORTX on AWS and Kubernetes - Quick Install Guide](https://github.com/Seagate/cortx-k8s/blob/UDX-6683_move_documentation_to_readme_md/doc/cortx-aws-k8s-installation.md)
+
+## Quick Starts
+
+All steps in the following quick starts assume the proper prerequisites have been installed or configured as described in [CORTX on Kubernetes Pre-requisites](#cortx-on-kubernetes-pre-requisites) above.
+
+### Deploying CORTX on Kubernetes
+
+1. Clone this repository to a machine with connectivity to your Kubernetes cluster:
+
+   ```bash
+   git clone https://github.com/Seagate/cortx-k8s -b stable
+   ```
+
+> **NOTE:** You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
+
+2. Update or clone `./k8_cortx_cloud/solution.yaml` to reflect your environment. The most common and expected updates are reflected below:
+   - Update all passwords in solution.yaml. The `csm-secret` should include one special character in cortx-secret.
+   - Update the images section with cortx-all image tag desired to be used. 
+     - Each specific release of the CORTX on Kubernetes code will point to a specific predefined container image.
+     - This can be overriden as desired.
+   - Update sns durability values. Default would be 1+0+0
+   - Update storage cvg devices for data and metadata with respect to the devices in your environment.
+   - Update nodes section with proper node hostnames from your Kubernetes cluster.
+     - If the Kubernetes control plane nodes are required to be used for deployment, make sure to remove the taint from it before deploying CORTX.
+     - For further details and reference, you can view the official Kubernetes documentation topic on [Taints & Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+   - For further details on `solution.yaml` specifics, review the [Solution YAML Overview](#solution-yaml-overview) below.
+
+
+3. Run the `deploy-cortx-cloud` script, passing in the path to your updated `solution.yaml` file.
+
+   ```bash
+   ./deploy-cortx-cloud.sh solution.yaml
+   ```
+
+4. Validate CORTX on Kubernetes statues
+
+   ```bash
+   DATA_POD=$(kubectl get pods -l cortx.io/service-type=cortx-data --no-headers | awk '{print $1}' | head -n 1)
+   kubectl exec -it $DATA_POD -c cortx-hax -- /bin/bash -c "hctl status"
+   ```
+
+### Upgrading CORTX on Kubernetes
+
+> **NOTE:** As the CORTX on Kubernetes architecture is evolving, the upgrade path for CORTX on Kubernetes is evolving as well. As a workaround until more foundational upgrade capabilities exist, the following steps are available to manually upgrade your CORTX on Kubernetes environment to a more recent release.
+
+1. Deploy CORTX on Kubernetes according to the [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes) steps above.
+
+2. Shutdown all CORTX Pods
+
+   ```bash
+   ./shutdown-cortx-cloud.sh solution.yaml
+   ```
+
+3. Patch the CORTX on Kubernetes Deployments using an updated image _(NOTE: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_
+
+   ```bash
+   TARGET_IMAGE="ghcr.io/seagate/cortx-all:2.0.0-593-custom-ci"
+   for DEPLOYMENT in $(kc get deploy | grep cortx | awk '{print $1}')
+   do
+      kc set image deployment/$DEPLOYMENT "*=$TARGET_IMAGE"
+   done
+   ```
+
+4. Start all CORTX Pods
+
+   ```bash
+   ./start-cortx-cloud.sh solution.yaml
+   ```
+
+### Using CORTX on Kubernetes
+
+_TODO_ Port https://seagate-systems.atlassian.net/wiki/spaces/PUB/pages/754155622/CORTX+Kubernetes+N-Pod+Deployment+and+Upgrade+Document+using+Services+Framework#5.-Understanding-Management-and-S3-Endpoints-and-configuring-External-Load-balancer-service(Optional) here or to a linked `doc/readme` file.
+
+### Log collection for CORTX on Kubernetes
+
+To gather logs from a CORTX on Kubernetes deployment, run the `logs-cortx-cloud` script while passing in the `solution.yaml` file to it.
+
+```bash
+./logs-cortx-cloud.sh --solution-config solution.yaml
+```
+
+### Undeploying CORTX on Kubernetes
+
+Run the `destroy-cortx-cloud` script, passing in the path to the previously updated `solution.yaml` file
+
+```bash
+./destroy-cortx-cloud.sh solution.yaml
+```
 
 ## Solution YAML Overview
 
@@ -95,9 +189,7 @@ This section contains common paramaters that applies to all CORTX Data nodes.
 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `TBD`       | Hostname for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
-
-TBD
+| `_TODO_`       | Hostname for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
 
 ### Storage parameters
 
@@ -105,9 +197,8 @@ The metadata and data drives are defined in this section. All drives must be the
 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `TBD`       | Hostname for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
+| `_TODO_`       | Hostname for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
 
-TBD
 
 ### Node parameters
 
@@ -124,14 +215,14 @@ This section contains information about all the worker nodes used to deploy CORT
     
 ## License
 
-TBD 
+_TODO_ 
 
 ---
 
+> **NOTE:** Below to be removed once integrated above...
 
-###############################################
-# Local block storage requirements            #
-###############################################
+### Local block storage requirements            
+
 1. Update the "solution.yaml" file to have correct worker node names in
    "solution.nodes.nodeX.name" (ensure this field match the 'NAME' field
    from the output of 'kubectl get nodes'), devices in the "storage.cvg*".
@@ -143,9 +234,8 @@ by "Rancher Local Path Provisioner". The user must follow the
 "Run prerequisite deployment script" section on each of the worker nodes in the
 cluster
 
-###############################################
-# Run prerequisite deployment script          #
-###############################################
+### Run prerequisite deployment script          
+
 1. Copy "prereq-deploy-cortx-cloud.sh" script, and the solution yaml file to all worker nodes:
 
 scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
@@ -172,33 +262,14 @@ NOTE:
 the same solution file for pre-req, deploy and destroy scripts (in the below section). The default
 <solution-file> is "solution.yaml".
 
-###############################################
-# Deploy and destroy CORTX cloud              #
-###############################################
-1. Deploy CORTX cloud:
-sudo ./deploy-cortx-cloud.sh [<solution-file>]
-
-2. Destroy CORTX cloud:
-sudo ./destroy-cortx-cloud.sh [<solution-file>] [--force|-f]
-
-Example:
-sudo ./destroy-cortx-cloud.sh solution.yaml --force
-
-NOTE:
-<solution-file> is an optional input to run deploy and destroy scripts. Make sure to use the same
-solution file for both deploy and destroy scripts. The default <solution-file> is "solution.yaml"
-
 Rancher Local Path location on worker node:
 /mnt/fs-local-volume/local-path-provisioner/pvc-<UID>_default_cortx-fs-local-pvc-<node-name>
 
 Rancher Local Path mount point in all Pod containers (CORTX Provisioners, Data, Control):
 /data
 
-###########################################################
-# Replacing a dummy container with real CORTX container   #
-###########################################################
+### Replacing a dummy container with real CORTX container   
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 The Helm charts work with both "dummy" and "CORTX ALL" containers. 
 If image is ghcr.io/seagate/centos:7 helm runs in "dummy" mode any other name runs "CORTX ALL" mode
 
@@ -207,58 +278,3 @@ command: ["/bin/sleep", "3650d"]                                  # DO NOT CHANG
 {{- else }}                                                       # DO NOT CHANGE
 command: ["/bin/sleep", "3650d"]    #<<=========================== REPLACE THIS WITH THE CORTX ENTRY POINT 
 {{- end }}                                                        # DO NOT CHANGE
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-See the following example from CORTX Data helm chart, replace the command section
-hightlighted with "<<===" with the relevant CORTX container commands required for
-the entrypoint. An "args" section also can be added to provide additional arguments.
-
-./k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-data/templates/cortx-data-pod.yaml
-
-containers:
-- name: cortx-s3-haproxy
-   image: {{ .Values.cortxdata.image }}
-   imagePullPolicy: IfNotPresent
-   {- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}  # DO NOT CHANGE
-   command: ["/bin/sleep", "3650d"]                                  # DO NOT CHANGE 
-   {{- else }}                                                       # DO NOT CHANGE
-   command: ["/bin/sleep", "3650d"]    #<<=========================== REPLACE THIS WITH THE CORTX ENTRY POINT 
-   {{- end }}                                                        # DO NOT CHANGE
-   volumeDevices:
-   {{- range .Files.Lines .Values.cortxdata.mountblkinfo }}
-   - name: {{ printf "cortx-data-%s-pv-%s" ( base .) $nodename }}
-      devicePath: {{ . }}
-   {{- end }}
-   volumeMounts:
-   - name: {{ .Values.cortxdata.cfgmap.volmountname }}
-      mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-   - name: {{ .Values.cortxdata.machineid.volmountname }}
-      mountPath: {{ .Values.cortxdata.machineid.mountpath }}
-   - name: local-path-pv
-      mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-   env:
-   - name: UDS_CLOUD_CONTAINER_NAME
-      value: {{ .Values.cortxdata.name }}
-   ports:
-   - containerPort: 80
-   - containerPort: 443
-   - containerPort: 9080
-   - containerPort: 9443
-
-The images can be changed by modifying the solution.yaml file section solution.images
-
-solution:
-  namespace: default
-  images:
-   cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-   cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-   cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-   cortxdata: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-   openldap: ghcr.io/seagate/symas-openldap:standalone
-   consul: hashicorp/consul:1.10.0
-   kafka: bitnami/kafka:3.0.0-debian-10-r7
-   zookeeper: bitnami/zookeeper:3.7.0-debian-10-r182
-   rancher: rancher/local-path-provisioner:v0.0.20
-
-NOTE: These images can be pre-downloaded on all worker nodes and untainted master node that
-allows scheduling to avoid deployment failure due to docker pull rate limits.
