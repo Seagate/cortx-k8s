@@ -195,6 +195,33 @@ for ip in `aws ec2 describe-instances --filters Name=tag:Name,Values=$ClusterTag
 At this stage the Kubernetes cluster should be fully operational
 
 ## 3 Install CORTX 
+
+**NOTE**: You can opt:-
+1.  To use container images hosted on the [repostitory](https://github.com/Seagate/cortx/pkgs/container/cortx-all)
+
+2. Generate the cortx-all container image yourself, follow the guidelines [here](https://github.com/Seagate/cortx/tree/main/doc/community-build/docker/cortx-all)
+
+    - On bastion host to generate the image.
+
+    - Save the docker image.
+      ```
+      docker save --output cortx-all.tar cortx-all
+      ```
+    - Copy the image to all other nodes in the cluster.
+      ```
+      for ip in $ClusterIPs; do echo $ip; scp $SSH_FLAGS cortx-all.tar centos@$ip: ; done
+      ```
+    - The image is in a zipped format, load/unzip the image in all the nodes:
+
+     ```
+        for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker load -i cortx-all.tar & done
+      ```
+    - (Optional) Check if the images are present on all nodes
+
+      ```
+        for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker images cortx-all & done
+      ```
+
 ### 3.1 Clone Cortx-K8s framework
 ```
 git clone -b stable https://github.com/Seagate/cortx-k8s.git
@@ -233,6 +260,18 @@ mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.
 # Update list of disks and list of nodes in the solutions.yaml file.
 ./cortx-k8s/k8_cortx_cloud/generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs 2 --data 2 --solution ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig  --datasize $DiskSize --metadatasize $DiskSize > ./cortx-k8s/k8_cortx_cloud/solution.yaml
 ```
+#### 3.2.2.1 Update the images tags.
+
+- If you are using your own generated cortx-all image, update the image tags on the solution.yaml file:
+
+- Example;
+```
+ images:
+    cortxcontrolprov: cortx-all:2.0.0-0
+    cortxcontrol: cortx-all:2.0.0-0
+    cortxdataprov: cortx-all:2.0.0-0
+    cortxdata: cortx-all:2.0.0-0
+  ```
 
 #### 3.2.3 Advanced configuration options
 <details>
