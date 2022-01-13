@@ -260,9 +260,9 @@ mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.
 # Update list of disks and list of nodes in the solutions.yaml file.
 ./cortx-k8s/k8_cortx_cloud/generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs 2 --data 2 --solution ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig  --datasize $DiskSize --metadatasize $DiskSize > ./cortx-k8s/k8_cortx_cloud/solution.yaml
 ```
-#### 3.2.2.1 Update the images tags.
+#### 3.2.2.1 Update the images tag.
 
-- If you are using your own generated cortx-all image, update the image tags on the solution.yaml file:
+- If you are using your own generated cortx-all image, update the image tag on the solution.yaml file:
 
 - Example;
 ```
