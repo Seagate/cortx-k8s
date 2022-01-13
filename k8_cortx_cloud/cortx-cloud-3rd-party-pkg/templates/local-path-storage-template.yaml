@@ -152,6 +152,6 @@ data:
     spec:
       containers:
       - name: helper-pod
-        image: busybox
+        image: <<.Values.rancher.helperPod.image>>
         imagePullPolicy: IfNotPresent
 

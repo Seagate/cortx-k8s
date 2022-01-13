@@ -288,6 +288,10 @@ function deployRancherProvisioner()
         ./parse_scripts/subst.sh $rancher_prov_file "rancher.image" $image
         ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
 
+        image=$(parseSolution 'solution.images.busybox')
+        image=$(echo $image | cut -f2 -d'>')
+        ./parse_scripts/subst.sh $rancher_prov_file "rancher.helperPod.image" $image
+
         kubectl create -f $rancher_prov_file
     fi
 }
