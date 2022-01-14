@@ -197,7 +197,7 @@ At this stage the Kubernetes cluster should be fully operational
 ## 3 Install CORTX 
 
 **NOTE**: For this setup, you can opt:-
-1.  To use container images hosted on the [repostitory](https://github.com/Seagate/cortx/pkgs/container/cortx-all)
+1.  To use container images hosted on the [repository](https://github.com/Seagate/cortx/pkgs/container/cortx-all)
 
 2. Generate the cortx-all container image yourself, following the guidelines [here](https://github.com/Seagate/cortx/tree/main/doc/community-build/docker/cortx-all)
 
