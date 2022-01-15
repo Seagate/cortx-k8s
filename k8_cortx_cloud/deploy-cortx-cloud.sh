@@ -510,8 +510,11 @@ function deployKafka()
         --values $TMP_KAFKA_ENVVARS_YAML  \
         --wait
 
-    rm $TMP_KAFKA_ENVVARS_YAML
+    printf "\n\n"
+}
 
+function waitForThirdParty()
+{
     printf "\nWait for CORTX 3rd party to be ready"
     while true; do
         count=0
@@ -883,11 +886,55 @@ function deployCortxSecrets()
     done
 }
 
+function silentKill()
+{
+    kill $1
+    wait $1 2> /dev/null
+}
+
+function waitForAllDeploymentsAvailable()
+{
+    INIT_DELAY=$1
+    shift
+    NEXT_DELAY=$1
+    shift
+    DEPL_STR=$1
+    shift
+
+    START=$SECONDS
+    (while true; do sleep 1; echo -n "."; done)&
+    DOTPID=$!
+    trap "silentKill $DOTPID" 0
+    
+    # Initial wait
+    FAIL=0
+    kubectl wait --for=condition=available --timeout=$INIT_DELAY $@
+    if [ $? -ne 0 ]; then
+        # Secondary wait
+        kubectl wait --for=condition=available --timeout=$NEXT_DELAY $@
+        if [ $? -ne 0 ]; then
+            # Still timed out.  This is a failure
+            FAIL=1
+            return
+        fi
+    fi
+
+    silentKill $DOTPID
+    trap - 0
+    ELAPSED=$(($SECONDS - $START))
+    echo
+    echo "Deployment $DEPL_STR available after $ELAPSED seconds"
+    echo
+    return $FAIL
+}
+
+
 function deployCortxControl()
 {
     printf "########################################################\n"
     printf "# Deploy CORTX Control                                  \n"
     printf "########################################################\n"
+
     cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
     cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
 
@@ -919,29 +966,13 @@ function deployCortxControl()
         --set namespace=$namespace \
         -n $namespace
 
-    printf "\nWait for CORTX Control to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
-            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-control-')"
 
-        if [[ $num_nodes -eq $count ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
+    printf "\nWait for CORTX Control to be ready"
+    waitForAllDeploymentsAvailable 120s 60s "CORTX Control" deployment/cortx-control
+    if [ $? -ne 0 ]; then
+        echo "Failed.  Exiting script."
+        exit 1
+    fi
     printf "\n\n"
 }
 
@@ -987,29 +1018,19 @@ function deployCortxData()
             -n $namespace
     done
 
+    # Wait for all cortx-data deployments to be ready
     printf "\nWait for CORTX Data to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
-            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-data-')"
-
-        if [[ $num_nodes -eq $count ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
+    declare -a deployments
+    for i in "${!node_selector_list[@]}"; do
+        node_name=${node_name_list[i]}
+        deployments[${#deployments[@]}]="deployment/cortx-data-${node_name}"
     done
+    waitForAllDeploymentsAvailable 120s 60s "CORTX Data" ${deployments[*]}
+    if [ $? -ne 0 ]; then
+        echo "Failed.  Exiting script."
+        exit 1
+    fi
+
     printf "\n\n"
 }
 
@@ -1060,28 +1081,18 @@ function deployCortxServer()
     done
 
     printf "\nWait for CORTX Server to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
-            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-server-')"
-
-        if [[ $num_nodes -eq $count ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
+    # Wait for all cortx-data deployments to be ready
+    declare -a deployments
+    for i in "${!node_selector_list[@]}"; do
+        node_name=${node_name_list[i]}
+        deployments[${#deployments[@]}]="deployment/cortx-server-${node_name}"
     done
+    waitForAllDeploymentsAvailable 120s 60s "CORTX Server" ${deployments[*]}
+    if [ $? -ne 0 ]; then
+        echo "Failed.  Exiting script."
+        exit 1
+    fi
+
     printf "\n\n"
 }
 
@@ -1121,28 +1132,11 @@ function deployCortxHa()
         -n $namespace
 
     printf "\nWait for CORTX HA to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
-            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-ha-')"
-
-        if [[ $num_nodes -eq $count ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
+    waitForAllDeploymentsAvailable 30s 30s "CORTX HA" deployment/cortx-control
+    if [ $? -ne 0 ]; then
+        echo "Failed.  Exiting script."
+        exit 1
+    fi
     printf "\n\n"
 }
 
@@ -1281,6 +1275,7 @@ if [[ (${#namespace_list[@]} -le 1 && "$found_match_nsp" = true) || "$namespace"
     deployOpenLDAP
     deployZookeeper
     deployKafka
+    waitForThirdParty
 fi
 
 ##########################################################
