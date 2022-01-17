@@ -1,0 +1,2 @@
+# cortx-k8s
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e752fdd0839141119c3394e6bedd06a6)](https://app.codacy.com/gh/Seagate/cortx-k8s?utm_source=github.com&utm_medium=referral&utm_content=Seagate/cortx-k8s&utm_campaign=Badge_Grade_Settings)
