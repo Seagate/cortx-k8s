@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.cortxclient.name }}
+  name: {{ .Values.cortxclient.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.cortxclient.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cortxclient.name }}
+        name: cortx-ha
+        cortx.io/service-type: cortx-ha
+    spec:
+      hostname: {{ .Values.cortxclient.service.headless.name }}
+      serviceAccountName: {{ .Values.cortxclient.serviceaccountname }}
+      volumes:
+        - name: {{ .Values.cortxclient.cfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxclient.cfgmap.name }}
+        - name: {{ .Values.cortxclient.sslcfgmap.volmountname }}
+          configMap:
+            name: {{ .Values.cortxclient.sslcfgmap.name }}
+        - name: local-path-pv
+          persistentVolumeClaim:
+            claimName: {{ .Values.cortxclient.localpathpvc.name }}
+        {{- range .Files.Lines .Values.cortxclient.secretinfo }}
+        - name: {{ printf "%s" . }}
+          secret:
+            secretName: {{ printf "%s" . }}
+        {{- end }}
+      containers:
+        {{- range $i := until (.Values.cortxclient.motr.numclientinst|int) }}
+        - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
+          image: {{ $.Values.cortxclient.image }}
+          imagePullPolicy: IfNotPresent
+          {{- if eq $.Values.cortxclient.image  "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services client --idx $CLIENT_INDEX --config yaml:///etc/cortx/cluster.conf
+          {{- end }}
+          volumeMounts:
+            - name: {{ $.Values.cortxclient.cfgmap.volmountname }}
+              mountPath: {{ $.Values.cortxclient.cfgmap.mountpath }}
+            - name: {{ $.Values.cortxclient.sslcfgmap.volmountname }}
+              mountPath: {{ $.Values.cortxclient.sslcfgmap.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ $.Values.cortxclient.localpathpvc.mountpath }}
+            {{- range $.Files.Lines $.Values.cortxclient.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: /etc/cortx/solution/secret
+              readOnly: true
+            {{- end }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ $.Values.cortxclient.name }}
+            - name: CLIENT_INDEX
+              value: {{ printf "%d" (add 1 $i) | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+        {{- end }}
+        - name: cortx-hax
+          image: {{ .Values.cortxclient.image }}
+          imagePullPolicy: IfNotPresent
+          {{- if eq .Values.cortxclient.image  "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/hare_setup start --config yaml:///etc/cortx/cluster.conf
+          {{- end }}
+          volumeMounts:
+            - name: {{ .Values.cortxclient.cfgmap.volmountname }}
+              mountPath: {{ .Values.cortxclient.cfgmap.mountpath }}
+            - name: {{ .Values.cortxclient.sslcfgmap.volmountname }}
+              mountPath: {{ .Values.cortxclient.sslcfgmap.mountpath }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxclient.localpathpvc.mountpath }}
+            {{- range .Files.Lines .Values.cortxclient.secretinfo }}
+            - name: {{ printf "%s" . }}
+              mountPath: /etc/cortx/solution/secret
+              readOnly: true
+            {{- end }}
+          env:
+            - name: UDS_CLOUD_CONTAINER_NAME
+              value: {{ .Values.cortxclient.name }}
+          securityContext:
+            allowPrivilegeEscalation: false

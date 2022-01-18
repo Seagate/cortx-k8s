@@ -1,0 +1,30 @@
+namespace: default
+cortxha:
+  name: cortx-ha
+  image: ghcr.io/seagate/centos:7
+  secretinfo: secret-info.txt
+  serviceaccountname: cortx-sa
+  service:
+    clusterip:
+      name: cortx-ha-clusterip-svc
+    headless:
+      name: cortx-ha-headless-svc
+    loadbal:
+      name: cortx-ha-loadbal-svc
+  cfgmap:
+    mountpath: /etc/cortx/solution
+    volmountname: config001
+    name: cortx-ha-cfgmap
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+    volmountname: ssl-config001
+    name: cortx-ssl-cert-cfgmap
+  machineid:
+    mountpath: /etc/cortx/solution/node
+    volmountname: machine-id-config
+    name:  cortx-ha-machine-id-cfgmap
+    value: ""
+  localpathpvc:
+    name: cortx-fs-local-pvc
+    mountpath: /etc/cortx # This is the mount path in the container
+    requeststoragesize: 1Gi

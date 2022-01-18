@@ -1,0 +1,126 @@
+solution:
+  namespace: default
+  secrets:
+    name: cortx-secret
+    content:
+      openldap_admin_secret: seagate1
+      kafka_admin_secret: Seagate@123
+      consul_admin_secret: Seagate@123
+      common_admin_secret: Seagate@123
+      s3_auth_admin_secret: ldapadmin
+      csm_auth_admin_secret: seagate2
+      csm_mgmt_admin_secret: Cortxadmin@123
+  images:
+    cortxcontrolprov: ghcr.io/seagate/centos:7
+    cortxcontrol: ghcr.io/seagate/centos:7
+    cortxdataprov: ghcr.io/seagate/centos:7
+    cortxdata: ghcr.io/seagate/centos:7
+    cortxserver: ghcr.io/seagate/centos:7
+    cortxha: ghcr.io/seagate/centos:7
+    cortxclient: ghcr.io/seagate/centos:7
+    openldap: ghcr.io/seagate/symas-openldap:2.4.58
+    consul: ghcr.io/seagate/consul:1.10.0
+    kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
+    zookeeper: ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182
+    rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
+    busybox: ghcr.io/seagate/busybox:latest
+  common:
+    setup_size: large
+    storage_provisioner_path: /mnt/fs-local-volume
+    container_path:
+      local: /etc/cortx
+      shared: /share
+      log: /etc/cortx/log
+    s3:
+      num_inst: 2
+      start_port_num: 28051
+      max_start_timeout: 240
+    motr:
+      num_client_inst: 0
+      start_port_num: 29000
+    storage_sets:
+      name: storage-set-1
+      durability:
+        sns: 1+0+0
+        dix: 1+0+0
+    external_services:
+      type: LoadBalancer
+    resource_allocation:
+      consul:
+        server:
+          storage: 10Gi
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 100m
+            limits:
+              memory: 300Mi
+              cpu: 100m
+        client:
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 100m
+            limits:
+              memory: 300Mi
+              cpu: 100m
+      openldap:
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 2
+          limits:
+            memory: 1Gi
+            cpu: 2
+      zookeeper:
+        storage_request_size: 9Gi
+        data_log_dir_request_size: 9Gi
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 250m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+      kafka:
+        storage_request_size: 9Gi
+        log_persistence_request_size: 9Gi
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 250m
+          limits:
+            memory: 2Gi
+            cpu: 1
+  storage:
+    cvg1:
+      name: cvg-01
+      type: ios
+      devices:
+        metadata:
+          device: /dev/sdc
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdd
+            size: 5Gi
+    cvg2:
+      name: cvg-02
+      type: ios
+      devices:
+        metadata:
+          device: /dev/sde
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdf
+            size: 5Gi
+  nodes:
+    node1:
+      name: node-1
+    node2:
+      name: node-2
+    node3:
+      name: node-3
+    node4:
+      name: node-4

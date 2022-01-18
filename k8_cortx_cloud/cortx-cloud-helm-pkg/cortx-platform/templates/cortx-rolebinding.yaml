@@ -1,0 +1,17 @@
+{{- if .Values.rbacRoleBinding.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.rbacRoleBinding.name }}
+  namespace: {{ .Values.namespace.name }}
+roleRef:
+  kind: Role
+  name: {{ .Values.rbacRole.name }}
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+## Authorize all service accounts in a namespace 
+## (recommended via https://kubernetes.io/docs/concepts/policy/pod-security-policy/#recommended-practice):
+- kind: Group
+  apiGroup: rbac.authorization.k8s.io
+  name: system:serviceaccounts:{{ .Values.namespace.name }}
+{{- end }}
