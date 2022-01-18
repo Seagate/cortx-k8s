@@ -915,7 +915,6 @@ function waitForAllDeploymentsAvailable()
         if [ $? -ne 0 ]; then
             # Still timed out.  This is a failure
             FAIL=1
-            return
         fi
     fi
 
@@ -923,7 +922,11 @@ function waitForAllDeploymentsAvailable()
     trap - 0
     ELAPSED=$(($SECONDS - $START))
     echo
-    echo "Deployment $DEPL_STR available after $ELAPSED seconds"
+    if [ $FAIL -eq 0 ]; then
+        echo "Deployment $DEPL_STR available after $ELAPSED seconds"
+    else
+        echo "Deployment $DEPL_STR timed out after $ELAPSED seconds"
+    fi
     echo
     return $FAIL
 }
