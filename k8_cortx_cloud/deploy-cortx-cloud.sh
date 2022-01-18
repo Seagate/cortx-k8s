@@ -510,6 +510,8 @@ function deployKafka()
         --values $TMP_KAFKA_ENVVARS_YAML  \
         --wait
 
+    rm $TMP_KAFKA_ENVVARS_YAML
+
     printf "\n\n"
 }
 
@@ -888,15 +890,13 @@ function deployCortxSecrets()
 
 function silentKill()
 {
-    kill $1
-    wait $1 2> /dev/null
+    kill "$1"
+    wait "$1" 2> /dev/null
 }
 
 function waitForAllDeploymentsAvailable()
 {
-    INIT_DELAY=$1
-    shift
-    NEXT_DELAY=$1
+    TIMEOUT=$1
     shift
     DEPL_STR=$1
     shift
@@ -908,10 +908,10 @@ function waitForAllDeploymentsAvailable()
     
     # Initial wait
     FAIL=0
-    kubectl wait --for=condition=available --timeout=$INIT_DELAY $@
+    kubectl wait --for=condition=available --timeout="$TIMEOUT" $@
     if [ $? -ne 0 ]; then
         # Secondary wait
-        kubectl wait --for=condition=available --timeout=$NEXT_DELAY $@
+        kubectl wait --for=condition=available --timeout="$TIMEOUT" $@
         if [ $? -ne 0 ]; then
             # Still timed out.  This is a failure
             FAIL=1
@@ -920,7 +920,7 @@ function waitForAllDeploymentsAvailable()
 
     silentKill $DOTPID
     trap - 0
-    ELAPSED=$(($SECONDS - $START))
+    ELAPSED=$((SECONDS - START))
     echo
     if [ $FAIL -eq 0 ]; then
         echo "Deployment $DEPL_STR available after $ELAPSED seconds"
@@ -971,7 +971,7 @@ function deployCortxControl()
 
 
     printf "\nWait for CORTX Control to be ready"
-    waitForAllDeploymentsAvailable 120s 60s "CORTX Control" deployment/cortx-control
+    waitForAllDeploymentsAvailable 300s "CORTX Control" deployment/cortx-control
     if [ $? -ne 0 ]; then
         echo "Failed.  Exiting script."
         exit 1
@@ -1028,7 +1028,7 @@ function deployCortxData()
         node_name=${node_name_list[i]}
         deployments[${#deployments[@]}]="deployment/cortx-data-${node_name}"
     done
-    waitForAllDeploymentsAvailable 120s 60s "CORTX Data" ${deployments[*]}
+    waitForAllDeploymentsAvailable 300s "CORTX Data" ${deployments[@]}
     if [ $? -ne 0 ]; then
         echo "Failed.  Exiting script."
         exit 1
@@ -1090,7 +1090,7 @@ function deployCortxServer()
         node_name=${node_name_list[i]}
         deployments[${#deployments[@]}]="deployment/cortx-server-${node_name}"
     done
-    waitForAllDeploymentsAvailable 120s 60s "CORTX Server" ${deployments[*]}
+    waitForAllDeploymentsAvailable 300s "CORTX Server" ${deployments[@]}
     if [ $? -ne 0 ]; then
         echo "Failed.  Exiting script."
         exit 1
@@ -1135,7 +1135,7 @@ function deployCortxHa()
         -n $namespace
 
     printf "\nWait for CORTX HA to be ready"
-    waitForAllDeploymentsAvailable 30s 30s "CORTX HA" deployment/cortx-control
+    waitForAllDeploymentsAvailable 120s "CORTX HA" deployment/cortx-ha
     if [ $? -ne 0 ]; then
         echo "Failed.  Exiting script."
         exit 1
