@@ -288,6 +288,10 @@ function deployRancherProvisioner()
         ./parse_scripts/subst.sh $rancher_prov_file "rancher.image" $image
         ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
 
+        image=$(parseSolution 'solution.images.busybox')
+        image=$(echo $image | cut -f2 -d'>')
+        ./parse_scripts/subst.sh $rancher_prov_file "rancher.helperPod.image" $image
+
         kubectl create -f $rancher_prov_file
     fi
 }
@@ -614,6 +618,11 @@ function deployCortxConfigMap()
         image=$(echo $image | cut -f2 -d'>')
         splitDockerImage "${image}"
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.release.version" $tag
+
+        # Pass through setup_size parameter
+        ## THIS IS PLACEHOLDER FUNCTION UNTIL PI-6 WHEN WE WILL IMPLEMENT
+        ## PROPER setup_size => container_resource MAPPINGS
+        ./parse_scripts/subst.sh $new_gen_file "cortx.common.setup_size" $(extractBlock 'solution.common.setup_size')
 
         # Generate node file with type storage_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"

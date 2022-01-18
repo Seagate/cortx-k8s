@@ -64,7 +64,7 @@ function saveLogs()
   fi
   if [ "${logs_output}" != "" ]; then
     echo "================= Logs of ${1} =================" > $log_file
-    printf "\n${logs_output}" >> $log_file
+    printf "\n%s" "${logs_output}" >> $log_file
     tar rf $logs_folder.tar $log_file
     rm $log_file
   fi
@@ -105,28 +105,22 @@ while IFS= read -r line; do
     fi
     pods_found=$((pods_found+1))
 
-    if [[ $pod =~ "cortx-control-pod" ]]; then
-      containers=$(kubectl get pods ${pod} -n ${namespace} -o jsonpath='{.spec.containers[*].name}')
-      containers=($containers)
-      for item in "${containers[@]}";
-      do
-        saveLogs $pod "${item}"
-      done
-      savePodDetail $pod
-      getInnerLogs $pod
-    elif [[ $pod =~ "cortx-data-pod" ]]; then
-      containers=$(kubectl get pods ${pod} -n ${namespace} -o jsonpath='{.spec.containers[*].name}')
-      containers=($containers)
-      for item in "${containers[@]}";
-      do
-        saveLogs $pod "${item}"
-      done
-      savePodDetail $pod
-      getInnerLogs $pod
-    else
-      saveLogs $pod
-      savePodDetail $pod
-    fi
+    case $pod in
+      cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
+        containers=$(kubectl get pods ${pod} -n ${namespace} -o jsonpath='{.spec.containers[*].name}')
+        containers=($containers)
+        for item in "${containers[@]}";
+        do
+          saveLogs $pod "${item}"
+        done
+        savePodDetail $pod
+        getInnerLogs $pod
+        ;;
+      *)
+        saveLogs $pod
+        savePodDetail $pod
+        ;;
+    esac
   fi
 
 done <<< "$(kubectl get pods)"

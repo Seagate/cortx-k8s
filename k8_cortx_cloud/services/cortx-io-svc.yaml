@@ -4,7 +4,7 @@ metadata:
   name: cortx-io-svc
 spec:
   selector:
-    name: cortx-data
+    name: cortx-server
   ports:
     - name: port80
       protocol: TCP
