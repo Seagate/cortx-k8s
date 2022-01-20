@@ -2,7 +2,7 @@
 ###############################################
 # Install helm                                #
 ###############################################
-1. Install helm on the master node:
+1. Install helm on the primary node:
 
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 get_helm.sh
@@ -34,7 +34,7 @@ Example:
 scp prereq-deploy-cortx-cloud.sh root@192.168.1.1:/home/
 scp solution.yaml root@192.168.1.1:/home/
 
-2. Run prerequisite script on all worker nodes in the cluster, and untainted master node
+2. Run prerequisite script on all worker nodes in the cluster, and untainted primary node
    that allows scheduling. "<disk>" is a required input to run this script. This disk
    should NOT be any of the devices listed in "solution.storage.cvg*" in the "solution.yaml"
    file:
