@@ -110,7 +110,7 @@ while IFS= read -r line; do
   pod_name="${pod[0]}"
   pod_status="${status[0]}"
 
-  if [[ ${pod_name} != "NAME" -a ${pod_status} != "Evicted" ]]; then
+  if [[ ${pod_name} != "NAME" && ${pod_status} != "Evicted" ]]; then
     if [[ ${nodename} ]] && \
        [[ ${nodename} != $(kubectl get pod "${pod_name}" -o jsonpath={.spec.nodeName}) ]]; then
       continue
