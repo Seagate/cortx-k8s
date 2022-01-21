@@ -5,7 +5,7 @@ DIR=$(dirname "${SCRIPT}")
 
 function parseSolution()
 {
-  echo "$(${DIR}/parse_scripts/parse_yaml.sh ${solution_yaml} $1)"
+  "${DIR}/parse_scripts/parse_yaml.sh" "${solution_yaml}" "$1"
 }
 
 function usage() {
@@ -38,9 +38,9 @@ while [ $# -gt 0 ]; do
   shift 2
 done
 namespace=$(parseSolution 'solution.namespace')
-namespace=$(echo ${namespace} | cut -f2 -d'>')
+namespace=$(echo "${namespace}" | cut -f2 -d'>')
 logs_folder="logs-cortx-cloud-${date}"
-mkdir ${logs_folder} -p
+mkdir "${logs_folder}" -p
 status=""
 
 printf "######################################################\n"
@@ -109,25 +109,25 @@ while IFS= read -r line; do
 
   if [ "${pod}" != "NAME" -a "${status}" != "Evicted" ]; then
     if [ "${nodename}" ] && \
-       [ "${nodename}" != $(kubectl get pod ${pod} -o jsonpath={.spec.nodeName}) ]; then
+       [ "${nodename}" != $(kubectl get pod "${pod}" -o jsonpath={.spec.nodeName}) ]; then
       continue
     fi
     pods_found=$((pods_found+1))
 
     case ${pod} in
       cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
-        containers=$(kubectl get pods ${pod} -n ${namespace} -o jsonpath='{.spec.containers[*].name}')
+        containers=$(kubectl get pods "${pod}" -n "${namespace}" -o jsonpath='{.spec.containers[*].name}')
         containers=(${containers})
         for item in "${containers[@]}";
         do
-          saveLogs ${pod} "${item}"
+          saveLogs "${pod}" "${item}"
         done
-        savePodDetail ${pod}
+        savePodDetail "${pod}"
         getInnerLogs "${pod[0]}" "${containers[0]}"
         ;;
       *)
-        saveLogs ${pod}
-        savePodDetail ${pod}
+        saveLogs "${pod}"
+        savePodDetail "${pod}"
         ;;
     esac
   fi
@@ -135,9 +135,9 @@ while IFS= read -r line; do
 done <<< "$(kubectl get pods)"
 
 if [ "${nodename}" ] && [ "${pods_found}" == "0" ]; then
-  printf "\n❌ No pods are running on the node: \"%s\".\n" ${nodename}
+  printf "\n❌ No pods are running on the node: \"%s\".\n" "${nodename}"
 else
   printf "\n\n📦 \"${logs_folder}.tar\" file generated"
 fi
-rm -rf ${logs_folder}
+rm -rf "${logs_folder}"
 printf "\n✔️  All done\n\n"
