@@ -1,11 +1,11 @@
 #!/bin/bash
 
 SCRIPT=$(readlink -f "$0")
-DIR=$(dirname "$SCRIPT")
+DIR=$(dirname "${SCRIPT}")
 
 function parseSolution()
 {
-  echo "$($DIR/parse_scripts/parse_yaml.sh $solution_yaml $1)"
+  echo "$(${DIR}/parse_scripts/parse_yaml.sh ${solution_yaml} $1)"
 }
 
 function usage() {
@@ -13,14 +13,14 @@ function usage() {
   echo -e "Usage: \`sh $0 [-n NODENAME] [-s SOLUTION_CONFIG_FILE]\`\n"
   echo "Optional Arguments:"
   echo "    -s|--solution-config FILE_PATH : path of solution configuration file."
-  echo "                                     default file path is $solution_yaml."
+  echo "                                     default file path is ${solution_yaml}."
   echo "    -n|--nodename NODENAME: collects logs from pods running only on given node".
   echo "                            collects logs from all the nodes by default."
   exit 1
 }
 
 date=$(date +%F_%H-%M)
-solution_yaml="$DIR/solution.yaml"
+solution_yaml="${DIR}/solution.yaml"
 pods_found=0
 while [ $# -gt 0 ]; do
   case $1 in
@@ -38,9 +38,9 @@ while [ $# -gt 0 ]; do
   shift 2
 done
 namespace=$(parseSolution 'solution.namespace')
-namespace=$(echo $namespace | cut -f2 -d'>')
+namespace=$(echo ${namespace} | cut -f2 -d'>')
 logs_folder="logs-cortx-cloud-${date}"
-mkdir $logs_folder -p
+mkdir ${logs_folder} -p
 status=""
 
 printf "######################################################\n"
@@ -103,41 +103,41 @@ function getInnerLogs()
 }
 
 while IFS= read -r line; do
-  IFS=" " read -r -a pod_status <<< "$line"
+  IFS=" " read -r -a pod_status <<< "${line}"
   IFS="/" read -r -a status <<< "${pod_status[2]}"
   IFS="/" read -r -a pod <<< "${pod_status[0]}"
 
-  if [ "$pod" != "NAME" -a "$status" != "Evicted" ]; then
-    if [ "$nodename" ] && \
-       [ "$nodename" != $(kubectl get pod ${pod} -o jsonpath={.spec.nodeName}) ]; then
+  if [ "${pod}" != "NAME" -a "${status}" != "Evicted" ]; then
+    if [ "${nodename}" ] && \
+       [ "${nodename}" != $(kubectl get pod ${pod} -o jsonpath={.spec.nodeName}) ]; then
       continue
     fi
     pods_found=$((pods_found+1))
 
-    case $pod in
+    case ${pod} in
       cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
         containers=$(kubectl get pods ${pod} -n ${namespace} -o jsonpath='{.spec.containers[*].name}')
-        containers=($containers)
+        containers=(${containers})
         for item in "${containers[@]}";
         do
-          saveLogs $pod "${item}"
+          saveLogs ${pod} "${item}"
         done
-        savePodDetail $pod
+        savePodDetail ${pod}
         getInnerLogs "${pod[0]}" "${containers[0]}"
         ;;
       *)
-        saveLogs $pod
-        savePodDetail $pod
+        saveLogs ${pod}
+        savePodDetail ${pod}
         ;;
     esac
   fi
 
 done <<< "$(kubectl get pods)"
 
-if [ "$nodename" ] && [ "$pods_found" == "0" ]; then
-  printf "\n❌ No pods are running on the node: \"%s\".\n" $nodename
+if [ "${nodename}" ] && [ "${pods_found}" == "0" ]; then
+  printf "\n❌ No pods are running on the node: \"%s\".\n" ${nodename}
 else
-  printf "\n\n📦 \"$logs_folder.tar\" file generated"
+  printf "\n\n📦 \"${logs_folder}.tar\" file generated"
 fi
 rm -rf ${logs_folder}
 printf "\n✔️  All done\n\n"
