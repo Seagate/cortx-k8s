@@ -44,7 +44,7 @@ mkdir "${logs_folder}" -p
 status=""
 
 printf "######################################################\n"
-printf "# ✍️  Generating logs, namespace: ${namespace}, date: ${date}\n"
+printf "# ✍️  Generating logs, namespace: %s, date: %s\n" "${namespace}" "${date}"
 printf "######################################################\n"
 
 function saveLogs()
@@ -140,7 +140,7 @@ done <<< "$(kubectl get pods)"
 if [[ ${nodename} ]] && [[ ${pods_found} == "0" ]]; then
   printf "\n❌ No pods are running on the node: \"%s\".\n" "${nodename}"
 else
-  printf "\n\n📦 \"${logs_folder}.tar\" file generated"
+  printf "\n\n📦 \"%s.tar\" file generated" "${logs_folder}"
 fi
 rm -rf "${logs_folder}"
 printf "\n✔️  All done\n\n"
