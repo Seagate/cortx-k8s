@@ -103,31 +103,34 @@ function getInnerLogs()
 }
 
 while IFS= read -r line; do
-  IFS=" " read -r -a pod_status <<< "${line}"
-  IFS="/" read -r -a status <<< "${pod_status[2]}"
-  IFS="/" read -r -a pod <<< "${pod_status[0]}"
+  IFS=" " read -r -a pod_line <<< "${line}"
+  IFS="/" read -r -a status <<< "${pod_line[2]}"
+  IFS="/" read -r -a pod <<< "${pod_line[0]}"
 
-  if [ "${pod}" != "NAME" -a "${status}" != "Evicted" ]; then
+  pod_name="${pod[0]}"
+  pod_status="${status[0]}"
+
+  if [ "${pod_name}" != "NAME" -a "${pod_status}" != "Evicted" ]; then
     if [ "${nodename}" ] && \
-       [ "${nodename}" != $(kubectl get pod "${pod}" -o jsonpath={.spec.nodeName}) ]; then
+       [ "${nodename}" != $(kubectl get pod "${pod_name}" -o jsonpath={.spec.nodeName}) ]; then
       continue
     fi
     pods_found=$((pods_found+1))
 
-    case ${pod} in
+    case ${pod_name} in
       cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
-        containers=$(kubectl get pods "${pod}" -n "${namespace}" -o jsonpath='{.spec.containers[*].name}')
+        containers=$(kubectl get pods "${pod_name}" -n "${namespace}" -o jsonpath='{.spec.containers[*].name}')
         containers=(${containers})
         for item in "${containers[@]}";
         do
-          saveLogs "${pod}" "${item}"
+          saveLogs "${pod_name}" "${item}"
         done
-        savePodDetail "${pod}"
+        savePodDetail "${pod[0]}"
         getInnerLogs "${pod[0]}" "${containers[0]}"
         ;;
       *)
-        saveLogs "${pod}"
-        savePodDetail "${pod}"
+        saveLogs "${pod_name}"
+        savePodDetail "${pod_name}"
         ;;
     esac
   fi
