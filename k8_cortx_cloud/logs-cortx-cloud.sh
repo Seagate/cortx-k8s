@@ -22,7 +22,7 @@ function usage() {
 date=$(date +%F_%H-%M)
 solution_yaml="${DIR}/solution.yaml"
 pods_found=0
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case $1 in
     -s|--solution-config )
       declare solution_yaml="$2"
@@ -110,9 +110,9 @@ while IFS= read -r line; do
   pod_name="${pod[0]}"
   pod_status="${status[0]}"
 
-  if [ "${pod_name}" != "NAME" -a "${pod_status}" != "Evicted" ]; then
-    if [ "${nodename}" ] && \
-       [ "${nodename}" != $(kubectl get pod "${pod_name}" -o jsonpath={.spec.nodeName}) ]; then
+  if [[ ${pod_name} != "NAME" -a ${pod_status} != "Evicted" ]]; then
+    if [[ ${nodename} ]] && \
+       [[ ${nodename} != $(kubectl get pod "${pod_name}" -o jsonpath={.spec.nodeName}) ]]; then
       continue
     fi
     pods_found=$((pods_found+1))
@@ -137,7 +137,7 @@ while IFS= read -r line; do
 
 done <<< "$(kubectl get pods)"
 
-if [ "${nodename}" ] && [ "${pods_found}" == "0" ]; then
+if [[ ${nodename} ]] && [[ ${pods_found} == "0" ]]; then
   printf "\n❌ No pods are running on the node: \"%s\".\n" "${nodename}"
 else
   printf "\n\n📦 \"${logs_folder}.tar\" file generated"
