@@ -17,11 +17,11 @@ cortxserver:
       name: cortx-server-loadbal-svc
       type: LoadBalancer
   cfgmap:
-    mountpath: /etc/cortx/solution
+    mountpath: /etc/testpath/solution
     volmountname: config001
     name: cortx-server-cfgmap
   sslcfgmap:
-    mountpath: /etc/cortx/solution/ssl
+    mountpath: /etc/testpath/solution/ssl
     volmountname: ssl-config001
     name: cortx-ssl-cert-cfgmap
   machineid:
@@ -31,5 +31,5 @@ cortxserver:
     value: ""
   localpathpvc:
     name: cortx-fs-server-local-pvc
-    mountpath: /etc/cortx # This is the mount path in the container
+    mountpath: /etc/testpath # This is the mount path in the container
     requeststoragesize: 1Gi

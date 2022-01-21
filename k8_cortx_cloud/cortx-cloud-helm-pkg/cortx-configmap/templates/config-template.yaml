@@ -35,9 +35,9 @@ cortx:
       log: <<.Values.cortx.common.storage.log>>
       config: <<.Values.cortx.common.storage.local>>
     security:
-      ssl_certificate: /etc/cortx/solution/ssl/s3.seagate.com.pem
-      domain_certificate: /etc/cortx/solution/ssl/stx.pem
-      device_certificate: /etc/cortx/solution/ssl/stx.pem
+      ssl_certificate: /etc/testpath/solution/ssl/s3.seagate.com.pem
+      domain_certificate: /etc/testpath/solution/ssl/stx.pem
+      device_certificate: /etc/testpath/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
   s3:

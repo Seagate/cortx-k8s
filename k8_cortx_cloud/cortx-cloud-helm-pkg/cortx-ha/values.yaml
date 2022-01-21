@@ -12,11 +12,11 @@ cortxha:
     loadbal:
       name: cortx-ha-loadbal-svc
   cfgmap:
-    mountpath: /etc/cortx/solution
+    mountpath: /etc/testpath/solution
     volmountname: config001
     name: cortx-ha-cfgmap
   sslcfgmap:
-    mountpath: /etc/cortx/solution/ssl
+    mountpath: /etc/testpath/solution/ssl
     volmountname: ssl-config001
     name: cortx-ssl-cert-cfgmap
   machineid:
@@ -26,5 +26,5 @@ cortxha:
     value: ""
   localpathpvc:
     name: cortx-fs-local-pvc
-    mountpath: /etc/cortx # This is the mount path in the container
+    mountpath: /etc/testpath # This is the mount path in the container
     requeststoragesize: 1Gi

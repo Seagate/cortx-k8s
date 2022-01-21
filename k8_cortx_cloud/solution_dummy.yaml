@@ -28,9 +28,9 @@ solution:
     setup_size: large
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
-      local: /etc/cortx
+      local: /etc/testpath
       shared: /share
-      log: /etc/cortx/log
+      log: /etc/testpath/log
     s3:
       num_inst: 2
       start_port_num: 28051
