@@ -120,7 +120,7 @@ while IFS= read -r line; do
     case ${pod_name} in
       cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
         containers=$(kubectl get pods "${pod_name}" -n "${namespace}" -o jsonpath='{.spec.containers[*].name}')
-        containers=(${containers})
+        IFS=" " read -r -a containers <<< "${containers}"
         for item in "${containers[@]}";
         do
           saveLogs "${pod_name}" "${item}"
