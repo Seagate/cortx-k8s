@@ -4,22 +4,29 @@
 
 [CORTX Community Object Storage](http://cortx.io/) is 100% open-source object storage, uniquely optimized for mass capacity storage devices. This repository provides capability and support for deploying CORTX onto the [Kubernetes](https://kubernetes.io/) container orchestration platform.
 
-## Table of Contents:
+## Table of Contents
 
-1. [Project Overview](#project-overview)
-1. [Reference Architecture](#reference-architecture)
-1. [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites)
-1. [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
-1. [Quick Starts](#quick-starts)
-   1. [Using the prereq deploy script (Optional)](#using-the-prereq-deploy-script-optional)
-   1. [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
-   1. [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
-   1. [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
-   1. [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
-   1. [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
-1. [Solution YAML Overview](#solution-yaml-overview)
-1. [Troubleshooting](#troubleshooting)
-1. [License](#license)
+1.  [Project Overview](#project-overview)
+
+2.  [Reference Architecture](#reference-architecture)
+
+3.  [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites)
+
+4.  [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
+
+5.  [Quick Starts](#quick-starts)
+   1.  [Using the prereq deploy script (Optional)](#using-the-prereq-deploy-script-optional)
+   2.  [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
+   3.  [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
+   4.  [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
+   5.  [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
+   6.  [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
+
+6.  [Solution YAML Overview](#solution-yaml-overview)
+
+7.  [Troubleshooting](#troubleshooting)
+
+8.  [License](#license)
 
 ## Project Overview
 
@@ -32,19 +39,23 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 ![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s.jpg)
 
 CORTX on Kubernetes consists of five primary components:
-1. Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul), [Apache Kafka](https://kafka.apache.org/), and [OpenLDAP](https://www.openldap.org/).
-2. CORTX Control Pods
-   - These pods maintain the CORTX control plane
-   - Usually with a cardinality of one pod per CORTX deployment
-3. CORTX Data Pods
-   - These pods maintain the CORTX data plane
-   - Usually with a cardinality of one pod per CORTX node
-4. CORTX Server Pods
-   - These pods maintain the CORTX API and user interfaces
-   - Usually with a cardinality of one pod per CORTX node (but scalable based on system traffic)
-5. CORTX HA Pods
-   - These pods maintain the overall high-availability of the CORTX deployment
-   - Usually with a cardinality of one pod per CORTX deployment
+1.  Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul), [Apache Kafka](https://kafka.apache.org/), and [OpenLDAP](https://www.openldap.org/).
+
+2.  CORTX Control Pods
+   -  These pods maintain the CORTX control plane
+   -  Usually with a cardinality of one pod per CORTX deployment
+
+3.  CORTX Data Pods
+   -  These pods maintain the CORTX data plane
+   -  Usually with a cardinality of one pod per CORTX node
+
+4.  CORTX Server Pods
+   -  These pods maintain the CORTX API and user interfaces
+   -  Usually with a cardinality of one pod per CORTX node (but scalable based on system traffic)
+
+5.  CORTX HA Pods
+   -  These pods maintain the overall high-availability of the CORTX deployment
+   -  Usually with a cardinality of one pod per CORTX deployment
 
 ## CORTX on Kubernetes Prerequisites
 
