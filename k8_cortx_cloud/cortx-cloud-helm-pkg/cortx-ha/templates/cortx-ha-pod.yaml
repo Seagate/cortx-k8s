@@ -20,7 +20,7 @@ spec:
         name: cortx-ha
         cortx.io/service-type: cortx-ha
     spec:
-      hostname: {{ .Values.cortxha.service.headless.name }}
+      hostname: {{ .Values.cortxha.name }}
       serviceAccountName: {{ .Values.cortxha.serviceaccountname }}
       automountServiceAccountToken: true
       volumes:

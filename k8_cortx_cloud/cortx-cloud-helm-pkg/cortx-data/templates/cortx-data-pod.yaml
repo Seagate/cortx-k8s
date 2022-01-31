@@ -23,7 +23,7 @@ spec:
     {{- $nodeparts := split "." $nodeselector }}
     {{- $nodename := $nodeparts._0 }}
     spec:
-      hostname: {{ .Values.cortxdata.service.headless.name }}
+      hostname: {{ .Values.cortxdata.name }}
       serviceAccountName: {{ .Values.cortxdata.serviceaccountname }}
       volumes:
         - name: {{ .Values.cortxdata.cfgmap.volmountname }}

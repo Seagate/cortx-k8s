@@ -632,10 +632,10 @@ function deployCortxConfigMap()
         # Generate node file with type storage_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
         cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-data-headless-svc-${node_name_list[$i]}"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-data-${node_name_list[$i]}"
         uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
         ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-headless-svc-${node_name_list[$i]}"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-${node_name_list[$i]}"
         ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "data_node"
         
         # Create data machine id file for cortx data
@@ -646,10 +646,10 @@ function deployCortxConfigMap()
         # Generate cluster server node file with type server_node in "node-info" folder
         cluster_server_node_file="$node_info_folder/cluster-server-node-${node_name_list[$i]}.yaml"
         cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_server_node_file
-        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.node.name" "cortx-server-headless-svc-${node_name_list[$i]}"
+        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.node.name" "cortx-server-${node_name_list[$i]}"
         uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
         ./parse_scripts/subst.sh $cluster_server_node_file "cortx.pod.uuid" "$uuid_str"
-        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.svc.name" "cortx-server-headless-svc-${node_name_list[$i]}"
+        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.svc.name" "cortx-server-${node_name_list[$i]}"
         ./parse_scripts/subst.sh $cluster_server_node_file "cortx.node.type" "server_node"
         # Create data machine id file for cortx server
         auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/server"
@@ -674,10 +674,10 @@ function deployCortxConfigMap()
     # Generate cluster ha node file with type ha_node in "node-info" folder
     cluster_ha_node_file="$node_info_folder/cluster-ha-node.yaml"
     cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_ha_node_file
-    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.name" "cortx-ha-headless-svc"
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.name" "cortx-ha"
     uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
     ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.pod.uuid" "$uuid_str"
-    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.svc.name" "cortx-ha-headless-svc"
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.svc.name" "cortx-ha"
     ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.type" "ha_node"
     # Create HA machine id file
     auto_gen_ha_path="$cfgmap_path/auto-gen-ha-$namespace"
