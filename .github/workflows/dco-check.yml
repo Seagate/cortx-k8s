@@ -20,4 +20,4 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: mukul-seagate11/actions-dco@v1.0
+      - uses: Seagate/actions-dco@v1.0
