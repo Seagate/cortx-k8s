@@ -72,7 +72,7 @@ CORTX on Kubernetes consists of five primary components:
 
    CORTX on Kubernetes currently requires the `vm.max_map_count` set to a specific minimum level of `30000000` (thirty million) on the Kubernetes Nodes which `cortx-data` Pods will run.
       - The `prereq-deploy-cortx-cloud.sh` script will set this value prior to deployment if you choose to utilize it.
-      - The `cortx-data` Pods include an initContainer that will check for this minimal value and temporarily halt deployment if not met. 
+      - The `cortx-data` Pods include an initContainer that will check for this minimal value and halt deployment if not met. 
 
 4. Local path provisioner
 
@@ -91,7 +91,7 @@ CORTX on Kubernetes consists of five primary components:
       2. `/var/data/3rd-party`
       3. `/var/log/3rd-party`
 
-   **NOTE:** This requirement will be going away in a future release _(some time after v0.0.20)_.
+    :information_source: This requirement will be going away in a future release _(some time after v0.0.20)_.
 
 ## Kubernetes Reference Deployments
 
@@ -99,10 +99,10 @@ There are numerous ways to install and configure a complete Kubernetes cluster. 
 
 For reference material, we have provided existing Kubernetes deployment models that have been verified to work with CORTX on Kubernetes. These are only provided for reference and are not meant to be explicit deployment constraints.
 
-Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster, please open an [Issue](https://github.com/Seagate/cortx-k8s/issues) in this repository for further troubleshooting. 
-
 1. [Seagate Internal Jenkins Job](http://eos-jenkins.mero.colo.seagate.com/job/Cortx-kubernetes/job/setup-kubernetes-cluster/)
 2. [CORTX on AWS and Kubernetes - Quick Install Guide](https://github.com/Seagate/cortx-k8s/blob/UDX-6683_move_documentation_to_readme_md/doc/cortx-aws-k8s-installation.md)
+
+Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster, please open an [Issue](https://github.com/Seagate/cortx-k8s/issues) in this repository for further troubleshooting.
 
 ## Quick Starts
 
@@ -112,11 +112,11 @@ All steps in the following quick starts assume the proper prerequisites have bee
 
 If you have direct access to the underlying Kubernetes Nodes in your cluster, CORTX on Kubernetes provides a [prerequisite deployment script](https://github.com/Seagate/cortx-k8s/blob/main/k8_cortx_cloud/prereq-deploy-cortx-cloud.sh) that will configure the majority of the low-level system configuration requirements prior to CORTX deployment. This is not a required step if you choose to ensure all the [prerequisites](#cortx-on-kubernetes-prerequisites) mentioned above are satisfied manually.
 
-   1. Copy "prereq-deploy-cortx-cloud.sh" script, and the solution yaml file to all worker nodes:
+   1. Copy `prereq-deploy-cortx-cloud.sh` script, and the solution yaml file to all worker nodes:
 
       ```bash
       scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
-      scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-prereq-script>
+      scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-solution-yaml>
       ```
 
    2. Run prerequisite script on all worker nodes in the cluster, and any untainted control nodes which allow Pod scheduling. `<disk>` is a required input to run this script. This disk should NOT be any of the devices listed in `solution.storage.cvg*` in the `solution.yaml` file:
@@ -125,24 +125,24 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
       sudo ./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
       ```
 
-   **NOTE:** `<solution-file>` is an optional input to run `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml`.
+    :information_source: `<solution-file>` is an optional input to run `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml`.
 
 ### Deploying CORTX on Kubernetes
 
 1. Clone this repository to a machine with connectivity to your Kubernetes cluster:
 
    ```bash
-   git clone https://github.com/Seagate/cortx-k8s -b stable
+   git clone https://github.com/Seagate/cortx-k8s
    ```
 
-> **NOTE:** You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
+>  :information_source: You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
 
 2. Update or clone `./k8_cortx_cloud/solution.yaml` to reflect your environment. The most common and expected updates are reflected below:
    - Update all passwords in solution.yaml. The `csm-secret` should include one special character in cortx-secret.
    - Update the images section with cortx-all image tag desired to be used. 
      - Each specific release of the CORTX on Kubernetes code will point to a specific predefined container image.
      - This can be overriden as desired.
-   - Update sns durability values. Default would be 1+0+0
+   - Update SNS and DIX durability values. The default value for both parameters is `1+0+0`.
    - Update storage cvg devices for data and metadata with respect to the devices in your environment.
    - Update nodes section with proper node hostnames from your Kubernetes cluster.
      - If the Kubernetes control plane nodes are required to be used for deployment, make sure to remove the taint from it before deploying CORTX.
@@ -150,13 +150,13 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
    - For further details on `solution.yaml` specifics, review the [Solution YAML Overview](#solution-yaml-overview) below.
 
 
-3. Run the `deploy-cortx-cloud` script, passing in the path to your updated `solution.yaml` file.
+3. Run the `deploy-cortx-cloud.sh` script, passing in the path to your updated `solution.yaml` file.
 
    ```bash
    ./deploy-cortx-cloud.sh solution.yaml
    ```
 
-4. Validate CORTX on Kubernetes statues
+4. Validate CORTX on Kubernetes status
 
    ```bash
    DATA_POD=$(kubectl get pods -l cortx.io/service-type=cortx-data --no-headers | awk '{print $1}' | head -n 1)
@@ -165,7 +165,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 ### Upgrading CORTX on Kubernetes
 
-> **NOTE:** As the CORTX on Kubernetes architecture is evolving, the upgrade path for CORTX on Kubernetes is evolving as well. As a workaround until more foundational upgrade capabilities exist, the following steps are available to manually upgrade your CORTX on Kubernetes environment to a more recent release.
+>  :information_source: As the CORTX on Kubernetes architecture is evolving, the upgrade path for CORTX on Kubernetes is evolving as well. As a workaround until more foundational upgrade capabilities exist, the following steps are available to manually upgrade your CORTX on Kubernetes environment to a more recent release.
 
 1. Deploy CORTX on Kubernetes according to the [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes) steps above.
 
@@ -175,7 +175,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
    ./shutdown-cortx-cloud.sh solution.yaml
    ```
 
-3. Patch the CORTX on Kubernetes Deployments using an updated image _(NOTE: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_
+3. Patch the CORTX on Kubernetes Deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_
 
    ```bash
    TARGET_IMAGE="ghcr.io/seagate/cortx-all:2.0.0-593-custom-ci"
@@ -197,7 +197,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 ### Log collection for CORTX on Kubernetes
 
-To gather logs from a CORTX on Kubernetes deployment, run the `logs-cortx-cloud` script while passing in the `solution.yaml` file to it.
+To gather logs from a CORTX on Kubernetes deployment, run the `logs-cortx-cloud.sh` script while passing in the `solution.yaml` file to it.
 
 ```bash
 ./logs-cortx-cloud.sh --solution-config solution.yaml
@@ -205,7 +205,7 @@ To gather logs from a CORTX on Kubernetes deployment, run the `logs-cortx-cloud`
 
 ### Undeploying CORTX on Kubernetes
 
-Run the `destroy-cortx-cloud` script, passing in the path to the previously updated `solution.yaml` file
+Run the `destroy-cortx-cloud.sh` script, passing in the path to the previously updated `solution.yaml` file
 
 ```bash
 ./destroy-cortx-cloud.sh solution.yaml
@@ -289,9 +289,9 @@ This section contains information about all the worker nodes used to deploy CORT
 
 ## Troubleshooting
 
-### Using dummy containers
+### Using stub containers
 
-The Helm charts work with both "dummy" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the dummy container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
+The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
 
 ## License
 
