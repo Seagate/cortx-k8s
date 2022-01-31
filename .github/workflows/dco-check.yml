@@ -20,4 +20,4 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: tisonkun/actions-dco@v1.0
+      - uses: mukul-seagate11/actions-dco@v1.0
