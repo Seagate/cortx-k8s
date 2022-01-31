@@ -8,9 +8,10 @@
 
 1. [Project Overview](#project-overview)
 1. [Reference Architecture](#reference-architecture)
-1. [CORTX on Kubernetes Pre-requisites](#cortx-on-kubernetes-pre-requisites)
+1. [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites)
 1. [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
 1. [Quick Starts](#quick-starts)
+   1. [Using the prereq deploy script (Optional)](#using-the-prereq-deploy-script-optional)
    1. [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
    1. [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
    1. [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
@@ -31,7 +32,7 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 ![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s.jpg)
 
 CORTX on Kubernetes consists of five primary components:
-1. Pre-requisite services, consisting of [Consul](https://github.com/hashicorp/consul), [Apache Kafka](https://kafka.apache.org/), and [OpenLDAP](https://www.openldap.org/).
+1. Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul), [Apache Kafka](https://kafka.apache.org/), and [OpenLDAP](https://www.openldap.org/).
 2. CORTX Control Pods
    - These pods maintain the CORTX control plane
    - Usually with a cardinality of one pod per CORTX deployment
@@ -45,18 +46,45 @@ CORTX on Kubernetes consists of five primary components:
    - These pods maintain the overall high-availability of the CORTX deployment
    - Usually with a cardinality of one pod per CORTX deployment
 
-## CORTX on Kubernetes Pre-requisites
+## CORTX on Kubernetes Prerequisites
 
 1. [Helm](https://helm.sh/)
 
    CORTX on Kubernetes is provided via Helm Charts. As such, you will need Helm installed locally to deploy CORTX on Kubernetes. You can find the specific installation instructions for your local platform via the [Installing Helm](https://helm.sh/docs/intro/install/) section of the official Helm documentation.
 
-2. [_TODO_](#_TODO_)
+2. Uniform device paths
 
-   _TODO_ Integrate pre-requisites from below and prereq-deploy-cortx-cloud.sh as granularly as possible
+   CORTX on Kubernetes currently expects all Kubernetes Nodes to have a uniform device/drive setup across the Kubernetes cluster. This is to say that CORTX on Kubernetes expects all Kubernetes Nodes to have the same `/dev/sdb`, `/dev/sdc`, `/dev/sdN`, etc device paths on every node.
+      - Work is currently underway to remove this requirement in a future release _(some time after v0.0.20)_.
+
+3. Required kernel parameters
+
+   CORTX on Kubernetes currently requires the `vm.max_map_count` set to a specific minimum level of `30000000` (thirty million) on the Kubernetes Nodes which `cortx-data` Pods will run.
+      - The `prereq-deploy-cortx-cloud.sh` script will set this value prior to deployment if you choose to utilize it.
+      - The `cortx-data` Pods include an initContainer that will check for this minimal value and temporarily halt deployment if not met. 
+
+4. Local path provisioner
+
+   CORTX on Kubernetes currently uses the [Rancher Local Provisioner](https://github.com/rancher/local-path-provisioner) to manage some dynamic provisioning of local storage for prerequisite services.
+      - The `prereq-deploy-cortx-cloud.sh` script will ensure this directory exists, if you choose to utilize it.
+      - This directory prefix is configurable in the `solution.yaml` file via the `solution.common.storage_provisioner_path`, while appending `local-path-provisioner` to it.
+         - You can manually create this path via the default values of `/mnt/fs-local-volume/local-path-provisioner` on every Kubernetes Node
+         - Or you can customize the value of `solution.common.storage_provisioner_path` and create directories on every Kubernetes Node to match (i.e. `/mnt/cortx-k8s/local-volumes/local-path-provisioner`.
+
+5. OpenLDAP directories
+
+   CORTX on Kubernetes currently leverages OpenLDAP as a required service. The deployment scripts require specific local directories to exist on the Kubernetes Nodes which OpenLDAP will run on.  
+   - The `prereq-deploy-cortx-cloud.sh` script will ensure these directories exist, if you choose to utilize it.
+   - Or you can manually create the following directories on every Kubernetes Node to ensure functional operation of OpenLDAP:
+      1. `/etc/3rd-party/openldap`
+      2. `/var/data/3rd-party`
+      3. `/var/log/3rd-party`
+
+   **NOTE:** This requirement will be going away in a future release _(some time after v0.0.20)_.
+
 ## Kubernetes Reference Deployments
 
-There are numerous ways to install and configure a complete Kubernetes cluster. As long as the pre-requisites in the previous step are all satisfied, CORTX on Kubernetes should deploy successfully.
+There are numerous ways to install and configure a complete Kubernetes cluster. As long as the prerequisites in the previous step are all satisfied, CORTX on Kubernetes should deploy successfully.
 
 For reference material, we have provided existing Kubernetes deployment models that have been verified to work with CORTX on Kubernetes. These are only provided for reference and are not meant to be explicit deployment constraints.
 
@@ -67,7 +95,26 @@ Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster
 
 ## Quick Starts
 
-All steps in the following quick starts assume the proper prerequisites have been installed or configured as described in [CORTX on Kubernetes Pre-requisites](#cortx-on-kubernetes-pre-requisites) above.
+All steps in the following quick starts assume the proper prerequisites have been installed or configured as described in [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites) above.
+
+### Using the prereq deploy script (Optional)
+
+If you have direct access to the underlying Kubernetes Nodes in your cluster, CORTX on Kubernetes provides a [prerequisite deployment script](https://github.com/Seagate/cortx-k8s/blob/main/k8_cortx_cloud/prereq-deploy-cortx-cloud.sh) that will configure the majority of the low-level system configuration requirements prior to CORTX deployment. This is not a required step if you choose to ensure all the [prerequisites](#cortx-on-kubernetes-prerequisites) mentioned above are satisfied manually.
+
+   1. Copy "prereq-deploy-cortx-cloud.sh" script, and the solution yaml file to all worker nodes:
+
+      ```bash
+      scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
+      scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-prereq-script>
+      ```
+
+   2. Run prerequisite script on all worker nodes in the cluster, and any untainted control nodes which allow Pod scheduling. `<disk>` is a required input to run this script. This disk should NOT be any of the devices listed in `solution.storage.cvg*` in the `solution.yaml` file:
+
+      ```bash
+      sudo ./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
+      ```
+
+   **NOTE:** `<solution-file>` is an optional input to run `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml`.
 
 ### Deploying CORTX on Kubernetes
 
@@ -135,7 +182,7 @@ All steps in the following quick starts assume the proper prerequisites have bee
 
 ### Using CORTX on Kubernetes
 
-_TODO_ Port https://seagate-systems.atlassian.net/wiki/spaces/PUB/pages/754155622/CORTX+Kubernetes+N-Pod+Deployment+and+Upgrade+Document+using+Services+Framework#5.-Understanding-Management-and-S3-Endpoints-and-configuring-External-Load-balancer-service(Optional) here or to a linked `doc/readme` file.
+**_TODO_** Port https://seagate-systems.atlassian.net/wiki/spaces/PUB/pages/754155622/CORTX+Kubernetes+N-Pod+Deployment+and+Upgrade+Document+using+Services+Framework#5.-Understanding-Management-and-S3-Endpoints-and-configuring-External-Load-balancer-service(Optional) here or into a linked `doc/readme` file.
 
 ### Log collection for CORTX on Kubernetes
 
@@ -206,7 +253,7 @@ This section contains common paramaters that applies to all CORTX Data nodes.
 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `_TODO_`       | Hostname for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
+| `_TODO_`       | TBD | `TBD` |
 
 ### Storage parameters
 
@@ -214,7 +261,7 @@ The metadata and data drives are defined in this section. All drives must be the
 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `_TODO_`       | Hostname for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
+| `_TODO_`       | TBD | `TBD` |
 
 
 ### Node parameters
@@ -223,10 +270,10 @@ This section contains information about all the worker nodes used to deploy CORT
 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `nodes.node1.name`       | Hostname for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
-| `nodes.node2.name`       | Hostname for the second node in the Kubernetes cluster available to deploy CORTX components. | `node-2` |
+| `nodes.node1.name`       | Kubernetes node name for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
+| `nodes.node2.name`       | Kubernetes node name for the second node in the Kubernetes cluster available to deploy CORTX components. | `node-2` |
 | `...`                    | ...                                                                                     | `...`
-| `nodes.nodeN.name`       | Hostname for the Nth node in the Kubernetes cluster available to deploy CORTX components. | `""` |
+| `nodes.nodeN.name`       | Kubernetes node name for the Nth node in the Kubernetes cluster available to deploy CORTX components. | `""` |
 
 
 ## Troubleshooting
@@ -237,55 +284,4 @@ The Helm charts work with both "dummy" and "CORTX ALL" containers, allowing user
 
 ## License
 
-_TODO_ 
-
----
-
-> **NOTE:** Below to be removed once integrated above...
-
-### Local block storage requirements            
-
-1. Update the "solution.yaml" file to have correct worker node names in
-   "solution.nodes.nodeX.name" (ensure this field match the 'NAME' field
-   from the output of 'kubectl get nodes'), devices in the "storage.cvg*".
-   This info is used to create persistent volumes and persistent volume
-   claims for CORTX Provisioner and CORTX Data.
-
-Note: "solution.common.storage_provisioner_path" is the mount point/directory used
-by "Rancher Local Path Provisioner". The user must follow the
-"Run prerequisite deployment script" section on each of the worker nodes in the
-cluster
-
-### Run prerequisite deployment script          
-
-1. Copy "prereq-deploy-cortx-cloud.sh" script, and the solution yaml file to all worker nodes:
-
-scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
-scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-prereq-script>
-
-Example:
-scp prereq-deploy-cortx-cloud.sh root@192.168.1.1:/home/
-scp solution.yaml root@192.168.1.1:/home/
-
-2. Run prerequisite script on all worker nodes in the cluster, and untainted master node
-   that allows scheduling. "<disk>" is a required input to run this script. This disk
-   should NOT be any of the devices listed in "solution.storage.cvg*" in the "solution.yaml"
-   file:
-
-sudo ./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
-
-Example:
-sudo ./prereq-deploy-cortx-cloud.sh /dev/sdb
-or
-sudo ./prereq-deploy-cortx-cloud.sh /dev/sdb solution_dummy.yaml
-
-NOTE:
-<solution-file> is an optional input to run "prereq-deploy-cortx-cloud.sh" script. Make sure to use
-the same solution file for pre-req, deploy and destroy scripts (in the below section). The default
-<solution-file> is "solution.yaml".
-
-Rancher Local Path location on worker node:
-/mnt/fs-local-volume/local-path-provisioner/pvc-<UID>_default_cortx-fs-local-pvc-<node-name>
-
-Rancher Local Path mount point in all Pod containers (CORTX Provisioners, Data, Control):
-/data
+CORTX is 100% Open Source. Most of the project is licensed under the [Apache 2.0 License](LICENSE) and the rest is under AGPLv3; check the specific License file of each CORTX submodule to determine which is which.
