@@ -1,11 +1,11 @@
 #!/bin/bash
 
 SCRIPT=$(readlink -f "$0")
-DIR=$(dirname "$SCRIPT")
+DIR=$(dirname "${SCRIPT}")
 
 function parseSolution()
 {
-  echo "$($DIR/parse_scripts/parse_yaml.sh $solution_yaml $1)"
+  "${DIR}/parse_scripts/parse_yaml.sh" "${solution_yaml}" "$1"
 }
 
 function usage() {
