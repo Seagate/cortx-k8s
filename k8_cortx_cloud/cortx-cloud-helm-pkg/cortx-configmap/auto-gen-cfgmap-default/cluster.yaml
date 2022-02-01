@@ -1,0 +1,79 @@
+cluster:
+  name: cortx-cluster
+  id: 44818053b3a94db686eb42585c1bea3a
+  node_types:
+  - name: data_node
+    components:
+      - name: utils
+      - name: motr
+        services:
+          - io
+      - name: hare
+    storage:
+    - name: cvg-01
+      type: ios
+      devices:
+        metadata: /dev/sdc
+        data:
+          - /dev/sde
+          - /dev/sdf
+    - name: cvg-02
+      type: ios
+      devices:
+        metadata: /dev/sdg
+        data:
+          - /dev/sdh
+          - /dev/sdi
+  - name: server_node
+    components:
+    - name: utils
+    - name: hare
+    - name: rgw
+  - name: control_node
+    components:
+    - name: utils
+    - name: csm
+      services:
+      - agent
+  - name: ha_node
+    components:
+    - name: utils
+    - name: ha
+  storage_sets:
+  - name: storage-set-1
+    durability:
+      sns: 1+0+0
+      dix: 1+0+0
+    nodes:
+    - name: cortx-control-headless-svc
+      id: 6d7ac99c088445e6b603db6f99fa5dc4
+      hostname: cortx-control-headless-svc
+      type: control_node
+    - name: cortx-ha-headless-svc
+      id: cd2bb67da04e41ef8f7bf5b2e2396ff1
+      hostname: cortx-ha-headless-svc
+      type: ha_node
+    - name: cortx-server-headless-svc-ssc-vm-g4-rhev4-0320
+      id: fb3855b5bdbc45abbfd0e03b95067f7a
+      hostname: cortx-server-headless-svc-ssc-vm-g4-rhev4-0320
+      type: server_node
+    - name: cortx-server-headless-svc-ssc-vm-g4-rhev4-0321
+      id: c913e088282e401688df410f008dd8ca
+      hostname: cortx-server-headless-svc-ssc-vm-g4-rhev4-0321
+      type: server_node
+    - name: cortx-server-headless-svc-ssc-vm-g4-rhev4-0322
+      id: 66600311c7014297a6d039fbf9e36a34
+      hostname: cortx-server-headless-svc-ssc-vm-g4-rhev4-0322
+      type: server_node
+    - name: cortx-data-headless-svc-ssc-vm-g4-rhev4-0320
+      id: 75d0f5fc0af44db4a328711ac31080c8
+      hostname: cortx-data-headless-svc-ssc-vm-g4-rhev4-0320
+      type: data_node
+    - name: cortx-data-headless-svc-ssc-vm-g4-rhev4-0321
+      id: de11a313e07a4a21a16fbc3d0b5e1518
+      hostname: cortx-data-headless-svc-ssc-vm-g4-rhev4-0321
+      type: data_node
+    - name: cortx-data-headless-svc-ssc-vm-g4-rhev4-0322
+      id: c4599e5e485049df822ba50d67d2b2d2
+      hostname: cortx-data-headless-svc-ssc-vm-g4-rhev4-0322
+      type: data_node
