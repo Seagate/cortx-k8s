@@ -108,18 +108,18 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
    1.  Copy `prereq-deploy-cortx-cloud.sh` script, and the solution yaml file to all worker nodes:
 
-      ```bash
-      scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
-      scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-solution-yaml>
-      ```
+   ```bash
+   scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
+   scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-solution-yaml>
+   ```
 
    2.  Run prerequisite script on all worker nodes in the cluster, and any untainted control nodes which allow Pod scheduling. `<disk>` is a required input to run this script. This disk should NOT be any of the devices listed in `solution.storage.cvg*` in the `solution.yaml` file:
 
-      ```bash
-      sudo ./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
-      ```
+   ```bash
+   sudo ./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
+   ```
 
-    :information_source: `<solution-file>` is an optional input to run `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml`.
+   :information_source: `<solution-file>` is an optional input to run `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml`.
 
 ### Deploying CORTX on Kubernetes
 
