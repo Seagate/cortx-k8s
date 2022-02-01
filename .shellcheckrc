@@ -1,0 +1,3 @@
+enable=check-extra-masked-returns
+enable=require-double-brackets
+enable=require-variable-braces
