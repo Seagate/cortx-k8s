@@ -443,6 +443,6 @@ chmod +x s3-benchmark
 | S3 | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/443, tcp/80
 | IAM | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/9443
 
-Tested by:
+## Tested by:
 
 Nov 12, 2021: Rose Wambui (rose.wambui@seagate.com) and Justin Woo (justin.woo@seagate.com) 
