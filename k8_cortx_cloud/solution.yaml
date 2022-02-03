@@ -25,7 +25,7 @@ solution:
     rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
     busybox: ghcr.io/seagate/busybox:latest
   common:
-    setup_size: large
+    setup_size: small
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
       local: /etc/cortx
@@ -102,29 +102,61 @@ solution:
           size: 5Gi
         data:
           d1:
-            device: /dev/sde
+            device: /dev/sdd
             size: 5Gi
           d2:
+            device: /dev/sde
+            size: 5Gi
+          d3:
             device: /dev/sdf
+            size: 5Gi
+          d4:
+            device: /dev/sdg
+            size: 5Gi
+          d5:
+            device: /dev/sdh
+            size: 5Gi
+          d6:
+            device: /dev/sdi
+            size: 5Gi
+          d7:
+            device: /dev/sdj
             size: 5Gi
     cvg2:
       name: cvg-02
       type: ios
       devices:
         metadata:
-          device: /dev/sdg
+          device: /dev/sdk
           size: 5Gi
         data:
           d1:
-            device: /dev/sdh
+            device: /dev/sdl
             size: 5Gi
           d2:
-            device: /dev/sdi
+            device: /dev/sdm
+            size: 5Gi
+          d3:
+            device: /dev/sdn
+            size: 5Gi
+          d4:
+            device: /dev/sdo
+            size: 5Gi
+          d5:
+            device: /dev/sdp
+            size: 5Gi
+          d6:
+            device: /dev/sdq
+            size: 5Gi
+          d7:
+            device: /dev/sdr
             size: 5Gi
   nodes:
     node1:
-      name: ssc-vm-g4-rhev4-0320.colo.seagate.com
+      name: node-1
     node2:
-      name: ssc-vm-g4-rhev4-0321.colo.seagate.com
+      name: node-2
     node3:
-      name: ssc-vm-g4-rhev4-0322.colo.seagate.com
+      name: node-3
+    node4:
+      name: node-4
