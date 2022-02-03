@@ -5,11 +5,6 @@ cortxcontrol:
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   service:
-    clusterip:
-      name: cortx-control-clusterip-svc
-      type: ClusterIP
-    headless:
-      name: cortx-control-headless-svc
     loadbal:
       name: cortx-control-loadbal-svc
       type: LoadBalancer
