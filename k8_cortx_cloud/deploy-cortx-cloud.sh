@@ -1273,7 +1273,7 @@ fi
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_nsp" = true) || "$namespace" == "default" ]]; then
     deployRancherProvisioner
     deployConsul
-    deployOpenLDAP
+   # deployOpenLDAP
     deployZookeeper
     deployKafka
     waitForThirdParty
