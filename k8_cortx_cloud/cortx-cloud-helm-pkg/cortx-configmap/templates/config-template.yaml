@@ -1,7 +1,7 @@
 cortx:
   external:
     kafka:
-      endpoints: 
+      endpoints:
         - tcp://<<.Values.cortx.external.kafka.endpoints>>:9092
       admin: admin
       secret: kafka_admin_secret
@@ -57,7 +57,7 @@ cortx:
     service_instances: <<.Values.cortx.num_s3_inst>>
     io_max_units: 8
     max_start_timeout: <<.Values.cortx.max_start_timeout>>
-    limits:                  
+    limits:
       services:
       - name: rgw_s3
         memory:
@@ -69,13 +69,10 @@ cortx:
   hare:
     hax:
       endpoints:
-      - https://motr-hax-svc:22003        
-      - tcp://data1-node1:22001                 
-      - tcp://data1-node2:22001                 
-      - tcp://data1-node3:22001                 
-      - tcp://server-node1:22001                
-      - tcp://server-node2:22001                
-      - tcp://server-node3:22001                
+        - https://motr-hax-svc:22003
+        <<.Values.cortx.hare.hax.data>>
+        <<.Values.cortx.hare.hax.server>>
+        <<.Values.cortx.hare.hax.client>>
       limits:
         services:
         - name: hax
@@ -92,14 +89,10 @@ cortx:
     transport_type: libfab
     ios:
       endpoints:
-      - tcp://data1-node1:21001
-      - tcp://data2-node1:21001
-      - tcp://data3-node1:21001
+        <<.Values.cortx.motr.ios>>
     confd:
       endpoints:
-      - tcp://data1-node1:22002       
-      - tcp://data1-node2:22002       
-      - tcp://data1-node3:22002 
+        <<.Values.cortx.motr.confd>>
     limits:
       services:
       - name: ios
@@ -116,17 +109,15 @@ cortx:
         cpu:
           min: 250m
           max: 500m
-    clients:                          
-      - name: rgw_s3                  
-        num_instances: 1              
+    clients:
+      - name: rgw_s3
+        num_instances: 1
         endpoints:
-        - tcp://server1-node1:21001    
-        - tcp://server2-node1:21001   
-      - name: motr_client             
-        num_instances: 0              .         
+        <<.Values.cortx.client.rgw>>
+      - name: motr_client
+        num_instances: <<.Values.cortx.num_motr_inst>>
         endpoints:
-        - tcp://server1-node1:21201  
-        - tcp://server1-node2:21201
+        <<.Values.cortx.motr.client>>
   csm:
     auth_admin: admin
     auth_secret: csm_auth_admin_secret
@@ -136,8 +127,8 @@ cortx:
     agent:
       endpoints:
       - https://<<.Values.cortx.io.svc>>:8081
-    limits:   
-      services:              
+    limits:
+      services:
       - name: agent
         memory:
           min: 128Mi
@@ -147,7 +138,7 @@ cortx:
           max: 500m
   ha:
     limits:
-      services:        
+      services:
       - name: ha
         memory:
           min: 128Mi

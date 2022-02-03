@@ -119,7 +119,7 @@ while IFS= read -r line; do
     if [[ $count -eq 0 ]]; then
         count=$((count+1))
         continue
-    fi    
+    fi
     IFS=" " read -r -a my_array <<< "$line"
     if [[ "${my_array[0]}" != *"kube-"* \
             && "${my_array[0]}" != "default" \
@@ -258,6 +258,14 @@ function deleteCortxConfigmap()
         rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
 
     done
+
+    # Delete client machine id config maps
+    for i in "${!node_name_list[@]}"; do
+        kubectl delete configmap "cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
+        rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
+
+    done
+
     # Delete control machine id config map
     kubectl delete configmap "cortx-control-machine-id-cfgmap-$namespace" --namespace=$namespace
     rm -rf "$cfgmap_path/auto-gen-control-$namespace"
@@ -331,6 +339,7 @@ function deleteSecrets()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-client -name "secret-*" -delete
 }
 
 function deleteConsul()
@@ -416,7 +425,7 @@ function delete3rdPartyPVs()
     echo $persistent_volumes
     for persistent_volume in $persistent_volumes
     do
-        printf "Removing $persistent_volume\n"    
+        printf "Removing $persistent_volume\n"
         if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
             kubectl patch pv $persistent_volume -p '{"metadata":{"finalizers":null}}'
         fi
@@ -428,7 +437,7 @@ function delete3rdPartyPVs()
         echo $persistent_volumes
         for persistent_volume in $persistent_volumes
         do
-            printf "Removing $persistent_volume\n"        
+            printf "Removing $persistent_volume\n"
             if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
                 kubectl patch pv $persistent_volume -p '{"metadata":{"finalizers":null}}'
             fi
@@ -495,7 +504,7 @@ function cleanup()
         file_name="mnt-blk-info-$shorter_node_name.txt"
         rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
     done
-    
+
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
@@ -545,8 +554,8 @@ fi
 deleteKubernetesPrereqs
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
     deleteStorageProvisioner
-    
-    helmChartCleanup    
+
+    helmChartCleanup
 fi
 deleteCortxNamespace
 cleanup
