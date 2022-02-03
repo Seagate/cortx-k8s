@@ -11,13 +11,13 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxserver: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxha: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
-    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-latest-custom-ci
+    cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
+    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
+    cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
+    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
+    cortxserver: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
+    cortxha: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
+    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
     openldap: ghcr.io/seagate/symas-openldap:2.4.58
     consul: ghcr.io/seagate/consul:1.10.0
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
@@ -25,7 +25,7 @@ solution:
     rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
     busybox: ghcr.io/seagate/busybox:latest
   common:
-    setup_size: small
+    setup_size: large
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
       local: /etc/cortx
@@ -107,11 +107,56 @@ solution:
           d2:
             device: /dev/sde
             size: 5Gi
+          d3:
+            device: /dev/sdf
+            size: 5Gi
+          d4:
+            device: /dev/sdg
+            size: 5Gi
+          d5:
+            device: /dev/sdh
+            size: 5Gi
+          d6:
+            device: /dev/sdi
+            size: 5Gi
+          d7:
+            device: /dev/sdj
+            size: 5Gi
+    cvg2:
+      name: cvg-02
+      type: ios
+      devices:
+        metadata:
+          device: /dev/sdk
+          size: 5Gi
+        data:
+          d1:
+            device: /dev/sdl
+            size: 5Gi
+          d2:
+            device: /dev/sdm
+            size: 5Gi
+          d3:
+            device: /dev/sdn
+            size: 5Gi
+          d4:
+            device: /dev/sdo
+            size: 5Gi
+          d5:
+            device: /dev/sdp
+            size: 5Gi
+          d6:
+            device: /dev/sdq
+            size: 5Gi
+          d7:
+            device: /dev/sdr
+            size: 5Gi
   nodes:
     node1:
-        name: ssc-vm-g2-rhev4-2964.colo.seagate.com
+      name: node-1
     node2:
-        name: ssc-vm-g2-rhev4-2965.colo.seagate.com
+      name: node-2
     node3:
-        name: ssc-vm-g2-rhev4-2966.colo.seagate.com
-
+      name: node-3
+    node4:
+      name: node-4
