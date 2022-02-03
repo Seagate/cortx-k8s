@@ -660,10 +660,10 @@ function deployCortxConfigMap()
     # Generate node file with type control_node in "node-info" folder
     new_gen_file="$node_info_folder/cluster-control-node.yaml"
     cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-    ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control-headless-svc"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control"
     uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
     ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
-    ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control-headless-svc"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control"
     ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
 
     # Create control machine id file
@@ -950,8 +950,6 @@ function deployCortxControl()
     helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control" \
         --set cortxcontrol.image=$cortxcontrol_image \
-        --set cortxcontrol.service.clusterip.name="cortx-control-clusterip-svc" \
-        --set cortxcontrol.service.headless.name="cortx-control-headless-svc" \
         --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
         --set cortxcontrol.service.loadbal.type="$external_services_type" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \

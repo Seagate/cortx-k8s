@@ -47,50 +47,52 @@ printf "######################################################\n"
 printf "# ✍️  Generating logs, namespace: ${namespace}, date: ${date}\n"
 printf "######################################################\n"
 
-# 1 -> pod
-# 2 -> container?
 function saveLogs()
 {
-  log_file=""
-  logs_output=""
-  if [ "${2}" != "" ]; then
-    printf "\n🔍 Logging pod: ${1}, container: ${2}"
-    log_file="./${logs_folder}/${1}-${2}.logs.txt"
-    logs_output=$(kubectl logs ${1} -c ${2})
-  else
-    printf "\n🔍 Logging pod: ${1}"
-    log_file="./${logs_folder}/${1}.logs.txt"
-    logs_output=$(kubectl logs ${1})
+  local pod="$1"
+  local container="$2"  # optional
+  local log_cmd=(kubectl logs "${pod}")
+  local log_name="${pod}"
+
+  printf "\n🔍 Logging pod: %s" "${pod}"
+  if [[ -n ${container} ]]; then
+    printf ", container: %s" "${container}"
+    log_name+="-${container}"
+    log_cmd+=(-c "${container}")
   fi
-  if [ "${logs_output}" != "" ]; then
-    echo "================= Logs of ${1} =================" > $log_file
-    printf "\n%s" "${logs_output}" >> $log_file
-    tar rf $logs_folder.tar $log_file
-    rm $log_file
-  fi
+
+  local log_file="${logs_folder}/${log_name}.logs.txt"
+
+  printf "================= Logs of %s =================\n" "${pod}" > "${log_file}"
+  "${log_cmd[@]}" >> "${log_file}"
+
+  tar --append --file "${logs_folder}".tar "${log_file}"
+  rm "${log_file}"
 }
 
 function savePodDetail()
 {
-  log_file="./${logs_folder}/${1}.detail.txt"
-  logs_output=$(kubectl describe pod ${1})
-  if [ "${logs_output}" != "" ]; then
-    echo "================= Detail of ${1} =================" > $log_file
-    printf "\n${logs_output}" >> $log_file
-    tar rf $logs_folder.tar $log_file
-    rm $log_file
-  fi
+  local pod="$1"
+  local log_file="${logs_folder}/${pod}.detail.txt"
+
+  printf "================= Detail of %s =================\n\n" "${pod}" > "${log_file}"
+  kubectl describe pod "${pod}" >> "${log_file}"
+
+  tar --append --file "${logs_folder}.tar" "${log_file}"
+  rm "${log_file}"
 }
 
 function getInnerLogs()
 {
-  path="/var/cortx/support_bundle"
-  name="bundle-logs-${1}-${date}"
-  printf "\n ⭐ Generating support-bundle logs for pod: ${1}\n"
-  kubectl exec ${1} --namespace="${namespace}" -- cortx_support_bundle generate -t file://${path} -b ${name} -m ${name}
-  kubectl cp $1:$path/$name $logs_folder/$name
-  tar rf $logs_folder.tar $logs_folder/$name
-  kubectl exec ${1} --namespace="${namespace}" -- bash -c "rm -rf ${path}"
+  local pod="$1"
+  local path="/var/cortx/support_bundle"
+  local name="bundle-logs-${pod}-${date}"
+
+  printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
+  kubectl exec "${pod}" --namespace="${namespace}" -- cortx_support_bundle generate --location file://${path} --bundle_id "${name}" --message "${name}"
+  kubectl cp "${pod}":"${path}/${name}" "${logs_folder}/${name}"
+  tar --append --file "${logs_folder}.tar" "${logs_folder}/${name}"
+  kubectl exec "${pod}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
 }
 
 while IFS= read -r line; do

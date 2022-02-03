@@ -20,7 +20,7 @@ spec:
         {{- end }}
         cortx.io/service-type: cortx-control
     spec:
-      hostname: {{ .Values.cortxcontrol.service.headless.name }}
+      hostname: {{ .Values.cortxcontrol.name }}
       serviceAccountName: {{ .Values.cortxcontrol.serviceaccountname }}
       volumes:
         - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
