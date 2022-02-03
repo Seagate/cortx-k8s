@@ -91,9 +91,9 @@ spec:
         args: 
           - -c
           {{- if .Values.cortxdata.machineid.value }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/testpath/solution -c yaml:///etc/testpath/cluster.conf
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
           {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/testpath/solution -c yaml:///etc/testpath/cluster.conf
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
           {{- end }}
         {{- end }}
         volumeDevices:
@@ -131,7 +131,7 @@ spec:
             mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           {{- range .Files.Lines .Values.cortxdata.secretinfo }}
           - name: {{ printf "%s" . }}
-            mountPath: /etc/testpath/solution/secret
+            mountPath: /etc/cortx/solution/secret
             readOnly: true
           {{- end }}
         env:
@@ -161,7 +161,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/testpath/cluster.conf
+            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
@@ -176,7 +176,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: /etc/testpath/solution/secret
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -196,7 +196,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/testpath/cluster.conf
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
             # Loop through the node list info file which contains the following example:
@@ -233,7 +233,7 @@ spec:
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: /etc/testpath/solution/secret
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -259,7 +259,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/testpath/cluster.conf
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
             # Loop through the node list info file which contains the following example:
@@ -296,7 +296,7 @@ spec:
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
             {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: /etc/testpath/solution/secret
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           ports:

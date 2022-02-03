@@ -46,7 +46,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/motr/bin/motr_setup start --services client --idx $CLIENT_INDEX --config yaml:///etc/testpath/cluster.conf
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services client --idx $CLIENT_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ $.Values.cortxclient.cfgmap.volmountname }}
@@ -57,7 +57,7 @@ spec:
               mountPath: {{ $.Values.cortxclient.localpathpvc.mountpath }}
             {{- range $.Files.Lines $.Values.cortxclient.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: /etc/testpath/solution/secret
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -78,7 +78,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare_setup start --config yaml:///etc/testpath/cluster.conf
+            - /opt/seagate/cortx/hare_setup start --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxclient.cfgmap.volmountname }}
@@ -89,7 +89,7 @@ spec:
               mountPath: {{ .Values.cortxclient.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxclient.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: /etc/testpath/solution/secret
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:

@@ -63,9 +63,9 @@ spec:
         args:
           - -c
           {{- if .Values.cortxha.machineid.value }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/testpath/solution -c yaml:///etc/testpath/cluster.conf
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
           {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/testpath/solution -c yaml:///etc/testpath/cluster.conf
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
           {{- end }}
         {{- end }}
         volumeMounts:
@@ -81,7 +81,7 @@ spec:
             mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
           {{- range .Files.Lines .Values.cortxha.secretinfo }}
           - name: {{ printf "%s" . }}
-            mountPath: /etc/testpath/solution/secret
+            mountPath: /etc/cortx/solution/secret
             readOnly: true
           {{- end }}
         env:
@@ -100,7 +100,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start -s fault_tolerance -c yaml:///etc/testpath/cluster.conf
+            - /opt/seagate/cortx/ha/bin/ha_start -s fault_tolerance -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -115,7 +115,7 @@ spec:
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxha.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: /etc/testpath/solution/secret
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -133,7 +133,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start -s health_monitor -c yaml:///etc/testpath/cluster.conf
+            - /opt/seagate/cortx/ha/bin/ha_start -s health_monitor -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -148,7 +148,7 @@ spec:
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxha.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: /etc/testpath/solution/secret
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:
@@ -166,7 +166,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/testpath/cluster.conf
+            - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxha.cfgmap.volmountname }}
@@ -181,7 +181,7 @@ spec:
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxha.secretinfo }}
             - name: {{ printf "%s" . }}
-              mountPath: /etc/testpath/solution/secret
+              mountPath: /etc/cortx/solution/secret
               readOnly: true
             {{- end }}
           env:

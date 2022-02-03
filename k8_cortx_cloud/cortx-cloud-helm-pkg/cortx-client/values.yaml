@@ -15,14 +15,14 @@ cortxclient:
     loadbal:
       name: cortx-client-loadbal-svc
   cfgmap:
-    mountpath: /etc/testpath/solution
+    mountpath: /etc/cortx/solution
     volmountname: config001
     name: cortx-client-cfgmap
   sslcfgmap:
-    mountpath: /etc/testpath/solution/ssl
+    mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
     name: cortx-ssl-cert-cfgmap
   localpathpvc:
     name: cortx-client-fs-local-pvc
-    mountpath: /etc/testpath # This is the mount path in the container
+    mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
