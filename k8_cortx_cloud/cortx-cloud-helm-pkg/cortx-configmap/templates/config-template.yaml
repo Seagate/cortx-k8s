@@ -73,21 +73,26 @@ cortx:
         <<.Values.cortx.hare.hax.data>>
         <<.Values.cortx.hare.hax.server>>
         <<.Values.cortx.hare.hax.client>>
-      limits:
-        services:
-        - name: hax
-          memory:
-            min: 128Mi
-            max: 1Gi
-          cpu:
-            min: 250m
-            max: 500m
+    control:
+      endpoints:
+        - https://motr-hax-svc:22003
+    limits:
+      services:
+      - name: hax
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
   motr:
     client_instances: <<.Values.cortx.num_motr_inst>>
     interface_type: tcp
     interface_family: inet
     transport_type: libfab
+    md_size: 10 
     ios:
+      group_size: 1
       endpoints:
         <<.Values.cortx.motr.ios>>
     confd:
@@ -110,7 +115,7 @@ cortx:
           min: 250m
           max: 500m
     clients:
-      - name: rgw_s3
+      - name: rgw
         num_instances: 1
         endpoints:
         <<.Values.cortx.client.rgw>>
@@ -139,7 +144,21 @@ cortx:
   ha:
     limits:
       services:
-      - name: ha
+      - name: fault_tolerance
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
+      - name: health_monitor
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
+      - name: k8s_monitor
         memory:
           min: 128Mi
           max: 1Gi

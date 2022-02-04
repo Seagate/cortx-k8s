@@ -30,9 +30,7 @@ cluster:
     components:
     - name: utils
     - name: hare
-    - name: motr
-      services:
-        - motr_client
+    - name: motr_client
   storage_sets:
   - name: <<.Values.cluster.storage_sets.name>>
     durability:
