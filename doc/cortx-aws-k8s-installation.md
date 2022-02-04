@@ -2,6 +2,8 @@
 This procedure should work for any Kubernetes cluster. We recommend to go through the entire document even if you're not planning to deploy CORTX in AWS.
 Actual CORTX deployment into an existing Kubernetes cluster is covered in section 3.
 
+### A demo of this installation process is available [here.](https://www.linkedin.com/posts/gtouret_opensource-sds-kubernetes-activity-6867206757735919616-Hzcq)
+
 ## 1. Prerequisites
 
 The following environment should exist in AWS prior to further deployment:
@@ -19,7 +21,7 @@ The following environment should exist in AWS prior to further deployment:
     <img src="pics/cortx-aws-k8s-before-installation.jpg">
  </p>
 
- We recommend to execute the following steps from the Bastion host
+ We recommend to run the following steps from the Bastion host.
 
 ## 2. Kubernetes cluster provisioning
 
@@ -42,7 +44,7 @@ This procedure was tested within the following limits:
 - Number of Motr (data+metadata) drives per node: 3 - 21 
   - A configuration of 100+ drives per node was also tested outside of AWS
 
-If you already have a suitable Kubernetes cluster please proceed to step 3 - CORTX Deployment
+If you already have a suitable Kubernetes cluster please proceed to step 3 - CORTX Deployment.
 
 ### 2.1 Define basic cluster configuration
 ```
@@ -209,17 +211,17 @@ At this stage the Kubernetes cluster should be fully operational
       ```
     - Copy the image to all other nodes in the cluster.
       ```
-      for ip in $ClusterIPs; do echo $ip; scp $SSH_FLAGS cortx-all.tar centos@$ip: ; done
+      for IP in $ClusterIPs; do echo $ip; scp $SSH_FLAGS cortx-all.tar centos@$ip: ; done
       ```
     - The image is in a zipped format, load/unzip the image in all the nodes:
 
       ```
-      for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker load -i cortx-all.tar & done
+      for IP in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker load -i cortx-all.tar & done
       ```
     - (Optional) Check if the images are present on all nodes
 
       ```
-       for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker images cortx-all & done
+       for IP in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip  docker images cortx-all & done
       ```
 
 ### 3.1 Clone Cortx-K8s framework
@@ -305,7 +307,7 @@ mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.
 ### 3.3 Copy updated framework to all worker nodes
 This step will not be required in the future version
 ```
-for ip in $ClusterIPs; do echo $ip; scp $SSH_FLAGS -r cortx-k8s centos@$ip: ; done
+for IP in $ClusterIPs; do echo $ip; scp $SSH_FLAGS -r cortx-k8s centos@$ip: ; done
 ``` 
 
 ### 3.4 Execute pre-installation script on all worker nodes
@@ -314,7 +316,7 @@ It will configure storage for the 3rd party applications and make additional pre
 AWS EC2 instances provisioned on step 2.2 have 1 disk for 3rd party apps (/dev/nvme7n1)
 
 ```
-for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip "cd cortx-k8s/k8_cortx_cloud; sudo ./prereq-deploy-cortx-cloud.sh /dev/$LogsDevice" </dev/null & done
+for IP in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip "cd cortx-k8s/k8_cortx_cloud; sudo ./prereq-deploy-cortx-cloud.sh /dev/$LogsDevice" </dev/null & done
 ```
 
 #### 3.4.1 Install Helm on the cluster control plane
