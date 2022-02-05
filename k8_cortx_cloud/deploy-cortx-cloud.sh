@@ -843,49 +843,34 @@ function deployCortxSecrets()
     # in the "auto-gen-secret" folder
     secret_auto_gen_path="$cfgmap_path/auto-gen-secret-$namespace"
     mkdir -p $secret_auto_gen_path
-    output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets.name")
-    IFS=';' read -r -a parsed_secret_name_array <<< "$output"
-    for secret_name in "${parsed_secret_name_array[@]}"
-    do
-        secret_fname=$(echo $secret_name | cut -f2 -d'>')
-        yaml_content_path=$(echo $secret_name | cut -f1 -d'>')
-        yaml_content_path=${yaml_content_path/.name/".content"}
-        secrets="$(./parse_scripts/yaml_extract_block.sh $solution_yaml $yaml_content_path 2)"
+    secret_name=$(parseSolution "solution.secrets.name")
+    secret_fname=$(echo $secret_name | cut -f2 -d'>')
+    yaml_content_path=$(echo $secret_name | cut -f1 -d'>')
+    yaml_content_path=${yaml_content_path/.name/".content"}
+    secrets="$(./parse_scripts/yaml_extract_block.sh $solution_yaml $yaml_content_path 2)"
 
-        new_secret_gen_file="$secret_auto_gen_path/$secret_fname.yaml"
-        cp "$cfgmap_path/templates/secret-template.yaml" $new_secret_gen_file
-        ./parse_scripts/subst.sh $new_secret_gen_file "secret.name" "$secret_fname"
-        ./parse_scripts/subst.sh $new_secret_gen_file "secret.content" "$secrets"
+    new_secret_gen_file="$secret_auto_gen_path/$secret_fname.yaml"
+    cp "$cfgmap_path/templates/secret-template.yaml" $new_secret_gen_file
+    ./parse_scripts/subst.sh $new_secret_gen_file "secret.name" "$secret_fname"
+    ./parse_scripts/subst.sh $new_secret_gen_file "secret.content" "$secrets"
         
-        kubectl_cmd_output=$(kubectl create -f $new_secret_gen_file --namespace=$namespace 2>&1)
+    kubectl_cmd_output=$(kubectl create -f $new_secret_gen_file --namespace=$namespace 2>&1)
 
-        if [[ "$kubectl_cmd_output" == *"BadRequest"* ]]; then
-            printf "Exit early. Create secret failed with error:\n$kubectl_cmd_output\n"
-            exit 1
-        fi
-        echo $kubectl_cmd_output
+    if [[ "$kubectl_cmd_output" == *"BadRequest"* ]]; then
+        printf "Exit early. Create secret failed with error:\n$kubectl_cmd_output\n"
+        exit 1
+    fi
+    echo $kubectl_cmd_output
 
-        control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
-        data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
-        server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
-        ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
-        if [[ -s $control_secret_path ]]; then
-            printf "\n" >> $control_secret_path
-        fi
-        if [[ -s $data_secret_path ]]; then
-            printf "\n" >> $data_secret_path
-        fi
-        if [[ -s $server_secret_path ]]; then
-            printf "\n" >> $server_secret_path
-        fi
-        if [[ -s $ha_secret_path ]]; then
-            printf "\n" >> $ha_secret_path
-        fi
-        printf "$secret_fname" >> $control_secret_path
-        printf "$secret_fname" >> $data_secret_path
-        printf "$secret_fname" >> $server_secret_path
-        printf "$secret_fname" >> $ha_secret_path
-    done
+    control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
+    data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
+    server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
+    ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
+
+    printf "$secret_fname" >> $control_secret_path
+    printf "$secret_fname" >> $data_secret_path
+    printf "$secret_fname" >> $server_secret_path
+    printf "$secret_fname" >> $ha_secret_path
 }
 
 function silentKill()
