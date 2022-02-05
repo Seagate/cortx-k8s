@@ -10,6 +10,7 @@ solution:
       s3_auth_admin_secret: ldapadmin
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
+      s3_default_iam_secret_key: cortx_default_secret
   images:
     cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
     cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
@@ -32,6 +33,10 @@ solution:
       shared: /share
       log: /etc/cortx/log
     s3:
+      default_iam_user:
+        name: cortxadmin
+        access_key: cortx_default_admin
+        #secret_key defined in solution->secrets as s3_default_iam_secret_key
       num_inst: 2
       start_port_num: 28051
       max_start_timeout: 240

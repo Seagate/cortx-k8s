@@ -40,7 +40,10 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
-  s3:
+  rgw:
+    auth_user: <<.Values.cortx.rgw.auth_user>>
+    auth_admin: <<.Values.cortx.rgw.auth_admin>>
+    auth_secret: s3_default_iam_secret_key
     iam:
       endpoints:
       - https://<<.Values.cortx.io.svc>>:9443

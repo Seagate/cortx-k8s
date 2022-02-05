@@ -611,13 +611,22 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.endpoints" $openldap_endpoint
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$openldap_servers" 8 "cortx.external.openldap.servers"
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
+
+        # RGW / S3 configuration
+        ./parse_scripts/subst.sh $new_gen_file "cortx.rgw.auth_user" $(extractBlock 'solution.common.s3.default_iam_user.name')
+        ./parse_scripts/subst.sh $new_gen_file "cortx.rgw.auth_admin" $(extractBlock 'solution.common.s3.default_iam_user.access_key')
         ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
+
+        # Motr configuration
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
+
+        # Common storage configration
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $shared_storage
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $log_storage
+
 
         image=$(parseSolution 'solution.images.cortxdata')
         image=$(echo $image | cut -f2 -d'>')
@@ -886,6 +895,7 @@ function deployCortxSecrets()
         printf "$secret_fname" >> $server_secret_path
         printf "$secret_fname" >> $ha_secret_path
     done
+
 }
 
 function silentKill()
