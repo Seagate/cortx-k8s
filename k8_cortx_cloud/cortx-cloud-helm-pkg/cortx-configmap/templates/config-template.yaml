@@ -71,3 +71,6 @@ cortx:
     agent:
       endpoints:
       - https://<<.Values.cortx.io.svc>>:8081
+  hax:
+    endpoints:
+    - <<.Values.cortx.hax.svc.protocol>>://<<.Values.cortx.hax.svc.name>>:<<.Values.cortx.hax.svc.port>>

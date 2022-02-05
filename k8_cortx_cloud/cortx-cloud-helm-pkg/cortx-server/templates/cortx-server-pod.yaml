@@ -19,6 +19,7 @@ spec:
         cortx.io/machine-id: {{ .Values.cortxserver.machineid.value }}
         {{- end }}
         cortx.io/service-type: cortx-server
+        cortx.io/hax-enabled: "true"
     {{- $nodeselector := (.Values.cortxserver.nodeselector) }}
     {{- $nodeparts := split "." $nodeselector }}
     {{- $nodename := $nodeparts._0 }}
@@ -239,7 +240,7 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxserver.name }}
           ports:
-          - containerPort: 2001
+          - containerPort: {{ .Values.cortxserver.hax.port }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-bgworker

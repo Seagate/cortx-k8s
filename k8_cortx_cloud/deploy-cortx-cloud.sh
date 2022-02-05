@@ -260,6 +260,8 @@ function deployKubernetesPrereqs()
         --set serviceAccount.name="$serviceAccountName" \
         --set networkPolicy.create="false" \
         --set namespace.name="$namespace" \
+        --set services.hax.name=$(extractBlock 'solution.common.hax.service_name') \
+        --set services.hax.port=$(extractBlock 'solution.common.hax.port_num') \
         -n $namespace
 
 }
@@ -612,6 +614,9 @@ function deployCortxConfigMap()
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$openldap_servers" 8 "cortx.external.openldap.servers"
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
         ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.hax.svc.protocol" "$(extractBlock 'solution.common.hax.protocol')"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.hax.svc.name" "$(extractBlock 'solution.common.hax.service_name')"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.hax.svc.port" "$(extractBlock 'solution.common.hax.port_num')"
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
@@ -1013,6 +1018,7 @@ function deployCortxData()
             --set cortxdata.localpathpvc.requeststoragesize="1Gi" \
             --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
             --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
+            --set cortxdata.hax.port=$(extractBlock 'solution.common.hax.port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="$serviceAccountName" \
             --set namespace=$namespace \
@@ -1075,6 +1081,7 @@ function deployCortxServer()
             --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
             --set cortxserver.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
             --set cortxserver.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
+            --set cortxserver.hax.port=$(extractBlock 'solution.common.hax.port_num') \
             --set cortxserver.secretinfo="secret-info.txt" \
             --set cortxserver.serviceaccountname="$serviceAccountName" \
             --set namespace=$namespace \
@@ -1208,14 +1215,6 @@ function deployCortxClient()
     printf "\n\n"
 }
 
-function deployCortxServices()
-{
-    printf "########################################################\n"
-    printf "# Deploy Services                                       \n"
-    printf "########################################################\n"
-    kubectl apply -f services/cortx-io-svc.yaml --namespace=$namespace
-}
-
 function cleanup()
 {
     #################################################################
@@ -1320,5 +1319,4 @@ deployCortxHa
 if [[ $num_motr_client -gt 0 ]]; then
     deployCortxClient
 fi
-deployCortxServices
 cleanup
