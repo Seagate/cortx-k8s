@@ -6,8 +6,8 @@ storage_class='local-path'
 ##TODO Extract from solution.yaml ?
 serviceAccountName=cortx-sa
 
-SERVER_POD_DEPLOYMENT=false
-DATA_POD_DEPLOYMENT=true
+SERVER_POD_DEPLOYMENT=true
+DATA_POD_DEPLOYMENT=false
 
 # Check if the file exists
 if [ ! -f $solution_yaml ]
@@ -726,6 +726,7 @@ function deployCortxConfigMap()
             echo $uuid_str > $auto_gen_node_path/id
         fi
     done
+    
     if [ "$SERVER_POD_DEPLOYMENT" == true ]; then
         # Generate node file with type control_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-control-node.yaml"
@@ -1419,6 +1420,7 @@ deployCortxLocalBlockStorage
 deleteStaleAutoGenFolders
 deployCortxConfigMap
 deployCortxSecrets
+
 if [ "$SERVER_POD_DEPLOYMENT" == true ]; then
     deployCortxControl
     deployCortxData
