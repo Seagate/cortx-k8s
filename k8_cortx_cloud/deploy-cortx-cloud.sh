@@ -849,7 +849,7 @@ function deployCortxSecrets()
     yaml_content_path=${yaml_content_path/.name/".content"}
     secrets="$(./parse_scripts/yaml_extract_block.sh ${solution_yaml} ${yaml_content_path} 2)"
 
-    new_secret_gen_file="${secret_auto_gen_path}/${secret_fname.yaml}"
+    new_secret_gen_file="${secret_auto_gen_path}/${secret_fname}.yaml"
     cp "${cfgmap_path}/templates/secret-template.yaml" ${new_secret_gen_file}
     ./parse_scripts/subst.sh ${new_secret_gen_file} "secret.name" "${secret_fname}"
     ./parse_scripts/subst.sh ${new_secret_gen_file} "secret.content" "${secrets}"
@@ -867,10 +867,10 @@ function deployCortxSecrets()
     server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
     ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
 
-    printf "${secret_fname}" >> ${control_secret_path}
-    printf "${secret_fname}" >> ${data_secret_path}
-    printf "${secret_fname}" >> ${server_secret_path}
-    printf "${secret_fname}" >> ${ha_secret_path}
+    printf "%s" "${secret_fname}" >> ${control_secret_path}
+    printf "%s" "${secret_fname}" >> ${data_secret_path}
+    printf "%s" "${secret_fname}" >> ${server_secret_path}
+    printf "%s" "${secret_fname}" >> ${ha_secret_path}
 }
 
 function silentKill()
