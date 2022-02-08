@@ -1,0 +1,80 @@
+cortx:
+  external:
+    kafka:
+      endpoints:
+        - tcp://<<.Values.cortx.external.kafka.endpoints>>:9092
+      admin: admin
+      secret: kafka_admin_secret
+    openldap:
+      endpoints:
+        - ldap://<<.Values.cortx.external.openldap.endpoints>>:389
+        - ssl://<<.Values.cortx.external.openldap.endpoints>>:636
+      servers:
+        <<.Values.cortx.external.openldap.servers>>
+      admin: admin
+      secret: openldap_admin_secret
+      base_dn: dc=seagate,dc=com
+    consul:
+      endpoints:
+        - tcp://<<.Values.cortx.external.consul.endpoints>>:8301
+        - http://<<.Values.cortx.external.consul.endpoints>>:8500
+      admin: admin
+      secret: consul_admin_secret
+  common:
+    release:
+      name: CORTX
+      version: <<.Values.cortx.common.release.version>>
+    environment_type: K8
+    setup_size: <<.Values.cortx.common.setup_size>>
+    service:
+      admin: admin
+      secret: common_admin_secret
+    storage:
+      shared: <<.Values.cortx.common.storage.shared>>
+      local: <<.Values.cortx.common.storage.local>>
+      log: <<.Values.cortx.common.storage.log>>
+      config: <<.Values.cortx.common.storage.local>>
+    security:
+      ssl_certificate: /etc/cortx/solution/ssl/s3.seagate.com.pem
+      domain_certificate: /etc/cortx/solution/ssl/stx.pem
+      device_certificate: /etc/cortx/solution/ssl/stx.pem
+  utils:
+    message_bus_backend: kafka
+  motr:
+    client_instances: <<.Values.cortx.num_motr_inst>>
+    interface_type: tcp
+    interface_family: inet
+    transport_type: libfab
+    md_size: 10 
+    ios:
+      group_size: 1
+      endpoints:
+        <<.Values.cortx.motr.ios>>
+    confd:
+      endpoints:
+        <<.Values.cortx.motr.confd>>
+    limits:
+      services:
+      - name: ios
+        memory:
+          min: 1Gi
+          max: 2Gi
+        cpu:
+          min: 250m
+          max: 1000m
+      - name: confd
+        memory:
+          min: 128Mi
+          max: 512Mi
+        cpu:
+          min: 250m
+          max: 500m
+    clients:
+      - name: rgw
+        num_instances: 1
+        endpoints:
+        <<.Values.cortx.client.rgw>>
+      - name: motr_client
+        num_instances: <<.Values.cortx.num_motr_inst>>
+        endpoints:
+        <<.Values.cortx.motr.client>>
