@@ -638,13 +638,14 @@ function deployCortxConfigMap()
     # Generate config files
     for i in "${!node_name_list[@]}"; do
         new_gen_file="$auto_gen_path/config.yaml"
-        if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  
-        then 
-            cp "$cfgmap_path/templates/config-template.yaml" $new_gen_file
-        elif [ $DEPLOYMENT_MODE -eq $DATA_ONLY_DEPLOYMENT ]; 
-        then
-            cp "$cfgmap_path/templates/config-data-template.yaml" $new_gen_file
-        fi
+        case $DEPLOYMENT_MODE in
+            $STANDARD_DEPLOYMENT )
+                cp "$cfgmap_path/templates/config-template.yaml" $new_gen_file
+                ;;
+            $DATA_ONLY_DEPLOYMENT )
+                cp "$cfgmap_path/templates/config-data-template.yaml" $new_gen_file
+                ;;
+        esac
         # 3rd party endpoints
         kafka_endpoint="kafka.default.svc.cluster.local"
         openldap_endpoint="openldap-svc.default.svc.cluster.local"
@@ -734,44 +735,44 @@ function deployCortxConfigMap()
         fi
     done
     
-    if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  then
-        # Generate node file with type control_node in "node-info" folder
-        new_gen_file="$node_info_folder/cluster-control-node.yaml"
-        cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control"
-        uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
-        ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
+    case $DEPLOYMENT_MODE in
+        $STANDARD_DEPLOYMENT )
+            # Generate node file with type control_node in "node-info" folder
+            new_gen_file="$node_info_folder/cluster-control-node.yaml"
+            cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
+            ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control"
+            uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+            ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
+            ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control"
+            ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
 
-        # Create control machine id file
-        auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
-        mkdir -p $auto_gen_control_path
-        echo $uuid_str > $auto_gen_control_path/id
+            # Create control machine id file
+            auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
+            mkdir -p $auto_gen_control_path
+            echo $uuid_str > $auto_gen_control_path/id
 
-        # Generate cluster ha node file with type ha_node in "node-info" folder
-        cluster_ha_node_file="$node_info_folder/cluster-ha-node.yaml"
-        cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_ha_node_file
-        ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.name" "cortx-ha-headless-svc"
-        uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
-        ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.pod.uuid" "$uuid_str"
-        ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.svc.name" "cortx-ha-headless-svc"
-        ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.type" "ha_node"
-        # Create HA machine id file
-        auto_gen_ha_path="$cfgmap_path/auto-gen-ha-$namespace"
-        mkdir -p $auto_gen_ha_path
-        echo $uuid_str > $auto_gen_ha_path/id
-    fi
-
-    # Copy cluster template
-    if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  
-    then 
-        cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
-    elif [ $DEPLOYMENT_MODE -eq $DATA_ONLY_DEPLOYMENT ]; 
-    then
-        cp "$cfgmap_path/templates/cluster-data-template.yaml" "$auto_gen_path/cluster.yaml"
-    fi
-
+            # Generate cluster ha node file with type ha_node in "node-info" folder
+            cluster_ha_node_file="$node_info_folder/cluster-ha-node.yaml"
+            cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_ha_node_file
+            ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.name" "cortx-ha-headless-svc"
+            uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+            ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.pod.uuid" "$uuid_str"
+            ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.svc.name" "cortx-ha-headless-svc"
+            ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.type" "ha_node"
+            # Create HA machine id file
+            auto_gen_ha_path="$cfgmap_path/auto-gen-ha-$namespace"
+            mkdir -p $auto_gen_ha_path
+            echo $uuid_str > $auto_gen_ha_path/id
+            
+            # Copy cluster template for all pod
+            cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
+            ;;
+        $DATA_ONLY_DEPLOYMENT )
+            # Copy cluster data template file
+            cp "$cfgmap_path/templates/cluster-data-template.yaml" "$auto_gen_path/cluster.yaml"
+            ;;
+    esac
+    
     # Insert all node info stored in "node-info" folder into "cluster.yaml" file
     cluster_uuid=$(UUID=$(uuidgen); echo ${UUID//-/})
     extract_output=""
@@ -1429,14 +1430,17 @@ deleteStaleAutoGenFolders
 deployCortxConfigMap
 deployCortxSecrets
 
-if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  then
-    deployCortxControl
-    deployCortxData
-    deployCortxServer
-    deployCortxHa
-elif [ $DEPLOYMENT_MODE -eq $DATA_ONLY_DEPLOYMENT ];  then
-    deployCortxData
-fi
+case $DEPLOYMENT_MODE in
+    $STANDARD_DEPLOYMENT )
+        deployCortxControl
+        deployCortxData
+        deployCortxServer
+        deployCortxHa
+        ;;
+    $DATA_ONLY_DEPLOYMENT )
+        deployCortxData
+    ;;
+esac
 if [[ $num_motr_client -gt 0 ]]; then
     deployCortxClient
 fi
