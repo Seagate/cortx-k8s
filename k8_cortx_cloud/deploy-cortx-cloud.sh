@@ -6,8 +6,14 @@ storage_class='local-path'
 ##TODO Extract from solution.yaml ?
 serviceAccountName=cortx-sa
 
-SERVER_POD_DEPLOYMENT=true
-DATA_POD_DEPLOYMENT=false
+
+STANDARD_DEPLOYMENT=1
+DATA_ONLY_DEPLOYMENT=2
+# Deployment Mode 
+# 1 - STANDARD_DEPLOYMENT
+# 2 - DATA_ONLY_DEPLOYMENT
+
+DEPLOYMENT_MODE=1   # Set the deployment mode as per above number
 
 # Check if the file exists
 if [ ! -f $solution_yaml ]
@@ -632,10 +638,11 @@ function deployCortxConfigMap()
     # Generate config files
     for i in "${!node_name_list[@]}"; do
         new_gen_file="$auto_gen_path/config.yaml"
-        if [ "$SERVER_POD_DEPLOYMENT" == true ]; 
+        if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  
         then 
             cp "$cfgmap_path/templates/config-template.yaml" $new_gen_file
-        else
+        elif [ $DEPLOYMENT_MODE -eq $DATA_ONLY_DEPLOYMENT ]; 
+        then
             cp "$cfgmap_path/templates/config-data-template.yaml" $new_gen_file
         fi
         # 3rd party endpoints
@@ -696,7 +703,7 @@ function deployCortxConfigMap()
         mkdir -p $auto_gen_node_path
         echo $uuid_str > $auto_gen_node_path/id
 
-        if [ "$SERVER_POD_DEPLOYMENT" == true ]; then
+        if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  then
             # Generate cluster server node file with type server_node in "node-info" folder
             cluster_server_node_file="$node_info_folder/cluster-server-node-${node_name_list[$i]}.yaml"
             cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_server_node_file
@@ -727,7 +734,7 @@ function deployCortxConfigMap()
         fi
     done
     
-    if [ "$SERVER_POD_DEPLOYMENT" == true ]; then
+    if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  then
         # Generate node file with type control_node in "node-info" folder
         new_gen_file="$node_info_folder/cluster-control-node.yaml"
         cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
@@ -757,10 +764,11 @@ function deployCortxConfigMap()
     fi
 
     # Copy cluster template
-    if [ "$SERVER_POD_DEPLOYMENT" == true ]; 
+    if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  
     then 
         cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
-    else
+    elif [ $DEPLOYMENT_MODE -eq $DATA_ONLY_DEPLOYMENT ]; 
+    then
         cp "$cfgmap_path/templates/cluster-data-template.yaml" "$auto_gen_path/cluster.yaml"
     fi
 
@@ -879,7 +887,7 @@ function deployCortxConfigMap()
         echo $kubectl_cmd_output
     fi
 
-    if [ "$SERVER_POD_DEPLOYMENT" == true ]; then
+    if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  then
         # Create server machine ID config maps
         for i in "${!node_name_list[@]}"; do
             auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace/server"
@@ -1378,7 +1386,7 @@ fi
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_nsp" = true) || "$namespace" == "default" ]]; then
     deployRancherProvisioner
     deployConsul
-    if [ "$SERVER_POD_DEPLOYMENT" == true ]; then 
+    if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  then 
         deployOpenLDAP
     fi
     deployZookeeper
@@ -1421,12 +1429,12 @@ deleteStaleAutoGenFolders
 deployCortxConfigMap
 deployCortxSecrets
 
-if [ "$SERVER_POD_DEPLOYMENT" == true ]; then
+if [ $DEPLOYMENT_MODE -eq $STANDARD_DEPLOYMENT ];  then
     deployCortxControl
     deployCortxData
     deployCortxServer
     deployCortxHa
-elif [ "$DATA_POD_DEPLOYMENT" == true ]; then
+elif [ $DEPLOYMENT_MODE -eq $DATA_ONLY_DEPLOYMENT ];  then
     deployCortxData
 fi
 if [[ $num_motr_client -gt 0 ]]; then
