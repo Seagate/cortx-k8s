@@ -76,50 +76,6 @@ else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
 fi
 
-# Check services headless
-count=0
-printf "${INFO}| Checking Services: Headless |${NC}\n"
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "$line"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "${status[0]}..."
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            printf "${FAILED}FAILED${NC}\n"
-        else
-            printf "${PASSED}PASSED${NC}\n"
-            count=$((count+1))
-        fi
-    fi
-done <<< "$(kubectl get services --namespace=$namespace | grep 'cortx-control-headless-')"
-
-if [[ $num_nodes -eq $count ]]; then
-    printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
-else
-    printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
-fi
-
-# Check services cluster IP
-count=0
-printf "${INFO}| Checking Services: Cluster IP |${NC}\n"
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "$line"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "${status[0]}..."
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            printf "${FAILED}FAILED${NC}\n"
-        else
-            printf "${PASSED}PASSED${NC}\n"
-            count=$((count+1))
-        fi
-    fi
-done <<< "$(kubectl get services --namespace=$namespace | grep 'cortx-control-clusterip-')"
-
-if [[ $num_nodes -eq $count ]]; then
-    printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
-else
-    printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
-fi
-
 # Check services load balance
 count=0
 printf "${INFO}| Checking Services: Load Balancer |${NC}\n"
