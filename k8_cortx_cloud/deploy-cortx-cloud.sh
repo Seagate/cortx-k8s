@@ -1113,7 +1113,6 @@ function deployCortxHa()
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-$namespace" \
         --set cortxha.localpathpvc.mountpath="$local_storage" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
-        --set cortxha.secretinfo="secret-info.txt" \
         --set namespace=$namespace \
         -n $namespace
 
