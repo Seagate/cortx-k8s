@@ -111,7 +111,9 @@ function cleanupFolders()
     printf "# Clean up                                          \n"
     printf "####################################################\n"
     # cleanup
-    rm -rf /etc/3rd-party/openldap /var/data/3rd-party/*
+    #WL: Not sure if /var/data/3rd-party is needed.  Need to test by
+    #    removing this in coordination with prep3rdPartyDirs below
+    rm -rf /var/data/3rd-party/*
     rm -rf $fs_mount_path/local-path-provisioner/*
 }
 
@@ -151,10 +153,11 @@ function prepCortxDeployment()
     done
 }
 
-function prepOpenLdapDeployment()
+
+# WL: Note: Not sure if this needs to be here.  I need to test
+#     with these removed.
+function prep3rdPartyDirs()
 {
-    # Prep for OpenLDAP deployment
-    mkdir -p /etc/3rd-party/openldap
     mkdir -p /var/data/3rd-party
     mkdir -p /var/log/3rd-party
 }
@@ -188,5 +191,5 @@ if [[ "$disk" != "" ]]; then
     cleanupFolders
     increaseResources
     prepCortxDeployment
-    prepOpenLdapDeployment
+    prep3rdParyDirs
 fi
