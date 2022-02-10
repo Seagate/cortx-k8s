@@ -39,25 +39,43 @@ The following prerequisites are all available in the root [CORTX](https://github
 
 This compact flow for submitting a Pull Request to the [cortx-k8s](https://github.com/Seagate/cortx-k8s) repository will help ensure that it is able to be accepted and merged with minimal overhead or editing. 
 
-> :warning: The target branch of your Pull Request should be **`integration`** (as documented below).
+> :warning: The target branch of your Pull Request should be the default **`integration`** branch
 
-1. Fork [this repository](https://github.com/Seagate/cortx-k8s) to another personal or organization account on GitHub.
-2. Create a new development branch off of the upstream (also known as the original repository's) `integration` branch.
-   - `git checkout -b <my-new-feature-branch> integration`
+1. Setup your work environment, starting from the initial repository
+    - [Fork the repository](https://github.com/Seagate/cortx-k8s/fork) to another personal or organization account on GitHub.
+    - Clone the forked repository locally.
+    - `git remote add upstream https://github.com/Seagate/cortx-k8s`
+
+2. Create a work branch starting from the default `integration` branch.
+   - `git checkout -b my_work_branch integration`
+
 3. Do your work, including writing code, writing tests, updating documentation, and passing all tests locally.
-4. Fetch the latest upstream changes to ensure you have the latest working copy of the upstream codebase.
-   - `git fetch upstream`
-5. Rebase your changes on top of the latest upstream streams, being sure to resolve any conflicts. _(This process allows you to resolve any local issues with your changes, one by one, before submitting your PR instead of afterwards.)_
-   - `git branch --set-upstream-to=upstream/integration`
-   - `git rebase`
-6. Push your rebased change set to your repository.
-   - `git push origin <my-new-feature-branch>`
-7. Create a pull request from your `<my-new-feature-branch>` against the upstream **`integration`** branch.
-   1. _**NOTE:**_ The target branch of your Pull Request should be `integration`, not `main`!
-   2. Either in the initial comment section of your Pull Request or in the **Reviewers** section, you will need to tag **@cortx-k8s-admins** for the project maintainers to be made aware of your pull request.
+   - Edit files...
+   - `git add ...`
+   - `git commit -s -m "My commit message" # commit with sign-off`
+
+4. Create a pull request from your `my_work_branch` against the upstream [**integration**](https://github.com/Seagate/cortx-k8s/tree/integration) branch.
+   - `git push origin my_work_branch`
+   - Submit Pull Request from GitHub with this repository's `integration` branch as the target branch.
    - _Reference:_ [Creating a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
-8. Your PR will be reviewed, inspected, and (if appropriate) automatically tested using integrated CI/CD workflows. Once complete, project maintainers will accept the PR and merge the code changes into the `integration` branch.
-9. Congratulations! You have now successfully contributed to making the CORTX project even better!
+
+5. Make updates based on code reviews (if needed)
+   - Edit files
+   - `git add ...`
+   - `git commit -s -m "My updated commit message" # commit with sign-off`
+   - `git push origin my_work_branch`
+
+6. Rebasing the work branch for changes that take longer (if needed)
+   - `git checkout integration`
+   - `git pull upstream`
+   - `git checkout my_work_branch`
+   - `git rebase integration`
+   - `git push origin my_work_branch`
+   - _NOTE: This is usually only required when changes have been delivered to the `upstream/integration` branch since you created your working branch_
+
+7. Your PR will be reviewed, inspected, and (if appropriate) automatically tested using integrated CI/CD workflows. Once complete, project maintainers will accept the PR and merge the code changes into the `integration` branch.
+
+8. Congratulations! You have now successfully contributed to making the CORTX project even better!
 
 ## Additional Resources
 
