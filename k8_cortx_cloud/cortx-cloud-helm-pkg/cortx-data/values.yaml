@@ -10,6 +10,8 @@ cortxdata:
   motr:
     startportnum: 29000
     numiosinst: 1
+  hax:
+    port: 22003
   service:
     clusterip:
       name: cortx-data-clusterip-svc

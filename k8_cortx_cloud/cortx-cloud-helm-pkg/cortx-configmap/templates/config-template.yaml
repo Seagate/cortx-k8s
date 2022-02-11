@@ -57,6 +57,10 @@ cortx:
     max_start_timeout: <<.Values.cortx.max_start_timeout>>
     auth_admin: sgiamadmin
     auth_secret: s3_auth_admin_secret
+  hare:
+    hax:
+      endpoints:
+        - <<.Values.cortx.hare.hax.svc.protocol>>://<<.Values.cortx.hare.hax.svc.name>>:<<.Values.cortx.hare.hax.svc.port>>
   motr:
     client_instances: <<.Values.cortx.num_motr_inst>>
     interface_type: tcp
