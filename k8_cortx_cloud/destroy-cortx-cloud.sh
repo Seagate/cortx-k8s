@@ -173,14 +173,6 @@ function deleteCortxData()
     done
 }
 
-function deleteCortxServices()
-{
-    printf "########################################################\n"
-    printf "# Delete CORTX Services                                 \n"
-    printf "########################################################\n"
-    kubectl delete service cortx-io-svc --namespace=$namespace
-}
-
 function deleteCortxControl()
 {
     printf "########################################################\n"
@@ -511,7 +503,6 @@ fi
 deleteCortxHa
 deleteCortxServer
 deleteCortxData
-deleteCortxServices
 deleteCortxControl
 waitForCortxPodsToTerminate
 deleteSecrets

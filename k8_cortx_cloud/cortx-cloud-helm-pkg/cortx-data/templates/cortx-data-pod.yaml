@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Values.cortxdata.name }}
+    app: {{ quote .Values.cortxdata.name }}
   name: {{ .Values.cortxdata.name }}
   namespace: {{ .Values.namespace }}
 spec:
@@ -13,12 +13,12 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ .Values.cortxdata.name }}
+        app: {{ quote .Values.cortxdata.name }}
         name: cortx-data
         {{- if .Values.cortxdata.machineid.value }}
-        cortx.io/machine-id: {{ .Values.cortxdata.machineid.value }}
+        cortx.io/machine-id: {{ quote .Values.cortxdata.machineid.value }}
         {{- end }}
-        cortx.io/service-type: cortx-data
+        cortx.io/service-type: "cortx-data"
         cortx.io/hax-enabled: "true"
     {{- $nodeselector := (.Values.cortxdata.nodeselector) }}
     {{- $nodeparts := split "." $nodeselector }}
