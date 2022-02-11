@@ -3,7 +3,6 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      openldap_admin_secret: seagate1
       kafka_admin_secret: Seagate@123
       consul_admin_secret: Seagate@123
       common_admin_secret: Seagate@123
@@ -11,14 +10,13 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
-    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
-    cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
-    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
-    cortxserver: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
-    cortxha: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
-    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-624-custom-ci
-    openldap: ghcr.io/seagate/symas-openldap:2.4.58
+    cortxcontrolprov: cortx-all:test
+    cortxcontrol: cortx-all:test
+    cortxdataprov: cortx-all:test
+    cortxdata: cortx-all:test
+    cortxserver: cortx-all:test
+    cortxha: cortx-all:test
+    cortxclient: cortx-all:test
     consul: ghcr.io/seagate/consul:1.10.0
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
     zookeeper: ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182
@@ -64,14 +62,6 @@ solution:
             limits:
               memory: 300Mi
               cpu: 100m
-      openldap:
-        resources:
-          requests:
-            memory: 1Gi
-            cpu: 2
-          limits:
-            memory: 1Gi
-            cpu: 2
       zookeeper:
         storage_request_size: 8Gi
         data_log_dir_request_size: 8Gi
@@ -107,56 +97,25 @@ solution:
           d2:
             device: /dev/sde
             size: 5Gi
-          d3:
-            device: /dev/sdf
-            size: 5Gi
-          d4:
-            device: /dev/sdg
-            size: 5Gi
-          d5:
-            device: /dev/sdh
-            size: 5Gi
-          d6:
-            device: /dev/sdi
-            size: 5Gi
-          d7:
-            device: /dev/sdj
-            size: 5Gi
     cvg2:
       name: cvg-02
       type: ios
       devices:
         metadata:
-          device: /dev/sdk
+          device: /dev/sdf
           size: 5Gi
         data:
           d1:
-            device: /dev/sdl
+            device: /dev/sdg
             size: 5Gi
           d2:
-            device: /dev/sdm
+            device: /dev/sdh
             size: 5Gi
-          d3:
-            device: /dev/sdn
-            size: 5Gi
-          d4:
-            device: /dev/sdo
-            size: 5Gi
-          d5:
-            device: /dev/sdp
-            size: 5Gi
-          d6:
-            device: /dev/sdq
-            size: 5Gi
-          d7:
-            device: /dev/sdr
-            size: 5Gi
+
   nodes:
     node1:
-      name: node-1
+      name: ssc-vm-g4-rhev4-0483.colo.seagate.com
     node2:
-      name: node-2
+      name: ssc-vm-g4-rhev4-0484.colo.seagate.com
     node3:
-      name: node-3
-    node4:
-      name: node-4
+      name: ssc-vm-g4-rhev4-0485.colo.seagate.com

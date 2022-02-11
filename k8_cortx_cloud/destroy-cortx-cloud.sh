@@ -61,7 +61,6 @@ pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
 pv_filter="pvc"
-openldap_pvc="openldap-data"
 
 function parseSolution()
 {
@@ -300,28 +299,6 @@ function deleteKafkaZookeper()
     helm uninstall zookeeper -n "default"
 }
 
-function deleteOpenLdap()
-{
-    printf "########################################################\n"
-    printf "# Delete openLDAP                                      #\n"
-    printf "########################################################\n"
-    openldap_array=[]
-    count=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a my_array <<< "$line"
-        openldap_array[count]="${my_array[1]}"
-        count=$((count+1))
-    done <<< "$(kubectl get pods -A | grep 'openldap-')"
-
-    for openldap_pod_name in "${openldap_array[@]}"
-    do
-        kubectl exec -ti $openldap_pod_name --namespace="default" -- bash -c \
-            'rm -rf /etc/3rd-party/* /var/data/3rd-party/* /var/log/3rd-party/*'
-    done
-
-    helm uninstall "openldap" -n "default"
-}
-
 function deleteSecrets()
 {
     printf "########################################################\n"
@@ -359,7 +336,6 @@ function waitFor3rdPartyToTerminate()
         while IFS= read -r line; do
             if [[ "$line" == *"kafka"* || \
                  "$line" == *"zookeeper"* || \
-                 "$line" == *"openldap"* || \
                  "$line" == *"consul"* ]]; then
                 count=$((count+1))
             fi
@@ -380,7 +356,7 @@ function delete3rdPartyPVCs()
     printf "########################################################\n"
     printf "# Delete Persistent Volume Claims                      #\n"
     printf "########################################################\n"
-    volume_claims=$(kubectl get pvc --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx|3rd-party" | cut -f1 -d " ")
+    volume_claims=$(kubectl get pvc --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|cortx|3rd-party" | cut -f1 -d " ")
     echo $volume_claims
     for volume_claim in $volume_claims
     do
@@ -391,7 +367,7 @@ function delete3rdPartyPVCs()
         kubectl delete pvc $volume_claim
     done
 
-    volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx|3rd-party" | cut -f1 -d " ")
+    volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|cortx|3rd-party" | cut -f1 -d " ")
     echo $volume_claims
     for volume_claim in $volume_claims
     do
@@ -403,7 +379,7 @@ function delete3rdPartyPVCs()
     done
 
     if [[ $namespace != 'default' ]]; then
-        volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|$openldap_pvc|cortx|3rd-party" | cut -f1 -d " ")
+        volume_claims=$(kubectl get pvc --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|cortx|3rd-party" | cut -f1 -d " ")
         echo $volume_claims
         for volume_claim in $volume_claims
         do
@@ -469,7 +445,7 @@ function helmChartCleanup()
             print_header=false
         fi
         helm uninstall ${my_array[0]} -n "default"
-    done <<< "$(helm ls | grep 'consul\|cortx\|kafka\|openldap\|zookeeper')"
+    done <<< "$(helm ls | grep 'consul\|cortx\|kafka\|zookeeper')"
 }
 
 function deleteKubernetesPrereqs()
@@ -541,7 +517,6 @@ done
 
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
     deleteKafkaZookeper
-    deleteOpenLdap
     deleteConsul
     waitFor3rdPartyToTerminate
     delete3rdPartyPVCs
