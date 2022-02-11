@@ -39,7 +39,7 @@ solution:
       num_client_inst: 0
       start_port_num: 29000
     hax:
-      protocol: http
+      protocol: https
       service_name: cortx-hax-svc
       port_num: 22003
     storage_sets:
