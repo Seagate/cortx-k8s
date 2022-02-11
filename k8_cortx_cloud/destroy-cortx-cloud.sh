@@ -173,14 +173,6 @@ function deleteCortxData()
     done
 }
 
-function deleteCortxServices()
-{
-    printf "########################################################\n"
-    printf "# Delete CORTX Services                                 \n"
-    printf "########################################################\n"
-    kubectl delete service cortx-io-svc --namespace=$namespace
-}
-
 function deleteCortxControl()
 {
     printf "########################################################\n"
@@ -256,7 +248,12 @@ function deleteCortxConfigmap()
     for i in "${!node_name_list[@]}"; do
         kubectl delete configmap "cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
         rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
-
+        
+        if [[ $num_motr_client -gt 0 ]]; then
+            # Delete client machine id config map
+            kubectl delete configmap "cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
+            rm -rf "$cfgmap_path/auto-gen-client--${node_name_list[i]}-$namespace"
+        fi
     done
     # Delete control machine id config map
     kubectl delete configmap "cortx-control-machine-id-cfgmap-$namespace" --namespace=$namespace
@@ -331,6 +328,7 @@ function deleteSecrets()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-client -name "secret-*" -delete
 }
 
 function deleteConsul()
@@ -511,7 +509,6 @@ fi
 deleteCortxHa
 deleteCortxServer
 deleteCortxData
-deleteCortxServices
 deleteCortxControl
 waitForCortxPodsToTerminate
 deleteSecrets
