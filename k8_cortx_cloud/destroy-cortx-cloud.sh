@@ -467,6 +467,12 @@ function deleteKubernetesPrereqs()
     printf "# Delete Cortx Kubernetes Prereqs                      #\n"
     printf "########################################################\n"
     helm delete cortx-platform
+
+    ## Backwards compatability check
+    ## If CORTX is undeployed with a newer undeploy script, it can get into
+    ## a broken state that is difficult to observe since the `svc/cortx-io-svc`
+    ## will never be deleted. This explicit delete prevents that from happening.
+    kubectl delete svc/cortx-io-svc --ignore-not-found=true
 }
 
 function deleteCortxNamespace()
