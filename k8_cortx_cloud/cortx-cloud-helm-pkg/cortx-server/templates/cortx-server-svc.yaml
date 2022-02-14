@@ -48,8 +48,8 @@ spec:
       targetPort: 28050
     - name: cortx-server-motr-hax-tcp
       protocol: TCP
-      port: 2001
-      targetPort: 2001
+      port: {{ .Values.cortxserver.hax.port }}
+      targetPort: {{ .Values.cortxserver.hax.port }}
 ---
 apiVersion: v1
 kind: Service
