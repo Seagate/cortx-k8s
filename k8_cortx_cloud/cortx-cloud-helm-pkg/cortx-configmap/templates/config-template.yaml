@@ -66,6 +66,10 @@ cortx:
     interface_type: tcp
     interface_family: inet
     transport_type: libfab
+    clients:
+      - name: motr_client
+        num_instances: <<.Values.cortx.num_motr_inst>>
+        endpoints: <<.Values.cortx.motr.client>>
   csm:
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
