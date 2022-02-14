@@ -1327,7 +1327,6 @@ function deployCortxServices()
     printf "# Deploy Services                                       \n"
     printf "########################################################\n"
     kubectl apply -f services/cortx-io-svc.yaml --namespace=$namespace
-    kubectl apply -f services/motr-hax-svc.yaml --namespace=$namespace
 }
 
 function cleanup()

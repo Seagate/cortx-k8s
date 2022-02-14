@@ -174,5 +174,4 @@ spec:
             allowPrivilegeEscalation: false
       nodeSelector:
         kubernetes.io/hostname: {{ .Values.cortxserver.nodeselector }}
-
-        
+   
