@@ -1221,8 +1221,6 @@ function deployCortxClient()
             -n $namespace
     done
 
-exit 1
-
     printf "\nWait for CORTX Client to be ready"
     while true; do
         count=0
