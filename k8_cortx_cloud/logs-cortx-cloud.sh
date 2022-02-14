@@ -91,7 +91,12 @@ function getInnerLogs()
   local name="bundle-logs-${pod}-${date}"
 
   printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
-  kubectl exec "${pod}" "${container_arg[@]}" --namespace="${namespace}" -- cortx_support_bundle generate --location file://${path} --bundle_id "${name}" --message "${name}"
+  kubectl exec "${pod}" "${container_arg[@]}" --namespace="${namespace}" -- \
+    cortx_support_bundle generate \
+      --cluster_conf_path yaml:///etc/cortx/cluster.conf \
+      --location file://${path} \
+      --bundle_id "${name}" \
+      --message "${name}"
   kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" "${container_arg[@]}" --namespace="${namespace}"
   tar --append --file "${logs_folder}.tar" "${logs_folder}/${name}"
   kubectl exec "${pod}" "${container_arg[@]}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
