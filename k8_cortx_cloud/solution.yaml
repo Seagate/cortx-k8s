@@ -11,9 +11,7 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-632-custom-ci
     cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-632-custom-ci
-    cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-632-custom-ci
     cortxdata: ghcr.io/seagate/cortx-all:2.0.0-632-custom-ci
     cortxserver: ghcr.io/seagate/cortx-all:2.0.0-632-custom-ci
     cortxha: ghcr.io/seagate/cortx-all:2.0.0-632-custom-ci
