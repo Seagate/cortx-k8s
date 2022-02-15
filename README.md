@@ -162,26 +162,11 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 1.  Deploy CORTX on Kubernetes according to the [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes) steps above.
 
-2.  Shutdown all CORTX Pods
+2.  Run the upgrade script to patch the CORTX on Kubernetes Deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments, and then re-start the Pods.
 
    ```bash
-   ./shutdown-cortx-cloud.sh solution.yaml
-   ```
-
-3.  Patch the CORTX on Kubernetes Deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_
-
-   ```bash
-   TARGET_IMAGE="ghcr.io/seagate/cortx-all:2.0.0-593-custom-ci"
-   for DEPLOYMENT in $(kc get deploy | grep cortx | awk '{print $1}')
-   do
-      kc set image deployment/$DEPLOYMENT "*=$TARGET_IMAGE"
-   done
-   ```
-
-4.  Start all CORTX Pods
-
-   ```bash
-   ./start-cortx-cloud.sh solution.yaml
+   TARGET_IMAGE="ghcr.io/seagate/cortx-all:2.0.0-641-custom-ci"
+   ./upgrade-cortx-cloud.sh -s solution.yaml -i $TARGET_IMAGE
    ```
 
 ### Using CORTX on Kubernetes
