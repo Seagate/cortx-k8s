@@ -61,7 +61,7 @@ cortx:
     auth_user: user_name
     auth_admin: sgiamadmin
     auth_secret: s3_auth_admin_secret
-    data:
+    s3:
       endpoints:
       - http://<<.Values.cortx.io.svc>>:80
       - https://<<.Values.cortx.io.svc>>:443
