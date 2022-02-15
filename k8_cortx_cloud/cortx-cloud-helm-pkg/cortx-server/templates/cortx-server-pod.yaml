@@ -110,7 +110,8 @@ spec:
             - /bin/sh
           args:
             - -c
-            - sleep infinity;
+            - /opt/seagate/cortx/rgw/bin/rgw_setup start -c yaml:///etc/cortx/cluster.conf;
+              sleep infinity;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
