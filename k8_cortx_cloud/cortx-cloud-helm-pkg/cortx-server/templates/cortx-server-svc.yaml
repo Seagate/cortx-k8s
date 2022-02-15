@@ -8,44 +8,6 @@ spec:
   selector:
     app: {{ .Values.cortxserver.name }}
   ports:
-    - name: cortx-s3-server001-tcp
-      protocol: TCP
-      port: 80
-      targetPort: 80
-    - name: cortx-s3-server002-tcp
-      protocol: TCP
-      port: 443
-      targetPort: 443
-    - name: cortx-s3-iam001-tcp
-      protocol: TCP
-      port: 9080
-      targetPort: 9080
-    - name: cortx-s3-iam002-tcp
-      protocol: TCP
-      port: 9443
-      targetPort: 9443
-    - name: cortx-s3-bg-tcp
-      protocol: TCP
-      port: 28049
-      targetPort: 28049
-    - name: cortx-s3-haproxy001-tcp
-      protocol: TCP
-      port: 28071
-      targetPort: 28071
-    - name: cortx-s3-haproxy002-tcp
-      protocol: TCP
-      port: 28092
-      targetPort: 28092
-    {{- range $i := until (.Values.cortxserver.s3.numinst|int) }}
-    - name: {{ printf "cortx-s3-%03d-tcp" (add 1 $i) }}
-      protocol: TCP
-      port: {{ printf "%d" (add $i $.Values.cortxserver.s3.startportnum) }}
-      targetPort: {{ printf "%d" (add $i $.Values.cortxserver.s3.startportnum) }}
-    {{- end }}
-    - name: cortx-s3-auth-server-tcp
-      protocol: TCP
-      port: 28050
-      targetPort: 28050
     - name: cortx-server-motr-hax-tcp
       protocol: TCP
       port: {{ .Values.cortxserver.hax.port }}
@@ -72,19 +34,11 @@ spec:
   selector:
     app: {{ .Values.cortxserver.name }}
   ports:
-    - name: cortx-s3-server001-tcp
+    - name: cortx-rgw-http
       protocol: TCP
-      port: 80
+      port: 8000
       targetPort: 80
-    - name: cortx-s3-server002-tcp
+    - name: cortx-rgw-https
       protocol: TCP
-      port: 443
+      port: 8443
       targetPort: 443
-    - name: cortx-s3-iam001-tcp
-      protocol: TCP
-      port: 9080
-      targetPort: 9080
-    - name: cortx-s3-iam002-tcp
-      protocol: TCP
-      port: 9443
-      targetPort: 9443

@@ -66,9 +66,17 @@ spec:
         args:
           - -c
           {{- if .Values.cortxserver.machineid.value }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          - set -x;
+            mkdir /opt/seagate/cortx/rgw;
+            mkdir /opt/seagate/cortx/rgw/bin;
+            echo "Hello World";
+            echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/rgw/bin/rgw_setup;
+            echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/hare/bin/hare_setup;
+            chmod +x /opt/seagate/cortx/hare/bin/hare_setup;
+            chmod +x /opt/seagate/cortx/rgw/bin/rgw_setup;
+            /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
         {{- end }}
         volumeMounts:
@@ -93,7 +101,7 @@ spec:
         ports:
         - containerPort: 5050
       containers:
-        - name: cortx-haproxy
+        - name: cortx-rgw
           image: {{ .Values.cortxserver.image }}
           imagePullPolicy: IfNotPresent
           {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
@@ -103,7 +111,8 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service haproxy -c yaml:///etc/cortx/cluster.conf
+            - /opt/seagate/cortx/rgw/bin/rgw_setup start -c yaml:///etc/cortx/cluster.conf;
+              sleep infinity;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -125,89 +134,10 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxserver.name }}
           ports:
-          - containerPort: 80
-          - containerPort: 443
-          - containerPort: 9080
-          - containerPort: 9443
-          - containerPort: 28049
-          - containerPort: 28071
-          - containerPort: 28092
+          - containerPort: 8000
+          - containerPort: 8443
           securityContext:
             allowPrivilegeEscalation: false
-        - name: cortx-authserver
-          image: {{ .Values.cortxserver.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command:
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service authserver -c yaml:///etc/cortx/cluster.conf
-          {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxserver.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
-            - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
-              mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
-            {{- if .Values.cortxserver.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxserver.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxserver.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxserver.name }}
-          ports:
-          - containerPort: 28050
-          securityContext:
-            allowPrivilegeEscalation: false
-        {{- range $i := until (.Values.cortxserver.s3.numinst|int) }}
-        - name: {{ printf "cortx-s3server-%03d" (add 1 $i) }}
-          image: {{ $.Values.cortxserver.image }}
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ $.Values.cortxserver.name }}
-            - name: S3_INDEX
-              value: {{ printf "%d" (add 1 $i) | quote }}
-          {{- if eq $.Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command:
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service s3server --index $S3_INDEX -c yaml:///etc/cortx/cluster.conf
-          {{- end }}
-          volumeMounts:
-            - name: {{ $.Values.cortxserver.cfgmap.volmountname }}
-              mountPath: {{ $.Values.cortxserver.cfgmap.mountpath }}
-            - name: {{ $.Values.cortxserver.sslcfgmap.volmountname }}
-              mountPath: {{ $.Values.cortxserver.sslcfgmap.mountpath }}
-            {{- if $.Values.cortxserver.machineid.value }}
-            - name: machine-id
-              mountPath: {{ $.Values.cortxserver.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ $.Values.cortxserver.localpathpvc.mountpath }}
-            {{- range $.Files.Lines $.Values.cortxserver.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          ports:
-          - containerPort: {{ printf "%d" (add $i $.Values.cortxserver.s3.startportnum) }}
-          securityContext:
-            allowPrivilegeEscalation: false
-        {{- end }}
         - name: cortx-hax
           image: {{ .Values.cortxserver.image }}
           imagePullPolicy: IfNotPresent
@@ -218,7 +148,8 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
+            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
+              sleep infinity;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -241,39 +172,6 @@ spec:
               value: {{ .Values.cortxserver.name }}
           ports:
           - containerPort: {{ .Values.cortxserver.hax.port }}
-          securityContext:
-            allowPrivilegeEscalation: false
-        - name: cortx-bgworker
-          image: {{ .Values.cortxserver.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxserver.image  "ghcr.io/seagate/centos:7" }}
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command:
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/s3/bin/s3_start --service bgworker -c yaml:///etc/cortx/cluster.conf
-          {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxserver.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
-            - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
-              mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
-            {{- if .Values.cortxserver.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxserver.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxserver.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxserver.name }}
           securityContext:
             allowPrivilegeEscalation: false
       nodeSelector:

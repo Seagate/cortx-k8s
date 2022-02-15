@@ -119,7 +119,7 @@ while IFS= read -r line; do
     if [[ $count -eq 0 ]]; then
         count=$((count+1))
         continue
-    fi    
+    fi
     IFS=" " read -r -a my_array <<< "$line"
     if [[ "${my_array[0]}" != *"kube-"* \
             && "${my_array[0]}" != "default" \
@@ -414,7 +414,7 @@ function delete3rdPartyPVs()
     echo $persistent_volumes
     for persistent_volume in $persistent_volumes
     do
-        printf "Removing $persistent_volume\n"    
+        printf "Removing $persistent_volume\n"
         if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
             kubectl patch pv $persistent_volume -p '{"metadata":{"finalizers":null}}'
         fi
@@ -426,7 +426,7 @@ function delete3rdPartyPVs()
         echo $persistent_volumes
         for persistent_volume in $persistent_volumes
         do
-            printf "Removing $persistent_volume\n"        
+            printf "Removing $persistent_volume\n"
             if [[ "$force_delete" == "--force" || "$force_delete" == "-f" ]]; then
                 kubectl patch pv $persistent_volume -p '{"metadata":{"finalizers":null}}'
             fi
@@ -499,7 +499,7 @@ function cleanup()
         file_name="mnt-blk-info-$shorter_node_name.txt"
         rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/$file_name
     done
-    
+
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
@@ -548,7 +548,7 @@ fi
 deleteKubernetesPrereqs
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
     deleteStorageProvisioner
-    
+
     helmChartCleanup    
 fi
 deleteCortxNamespace

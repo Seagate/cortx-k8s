@@ -3,7 +3,7 @@
 solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
 
-##TODO Extract from solution.yaml ? 
+##TODO Extract from solution.yaml ?
 serviceAccountName=cortx-sa
 
 # Check if the file exists
@@ -152,7 +152,7 @@ find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
 
 # Create files consist of drives per node and files consist of drive sizes.
-# These files are used by the helm charts to deploy cortx data. These file 
+# These files are used by the helm charts to deploy cortx data. These file
 # will be deleted at the end of this script.
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
 node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
@@ -200,7 +200,7 @@ do
     device=$(echo ${parsed_dev_array[$index]} | cut -f2 -d'>')
     size=$(echo ${parsed_size_array[$index]} | cut -f2 -d'>')
     mnt_blk_info="$device $size"
-    
+
     if [[ -s $cortx_blk_data_mnt_info_path ]]; then
         printf "\n" >> $cortx_blk_data_mnt_info_path
     fi
@@ -226,7 +226,7 @@ while IFS= read -r line; do
     if [[ $count -eq 0 ]]; then
         count=$((count+1))
         continue
-    fi    
+    fi
     IFS=" " read -r -a my_array <<< "$line"
     if [[ "${my_array[0]}" != *"kube-"* \
             && "${my_array[0]}" != "default" \
@@ -468,7 +468,7 @@ function deployKafka()
     image=$(echo $image | cut -f2 -d'>')
     splitDockerImage "${image}"
     printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
-    
+
     _KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:=1000}
     _KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:=1000}
     _KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:=1000}
@@ -590,6 +590,24 @@ function deployCortxConfigMap()
     auto_gen_path="$cfgmap_path/auto-gen-cfgmap-$namespace"
     mkdir -p $auto_gen_path
 
+    rgw_endpoints=""
+    for i in "${!node_name_list[@]}"
+    do
+        rgw_endpoints="$rgw_endpoints"$'\n'"  - ""tcp://cortx-server-headless-svc-""${node_name_list[$i]}"":21001"
+    done
+
+    ios_endpoints=""
+    for i in "${!node_name_list[@]}"
+    do
+        ios_endpoints="$ios_endpoints"$'\n'"- ""tcp://cortx-data-headless-svc-""${node_name_list[$i]}"":21001"
+    done
+
+    confd_endpoints=""
+    for i in "${!node_name_list[@]}"
+    do
+        confd_endpoints="$confd_endpoints"$'\n'"- ""tcp://cortx-data-headless-svc-""${node_name_list[$i]}"":22002"
+    done
+
     motr_client_endpoints="[]"
     if [[ $num_motr_client -gt 0 ]]; then
         motr_client_endpoints="\n"
@@ -621,13 +639,15 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.kafka.endpoints" $kafka_endpoint
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.endpoints" $openldap_endpoint
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$openldap_servers" 8 "cortx.external.openldap.servers"
+        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$ios_endpoints" 8 "cortx.motr.ios"
+        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$confd_endpoints" 8 "cortx.motr.confd"
+        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$rgw_endpoints" 8 "cortx.client.rgw"
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$motr_client_endpoints" 8 "cortx.motr.client"
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
         ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
         ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.protocol" "$(extractBlock 'solution.common.hax.protocol')"
         ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.name" "$(extractBlock 'solution.common.hax.service_name')"
         ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.port" "$(extractBlock 'solution.common.hax.port_num')"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
@@ -652,7 +672,7 @@ function deployCortxConfigMap()
         ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
         ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-headless-svc-${node_name_list[$i]}"
         ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "data_node"
-        
+
         # Create data machine id file for cortx data
         auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data"
         mkdir -p $auto_gen_node_path
@@ -754,7 +774,7 @@ function deployCortxConfigMap()
             cvg_dev=$(echo $cvg_dev_var_val_element | cut -f2 -d'>')
             echo "- $cvg_dev" >> $storage_cvg_data_auto_gen_file
         done
-        
+
         # Substitute all the variables in the template file
         storage_info_gen_file="$storage_info_folder/cluster-storage-$cvg_index-info.yaml"
         cp "$cfgmap_path/templates/cluster-storage-template.yaml" $storage_info_gen_file
@@ -766,11 +786,11 @@ function deployCortxConfigMap()
         cvg_type_output=$(parseSolution "solution.storage.$cvg_index.type")
         cvg_type=$(echo $cvg_type_output | cut -f2 -d'>')
         ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.type" $cvg_type
-        
+
         cvg_metadata_output=$(parseSolution "solution.storage.$cvg_index.devices.metadata.device")
         cvg_metadata=$(echo $cvg_metadata_output | cut -f2 -d'>')
         ./parse_scripts/subst.sh $storage_info_gen_file "cortx.metadata.dev_partition" $cvg_metadata
-        
+
         extract_output="$(./parse_scripts/yaml_extract_block.sh $storage_cvg_data_auto_gen_file)"
         ./parse_scripts/yaml_insert_block.sh "$storage_info_gen_file" "$extract_output" 4 "cortx.data.dev_partition"
     done
@@ -898,7 +918,7 @@ function deployCortxSecrets()
     cp "${cfgmap_path}/templates/secret-template.yaml" "${new_secret_gen_file}"
     ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${secret_fname}"
     ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets}"
-        
+
     kubectl_cmd_output=$(kubectl create -f "${new_secret_gen_file}" --namespace="${namespace}" 2>&1)
 
     if [[ "${kubectl_cmd_output}" == *"BadRequest"* ]]; then
@@ -940,7 +960,7 @@ function waitForAllDeploymentsAvailable()
     (while true; do sleep 1; echo -n "."; done)&
     DOTPID=$!
     trap "silentKill $DOTPID" 0
-    
+
     # Initial wait
     FAIL=0
     kubectl wait --for=condition=available --timeout="$TIMEOUT" $@
@@ -1334,7 +1354,7 @@ count=0
 for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
     cvg_name=$(echo $cvg_var_val_element | cut -f2 -d'>')
     cvg_filter=$(echo $cvg_var_val_element | cut -f1 -d'>')
-    cvg_index=$(echo $cvg_filter | cut -f3 -d'.')    
+    cvg_index=$(echo $cvg_filter | cut -f3 -d'.')
     cvg_index_list[$count]=$cvg_index
     count=$((count+1))
 done

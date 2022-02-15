@@ -40,11 +40,6 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
-  s3:
-    iam:
-      endpoints:
-      - https://<<.Values.cortx.io.svc>>:9443
-      - http://<<.Values.cortx.io.svc>>:9080
     data:
       endpoints:
       - http://<<.Values.cortx.io.svc>>:80
@@ -52,21 +47,70 @@ cortx:
     internal:
       endpoints:
       - http://<<.Values.cortx.io.svc>>:28049
-    service_instances: <<.Values.cortx.num_s3_inst>>
+    auth_secret: s3_auth_admin_secret
+  rgw:
+    s3:
+      endpoints:
+      - http://<<.Values.cortx.io.svc>>:80
+      - https://<<.Values.cortx.io.svc>>:443
     io_max_units: 8
     max_start_timeout: <<.Values.cortx.max_start_timeout>>
-    auth_admin: sgiamadmin
-    auth_secret: s3_auth_admin_secret
+    limits:
+      services:
+      - name: rgw
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 1000m
   hare:
     hax:
       endpoints:
         - <<.Values.cortx.hare.hax.svc.protocol>>://<<.Values.cortx.hare.hax.svc.name>>:<<.Values.cortx.hare.hax.svc.port>>
+    limits:
+      services:
+      - name: hax
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
   motr:
     client_instances: <<.Values.cortx.num_motr_inst>>
     interface_type: tcp
     interface_family: inet
     transport_type: libfab
+    md_size: 10 
+    ios:
+      group_size: 1
+      endpoints:
+        <<.Values.cortx.motr.ios>>
+    confd:
+      endpoints:
+        <<.Values.cortx.motr.confd>>
+    limits:
+      services:
+      - name: ios
+        memory:
+          min: 1Gi
+          max: 2Gi
+        cpu:
+          min: 250m
+          max: 1000m
+      - name: confd
+        memory:
+          min: 128Mi
+          max: 512Mi
+        cpu:
+          min: 250m
+          max: 500m
     clients:
+      - name: rgw
+        num_instances: 1
+        endpoints:
+        <<.Values.cortx.client.rgw>>
       - name: motr_client
         num_instances: <<.Values.cortx.num_motr_inst>>
         endpoints: <<.Values.cortx.motr.client>>
@@ -79,3 +123,36 @@ cortx:
     agent:
       endpoints:
       - https://<<.Values.cortx.io.svc>>:8081
+    limits:
+      services:
+      - name: agent
+        memory:
+          min: 128Mi
+          max: 256Mi
+        cpu:
+          min: 250m
+          max: 500m
+  ha:
+    limits:
+      services:
+      - name: fault_tolerance
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
+      - name: health_monitor
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
+      - name: k8s_monitor
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
