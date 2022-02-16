@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -uo pipefail
-
 solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
 
