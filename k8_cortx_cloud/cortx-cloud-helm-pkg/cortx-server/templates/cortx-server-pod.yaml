@@ -66,13 +66,6 @@ spec:
           - -c
           {{- if .Values.cortxserver.machineid.value }}
           - set -x;
-            mkdir /opt/seagate/cortx/rgw;
-            mkdir /opt/seagate/cortx/rgw/bin;
-            echo "Hello World";
-            echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/rgw/bin/rgw_setup;
-            echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/hare/bin/hare_setup;
-            chmod +x /opt/seagate/cortx/hare/bin/hare_setup;
-            chmod +x /opt/seagate/cortx/rgw/bin/rgw_setup;
             /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- else }}
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
@@ -148,7 +141,6 @@ spec:
           args:
             - -c
             - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
-              sleep infinity;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
