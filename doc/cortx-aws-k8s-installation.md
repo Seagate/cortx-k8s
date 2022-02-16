@@ -224,7 +224,7 @@ At this stage the Kubernetes cluster should be fully operational
 
 ### 3.1 Clone Cortx-K8s framework
 ```
-git clone -b stable https://github.com/Seagate/cortx-k8s.git
+git clone -b integration https://github.com/Seagate/cortx-k8s.git
 ```
 ### 3.2 Update cluster configuration
 CORTX deployment framework can be configured through a single file  cortx-k8s/k8_cortx_cloud/solution.yaml
@@ -252,6 +252,15 @@ grep -v $LogsDevice devices1.txt | awk '{print "/dev/"$1}' > devices.txt
 ```
 
 #### 3.2.2 Update solution.yaml
+First, make sure `yq` is installed on the local machine.
+You can download the current version from GitHub:
+```
+wget https://github.com/mikefarah/yq/releases/download/v4.19.1/yq_linux_amd64 -O /usr/bin/yq
+chmod +x /usr/bin/yq
+```
+If you don't have root access, it's not necessary to install `yq` system-wide;
+ensure that it's somewhere on your `$PATH` and executable.
+
 The following command will configure 2 CVGs with 1 metadata and 2 data drives. Update this command according to the actual configuration. 
 Note: number of CVGs should be equal to the amount of Motr instances (see num_inst parameter in the solution.yaml)
 ```
