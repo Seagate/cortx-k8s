@@ -11,8 +11,8 @@ spec:
     - name: cortx-rgw-http
       protocol: TCP
       port: 8000
-      targetPort: 80
+      targetPort: 8000
     - name: cortx-rgw-https
       protocol: TCP
       port: 8443
-      targetPort: 443
+      targetPort: 8443

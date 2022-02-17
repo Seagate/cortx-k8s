@@ -56,9 +56,9 @@ cortx:
     {{- with .Values.cortxS3.maxStartTimeout }}
     max_start_timeout: {{ . | int }}                            # DEPRECATED
     {{- end }}
-    auth_user: user_name                                        # DEPRECATED
-    auth_admin: sgiamadmin                                      # DEPRECATED
-    auth_secret: s3_auth_admin_secret                           # DEPRECATED
+    auth_user: {{ .Values.cortxRgw.authUser }}                  # DEPRECATED
+    auth_admin: {{ .Values.cortxRgw.authAdmin }}                # DEPRECATED
+    auth_secret: {{ .Values.cortxRgw.authSecret }}              # DEPRECATED
   rgw:
     iam:                                                        # DEPRECATED
       endpoints:                                                # DEPRECATED
@@ -79,9 +79,9 @@ cortx:
     {{- with .Values.cortxS3.maxStartTimeout }}
     max_start_timeout: {{ . | int }}
     {{- end }}
-    auth_user: user_name                                        # HARDCODED, to be updated by CORTX-28022
-    auth_admin: sgiamadmin                                      # HARDCODED, to be updated by CORTX-28022
-    auth_secret: s3_auth_admin_secret                           # HARDCODED, to be updated by CORTX-28022
+    auth_user: {{ .Values.cortxRgw.authUser }} 
+    auth_admin: {{ .Values.cortxRgw.authAdmin }}
+    auth_secret: {{ .Values.cortxRgw.authSecret }}
     limits:                  
       num_services: 1                                           #HARDCODED
       services:

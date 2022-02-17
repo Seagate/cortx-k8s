@@ -623,6 +623,8 @@ function deployCortxConfigMap()
         --set cortxStoragePaths.config="${local_storage}"
         --set cortxVersion="${tag}"
         --set cortxSetupSize="$(extractBlock 'solution.common.setup_size' || true)"
+        --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
+        --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
     )
 
     # Build OpenLDAP server values dynamically from running pods

@@ -91,9 +91,18 @@ cortxStoragePaths:
 cortxIoServiceName: "cortx-io-svc"
 
 # cortxS3 allows configuring CORTX S3 settings
+##TODO Evaluate merging with below cortxRGW section to align with underlying config.yaml keys
 cortxS3:
   instanceCount: 2
   maxStartTimeout: 240
+
+# cortxS3 allows configuring CORTX S3 settings
+cortxRgw:
+  authAdmin: cortx-admin
+  authUser: cortx-user
+  # The below value should match the corresponding key in solution.yaml
+  # and is generally not changed by default.
+  authSecret: s3_auth_admin_secret
 
 # cortxHA allows configuring CORTX HA settings
 cortxHa:
