@@ -121,6 +121,15 @@ cortx:
       endpoints: {{- toYaml .Values.cortxMotr.iosEndpoints | nindent 6 }}
     confd:
       endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
+    clients:
+      - name: rgw
+        num_instances: 1  # number of instances *per-pod*
+        endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
+    {{- if len .Values.cortxMotr.clientEndpoints }}
+      - name: motr_client
+        num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
+        endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
+    {{- end }}
     limits:
       services:
       - name: ios
@@ -137,15 +146,6 @@ cortx:
         cpu:
           min: 250m
           max: 500m
-    clients:
-      - name: rgw
-        num_instances: 1                                            #HARDCODED
-        endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
-    {{- if len .Values.cortxMotr.clientEndpoints }}
-      - name: motr_client
-        num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
-        endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
-    {{- end }}
   csm:
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
