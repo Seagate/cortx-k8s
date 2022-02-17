@@ -118,7 +118,6 @@ cortx:
     interface_family: inet
     transport_type: libfab
     ios:
-      group_size: 1                                                 #HARDCODED
       endpoints: {{- toYaml .Values.cortxMotr.iosEndpoints | nindent 6 }}
     confd:
       endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
