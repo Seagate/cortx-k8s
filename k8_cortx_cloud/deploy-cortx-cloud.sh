@@ -252,6 +252,9 @@ function deployKubernetesPrereqs()
         createPodSecurityPolicy="false"
     fi
 
+    external_services_type=$(parseSolution 'solution.common.external_services.type')
+    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+
     helm install "cortx-platform" cortx-cloud-helm-pkg/cortx-platform \
         --set podSecurityPolicy.create="$createPodSecurityPolicy" \
         --set rbacRole.create="true" \
@@ -262,6 +265,7 @@ function deployKubernetesPrereqs()
         --set namespace.name="$namespace" \
         --set services.hax.name=$(extractBlock 'solution.common.hax.service_name') \
         --set services.hax.port=$(extractBlock 'solution.common.hax.port_num') \
+        --set services.io.type="${external_services_type}"
         -n $namespace
 
 }
