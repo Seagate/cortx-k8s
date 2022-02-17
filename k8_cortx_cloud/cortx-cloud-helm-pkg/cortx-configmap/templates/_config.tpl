@@ -138,11 +138,11 @@ cortx:
         cpu:
           min: 250m
           max: 500m
-    {{- if len .Values.cortxMotr.clientEndpoints }}
     clients:
       - name: rgw
         num_instances: 1                     #HARDCODED
         endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
+    {{- if len .Values.cortxMotr.clientEndpoints }}
       - name: motr_client
         num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
         endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
