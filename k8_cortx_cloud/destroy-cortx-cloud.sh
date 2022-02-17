@@ -451,7 +451,7 @@ function helmChartCleanup()
     printf "########################################################\n"
     print_header=true
     local charts
-    charts="$(helm list | { grep 'consul\|cortx\|kafka\|openldap\|zookeeper' || true; })"
+    charts="$(helm list | { grep '^consul\|^cortx\|^kafka\|^openldap\|^zookeeper' || true; })"
     if [[ -n ${charts} ]]; then
         while IFS= read -r line; do
             IFS=" " read -r -a my_array <<< "${line}"
