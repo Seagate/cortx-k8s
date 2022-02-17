@@ -49,7 +49,7 @@ cortx:
     internal:
       endpoints:
       - http://{{ .Values.cortxIoServiceName }}:28049
-    {{- with .Values.cortxS3.instanceCount }}                   
+    {{- with .Values.cortxS3.instanceCount }}
     service_instances: {{ . | int }}
     {{- end }}
     io_max_units: 8
@@ -79,10 +79,10 @@ cortx:
     {{- with .Values.cortxS3.maxStartTimeout }}
     max_start_timeout: {{ . | int }}
     {{- end }}
-    auth_user: {{ .Values.cortxRgw.authUser }} 
+    auth_user: {{ .Values.cortxRgw.authUser }}
     auth_admin: {{ .Values.cortxRgw.authAdmin }}
     auth_secret: {{ .Values.cortxRgw.authSecret }}
-    limits:                  
+    limits:
       num_services: 1                                               #HARDCODED
       services:
       - name: rgw
