@@ -1,0 +1,39 @@
+###################################################
+#
+# k8s-cluster.yaml
+#
+# cluster configuration file for k8s tools
+#
+###################################################
+
+
+# Name of the solution.yaml file that will be generated
+# (relative to cwd)
+generated_solution: /tmp/mysolution.yaml
+
+# Version of cortx-all to use
+# If omitted then the version specified in the
+# default solution.yaml file is used
+#cortx_ver:  2.0.0-latest-custom-ci
+
+
+setup_size: small
+
+
+# Nodes in k8s cluster
+nodes:
+  - node1.example.com
+  - node2.example.com
+  - node3.example.com
+
+
+# Block devs to use
+storage:
+  local-fs: /dev/sdb
+  cvg1:
+    # Note: only one dev for metadata is supported per cvg
+    metadata: /dev/sdc
+    data:
+      - /dev/sdd
+      - /dev/sde
+
