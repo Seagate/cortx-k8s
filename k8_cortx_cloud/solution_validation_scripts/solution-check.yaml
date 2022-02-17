@@ -11,10 +11,10 @@ solution:
       csm_auth_admin_secret: required
       csm_mgmt_admin_secret: required
   images:
-    cortxcontrolprov: required
     cortxcontrol: required
-    cortxdataprov: required
     cortxdata: required
+    cortxserver: required
+    cortxha: required
     openldap: required
     consul: required
     kafka: required

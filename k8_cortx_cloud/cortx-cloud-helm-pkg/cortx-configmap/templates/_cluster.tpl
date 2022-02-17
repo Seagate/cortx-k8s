@@ -31,21 +31,10 @@ cluster:
     components:
     - name: utils
     - name: hare
-    - name: s3
-      services:
-      - s3server
-      - haproxy
-      - authserver
-      - bgworker
+    - name: rgw
   - name: control_node
     components:
     - name: utils
-    - name: motr
-      services:
-      - fsm
-    - name: s3
-      services:
-        - bgscheduler
     - name: csm
       services:
       - agent
@@ -55,7 +44,6 @@ cluster:
     - name: ha
   - name: client_node
     components:
-    - name: utils
     - name: hare
     - name: motr
       services:

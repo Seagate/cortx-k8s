@@ -7,7 +7,7 @@ cortx:
       admin: {{ .Values.externalKafka.adminUser }}
       secret: {{ .Values.externalKafka.adminSecretName }}
     {{- end }}
-    {{- if .Values.externalLdap.enabled }}
+    {{- if .Values.externalLdap.enabled }}                      # DEPRECATED
     openldap:
       endpoints: {{- toYaml .Values.externalLdap.endpoints | nindent 8 }}
       servers: {{- toYaml .Values.externalLdap.servers | nindent 8 }}
@@ -25,7 +25,7 @@ cortx:
     release:
       name: CORTX
       version: {{ .Values.cortxVersion }}
-    environment_type: K8
+    environment_type: K8                                        # DEPRECATED
     setup_size: {{ .Values.cortxSetupSize }}
     service:
       admin: admin
@@ -37,40 +37,112 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
-  s3:
-    iam:
-      endpoints:
-      - https://{{ .Values.cortxIoServiceName }}:9443
-      - http://{{ .Values.cortxIoServiceName }}:9080
+  s3:                                                           # DEPRECATED - S3 KEY
+    iam:                                                        # DEPRECATED
+      endpoints:                                                # DEPRECATED
+      - https://{{ .Values.cortxIoServiceName }}:9443           # DEPRECATED
+      - http://{{ .Values.cortxIoServiceName }}:9080            # DEPRECATED
+    data:                                                       # DEPRECATED
+      endpoints:                                                # DEPRECATED
+      - http://{{ .Values.cortxIoServiceName }}:80              # DEPRECATED
+      - https://{{ .Values.cortxIoServiceName }}:443            # DEPRECATED
+    internal:                                                   # DEPRECATED
+      endpoints:                                                # DEPRECATED
+      - http://{{ .Values.cortxIoServiceName }}:28049           # DEPRECATED
+    {{- with .Values.cortxS3.instanceCount }}                   
+    service_instances: {{ . | int }}                            # DEPRECATED  
+    {{- end }}
+    io_max_units: 8                                             # DEPRECATED
+    {{- with .Values.cortxS3.maxStartTimeout }}
+    max_start_timeout: {{ . | int }}                            # DEPRECATED
+    {{- end }}
+    auth_user: user_name                                        # DEPRECATED
+    auth_admin: sgiamadmin                                      # DEPRECATED
+    auth_secret: s3_auth_admin_secret                           # DEPRECATED
+  rgw:
+    iam:                                                        # DEPRECATED
+      endpoints:                                                # DEPRECATED
+      - https://{{ .Values.cortxIoServiceName }}:8443           # DEPRECATED
+      - http://{{ .Values.cortxIoServiceName }}:8000            # DEPRECATED
     data:
       endpoints:
-      - http://{{ .Values.cortxIoServiceName }}:80
-      - https://{{ .Values.cortxIoServiceName }}:443
-    internal:
+      - http://{{ .Values.cortxIoServiceName }}:8000
+      - https://{{ .Values.cortxIoServiceName }}:8443
+    s3:
       endpoints:
-      - http://{{ .Values.cortxIoServiceName }}:28049
+      - http://{{ .Values.cortxIoServiceName }}:8000
+      - https://{{ .Values.cortxIoServiceName }}:8443
     {{- with .Values.cortxS3.instanceCount }}
     service_instances: {{ . | int }}
     {{- end }}
-    io_max_units: 8
+    io_max_units: 8                                             #HARDCODED
     {{- with .Values.cortxS3.maxStartTimeout }}
     max_start_timeout: {{ . | int }}
     {{- end }}
-    auth_admin: sgiamadmin
-    auth_secret: s3_auth_admin_secret
+    auth_user: user_name                                        # HARDCODED, to be updated by CORTX-28022
+    auth_admin: sgiamadmin                                      # HARDCODED, to be updated by CORTX-28022
+    auth_secret: s3_auth_admin_secret                           # HARDCODED, to be updated by CORTX-28022
+    limits:                  
+      num_services: 1                                           #HARDCODED
+      services:
+      - name: rgw
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 1000m
   hare:
     hax:
       endpoints:
       {{- with .Values.cortxHa.haxService }}
         - {{ .protocol }}://{{ .name }}:{{ .port }}
       {{- end }}
+      {{- toYaml .Values.cortxHare.haxDataEndpoints | nindent 8 }}
+      {{- toYaml .Values.cortxHare.haxServerEndpoints | nindent 8 }}
+      {{- if gt (len .Values.cortxHare.haxClientEndpoints) 0 -}}
+        {{- toYaml .Values.cortxHare.haxClientEndpoints | nindent 8 }}
+      {{- end }}
+    limits:
+      services:
+      - name: hax
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
   motr:
-    client_instances: {{ len .Values.cortxMotr.clientEndpoints }}
-    interface_type: tcp
+    client_instances: {{ len .Values.cortxMotr.clientEndpoints }}   #DEPRECATED
+    interface_type: tcp                                             #DEPRECATED
     interface_family: inet
     transport_type: libfab
+    ios:
+      group_size: 1                          #HARDCODED
+      endpoints: {{- toYaml .Values.cortxMotr.iosEndpoints | nindent 6 }}
+    confd:
+      endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
+    limits:
+      services:
+      - name: ios
+        memory:
+          min: 1Gi
+          max: 2Gi
+        cpu:
+          min: 250m
+          max: 1000m
+      - name: confd
+        memory:
+          min: 128Mi
+          max: 512Mi
+        cpu:
+          min: 250m
+          max: 500m
     {{- if len .Values.cortxMotr.clientEndpoints }}
     clients:
+      - name: rgw
+        num_instances: 1                     #HARDCODED
+        endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
       - name: motr_client
         num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
         endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
@@ -84,4 +156,37 @@ cortx:
     agent:
       endpoints:
       - https://{{ .Values.cortxIoServiceName }}:8081
+    limits:
+      services:
+      - name: agent
+        memory:
+          min: 128Mi
+          max: 256Mi
+        cpu:
+          min: 250m
+          max: 500m
+  ha:
+    limits:
+      services:
+      - name: fault_tolerance
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
+      - name: health_monitor
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
+      - name: k8s_monitor
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
 {{- end -}}

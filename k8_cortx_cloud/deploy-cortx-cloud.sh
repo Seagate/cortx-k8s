@@ -322,7 +322,8 @@ function deployConsul()
         --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
         --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
         --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu') \
-        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false
+        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
+        --wait
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
     kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
@@ -330,7 +331,7 @@ function deployConsul()
 
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
     kubectl rollout restart statefulset/consul-server
-    kubectl rollout restart daemonset/consul
+    kubectl rollout restart daemonset/consul-client
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -629,10 +630,21 @@ function deployCortxConfigMap()
         )
     done
 
+    for idx in "${!node_name_list[@]}"; do
+        helm_install_args+=(
+            --set "cortxHare.haxDataEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxHare.haxServerEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxMotr.confdEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxMotr.iosEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:21001"
+            --set "cortxMotr.rgwEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:21001"
+        )
+    done
+
     if ((num_motr_client > 0)); then
         for idx in "${!node_name_list[@]}"; do
             helm_install_args+=(
                 --set "cortxMotr.clientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[${idx}]}:21001"
+                --set "cortxHare.haxClientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[${idx}]}:22001"
             )
         done
     fi
@@ -680,6 +692,24 @@ function deployCortxConfigMap()
             )
         done
     done
+
+#TODO REMOVE
+echo "###################################"
+echo "###################################"
+echo "###################################"
+echo ""
+echo ${helm_install_args[@]} 
+echo ""
+echo "helm install \
+        \"cortx-cfgmap-${namespace}\" \
+        cortx-cloud-helm-pkg/cortx-configmap \
+        --set fullnameOverride=\"cortx-cfgmap-${namespace}\" \
+        \"${helm_install_args[@]}\""
+echo ""
+echo "###################################"
+echo "###################################"
+echo "###################################"
+#TODO REMOVE
 
     helm install \
         "cortx-cfgmap-${namespace}" \
