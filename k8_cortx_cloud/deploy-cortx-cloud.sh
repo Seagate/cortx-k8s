@@ -699,24 +699,6 @@ function deployCortxConfigMap()
         done
     done
 
-#TODO REMOVE
-echo "###################################"
-echo "###################################"
-echo "###################################"
-echo ""
-echo ${helm_install_args[@]} 
-echo ""
-echo "helm install \
-        \"cortx-cfgmap-${namespace}\" \
-        cortx-cloud-helm-pkg/cortx-configmap \
-        --set fullnameOverride=\"cortx-cfgmap-${namespace}\" \
-        \"${helm_install_args[@]}\""
-echo ""
-echo "###################################"
-echo "###################################"
-echo "###################################"
-#TODO REMOVE
-
     helm install \
         "cortx-cfgmap-${namespace}" \
         cortx-cloud-helm-pkg/cortx-configmap \
