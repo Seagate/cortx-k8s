@@ -49,6 +49,9 @@ cortx:
       - http://<<.Values.cortx.io.svc>>:28049
     auth_secret: s3_auth_admin_secret
   rgw:
+    auth_user: user_name
+    auth_admin: sgiamadmin
+    auth_secret: s3_auth_admin_secret
     s3:
       endpoints:
       - http://<<.Values.cortx.io.svc>>:80
