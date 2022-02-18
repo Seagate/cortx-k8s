@@ -71,6 +71,9 @@ cortx:
     hax:
       endpoints:
         - <<.Values.cortx.hare.hax.svc.protocol>>://<<.Values.cortx.hare.hax.svc.name>>:<<.Values.cortx.hare.hax.svc.port>>
+        <<.Values.cortx.hare.hax.data>>
+        <<.Values.cortx.hare.hax.server>>
+        <<.Values.cortx.hare.hax.client>>
     limits:
       services:
       - name: hax

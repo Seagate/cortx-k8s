@@ -617,6 +617,24 @@ function deployCortxConfigMap()
         done
     fi
 
+    haxd_endpoints=""
+    for i in "${!node_name_list[@]}"
+    do
+        haxd_endpoints="$haxd_endpoints"$'\n'"- ""tcp://cortx-data-headless-svc-""${node_name_list[$i]}"":22001"
+    done
+
+    haxs_endpoints=""
+    for i in "${!node_name_list[@]}"
+    do
+        haxs_endpoints="$haxs_endpoints"$'\n'"- ""tcp://cortx-server-headless-svc-""${node_name_list[$i]}"":22001"
+    done
+
+    hare_client_endpoints=""
+    for i in "${!node_name_list[@]}"
+    do
+        hare_client_endpoints="$hare_client_endpoints"$'\n'"- ""tcp://cortx-client-headless-svc-""${node_name_list[$i]}"":22001"
+    done
+
     # Generate config files
     for i in "${!node_name_list[@]}"; do
         new_gen_file="$auto_gen_path/config.yaml"
@@ -641,6 +659,9 @@ function deployCortxConfigMap()
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$openldap_servers" 8 "cortx.external.openldap.servers"
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$ios_endpoints" 8 "cortx.motr.ios"
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$confd_endpoints" 8 "cortx.motr.confd"
+        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$haxd_endpoints" 8 "cortx.hare.hax.data"
+        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$haxs_endpoints" 8 "cortx.hare.hax.server"
+        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$hare_client_endpoints" 8 "cortx.hare.hax.client"
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$rgw_endpoints" 8 "cortx.client.rgw"
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$motr_client_endpoints" 8 "cortx.motr.client"
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
