@@ -8,6 +8,8 @@ cortxserver:
   s3:
     numinst: 2
     startportnum: 28051
+  hax:
+    port: 22003
   service:
     clusterip:
       name: cortx-server-clusterip-svc

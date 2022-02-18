@@ -173,14 +173,6 @@ function deleteCortxData()
     done
 }
 
-function deleteCortxServices()
-{
-    printf "########################################################\n"
-    printf "# Delete CORTX Services                                 \n"
-    printf "########################################################\n"
-    kubectl delete service cortx-io-svc --namespace=$namespace
-}
-
 function deleteCortxControl()
 {
     printf "########################################################\n"
@@ -256,7 +248,12 @@ function deleteCortxConfigmap()
     for i in "${!node_name_list[@]}"; do
         kubectl delete configmap "cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
         rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
-
+        
+        if [[ $num_motr_client -gt 0 ]]; then
+            # Delete client machine id config map
+            kubectl delete configmap "cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
+            rm -rf "$cfgmap_path/auto-gen-client--${node_name_list[i]}-$namespace"
+        fi
     done
 
     # Delete client machine id config maps
@@ -478,6 +475,12 @@ function deleteKubernetesPrereqs()
     printf "# Delete Cortx Kubernetes Prereqs                      #\n"
     printf "########################################################\n"
     helm delete cortx-platform
+
+    ## Backwards compatability check
+    ## If CORTX is undeployed with a newer undeploy script, it can get into
+    ## a broken state that is difficult to observe since the `svc/cortx-io-svc`
+    ## will never be deleted. This explicit delete prevents that from happening.
+    kubectl delete svc/cortx-io-svc --ignore-not-found=true
 }
 
 function deleteCortxNamespace()
@@ -520,7 +523,6 @@ fi
 deleteCortxHa
 deleteCortxServer
 deleteCortxData
-deleteCortxServices
 deleteCortxControl
 waitForCortxPodsToTerminate
 deleteSecrets

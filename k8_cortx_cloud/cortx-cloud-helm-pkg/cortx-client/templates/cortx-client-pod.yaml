@@ -14,11 +14,10 @@ spec:
     metadata:
       labels:
         app: {{ .Values.cortxclient.name }}
-        name: cortx-client
+        cortx.io/service-type: cortx-client
         {{- if .Values.cortxclient.machineid.value }}
         cortx.io/machine-id: {{ .Values.cortxclient.machineid.value }}
         {{- end }}
-        cortx.io/service-type: cortx-client
     spec:
       hostname: {{ .Values.cortxclient.service.headless.name }}
       serviceAccountName: {{ .Values.cortxclient.serviceaccountname }}
@@ -29,9 +28,6 @@ spec:
         - name: {{ .Values.cortxclient.sslcfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxclient.sslcfgmap.name }}
-        - name: {{ .Values.cortxclient.machineid.volmountname }}
-          configMap:
-            name: {{ .Values.cortxclient.machineid.name }}
         {{- if .Values.cortxclient.machineid.value }}
         - name: machine-id
           downwardAPI:
@@ -49,46 +45,48 @@ spec:
             secretName: {{ printf "%s" . }}
         {{- end }}
       initContainers:
-        - name: cortx-setup
-          image: {{ .Values.cortxclient.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxclient.image  "ghcr.io/seagate/centos:7" }}
-          command: ["/bin/sleep", "3650d"]
+      - name: cortx-setup
+        image: {{ .Values.cortxclient.image }}
+        imagePullPolicy: IfNotPresent
+        command: 
+          - /bin/sh
+        {{- if eq .Values.cortxclient.image  "ghcr.io/seagate/centos:7" }}
+        args: 
+          - -c
+          - sleep 3650d
+        {{- else }}
+        args: 
+          - -c
+          {{- if .Values.cortxclient.machineid.value }}
+          - set -x;
+            echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/hare/bin/hare_setup;
+            echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/motr/bin/motr_setup;
+            chmod +x /opt/seagate/cortx/hare/bin/hare_setup;
+            chmod +x /opt/seagate/cortx/motr/bin/motr_setup;
+            /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- else }}
-          command:
-            - /bin/sh
-          args:
-            - -c
-            {{- if .Values.cortxclient.machineid.value }}
-            - set -x;
-              echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/hare/bin/hare_setup;
-              echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/motr/bin/motr_setup;
-              chmod +x /opt/seagate/cortx/hare/bin/hare_setup;
-              chmod +x /opt/seagate/cortx/motr/bin/motr_setup;
-              /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
-            {{- else }}
-            - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-            {{- end }}
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
           {{- end }}
-          volumeMounts:
-            - name: {{ .Values.cortxclient.cfgmap.volmountname }}
-              mountPath: {{ .Values.cortxclient.cfgmap.mountpath }}
-            - name: {{ .Values.cortxclient.sslcfgmap.volmountname }}
-              mountPath: {{ .Values.cortxclient.sslcfgmap.mountpath }}
-            {{- if .Values.cortxclient.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxclient.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxclient.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxclient.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
-          env:
-            - name: MACHINE_ID
-              value: {{ printf "%s" .Values.cortxclient.machineid.value | quote }}
+        {{- end }}
+        volumeMounts:
+          - name: {{ .Values.cortxclient.cfgmap.volmountname }}
+            mountPath: {{ .Values.cortxclient.cfgmap.mountpath }}
+          - name: {{ .Values.cortxclient.sslcfgmap.volmountname }}
+            mountPath: {{ .Values.cortxclient.sslcfgmap.mountpath }}
+          {{- if .Values.cortxclient.machineid.value }}
+          - name: machine-id
+            mountPath: {{ .Values.cortxclient.machineid.mountpath }}
+          {{- end }}
+          - name: local-path-pv
+            mountPath: {{ .Values.cortxclient.localpathpvc.mountpath }}
+          {{- range .Files.Lines .Values.cortxclient.secretinfo }}
+          - name: {{ printf "%s" . }}
+            mountPath: /etc/cortx/solution/secret
+            readOnly: true
+          {{- end }}
+        env:
+          - name: MACHINE_ID
+            value: {{ printf "%s" .Values.cortxclient.machineid.value | quote }}
       containers:
         {{- range $i := until (.Values.cortxclient.motr.numclientinst|int) }}
         - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
@@ -109,6 +107,10 @@ spec:
               mountPath: {{ $.Values.cortxclient.cfgmap.mountpath }}
             - name: {{ $.Values.cortxclient.sslcfgmap.volmountname }}
               mountPath: {{ $.Values.cortxclient.sslcfgmap.mountpath }}
+            {{- if $.Values.cortxclient.machineid.value }}
+            - name: machine-id
+              mountPath: {{ $.Values.cortxclient.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ $.Values.cortxclient.localpathpvc.mountpath }}
             {{- range $.Files.Lines $.Values.cortxclient.secretinfo }}
@@ -142,6 +144,10 @@ spec:
               mountPath: {{ .Values.cortxclient.cfgmap.mountpath }}
             - name: {{ .Values.cortxclient.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxclient.sslcfgmap.mountpath }}
+            {{- if .Values.cortxclient.machineid.value }}
+            - name: machine-id
+              mountPath: {{ .Values.cortxclient.machineid.mountpath }}
+            {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxclient.localpathpvc.mountpath }}
             {{- range .Files.Lines .Values.cortxclient.secretinfo }}
