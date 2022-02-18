@@ -79,7 +79,7 @@ cortx:
   hare:
     hax:
       endpoints:
-        - https://motr-hax-svc:22003
+        - <<.Values.cortx.hare.hax.svc.protocol>>://<<.Values.cortx.hare.hax.svc.name>>:<<.Values.cortx.hare.hax.svc.port>>
         <<.Values.cortx.hare.hax.data>>
         <<.Values.cortx.hare.hax.server>>
         <<.Values.cortx.hare.hax.client>>
@@ -131,8 +131,7 @@ cortx:
         <<.Values.cortx.client.rgw>>
       - name: motr_client
         num_instances: <<.Values.cortx.num_motr_inst>>
-        endpoints:
-        <<.Values.cortx.motr.client>>
+        endpoints: <<.Values.cortx.motr.client>>
   csm:
     auth_admin: admin                                                  # Deprecated
     auth_secret: csm_auth_admin_secret                                 # Deprecated
