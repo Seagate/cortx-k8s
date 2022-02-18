@@ -38,6 +38,10 @@ solution:
     motr:
       num_client_inst: 0
       start_port_num: 29000
+    hax:
+      protocol: https
+      service_name: cortx-hax-svc
+      port_num: 22003
     storage_sets:
       name: storage-set-1
       durability:

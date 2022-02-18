@@ -269,6 +269,8 @@ function deployKubernetesPrereqs()
         --set serviceAccount.name="$serviceAccountName" \
         --set networkPolicy.create="false" \
         --set namespace.name="$namespace" \
+        --set services.hax.name=$(extractBlock 'solution.common.hax.service_name') \
+        --set services.hax.port=$(extractBlock 'solution.common.hax.port_num') \
         -n $namespace
 
 }
@@ -627,13 +629,20 @@ function deployCortxConfigMap()
     do
         confd_endpoints="$confd_endpoints"$'\n'"- ""tcp://cortx-data-headless-svc-""${node_name_list[$i]}"":22002"
     done
-    motr_client_endpoints=""
+
     hare_client_endpoints=""
     for i in "${!node_name_list[@]}"
     do
         hare_client_endpoints="$hare_client_endpoints"$'\n'"- ""tcp://cortx-client-headless-svc-""${node_name_list[$i]}"":22001"
-        motr_client_endpoints="$motr_client_endpoints"$'\n'"  - ""tcp://cortx-client-headless-svc-""${node_name_list[$i]}"":21001"
     done
+    motr_client_endpoints="[]"
+    if [[ $num_motr_client -gt 0 ]]; then
+        motr_client_endpoints="\n"
+        for i in "${!node_name_list[@]}"
+        do
+            motr_client_endpoints="$motr_client_endpoints"$'\n'"  - ""tcp://cortx-client-headless-svc-""${node_name_list[$i]}"":21001"
+        done
+    fi
 
     # Generate config files
     for i in "${!node_name_list[@]}"; do
@@ -673,6 +682,9 @@ function deployCortxConfigMap()
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$motr_client_endpoints" 8 "cortx.motr.client"
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
         ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.protocol" "$(extractBlock 'solution.common.hax.protocol')"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.name" "$(extractBlock 'solution.common.hax.service_name')"
+        ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.port" "$(extractBlock 'solution.common.hax.port_num')"
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
         ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
         ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
@@ -718,6 +730,52 @@ function deployCortxConfigMap()
             mkdir -p $auto_gen_node_path
             echo $uuid_str > $auto_gen_node_path/id
         fi
+
+        if [[ $num_motr_client -gt 0 ]]; then
+            # Generate cluster client node file with type client_node in "node-info" folder
+            cluster_client_node_file="$node_info_folder/cluster-client-node-${node_name_list[$i]}.yaml"
+            cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_client_node_file
+            ./parse_scripts/subst.sh $cluster_client_node_file "cortx.node.name" "cortx-client-headless-svc-${node_name_list[$i]}"
+            uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+            ./parse_scripts/subst.sh $cluster_client_node_file "cortx.pod.uuid" "$uuid_str"
+            ./parse_scripts/subst.sh $cluster_client_node_file "cortx.svc.name" "cortx-client-headless-svc-${node_name_list[$i]}"
+            ./parse_scripts/subst.sh $cluster_client_node_file "cortx.node.type" "client_node"
+            # Create data machine id file for cortx server
+            auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/client"
+            mkdir -p $auto_gen_node_path
+            echo $uuid_str > $auto_gen_node_path/id
+        fi
+    done
+
+    # Generate node file with type control_node in "node-info" folder
+    new_gen_file="$node_info_folder/cluster-control-node.yaml"
+    cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
+    ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control"
+    uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+    ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control"
+    ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
+
+    # Create control machine id file
+    auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
+    mkdir -p $auto_gen_control_path
+    echo $uuid_str > $auto_gen_control_path/id
+
+    # Generate cluster ha node file with type ha_node in "node-info" folder
+    cluster_ha_node_file="$node_info_folder/cluster-ha-node.yaml"
+    cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_ha_node_file
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.name" "cortx-ha-headless-svc"
+    uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.pod.uuid" "$uuid_str"
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.svc.name" "cortx-ha-headless-svc"
+    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.type" "ha_node"
+    # Create HA machine id file
+    auto_gen_ha_path="$cfgmap_path/auto-gen-ha-$namespace"
+    mkdir -p $auto_gen_ha_path
+    echo $uuid_str > $auto_gen_ha_path/id
+
+    # Copy cluster template
+    cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
 
         if [[ $num_motr_client -gt 0 ]]; then
             # Generate cluster client node file with type client_node in "node-info" folder
@@ -925,6 +983,21 @@ function deployCortxConfigMap()
         echo $kubectl_cmd_output
     fi
 
+    if [[ $num_motr_client -gt 0 ]]; then
+        # Create client machine ID config maps
+        for i in "${!node_name_list[@]}"; do
+            auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace/client"
+            kubectl_cmd_output=$(kubectl create configmap "cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace" \
+                                --namespace=$namespace \
+                                --from-file=$auto_gen_cfgmap_path)
+            if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
+                printf "Exit early. Create config map 'cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace' failed with error:\n$kubectl_cmd_output\n"
+                exit 1
+                fi
+        done
+        echo $kubectl_cmd_output
+    fi
+
     # Create SSL cert config map
     ssl_cert_path="$cfgmap_path/ssl-cert"
     kubectl_cmd_output=$(kubectl create configmap "cortx-ssl-cert-cfgmap-$namespace" \
@@ -944,58 +1017,41 @@ function deployCortxSecrets()
     printf "########################################################\n"
     # Parse secret from the solution file and create all secret yaml files
     # in the "auto-gen-secret" folder
-    secret_auto_gen_path="$cfgmap_path/auto-gen-secret-$namespace"
-    mkdir -p $secret_auto_gen_path
-    output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets.name")
-    IFS=';' read -r -a parsed_secret_name_array <<< "$output"
-    for secret_name in "${parsed_secret_name_array[@]}"
-    do
-        secret_fname=$(echo $secret_name | cut -f2 -d'>')
-        yaml_content_path=$(echo $secret_name | cut -f1 -d'>')
-        yaml_content_path=${yaml_content_path/.name/".content"}
-        secrets="$(./parse_scripts/yaml_extract_block.sh $solution_yaml $yaml_content_path 2)"
+    secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
+    mkdir -p "${secret_auto_gen_path}"
+    secret_name=$(parseSolution "solution.secrets.name")
+    secret_fname=$(echo "${secret_name}" | cut -f2 -d'>')
+    yaml_content_path=$(echo "${secret_name}" | cut -f1 -d'>')
+    yaml_content_path=${yaml_content_path/.name/".content"}
+    secrets="$(./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "${yaml_content_path}" 2)"
 
-        new_secret_gen_file="$secret_auto_gen_path/$secret_fname.yaml"
-        cp "$cfgmap_path/templates/secret-template.yaml" $new_secret_gen_file
-        ./parse_scripts/subst.sh $new_secret_gen_file "secret.name" "$secret_fname"
-        ./parse_scripts/subst.sh $new_secret_gen_file "secret.content" "$secrets"
+    new_secret_gen_file="${secret_auto_gen_path}/${secret_fname}.yaml"
+    cp "${cfgmap_path}/templates/secret-template.yaml" "${new_secret_gen_file}"
+    ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${secret_fname}"
+    ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets}"
+        
+    kubectl_cmd_output=$(kubectl create -f "${new_secret_gen_file}" --namespace="${namespace}" 2>&1)
 
-        kubectl_cmd_output=$(kubectl create -f $new_secret_gen_file --namespace=$namespace 2>&1)
+    if [[ "${kubectl_cmd_output}" == *"BadRequest"* ]]; then
+        printf "Exit early. Create secret failed with error:\n%s\n" "${kubectl_cmd_output}"
+        exit 1
+    fi
+    echo "${kubectl_cmd_output}"
 
-        if [[ "$kubectl_cmd_output" == *"BadRequest"* ]]; then
-            printf "Exit early. Create secret failed with error:\n$kubectl_cmd_output\n"
-            exit 1
-        fi
-        echo $kubectl_cmd_output
+    control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
+    data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
+    server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
+    ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
 
-        control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
-        data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
-        server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
-        ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
-        if [[ $num_motr_client -gt 0 ]]; then
-            client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
-            if [[ -s $client_secret_path ]]; then
-                printf "\n" >> $client_secret_path
-            fi
-            printf "$secret_fname" >> $client_secret_path
-        fi
-        if [[ -s $control_secret_path ]]; then
-            printf "\n" >> $control_secret_path
-        fi
-        if [[ -s $data_secret_path ]]; then
-            printf "\n" >> $data_secret_path
-        fi
-        if [[ -s $server_secret_path ]]; then
-            printf "\n" >> $server_secret_path
-        fi
-        if [[ -s $ha_secret_path ]]; then
-            printf "\n" >> $ha_secret_path
-        fi
-        printf "$secret_fname" >> $control_secret_path
-        printf "$secret_fname" >> $data_secret_path
-        printf "$secret_fname" >> $server_secret_path
-        printf "$secret_fname" >> $ha_secret_path
-    done
+    printf "%s" "${secret_fname}" > ${control_secret_path}
+    printf "%s" "${secret_fname}" > ${data_secret_path}
+    printf "%s" "${secret_fname}" > ${server_secret_path}
+    printf "%s" "${secret_fname}" > ${ha_secret_path}
+
+    if [[ $num_motr_client -gt 0 ]]; then
+        client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
+        printf "%s" "${secret_fname}" > ${client_secret_path}
+    fi
 }
 
 function silentKill()
@@ -1123,6 +1179,7 @@ function deployCortxData()
             --set cortxdata.localpathpvc.requeststoragesize="1Gi" \
             --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
             --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
+            --set cortxdata.hax.port=$(extractBlock 'solution.common.hax.port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="$serviceAccountName" \
             --set namespace=$namespace \
@@ -1185,6 +1242,7 @@ function deployCortxServer()
             --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
             --set cortxserver.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
             --set cortxserver.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
+            --set cortxserver.hax.port=$(extractBlock 'solution.common.hax.port_num') \
             --set cortxserver.secretinfo="secret-info.txt" \
             --set cortxserver.serviceaccountname="$serviceAccountName" \
             --set namespace=$namespace \
@@ -1238,7 +1296,6 @@ function deployCortxHa()
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-$namespace" \
         --set cortxha.localpathpvc.mountpath="$local_storage" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
-        --set cortxha.secretinfo="secret-info.txt" \
         --set namespace=$namespace \
         -n $namespace
 
@@ -1288,6 +1345,7 @@ function deployCortxClient()
             --set cortxclient.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
             --set cortxclient.sslcfgmap.volmountname="ssl-config001" \
             --set cortxclient.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
+            --set cortxclient.machineid.value="$cortxclient_machineid" \
             --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-$node_name" \
             --set cortxclient.localpathpvc.mountpath="$local_storage" \
             --set cortxclient.localpathpvc.requeststoragesize="1Gi" \
@@ -1321,14 +1379,6 @@ function deployCortxClient()
     printf "\n\n"
 }
 
-function deployCortxServices()
-{
-    printf "########################################################\n"
-    printf "# Deploy Services                                       \n"
-    printf "########################################################\n"
-    kubectl apply -f services/cortx-io-svc.yaml --namespace=$namespace
-}
-
 function cleanup()
 {
     #################################################################
@@ -1340,6 +1390,7 @@ function cleanup()
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
+    find $(pwd)/cortx-cloud-helm-pkg/cortx-client -name "secret-*" -delete
 
     rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
 
@@ -1443,5 +1494,4 @@ esac
 if [[ $num_motr_client -gt 0 ]]; then
     deployCortxClient
 fi
-deployCortxServices
 cleanup

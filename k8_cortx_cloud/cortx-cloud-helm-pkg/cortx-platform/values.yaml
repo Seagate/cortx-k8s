@@ -45,3 +45,13 @@ networkPolicy:
     podAppLabel: cortx-control-pod
   cortxData:
     podNameLabel: cortx-data
+
+services:
+  hax:
+    name: cortx-hax-svc
+    type: ClusterIP
+    port: 22003
+  io:
+    name: cortx-io-svc
+    type: ClusterIP
+    #port: <!-- SEE ./templates/cortx-io-svc.yaml FOR PORT DETAILS -->#
