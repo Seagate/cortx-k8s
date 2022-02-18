@@ -85,14 +85,21 @@ function savePodDetail()
 function getInnerLogs()
 {
   local pod="$1"
+  local container_arg=()
+  [[ -n $2 ]] && container_arg+=(--container "$2")
   local path="/var/cortx/support_bundle"
   local name="bundle-logs-${pod}-${date}"
 
   printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
-  kubectl exec "${pod}" --namespace="${namespace}" -- cortx_support_bundle generate --location file://${path} --bundle_id "${name}" --message "${name}"
-  kubectl cp "${pod}":"${path}/${name}" "${logs_folder}/${name}"
+  kubectl exec "${pod}" "${container_arg[@]}" --namespace="${namespace}" -- \
+    cortx_support_bundle generate \
+      --cluster_conf_path yaml:///etc/cortx/cluster.conf \
+      --location file://${path} \
+      --bundle_id "${name}" \
+      --message "${name}"
+  kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" "${container_arg[@]}" --namespace="${namespace}"
   tar --append --file "${logs_folder}.tar" "${logs_folder}/${name}"
-  kubectl exec "${pod}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
+  kubectl exec "${pod}" "${container_arg[@]}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
 }
 
 while IFS= read -r line; do
@@ -116,7 +123,7 @@ while IFS= read -r line; do
           saveLogs $pod "${item}"
         done
         savePodDetail $pod
-        getInnerLogs $pod
+        getInnerLogs "${pod[0]}" "${containers[0]}"
         ;;
       *)
         saveLogs $pod
