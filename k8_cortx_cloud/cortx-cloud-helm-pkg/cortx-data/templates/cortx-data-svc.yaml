@@ -10,8 +10,8 @@ spec:
   ports:
     - name: cortx-data-motr-hax-tcp
       protocol: TCP
-      port: 2001
-      targetPort: 2001
+      port: {{ .Values.cortxdata.hax.port }}
+      targetPort: {{ .Values.cortxdata.hax.port }}
     - name: cortx-motr-confd-tcp
       protocol: TCP
       port: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
