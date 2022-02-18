@@ -32,7 +32,7 @@ solution:
       shared: /share
       log: /etc/cortx/log
     s3:
-      num_inst: 2
+      num_inst: 1
       start_port_num: 28051
       max_start_timeout: 240
     motr:
