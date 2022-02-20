@@ -10,12 +10,12 @@ spec:
   ports:
     - name: http-port80
       protocol: TCP
-      port: 8000
-      targetPort: 80
+      port: 80
+      targetPort: 8000
     - name: https-port443
       protocol: TCP
-      port: 8443
-      targetPort: 443
+      port: 443
+      targetPort: 8443
     - name: port28049
       protocol: TCP
       port: 28049
