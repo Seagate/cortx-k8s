@@ -354,8 +354,8 @@ ssh $SSH_FLAGS centos@$ClusterControlPlaneIP
 
 kubectl get pod
 
-DataPod=`kubectl get pod | grep cortx-data-pod | grep Running | awk '{print $1}' | head -1`
-kubectl exec -i $DataPod -c cortx-motr-hax -- hctl status
+DataPod=`kubectl get pod | grep cortx-data | grep Running | awk '{print $1}' | head -1`
+kubectl exec -i $DataPod -c cortx-hax -- hctl status
 ```
 In the hctl status output validate that all services are "started". It may take several minutes for s3server instances to move from "offline" to "started"
 
@@ -399,7 +399,7 @@ ssh $SSH_FLAGS centos@$ClusterControlPlaneIP
 ### 4.1 Use CORTX CSM (Management API) to provision an S3 account
 ```
 # Define CSM IP in the cluster
-export CSM_IP=`kubectl get svc cortx-control-clusterip-svc -ojsonpath='{.spec.clusterIP}'`
+export CSM_IP=`kubectl get svc cortx-control-loadbal-svc -ojsonpath='{.spec.clusterIP}'`
 
 # Authenticate using CORTX credentials (as defined in solutions.yaml on step 3.2)
 curl -v -d '{"username": "cortxadmin", "password": "Cortxadmin@123"}' https://$CSM_IP:8081/api/v2/login --insecure
@@ -427,32 +427,32 @@ export AWS_DEFAULT_REGION=us-east-1
 CORTX S3 and IAM interfaces are available through multiple IPs (one IP per worker node). An external load balancer can be used to aggregate all traffic
 ```
 # Define one of the data IPs in the cluster 
-export DATA_IP=`kubectl get svc | grep cortx-data-clusterip-svc | head -1 | awk '{print $3}'`
+export SERVER_IP=`kubectl get svc | grep cortx-server-clusterip-svc | head -1 | awk '{print $3}'`
 
 # Create an IAM user and get credentials for this user
-aws --no-verify-ssl --endpoint-url https://$DATA_IP:9443 iam create-user --user-name bob
-aws --no-verify-ssl --endpoint-url https://$DATA_IP:9443 iam create-access-key --user-name bob
-aws --no-verify-ssl --endpoint-url https://$DATA_IP:9443 iam list-users
+aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam create-user --user-name bob
+aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam create-access-key --user-name bob
+aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam list-users
 
 # Create an S3 bucket and upload a file 
-aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 ls
-aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 mb s3://cortx-aws-works
-aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 cp awscliv2.zip s3://cortx-aws-works
+aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 ls
+aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 mb s3://cortx-aws-works
+aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 cp awscliv2.zip s3://cortx-aws-works
 ```
 
 ### 4.4 Test performance using s3-benchmark
 ```
 curl -OL https://github.com/dvassallo/s3-benchmark/raw/master/build/linux-amd64/s3-benchmark
 chmod +x s3-benchmark
-./s3-benchmark -bucket-name s3-benchmark -endpoint http://$DATA_IP:80
+./s3-benchmark -bucket-name s3-benchmark -endpoint http://$SERVER_IP:80
 ```
 
 ## 5 IPs and Ports to communicate with CORTX
 | Interface | IP(s) | Port(s)
 | --- | --- | --- |
-| Management | cortx-control-clusterip-svc K8s service | tcp/8081
-| S3 | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/443, tcp/80
-| IAM | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/9443
+| Management | cortx-control-loadbal-svc K8s service | tcp/8081
+| S3 | Multiple IPs (cortx-server-clusterip-svc pods) | tcp/443, tcp/80
+| IAM | Multiple IPs (cortx-server-clusterip-svc pods) | tcp/9443
 
 ## Tested by:
 
