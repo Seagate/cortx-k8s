@@ -54,7 +54,7 @@ ClusterTag=cortx-k8s-cl03
 SubnetId=subnet-070838693db278eab
 # Security Group ID for the cluster
 SecurityGroupId=sg-0585145ff6b831b77
-# CentOS 7.9 AMI ID. See https://wiki.centos.org/Cloud/AWS 
+# CentOS 7.9 AMI ID for us-west-1. See https://wiki.centos.org/Cloud/AWS for other regions
 AmiID=ami-08d2d8b00f270d03b
 # Instance type
 InstanceType=c5.2xlarge
