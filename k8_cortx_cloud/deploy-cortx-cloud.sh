@@ -265,7 +265,7 @@ function deployKubernetesPrereqs()
         --set namespace.name="$namespace" \
         --set services.hax.name=$(extractBlock 'solution.common.hax.service_name') \
         --set services.hax.port=$(extractBlock 'solution.common.hax.port_num') \
-        --set services.io.type="${external_services_type}"
+        --set services.io.type="${external_services_type}" \
         -n $namespace
 
 }
