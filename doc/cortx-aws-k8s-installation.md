@@ -224,7 +224,7 @@ At this stage the Kubernetes cluster should be fully operational
 
 ### 3.1 Clone Cortx-K8s framework
 ```
-git clone -b integration https://github.com/Seagate/cortx-k8s.git
+git clone -b v0.0.22 https://github.com/Seagate/cortx-k8s.git
 ```
 ### 3.2 Update cluster configuration
 CORTX deployment framework can be configured through a single file  cortx-k8s/k8_cortx_cloud/solution.yaml
