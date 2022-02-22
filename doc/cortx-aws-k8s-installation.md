@@ -334,12 +334,6 @@ AWS EC2 instances provisioned on step 2.2 have 1 disk for 3rd party apps (/dev/n
 for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip "cd cortx-k8s/k8_cortx_cloud; sudo ./prereq-deploy-cortx-cloud.sh /dev/$LogsDevice" </dev/null & done
 ```
 
-#### 3.4.1 Install Helm on the cluster control plane
-Current script version doesn't deploy Helm - it will be fixed later.
-```
-ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3; chmod 700 get_helm.sh; ./get_helm.sh"
-```
-
 ### 3.5 Deploy CORTX
 > **NOTE**: For Motr + Hare only cortx cluster make number of s3 instance as 0 (solution -> common -> s3 -> num_inst) in cortx-k8s/k8_cortx_cloud/solution.yaml
 ```
