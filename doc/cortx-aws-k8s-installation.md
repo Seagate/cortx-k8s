@@ -456,4 +456,5 @@ chmod +x s3-benchmark
 
 ## Tested by:
 
+Feb 22, 2022: Tim Shaffer (tim.shaffer@seagate.com)
 Nov 12, 2021: Rose Wambui (rose.wambui@seagate.com) and Justin Woo (justin.woo@seagate.com) 
