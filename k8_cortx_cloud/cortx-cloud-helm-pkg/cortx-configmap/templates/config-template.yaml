@@ -126,7 +126,7 @@ cortx:
           max: 500m
     clients:
       - name: rgw
-        num_instances: 1
+        num_instances: <<.Values.cortx.num_s3_inst>>
         endpoints:
         <<.Values.cortx.client.rgw>>
       - name: motr_client
