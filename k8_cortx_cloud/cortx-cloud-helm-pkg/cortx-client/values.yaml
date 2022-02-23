@@ -8,12 +8,8 @@ cortxclient:
   motr:
     numclientinst: 0
   service:
-    clusterip:
-      name: cortx-client-clusterip-svc
     headless:
       name: cortx-client-headless-svc
-    loadbal:
-      name: cortx-client-loadbal-svc
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001

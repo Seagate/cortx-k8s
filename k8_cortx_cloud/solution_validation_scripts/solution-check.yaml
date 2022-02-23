@@ -46,7 +46,15 @@ solution:
         sns: required
         dix: required
     external_services:
-      type: required
+      s3:
+        type: required
+        ports:
+          http: required
+          https: required
+      control:
+        type: required
+        ports:
+          https: required
     resource_allocation:
       consul:
         server:

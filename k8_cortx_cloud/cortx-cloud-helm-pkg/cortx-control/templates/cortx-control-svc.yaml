@@ -1,14 +1,18 @@
 apiVersion: v1
 kind: Service
+{{- $svc := .Values.cortxcontrol.service.loadbal }}
 metadata:
-  name: {{ .Values.cortxcontrol.service.loadbal.name }}
+  name: {{ $svc.name }}
   namespace: {{ .Values.namespace }}
 spec:
-  type: {{ .Values.cortxcontrol.service.loadbal.type }}
+  type: {{ $svc.type }}
   selector:
     app: {{ .Values.cortxcontrol.name }}
   ports:
-  - name: cotrx-control-8081
-    port: 8081
-    targetPort: 8081
-    nodePort: 31169
+    {{- $nodePortAllowed := or (eq $svc.type "NodePort") (eq $svc.type "LoadBalancer") }}
+    - name: cotrx-control-8081
+      port: {{ $svc.ports.api }}
+      targetPort: 8081
+      {{- if and $nodePortAllowed (not (empty $svc.nodePorts.https)) }}
+      nodePort: {{ $svc.nodePorts.https }}
+      {{- end }}
