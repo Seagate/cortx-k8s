@@ -354,7 +354,7 @@ ssh $SSH_FLAGS centos@$ClusterControlPlaneIP
 
 kubectl get pod
 
-DataPod=`kubectl get pod | grep cortx-data | grep Running | awk '{print $1}' | head -1`
+DataPod=`kubectl get pod --field-selector=status.phase=Running --selector cortx.io/service-type=cortx-data -o jsonpath={.items[0].metadata.name}`
 kubectl exec -i $DataPod -c cortx-hax -- hctl status
 ```
 In the hctl status output validate that all services are "started". It may take several minutes for s3server instances to move from "offline" to "started"
