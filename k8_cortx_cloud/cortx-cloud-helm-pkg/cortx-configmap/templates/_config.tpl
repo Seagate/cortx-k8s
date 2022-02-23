@@ -125,7 +125,7 @@ cortx:
       - name: rgw
         num_instances: 1  # number of instances *per-pod*
         endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
-    {{- if len .Values.cortxMotr.clientEndpoints }}
+    {{- if gt (len .Values.cortxMotr.clientEndpoints) 0 }}
       - name: motr_client
         num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
         endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}

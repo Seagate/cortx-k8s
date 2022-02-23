@@ -252,8 +252,7 @@ function deployKubernetesPrereqs()
         createPodSecurityPolicy="false"
     fi
 
-    external_services_type=$(parseSolution 'solution.common.external_services.type')
-    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+    external_services_type=$(extractBlock 'solution.common.external_services.type' || true)
 
     helm install "cortx-platform" cortx-cloud-helm-pkg/cortx-platform \
         --set podSecurityPolicy.create="$createPodSecurityPolicy" \
