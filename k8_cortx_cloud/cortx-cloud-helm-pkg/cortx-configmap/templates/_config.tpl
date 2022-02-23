@@ -8,7 +8,7 @@ cortx:
       secret: {{ .Values.externalKafka.adminSecretName }}
     {{- end }}
     {{- if .Values.externalLdap.enabled }}
-    openldap:
+    openldap:                                                       # DEPRECATED - OPENLDAP KEY
       endpoints: {{- toYaml .Values.externalLdap.endpoints | nindent 8 }}
       servers: {{- toYaml .Values.externalLdap.servers | nindent 8 }}
       admin: {{ .Values.externalLdap.adminUser }}
@@ -25,7 +25,7 @@ cortx:
     release:
       name: CORTX
       version: {{ .Values.cortxVersion }}
-    environment_type: K8
+    environment_type: K8                                            # DEPRECATED
     setup_size: {{ .Values.cortxSetupSize }}
     service:
       admin: admin
@@ -37,7 +37,7 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
-  s3:
+  s3:                                                               # DEPRECATED - ENTIRE S3 KEY
     iam:
       endpoints:
       - https://{{ .Values.cortxIoServiceName }}:9443
@@ -56,25 +56,96 @@ cortx:
     {{- with .Values.cortxS3.maxStartTimeout }}
     max_start_timeout: {{ . | int }}
     {{- end }}
-    auth_admin: sgiamadmin
-    auth_secret: s3_auth_admin_secret
+    auth_user: {{ .Values.cortxRgw.authUser }}
+    auth_admin: {{ .Values.cortxRgw.authAdmin }}
+    auth_secret: {{ .Values.cortxRgw.authSecret }}
+  rgw:
+    iam:                                                            # DEPRECATED - IAM KEY
+      endpoints:
+      - https://{{ .Values.cortxIoServiceName }}:8443
+      - http://{{ .Values.cortxIoServiceName }}:8000
+    data:
+      endpoints:
+      - http://{{ .Values.cortxIoServiceName }}:8000
+      - https://{{ .Values.cortxIoServiceName }}:8443
+    s3:
+      endpoints:
+      - http://{{ .Values.cortxIoServiceName }}:8000
+      - https://{{ .Values.cortxIoServiceName }}:8443
+    {{- with .Values.cortxS3.instanceCount }}
+    service_instances: {{ . | int }}
+    {{- end }}
+    io_max_units: 8                                                 #HARDCODED
+    {{- with .Values.cortxS3.maxStartTimeout }}
+    max_start_timeout: {{ . | int }}
+    {{- end }}
+    auth_user: {{ .Values.cortxRgw.authUser }}
+    auth_admin: {{ .Values.cortxRgw.authAdmin }}
+    auth_secret: {{ .Values.cortxRgw.authSecret }}
+    limits:
+      num_services: 1                                               #HARDCODED
+      services:
+      - name: rgw
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 1000m
   hare:
     hax:
       endpoints:
       {{- with .Values.cortxHa.haxService }}
         - {{ .protocol }}://{{ .name }}:{{ .port }}
       {{- end }}
+      {{- toYaml .Values.cortxHare.haxDataEndpoints | nindent 8 }}
+      {{- toYaml .Values.cortxHare.haxServerEndpoints | nindent 8 }}
+      {{- if gt (len .Values.cortxHare.haxClientEndpoints) 0 -}}
+        {{- toYaml .Values.cortxHare.haxClientEndpoints | nindent 8 }}
+      {{- end }}
+    limits:
+      services:
+      - name: hax
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
   motr:
-    client_instances: {{ len .Values.cortxMotr.clientEndpoints }}
-    interface_type: tcp
+    client_instances: {{ len .Values.cortxMotr.clientEndpoints }}   #DEPRECATED
+    interface_type: tcp                                             #DEPRECATED
     interface_family: inet
     transport_type: libfab
-    {{- if len .Values.cortxMotr.clientEndpoints }}
+    ios:
+      endpoints: {{- toYaml .Values.cortxMotr.iosEndpoints | nindent 6 }}
+    confd:
+      endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
     clients:
+      - name: rgw
+        num_instances: 1  # number of instances *per-pod*
+        endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
+    {{- if gt (len .Values.cortxMotr.clientEndpoints) 0 }}
       - name: motr_client
         num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
         endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
     {{- end }}
+    limits:
+      services:
+      - name: ios
+        memory:
+          min: 1Gi
+          max: 2Gi
+        cpu:
+          min: 250m
+          max: 1000m
+      - name: confd
+        memory:
+          min: 128Mi
+          max: 512Mi
+        cpu:
+          min: 250m
+          max: 500m
   csm:
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
@@ -84,4 +155,37 @@ cortx:
     agent:
       endpoints:
       - https://{{ .Values.cortxIoServiceName }}:8081
+    limits:
+      services:
+      - name: agent
+        memory:
+          min: 128Mi
+          max: 256Mi
+        cpu:
+          min: 250m
+          max: 500m
+  ha:
+    limits:
+      services:
+      - name: fault_tolerance
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
+      - name: health_monitor
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
+      - name: k8s_monitor
+        memory:
+          min: 128Mi
+          max: 1Gi
+        cpu:
+          min: 250m
+          max: 500m
 {{- end -}}

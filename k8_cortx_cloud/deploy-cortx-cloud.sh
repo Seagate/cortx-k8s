@@ -252,6 +252,8 @@ function deployKubernetesPrereqs()
         createPodSecurityPolicy="false"
     fi
 
+    external_services_type=$(extractBlock 'solution.common.external_services.type' || true)
+
     helm install "cortx-platform" cortx-cloud-helm-pkg/cortx-platform \
         --set podSecurityPolicy.create="$createPodSecurityPolicy" \
         --set rbacRole.create="true" \
@@ -262,6 +264,7 @@ function deployKubernetesPrereqs()
         --set namespace.name="$namespace" \
         --set services.hax.name=$(extractBlock 'solution.common.hax.service_name') \
         --set services.hax.port=$(extractBlock 'solution.common.hax.port_num') \
+        --set services.io.type="${external_services_type}" \
         -n $namespace
 
 }
@@ -322,7 +325,8 @@ function deployConsul()
         --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
         --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
         --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu') \
-        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false
+        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
+        --wait
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
     kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
@@ -330,7 +334,7 @@ function deployConsul()
 
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
     kubectl rollout restart statefulset/consul-server
-    kubectl rollout restart daemonset/consul
+    kubectl rollout restart daemonset/consul-client
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -618,6 +622,8 @@ function deployCortxConfigMap()
         --set cortxStoragePaths.config="${local_storage}"
         --set cortxVersion="${tag}"
         --set cortxSetupSize="$(extractBlock 'solution.common.setup_size' || true)"
+        --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
+        --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
     )
 
     # Build OpenLDAP server values dynamically from running pods
@@ -629,10 +635,21 @@ function deployCortxConfigMap()
         )
     done
 
+    for idx in "${!node_name_list[@]}"; do
+        helm_install_args+=(
+            --set "cortxHare.haxDataEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxHare.haxServerEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxMotr.confdEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxMotr.iosEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:21001"
+            --set "cortxMotr.rgwEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:21001"
+        )
+    done
+
     if ((num_motr_client > 0)); then
         for idx in "${!node_name_list[@]}"; do
             helm_install_args+=(
                 --set "cortxMotr.clientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[${idx}]}:21001"
+                --set "cortxHare.haxClientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[${idx}]}:22001"
             )
         done
     fi
