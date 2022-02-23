@@ -284,11 +284,14 @@ yq -i '.solution.common.setup_size = "small"' cortx-k8s/k8_cortx_cloud/solution.
 - Example;
 ```
  images:
-    cortxcontrolprov: cortx-all:2.0.0-0
-    cortxcontrol: cortx-all:2.0.0-0
-    cortxdataprov: cortx-all:2.0.0-0
-    cortxdata: cortx-all:2.0.0-0
-  ```
+   cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxdata: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxserver: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxha: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxclient: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+```
 
 #### 3.2.3 Advanced configuration options
 <details>
