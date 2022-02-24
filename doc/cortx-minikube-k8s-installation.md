@@ -1,8 +1,8 @@
-# **CORTX on MINIKUBE - Quick Install Guide**
+# **CORTX on minikube - Quick Install Guide**
 
-*Note: This setup is for a single node cluster testing using Centos 7.9*
+*Note: This setup is for a single node cluster tested using Centos 7.9*
 
-**1. Minimum Requirements:**
+## 1. Minimum Requirements:
 
 * **RAM**: 10GB
 * **Processor**: 6
@@ -18,41 +18,23 @@
 
 ```
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-```
- 
-```
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-```
-
-```
 kubectl version
 ```
 
-**3. Install Helm(A package manager for K8s):**
+**3. Install Helm (A package manager for K8s):**
 
 ```
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-```
-
-```
 chmod 700 get_helm.sh
-```
-
-```
 ./get_helm.sh
 ```
 
-**4. Install and start minikube(Centos7.9):**
+**4. Install and start minikube:**
 
 ```
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-```
-
-```
 sudo install minikube-linux-amd64 /usr/local/bin/minikube
-```
-
-```
 minikube start --driver=none
 ```
 
@@ -62,21 +44,25 @@ Note minikube may fail to start in some setup due to driver issue, if this happe
 **5. Clone Cortx-K8s framework**
 
 ```
-git clone https://github.com/Seagate/cortx-k8s
-```
-
-```
+git clone -b v0.0.22 https://github.com/Seagate/cortx-k8s
 cd cortx-k8s/k8_cortx_cloud/
 ```
 
-**5.1  Update the solution.yaml file.**
+<!-- Note: This was tested on the following commit id
+```
+commit 8b842371eb4a3317b23cec6b2ddf74d40d4ad0ef
+Author: Keith Pine <keith.pine@seagate.com>
+Date:   Wed Feb 16 14:36:31 2022 -0800
+``` -->
+
+### 5.1  Update the solution.yaml file.
 
 - Update the node name in `solution.yaml` with the name of the node you get from `kubectl get node` command. 
 
     ```
     nodes:
-        node1:
-          name: control-plane.minikube.internal
+      node1:
+        name: control-plane.minikube.internal
 
     ```
 
@@ -107,7 +93,7 @@ cd cortx-k8s/k8_cortx_cloud/
     sr0              11:0    1 1024M  0 rom  
     ```
     
-    For e.g, We have added `/dev/sdb`, `/dev/sdc`, `/dev/sdd`, `/dev/sde`, `/dev/sdf`, `/dev/sdg` for the disk and `10Gi` for the size in the below snip.
+    For example, in the below snippet we have added `/dev/sdb`, `/dev/sdc`, `/dev/sdd`, `/dev/sde`, `/dev/sdf`, and `/dev/sdg` as the storage devices with size `10Gi`.
     
     ```
     storage:
@@ -124,6 +110,7 @@ cd cortx-k8s/k8_cortx_cloud/
                 size: 10Gi
               d2:
                 device: /dev/sdd
+                size: 10Gi
         cvg2:
           name: cvg-02
           type: ios
@@ -146,7 +133,7 @@ cd cortx-k8s/k8_cortx_cloud/
 sudo ./prereq-deploy-cortx-cloud.sh /dev/disk-name-not-used-in-yaml 
 ```
 
-*Note: disk-name should be relpaced by a disk which is not used in solution.yaml or the os*
+*Note: `/dev/disk-name-not-used-in-yaml` should be replaced by a disk that is not used in `solution.yaml` or by the OS. From the above example we would use `/dev/sdh`.*
 
 
 **5.3 Deploy CORTX**
@@ -155,7 +142,7 @@ sudo ./prereq-deploy-cortx-cloud.sh /dev/disk-name-not-used-in-yaml
 ./deploy-cortx-cloud.sh
 ```
 
-*Note: due to high resource requirement this might take longer to complete the deployment.*
+*Deployment may take several minutes to complete.*
 
 **This step completes CORTX installation**
 
@@ -169,27 +156,26 @@ Below is the output of a successful deployment:
 
 ```
 # kubectl get pod
-NAME                               READY   STATUS    RESTARTS      AGE
-consul-client-pxczf                1/1     Running   0             97m
-consul-server-0                    1/1     Running   0             97m
-cortx-control-5d9d48bf54-x2ltw     4/4     Running   0             95m
-cortx-data-car-7fd57f7bf5-jsbfz    4/4     Running   0             94m
-cortx-ha-5b7b9fbf84-65247          3/3     Running   1 (89m ago)   90m
-cortx-server-car-6744466b9-95tnv   5/5     Running   0             92m
-kafka-0                            1/1     Running   0             97m
-openldap-0                         1/1     Running   0             97m
-zookeeper-0                        1/1     Running   0             97m
+NAME                                READY   STATUS    RESTARTS   AGE
+consul-client-sxkmc                 1/1     Running   0          7m12s
+consul-server-0                     1/1     Running   0          7m11s
+cortx-control-b575878f8-g2k9c       4/4     Running   0          5m48s
+cortx-data-car-c94bdd86c-bqjnh      4/4     Running   0          4m37s
+cortx-ha-58b494c59d-ft9n6           3/3     Running   0          46s
+cortx-server-car-758675d6fc-ss2f8   5/5     Running   0          2m9s
+kafka-0                             1/1     Running   0          6m27s
+openldap-0                          1/1     Running   0          7m8s
+zookeeper-0                         1/1     Running   0          6m49s
 ```
 
 Once you get the above output we need to check the cluster status as follows:
 
 ```
-DataPod=`kubectl get pod | grep cortx-data- | grep Running | awk '{print $1}' | head -1`
-
-kubectl exec -i $DataPod -c cortx-hax -- hctl status
+DataPod=`kubectl get pod --field-selector=status.phase=Running --selector cortx.io/service-type=cortx-data -o jsonpath={.items[0].metadata.name}`
+kubectl exec $DataPod -c cortx-hax -- hctl status
 ```
 
-For e.g, On an successful deployment output from the above command should be as follows (`hax`, `s3server`, `ioservice` and `confd` are started):
+For example, after a successful deployment the output from the above command should be as follows (`hax`, `s3server`, `ioservice` and `confd` are started):
 
 ```
 # kubectl exec -i $DataPod -c cortx-hax -- hctl status
@@ -220,9 +206,9 @@ Services:
 
 *If the pods are not coming up correctly or any of the service are not getting `[started]` - check your `solution.yaml` for typos or mistakes which could result in a deployment failure.*
 
-**5.5 Destroy CORTX Cluster**
+**5.5 Delete CORTX Cluster**
 
-To rollback to step 5.3 and destroy the CORTX cluster run the foll command:
+To rollback to step 5.3 and delete the CORTX cluster run the below command:
 
 ```
 ./destroy-cortx-cloud.sh
@@ -235,9 +221,9 @@ Use CORTX CSM (Management API) to provision an S3 account
 **6.1 Login to the management**
 
 ```
-export CSM_IP=`kubectl get svc cortx-control-loadbal-svc  -ojsonpath='{.spec.clusterIP}'`
+export CSM_IP=`kubectl get svc cortx-control-loadbal-svc -ojsonpath='{.spec.clusterIP}'`
 
-curl rl -v -d '{"username": "cortxadmin", "password": "Cortxadmin@123"}' https://$CSM_IP:8081/api/v2/login --insecure
+curl -i -d '{"username": "cortxadmin", "password": "Cortxadmin@123"}' https://$CSM_IP:8081/api/v2/login --insecure | grep Bearer
 ```
 
 *Copy the bearer token for the next command*
@@ -245,7 +231,10 @@ curl rl -v -d '{"username": "cortxadmin", "password": "Cortxadmin@123"}' https:/
 **6.2 Create an S3 account.**
 
 ```
-curl -H 'Authorization:  Bearer <bearer-token>' -d '{  "account_name": "testUser",   "account_email": "*****@gmail.com",   "password": "Account@1" }' https://$CSM_IP:8081/api/v2/s3_accounts --insecure
+curl --insecure \
+  -H 'Authorization: Bearer <bearer-token>' \
+  -d '{  "account_name": "testUser", "account_email": "*****@gmail.com", "password": "Account@1" }' \
+  https://$CSM_IP:8081/api/v2/s3_accounts
 ```
 
 - Results from the above command
@@ -254,7 +243,7 @@ curl -H 'Authorization:  Bearer <bearer-token>' -d '{  "account_name": "testUser
 {"account_name": "testUser", "account_email": "*****@gmail.com", "account_id": "507040439091", "canonical_id": "92b845b0de8a4532a0d3a15a1540e43ffc1ec5a02662430ea76dce69d3e770fb", "access_key": "AKIA*******************CKw", "secret_key": "U1pU****************************cGL"}
 ```
 
-**7.  Install and configure AWS CLI to use IAM and S3 APIs**
+**7. Install and configure AWS CLI to use IAM and S3 APIs**
 
 ```
 sudo yum install -y unzip
@@ -271,10 +260,10 @@ export AWS_SECRET_ACCESS_KEY=U1pU****************************cGL
 export AWS_DEFAULT_REGION=us-east-1
 ```
 
-- Use the control server ip for IO
+- Find the S3 server endpoint for IO
 
 ```
-export DATA_IP=`kubectl get svc | grep cortx-server-loadbal-svc | head -1 | awk '{print $3}'`
+export DATA_IP=`kubectl get svc cortx-io-svc -ojsonpath='{.spec.clusterIP}'`
 ```
 
 - Use the AWS CLI for IO. 
@@ -290,5 +279,7 @@ aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 ls
 
 
 ### Tested by:
+
+This document was tested on the following version: [v0.0.22](https://github.com/Seagate/cortx-k8s/releases/tag/v0.0.22)
 
 Feb 23, 2022: Sayed Alfhad Shah(fahadshah2411@gmail.com), Rinku Kothiya(rinku.kothiya@seagate.com) and Rose Wambui(rose.wambui@seagate.com)
