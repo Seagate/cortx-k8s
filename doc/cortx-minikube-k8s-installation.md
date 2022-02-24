@@ -1,12 +1,14 @@
 # **CORTX on MINIKUBE - Quick Install Guide**
 
+*Note: This setup is for a single node cluster testing using Centos 7.9*
+
 **1. Minimum Requirements:**
 
 * **RAM**: 10GB
 * **Processor**: 6
 * **NIC**: 1
 * **OS Disk**: 1 disk of 20GB
-* **Data Disks**: 4 disks of 10GB each
+* **Data Disks**: 5 disks of 10GB each
 * **Metadata disks**: 2 disks of 10GB each
 * **Container or virtual machine manager**, such as: Docker, Hyperkit, Hyper-V, KVM, Parallels, Podman, VirtualBox, or VMware Fusion/Workstation
 
@@ -83,8 +85,30 @@ cd cortx-k8s/k8_cortx_cloud/
     setup_size: small
     ```
 
-- Update the device name and size for all the cvg(s). For e.g, We have added `/dev/sdb`, `/dev/sdc`, `/dev/sde`, `/dev/sdf` for the disk and `10Gi` for the size in the below snip.
- 
+- Update the device name and size for all the cvg(s).
+    
+    - You can use the following command to find your disk-names:
+    
+    ```
+    # lsblk
+    NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+    sda               8:0    0   25G  0 disk 
+    ├─sda1            8:1    0    1G  0 part /boot
+    └─sda2            8:2    0   24G  0 part 
+      ├─centos-root 253:0    0 21.5G  0 lvm  /
+      └─centos-swap 253:1    0  2.5G  0 lvm  
+    sdb               8:16   0   10G  0 disk /mnt/fs-local-volume
+    sdc               8:32   0   10G  0 disk 
+    sdd               8:48   0   10G  0 disk 
+    sde               8:64   0   10G  0 disk 
+    sdf               8:80   0   10G  0 disk 
+    sdg               8:96   0   10G  0 disk 
+    sdh               8:112  0   10G  0 disk 
+    sr0              11:0    1 1024M  0 rom  
+    ```
+    
+    For e.g, We have added `/dev/sdb`, `/dev/sdc`, `/dev/sdd`, `/dev/sde`, `/dev/sdf`, `/dev/sdg` for the disk and `10Gi` for the size in the below snip.
+    
     ```
     storage:
         cvg1:
@@ -98,6 +122,8 @@ cd cortx-k8s/k8_cortx_cloud/
               d1:
                 device: /dev/sdc
                 size: 10Gi
+              d2:
+                device: /dev/sdd
         cvg2:
           name: cvg-02
           type: ios
@@ -109,7 +135,9 @@ cd cortx-k8s/k8_cortx_cloud/
               d1:
                 device: /dev/sdf
                 size: 10Gi
-
+              d2:
+                device: /dev/sdg
+                size: 10Gi
     ```
     
 **5.2 Execute pre-installation script.**
@@ -191,6 +219,14 @@ Services:
 *Note: It may take several minutes for s3server instances to move from "offline" to "started"*
 
 *If the pods are not coming up correctly or any of the service are not getting `[started]` - check your `solution.yaml` for typos or mistakes which could result in a deployment failure.*
+
+**5.5 Destroy CORTX Cluster**
+
+To rollback to step 5.3 and destroy the CORTX cluster run the foll command:
+
+```
+./destroy-cortx-cloud.sh
+```
 
 **6. Using CORTX**
 
