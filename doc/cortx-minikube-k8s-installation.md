@@ -56,7 +56,7 @@ sudo install minikube-linux-amd64 /usr/local/bin/minikube
 minikube start --driver=none
 ```
 
-Note minikube may fail to start in some setup due to driver issue, if this happens you can install the drivers here -> Drivers | minikube (k8s.io)
+Note minikube may fail to start in some setup due to driver issue, if this happens you can install the drivers here -> Drivers | minikube [(k8s.io)](https://minikube.sigs.k8s.io/docs/drivers/)
 
 
 **5. Clone Cortx-K8s framework**
