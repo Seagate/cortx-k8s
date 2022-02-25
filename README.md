@@ -94,7 +94,7 @@ There are numerous ways to install and configure a complete Kubernetes cluster. 
 For reference material, we have provided existing Kubernetes deployment models that have been verified to work with CORTX on Kubernetes. These are only provided for reference and are not meant to be explicit deployment constraints.
 
 1.  [Seagate Internal Jenkins Job](http://eos-jenkins.mero.colo.seagate.com/job/Cortx-kubernetes/job/setup-kubernetes-cluster/)
-2.  [CORTX on AWS and Kubernetes - Quick Install Guide](https://github.com/Seagate/cortx-k8s/blob/UDX-6683_move_documentation_to_readme_md/doc/cortx-aws-k8s-installation.md)
+2.  [CORTX on AWS and Kubernetes - Quick Install Guide](https://github.com/Seagate/cortx-k8s/blob/main/doc/cortx-aws-k8s-installation.md)
 
 Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster, please open an [Issue](https://github.com/Seagate/cortx-k8s/issues) in this repository for further troubleshooting.
 
