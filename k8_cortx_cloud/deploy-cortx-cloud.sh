@@ -892,7 +892,7 @@ function deployCortxControl()
         --set cortxcontrol.image="${control_image}" \
         --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
         --set cortxcontrol.service.loadbal.type="${control_service_type}" \
-        --set cortxcontrol.service.loadbal.ports.api="${control_service_ports_https}" \
+        --set cortxcontrol.service.loadbal.ports.https="${control_service_ports_https}" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
         --set cortxcontrol.cfgmap.name="cortx-cfgmap-${namespace}" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
