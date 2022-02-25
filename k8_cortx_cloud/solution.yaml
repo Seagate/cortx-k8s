@@ -50,7 +50,20 @@ solution:
         sns: 1+0+0
         dix: 1+0+0
     external_services:
-      type: LoadBalancer
+      s3:
+        type: NodePort
+        ports:
+          http: 8000
+          https: 8443
+        nodePorts:
+          http: ""
+          https: ""
+      control:
+        type: NodePort
+        ports:
+          https: 8081
+        nodePorts:
+          https: ""
     resource_allocation:
       consul:
         server:

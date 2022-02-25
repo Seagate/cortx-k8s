@@ -102,6 +102,31 @@ function extractBlock()
     echo "$(./parse_scripts/yaml_extract_block.sh $solution_yaml $1)"
 }
 
+#######################################
+# Get a scalar value given a YAML path in a solution.yaml file.
+# Arguments:
+#   A YAML path to lookup, e.g. "solution.common.external_services.s3.type".
+#   Wildcard paths are not accepted, e.g. "solution.nodes.node*.name".
+# Outputs:
+#   Writes the value to stdout. An empty string "" is printed if
+#   the value does not exist.
+# Returns:
+#   1 if the yaml path contains a wildcard, 0 otherwise.
+#######################################
+function getSolutionValue()
+{
+    local yaml_path=$1
+    # Don't allow wildcard paths
+    if [[ ${yaml_path}  == *"*"* ]]; then
+        return 1
+    fi
+
+    local value
+    value=$(parseSolution "${yaml_path}")
+    # discard everything before and including the first '>'
+    echo "${value#*>}"
+}
+
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo $namespace | cut -f2 -d'>')
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
@@ -242,31 +267,50 @@ done <<< "$(kubectl get namespaces)"
 ##########################################################
 function deployKubernetesPrereqs()
 {
-
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
     ## in the same chart as Namespace-scoped objects.
-    podSecurityPolicyName="cortx-baseline"
-    createPodSecurityPolicy="true"
-    output=$(kubectl get psp --no-headers $podSecurityPolicyName 2>/dev/null | wc -l)
-    if [[ "$output" == "1" ]]; then
+    local podSecurityPolicyName="cortx-baseline"
+    local createPodSecurityPolicy="true"
+    local output
+    output=$(kubectl get psp --no-headers ${podSecurityPolicyName} 2>/dev/null | wc -l || true)
+    if [[ ${output} == "1" ]]; then
         createPodSecurityPolicy="false"
     fi
 
-    external_services_type=$(extractBlock 'solution.common.external_services.type' || true)
+    local hax_service_name
+    local hax_service_port
+    local s3_service_type
+    local s3_service_ports_http
+    local s3_service_ports_https
+    hax_service_name=$(getSolutionValue 'solution.common.hax.service_name')
+    hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
+    s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
+    s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
+    s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
+
+    local optional_values=()
+    local s3_service_nodeports_http
+    local s3_service_nodeports_https
+    s3_service_nodeports_http=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.http')
+    s3_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.https')
+    [[ -n ${s3_service_nodeports_http} ]] && optional_values+=(--set services.io.nodePorts.http="${s3_service_nodeports_http}")
+    [[ -n ${s3_service_nodeports_https} ]] && optional_values+=(--set services.io.nodePorts.https="${s3_service_nodeports_https}")
 
     helm install "cortx-platform" cortx-cloud-helm-pkg/cortx-platform \
-        --set podSecurityPolicy.create="$createPodSecurityPolicy" \
+        --set podSecurityPolicy.create="${createPodSecurityPolicy}" \
         --set rbacRole.create="true" \
         --set rbacRoleBinding.create="true" \
         --set serviceAccount.create="true" \
-        --set serviceAccount.name="$serviceAccountName" \
+        --set serviceAccount.name="${serviceAccountName}" \
         --set networkPolicy.create="false" \
-        --set namespace.name="$namespace" \
-        --set services.hax.name=$(extractBlock 'solution.common.hax.service_name') \
-        --set services.hax.port=$(extractBlock 'solution.common.hax.port_num') \
-        --set services.io.type="${external_services_type}" \
-        -n $namespace
-
+        --set namespace.name="${namespace}" \
+        --set services.hax.name="${hax_service_name}" \
+        --set services.hax.port="${hax_service_port}" \
+        --set services.io.type="${s3_service_type}" \
+        --set services.io.ports.http="${s3_service_ports_http}" \
+        --set services.io.ports.https="${s3_service_ports_https}" \
+        "${optional_values[@]}" \
+        --namespace "${namespace}"
 }
 
 
@@ -829,35 +873,41 @@ function deployCortxControl()
     printf "# Deploy CORTX Control                                  \n"
     printf "########################################################\n"
 
-    cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
-    cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
+    local control_image
+    local control_service_type
+    local control_service_ports_https
+    local control_machineid
+    control_image=$(getSolutionValue 'solution.images.cortxcontrol')
+    control_service_type=$(getSolutionValue 'solution.common.external_services.control.type')
+    control_service_ports_https=$(getSolutionValue 'solution.common.external_services.control.ports.https')
+    control_machineid=$(cat "${cfgmap_path}/auto-gen-control-${namespace}/id")
 
-    external_services_type=$(parseSolution 'solution.common.external_services.type')
-    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+    local optional_values=()
+    local control_service_nodeports_https
+    control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
+    [[ -n ${control_service_nodeports_https} ]] && optional_values+=(--set cortxcontrol.service.loadbal.nodePorts.https="${control_service_nodeports_https}")
 
-    cortxcontrol_machineid=$(cat $cfgmap_path/auto-gen-control-$namespace/id)
-
-    num_nodes=1
-    helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
+    helm install "cortx-control-${namespace}" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control" \
-        --set cortxcontrol.image=$cortxcontrol_image \
+        --set cortxcontrol.image="${control_image}" \
         --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
-        --set cortxcontrol.service.loadbal.type="$external_services_type" \
+        --set cortxcontrol.service.loadbal.type="${control_service_type}" \
+        --set cortxcontrol.service.loadbal.ports.https="${control_service_ports_https}" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
-        --set cortxcontrol.cfgmap.name="cortx-cfgmap-$namespace" \
+        --set cortxcontrol.cfgmap.name="cortx-cfgmap-${namespace}" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
-        --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+        --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
         --set cortxcontrol.sslcfgmap.volmountname="ssl-config001" \
         --set cortxcontrol.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxcontrol.machineid.value="$cortxcontrol_machineid" \
-        --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
-        --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
+        --set cortxcontrol.machineid.value="${control_machineid}" \
+        --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-${namespace}" \
+        --set cortxcontrol.localpathpvc.mountpath="${local_storage}" \
         --set cortxcontrol.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
-        --set cortxcontrol.serviceaccountname="$serviceAccountName" \
-        --set namespace=$namespace \
-        -n $namespace
-
+        --set cortxcontrol.serviceaccountname="${serviceAccountName}" \
+        --set namespace="${namespace}" \
+        "${optional_values[@]}" \
+        --namespace "${namespace}"
 
     printf "\nWait for CORTX Control to be ready"
     if ! waitForAllDeploymentsAvailable 300s "CORTX Control" deployment/cortx-control; then
@@ -930,11 +980,20 @@ function deployCortxServer()
     printf "########################################################\n"
     printf "# Deploy CORTX Server                                   \n"
     printf "########################################################\n"
-    cortxserver_image=$(parseSolution 'solution.images.cortxserver')
-    cortxserver_image=$(echo $cortxserver_image | cut -f2 -d'>')
-
-    external_services_type=$(parseSolution 'solution.common.external_services.type')
-    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+    local cortxserver_image
+    local hax_port
+    local s3_num_inst
+    local s3_start_port_num
+    local s3_service_type
+    local s3_service_ports_http
+    local s3_service_ports_https
+    cortxserver_image=$(getSolutionValue 'solution.images.cortxserver')
+    s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
+    s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
+    s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
+    s3_num_inst="$(getSolutionValue 'solution.common.s3.num_inst')"
+    s3_start_port_num="$(getSolutionValue 'solution.common.s3.start_port_num')"
+    hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
 
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
@@ -942,33 +1001,35 @@ function deployCortxServer()
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
 
-        cortxserver_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/server/id)
+        cortxserver_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[$i]}-${namespace}/server/id")
 
-        helm install "cortx-server-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-server \
-            --set cortxserver.name="cortx-server-$node_name" \
-            --set cortxserver.image=$cortxserver_image \
-            --set cortxserver.nodeselector=$node_selector \
-            --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-$node_name" \
-            --set cortxserver.service.headless.name="cortx-server-headless-svc-$node_name" \
-            --set cortxserver.service.loadbal.name="cortx-server-loadbal-svc-$node_name" \
-            --set cortxserver.service.loadbal.type="$external_services_type" \
-            --set cortxserver.cfgmap.name="cortx-cfgmap-$namespace" \
-            --set cortxserver.cfgmap.volmountname="config001-$node_name" \
+        helm install "cortx-server-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-server \
+            --set cortxserver.name="cortx-server-${node_name}" \
+            --set cortxserver.image="${cortxserver_image}" \
+            --set cortxserver.nodeselector="${node_selector}" \
+            --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-${node_name}" \
+            --set cortxserver.service.headless.name="cortx-server-headless-svc-${node_name}" \
+            --set cortxserver.service.loadbal.name="cortx-server-loadbal-svc-${node_name}" \
+            --set cortxserver.service.loadbal.type="${s3_service_type}" \
+            --set cortxserver.service.loadbal.ports.http="${s3_service_ports_http}" \
+            --set cortxserver.service.loadbal.ports.https="${s3_service_ports_https}" \
+            --set cortxserver.cfgmap.name="cortx-cfgmap-${namespace}" \
+            --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
             --set cortxserver.cfgmap.mountpath="/etc/cortx/solution" \
-            --set cortxserver.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+            --set cortxserver.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
             --set cortxserver.sslcfgmap.volmountname="ssl-config001" \
             --set cortxserver.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxserver.machineid.value="$cortxserver_machineid" \
-            --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-$node_name" \
-            --set cortxserver.localpathpvc.mountpath="$local_storage" \
+            --set cortxserver.machineid.value="${cortxserver_machineid}" \
+            --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
+            --set cortxserver.localpathpvc.mountpath="${local_storage}" \
             --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxserver.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
-            --set cortxserver.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
-            --set cortxserver.hax.port=$(extractBlock 'solution.common.hax.port_num') \
+            --set cortxserver.s3.numinst="${s3_num_inst}" \
+            --set cortxserver.s3.startportnum="${s3_start_port_num}" \
+            --set cortxserver.hax.port="${hax_port}" \
             --set cortxserver.secretinfo="secret-info.txt" \
-            --set cortxserver.serviceaccountname="$serviceAccountName" \
-            --set namespace=$namespace \
-            -n $namespace
+            --set cortxserver.serviceaccountname="${serviceAccountName}" \
+            --set namespace="${namespace}" \
+            --namespace "${namespace}"
     done
 
     printf "\nWait for CORTX Server to be ready"
@@ -1035,9 +1096,6 @@ function deployCortxClient()
     cortxclient_image=$(parseSolution 'solution.images.cortxclient')
     cortxclient_image=$(echo $cortxclient_image | cut -f2 -d'>')
 
-    external_services_type=$(parseSolution 'solution.common.external_services.type')
-    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
-
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
         num_nodes=$((num_nodes+1))
@@ -1053,10 +1111,7 @@ function deployCortxClient()
             --set cortxclient.secretinfo="secret-info.txt" \
             --set cortxclient.serviceaccountname="$serviceAccountName" \
             --set cortxclient.motr.numclientinst=$num_motr_client \
-            --set cortxclient.service.clusterip.name="cortx-client-clusterip-svc-$node_name" \
             --set cortxclient.service.headless.name="cortx-client-headless-svc-$node_name" \
-            --set cortxclient.service.loadbal.name="cortx-client-loadbal-svc-$node_name" \
-            --set cortxclient.service.loadbal.type="$external_services_type" \
             --set cortxclient.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxclient.cfgmap.volmountname="config001-$node_name" \
             --set cortxclient.cfgmap.mountpath="/etc/cortx/solution" \

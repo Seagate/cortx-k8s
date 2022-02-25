@@ -36,9 +36,9 @@ spec:
   ports:
     - name: cortx-rgw-http
       protocol: TCP
-      port: 8000
+      port: {{ .Values.cortxserver.service.loadbal.ports.http }}
       targetPort: 8000
     - name: cortx-rgw-https
       protocol: TCP
-      port: 8443
+      port: {{ .Values.cortxserver.service.loadbal.ports.https }}
       targetPort: 8443
