@@ -11,9 +11,7 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrolprov: ghcr.io/seagate/centos:7
     cortxcontrol: ghcr.io/seagate/centos:7
-    cortxdataprov: ghcr.io/seagate/centos:7
     cortxdata: ghcr.io/seagate/centos:7
     cortxserver: ghcr.io/seagate/centos:7
     cortxha: ghcr.io/seagate/centos:7
@@ -32,6 +30,9 @@ solution:
       shared: /share
       log: /etc/cortx/log
     s3:
+      default_iam_users:
+        auth_admin: "sgiamadmin"
+        auth_user: "user_name"
       num_inst: 2
       start_port_num: 28051
       max_start_timeout: 240
@@ -48,7 +49,20 @@ solution:
         sns: 1+0+0
         dix: 1+0+0
     external_services:
-      type: LoadBalancer
+      s3:
+        type: NodePort
+        ports:
+          http: 8000
+          https: 8443
+        nodePorts:
+          http: ""
+          https: ""
+      control:
+        type: NodePort
+        ports:
+          https: 8081
+        nodePorts:
+          https: ""
     resource_allocation:
       consul:
         server:

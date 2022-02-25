@@ -3,7 +3,7 @@
 solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
 
-##TODO Extract from solution.yaml ? 
+##TODO Extract from solution.yaml ?
 serviceAccountName=cortx-sa
 
 # Check if the file exists
@@ -102,6 +102,31 @@ function extractBlock()
     echo "$(./parse_scripts/yaml_extract_block.sh $solution_yaml $1)"
 }
 
+#######################################
+# Get a scalar value given a YAML path in a solution.yaml file.
+# Arguments:
+#   A YAML path to lookup, e.g. "solution.common.external_services.s3.type".
+#   Wildcard paths are not accepted, e.g. "solution.nodes.node*.name".
+# Outputs:
+#   Writes the value to stdout. An empty string "" is printed if
+#   the value does not exist.
+# Returns:
+#   1 if the yaml path contains a wildcard, 0 otherwise.
+#######################################
+function getSolutionValue()
+{
+    local yaml_path=$1
+    # Don't allow wildcard paths
+    if [[ ${yaml_path}  == *"*"* ]]; then
+        return 1
+    fi
+
+    local value
+    value=$(parseSolution "${yaml_path}")
+    # discard everything before and including the first '>'
+    echo "${value#*>}"
+}
+
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo $namespace | cut -f2 -d'>')
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
@@ -152,7 +177,7 @@ find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
 
 # Create files consist of drives per node and files consist of drive sizes.
-# These files are used by the helm charts to deploy cortx data. These file 
+# These files are used by the helm charts to deploy cortx data. These file
 # will be deleted at the end of this script.
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
 node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
@@ -200,7 +225,7 @@ do
     device=$(echo ${parsed_dev_array[$index]} | cut -f2 -d'>')
     size=$(echo ${parsed_size_array[$index]} | cut -f2 -d'>')
     mnt_blk_info="$device $size"
-    
+
     if [[ -s $cortx_blk_data_mnt_info_path ]]; then
         printf "\n" >> $cortx_blk_data_mnt_info_path
     fi
@@ -226,7 +251,7 @@ while IFS= read -r line; do
     if [[ $count -eq 0 ]]; then
         count=$((count+1))
         continue
-    fi    
+    fi
     IFS=" " read -r -a my_array <<< "$line"
     if [[ "${my_array[0]}" != *"kube-"* \
             && "${my_array[0]}" != "default" \
@@ -242,28 +267,50 @@ done <<< "$(kubectl get namespaces)"
 ##########################################################
 function deployKubernetesPrereqs()
 {
-
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
     ## in the same chart as Namespace-scoped objects.
-    podSecurityPolicyName="cortx-baseline"
-    createPodSecurityPolicy="true"
-    output=$(kubectl get psp --no-headers $podSecurityPolicyName 2>/dev/null | wc -l)
-    if [[ "$output" == "1" ]]; then
+    local podSecurityPolicyName="cortx-baseline"
+    local createPodSecurityPolicy="true"
+    local output
+    output=$(kubectl get psp --no-headers ${podSecurityPolicyName} 2>/dev/null | wc -l || true)
+    if [[ ${output} == "1" ]]; then
         createPodSecurityPolicy="false"
     fi
 
+    local hax_service_name
+    local hax_service_port
+    local s3_service_type
+    local s3_service_ports_http
+    local s3_service_ports_https
+    hax_service_name=$(getSolutionValue 'solution.common.hax.service_name')
+    hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
+    s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
+    s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
+    s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
+
+    local optional_values=()
+    local s3_service_nodeports_http
+    local s3_service_nodeports_https
+    s3_service_nodeports_http=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.http')
+    s3_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.https')
+    [[ -n ${s3_service_nodeports_http} ]] && optional_values+=(--set services.io.nodePorts.http="${s3_service_nodeports_http}")
+    [[ -n ${s3_service_nodeports_https} ]] && optional_values+=(--set services.io.nodePorts.https="${s3_service_nodeports_https}")
+
     helm install "cortx-platform" cortx-cloud-helm-pkg/cortx-platform \
-        --set podSecurityPolicy.create="$createPodSecurityPolicy" \
+        --set podSecurityPolicy.create="${createPodSecurityPolicy}" \
         --set rbacRole.create="true" \
         --set rbacRoleBinding.create="true" \
         --set serviceAccount.create="true" \
-        --set serviceAccount.name="$serviceAccountName" \
+        --set serviceAccount.name="${serviceAccountName}" \
         --set networkPolicy.create="false" \
-        --set namespace.name="$namespace" \
-        --set services.hax.name=$(extractBlock 'solution.common.hax.service_name') \
-        --set services.hax.port=$(extractBlock 'solution.common.hax.port_num') \
-        -n $namespace
-
+        --set namespace.name="${namespace}" \
+        --set services.hax.name="${hax_service_name}" \
+        --set services.hax.port="${hax_service_port}" \
+        --set services.io.type="${s3_service_type}" \
+        --set services.io.ports.http="${s3_service_ports_http}" \
+        --set services.io.ports.https="${s3_service_ports_https}" \
+        "${optional_values[@]}" \
+        --namespace "${namespace}"
 }
 
 
@@ -322,7 +369,8 @@ function deployConsul()
         --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
         --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
         --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu') \
-        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false
+        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
+        --wait
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
     kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
@@ -330,7 +378,7 @@ function deployConsul()
 
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
     kubectl rollout restart statefulset/consul-server
-    kubectl rollout restart daemonset/consul
+    kubectl rollout restart daemonset/consul-client
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -393,12 +441,11 @@ function deployOpenLDAP()
 function splitDockerImage()
 {
     IFS='/' read -ra image <<< "$1"
-    tag="${image[2]}"
-    IFS=':' read -ra tag <<< "$tag"
+    IFS=':' read -ra tag_arr <<< "${image[2]}"
     registry="${image[0]}"
     repository="${image[1]}"
-    repository="${repository}/${tag[0]}"
-    tag="${tag[1]}"
+    repository="${repository}/${tag_arr[0]}"
+    tag="${tag_arr[1]}"
 }
 
 function deployZookeeper()
@@ -468,7 +515,7 @@ function deployKafka()
     image=$(echo $image | cut -f2 -d'>')
     splitDockerImage "${image}"
     printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
-    
+
     _KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:=1000}
     _KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:=1000}
     _KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:=1000}
@@ -571,312 +618,165 @@ function deleteStaleAutoGenFolders()
     done
 }
 
+function generateMachineId()
+{
+    local uuid
+    uuid="$(uuidgen --random)"
+    echo "${uuid//-}"
+}
+
 function deployCortxConfigMap()
 {
     printf "########################################################\n"
     printf "# Deploy CORTX Configmap                                \n"
     printf "########################################################\n"
-    # Create node template folder
-    node_info_folder="$cfgmap_path/node-info-$namespace"
-    mkdir -p $node_info_folder
 
-    # Create storage template folder
-    storage_info_folder="$cfgmap_path/storage-info-$namespace"
-    mkdir -p $storage_info_folder
-    storage_info_temp_folder="$storage_info_folder/temp_folder"
-    mkdir -p $storage_info_temp_folder
+    readonly auto_gen_control_path="${cfgmap_path}/auto-gen-control-${namespace}"
+    readonly auto_gen_ha_path="${cfgmap_path}/auto-gen-ha-${namespace}"
 
-    # Create auto-gen config folder
-    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-$namespace"
-    mkdir -p $auto_gen_path
+    # Create Pod machine IDs
+    for path in ${auto_gen_control_path} ${auto_gen_ha_path}; do
+        mkdir -p "${path}"
+        generateMachineId > "${path}/id"
+    done
+    for node in "${node_name_list[@]}"; do
+        auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
+        mkdir -p "${auto_gen_path}"/{data,server,client}
 
-    motr_client_endpoints="[]"
-    if [[ $num_motr_client -gt 0 ]]; then
-        motr_client_endpoints="\n"
-        for i in "${!node_name_list[@]}"
-        do
-            motr_client_endpoints="$motr_client_endpoints"$'\n'"  - ""tcp://cortx-client-headless-svc-""${node_name_list[$i]}"":21001"
+        generateMachineId > "${auto_gen_path}/data/id"
+        generateMachineId > "${auto_gen_path}/server/id"
+        ((num_motr_client > 0)) && generateMachineId > "${auto_gen_path}/client/id"
+    done
+
+    # This assigns to a global $tag variable
+    splitDockerImage "$(parseSolution 'solution.images.cortxdata' | cut -f2 -d'>' || true)"
+
+    helm_install_args=(
+        --set externalKafka.enabled=true
+        --set externalLdap.enabled=true
+        --set externalConsul.enabled=true
+        --set cortxHa.haxService.protocol="$(extractBlock 'solution.common.hax.protocol' || true)"
+        --set cortxHa.haxService.name="$(extractBlock 'solution.common.hax.service_name' || true)"
+        --set cortxHa.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
+        --set cortxS3.instanceCount="$(extractBlock 'solution.common.s3.num_inst' || true)"
+        --set cortxS3.maxStartTimeout="$(extractBlock 'solution.common.s3.max_start_timeout' || true)"
+        --set cortxStoragePaths.local="${local_storage}"
+        --set cortxStoragePaths.shared="${shared_storage}"
+        --set cortxStoragePaths.log="${log_storage}"
+        --set cortxStoragePaths.config="${local_storage}"
+        --set cortxVersion="${tag}"
+        --set cortxSetupSize="$(extractBlock 'solution.common.setup_size' || true)"
+        --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
+        --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
+    )
+
+    # Build OpenLDAP server values dynamically from running pods
+    readonly openldap_endpoint="openldap-svc.default.svc.cluster.local"
+    IFS=" " read -r -a pods <<< "$(kubectl get pods --all-namespaces --selector name=openldap-connect --output jsonpath='{.items[*].metadata.name}' || true)"
+    for idx in "${!pods[@]}"; do
+        helm_install_args+=(
+            --set "externalLdap.servers[${idx}]=${pods[idx]}.${openldap_endpoint}"
+        )
+    done
+
+    for idx in "${!node_name_list[@]}"; do
+        helm_install_args+=(
+            --set "cortxHare.haxDataEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxHare.haxServerEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxMotr.confdEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22002"
+            --set "cortxMotr.iosEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:21001"
+            --set "cortxMotr.rgwEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:21001"
+        )
+    done
+
+    if ((num_motr_client > 0)); then
+        for idx in "${!node_name_list[@]}"; do
+            helm_install_args+=(
+                --set "cortxMotr.clientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[${idx}]}:21001"
+                --set "cortxHare.haxClientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[${idx}]}:22001"
+            )
         done
     fi
 
-    # Generate config files
-    for i in "${!node_name_list[@]}"; do
-        new_gen_file="$auto_gen_path/config.yaml"
-        cp "$cfgmap_path/templates/config-template.yaml" $new_gen_file
-        # 3rd party endpoints
-        kafka_endpoint="kafka.default.svc.cluster.local"
-        openldap_endpoint="openldap-svc.default.svc.cluster.local"
-        consul_endpoint="consul-server.default.svc.cluster.local"
-        openldap_servers=""
-        while IFS= read -r line; do
-            IFS=" " read -r -a my_array <<< "$line"
-            if [ "$openldap_servers" == "" ]
-            then
-                openldap_servers="- ""${my_array[1]}"".""$openldap_endpoint"
-            else
-                openldap_servers="$openldap_servers"$'\n'"- ""${my_array[1]}"".""$openldap_endpoint"
-            fi
-        done <<< "$(kubectl get pods -A | grep 'openldap-')"
+    # Populate the cluster storage set
+    storage_set_name=$(parseSolution 'solution.common.storage_sets.name' | cut -f2 -d'>' || true)
+    storage_set_dur_sns=$(parseSolution 'solution.common.storage_sets.durability.sns' | cut -f2 -d'>' || true)
+    storage_set_dur_dix=$(parseSolution 'solution.common.storage_sets.durability.dix' | cut -f2 -d'>' || true)
 
-        ./parse_scripts/subst.sh $new_gen_file "cortx.external.kafka.endpoints" $kafka_endpoint
-        ./parse_scripts/subst.sh $new_gen_file "cortx.external.openldap.endpoints" $openldap_endpoint
-        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$openldap_servers" 8 "cortx.external.openldap.servers"
-        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$motr_client_endpoints" 8 "cortx.motr.client"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
-        ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.protocol" "$(extractBlock 'solution.common.hax.protocol')"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.name" "$(extractBlock 'solution.common.hax.service_name')"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.port" "$(extractBlock 'solution.common.hax.port_num')"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.num_s3_inst" $(extractBlock 'solution.common.s3.num_inst')
-        ./parse_scripts/subst.sh $new_gen_file "cortx.max_start_timeout" $(extractBlock 'solution.common.s3.max_start_timeout')
-        ./parse_scripts/subst.sh $new_gen_file "cortx.num_motr_inst" $(extractBlock 'solution.common.motr.num_client_inst')
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.local" $local_storage
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.shared" $shared_storage
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.storage.log" $log_storage
-
-        image=$(parseSolution 'solution.images.cortxdata')
-        image=$(echo $image | cut -f2 -d'>')
-        splitDockerImage "${image}"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.release.version" $tag
-
-        # Pass through setup_size parameter
-        ## THIS IS PLACEHOLDER FUNCTION UNTIL PI-6 WHEN WE WILL IMPLEMENT
-        ## PROPER setup_size => container_resource MAPPINGS
-        ./parse_scripts/subst.sh $new_gen_file "cortx.common.setup_size" $(extractBlock 'solution.common.setup_size')
-
-        # Generate node file with type storage_node in "node-info" folder
-        new_gen_file="$node_info_folder/cluster-storage-node-${node_name_list[$i]}.yaml"
-        cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-data-headless-svc-${node_name_list[$i]}"
-        uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
-        ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-data-headless-svc-${node_name_list[$i]}"
-        ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "data_node"
-        
-        # Create data machine id file for cortx data
-        auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data"
-        mkdir -p $auto_gen_node_path
-        echo $uuid_str > $auto_gen_node_path/id
-
-        # Generate cluster server node file with type server_node in "node-info" folder
-        cluster_server_node_file="$node_info_folder/cluster-server-node-${node_name_list[$i]}.yaml"
-        cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_server_node_file
-        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.node.name" "cortx-server-headless-svc-${node_name_list[$i]}"
-        uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
-        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.pod.uuid" "$uuid_str"
-        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.svc.name" "cortx-server-headless-svc-${node_name_list[$i]}"
-        ./parse_scripts/subst.sh $cluster_server_node_file "cortx.node.type" "server_node"
-        # Create data machine id file for cortx server
-        auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/server"
-        mkdir -p $auto_gen_node_path
-        echo $uuid_str > $auto_gen_node_path/id
-
-        if [[ $num_motr_client -gt 0 ]]; then
-            # Generate cluster client node file with type client_node in "node-info" folder
-            cluster_client_node_file="$node_info_folder/cluster-client-node-${node_name_list[$i]}.yaml"
-            cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_client_node_file
-            ./parse_scripts/subst.sh $cluster_client_node_file "cortx.node.name" "cortx-client-headless-svc-${node_name_list[$i]}"
-            uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
-            ./parse_scripts/subst.sh $cluster_client_node_file "cortx.pod.uuid" "$uuid_str"
-            ./parse_scripts/subst.sh $cluster_client_node_file "cortx.svc.name" "cortx-client-headless-svc-${node_name_list[$i]}"
-            ./parse_scripts/subst.sh $cluster_client_node_file "cortx.node.type" "client_node"
-            # Create data machine id file for cortx server
-            auto_gen_node_path="$cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/client"
-            mkdir -p $auto_gen_node_path
-            echo $uuid_str > $auto_gen_node_path/id
+    helm_install_args+=(
+        --set "clusterStorageSets.${storage_set_name}.durability.sns=${storage_set_dur_sns}"
+        --set "clusterStorageSets.${storage_set_name}.durability.dix=${storage_set_dur_dix}"
+        --set "clusterStorageSets.${storage_set_name}.controlUuid=$(< "${auto_gen_control_path}/id")"
+        --set "clusterStorageSets.${storage_set_name}.haUuid=$(< "${auto_gen_ha_path}/id")"
+    )
+    for node in "${node_name_list[@]}"; do
+        helm_install_args+=(
+            --set "clusterStorageSets.${storage_set_name}.nodes.${node}.dataUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/data/id")"
+            --set "clusterStorageSets.${storage_set_name}.nodes.${node}.serverUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/server/id")"
+        )
+        if ((num_motr_client > 0)); then
+            helm_install_args+=(
+                --set "clusterStorageSets.${storage_set_name}.nodes.${node}.clientUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/client/id")"
+            )
         fi
     done
 
-    # Generate node file with type control_node in "node-info" folder
-    new_gen_file="$node_info_folder/cluster-control-node.yaml"
-    cp "$cfgmap_path/templates/cluster-node-template.yaml" $new_gen_file
-    ./parse_scripts/subst.sh $new_gen_file "cortx.node.name" "cortx-control"
-    uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
-    ./parse_scripts/subst.sh $new_gen_file "cortx.pod.uuid" "$uuid_str"
-    ./parse_scripts/subst.sh $new_gen_file "cortx.svc.name" "cortx-control"
-    ./parse_scripts/subst.sh $new_gen_file "cortx.node.type" "control_node"
-
-    # Create control machine id file
-    auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
-    mkdir -p $auto_gen_control_path
-    echo $uuid_str > $auto_gen_control_path/id
-
-    # Generate cluster ha node file with type ha_node in "node-info" folder
-    cluster_ha_node_file="$node_info_folder/cluster-ha-node.yaml"
-    cp "$cfgmap_path/templates/cluster-node-template.yaml" $cluster_ha_node_file
-    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.name" "cortx-ha-headless-svc"
-    uuid_str=$(UUID=$(uuidgen); echo ${UUID//-/})
-    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.pod.uuid" "$uuid_str"
-    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.svc.name" "cortx-ha-headless-svc"
-    ./parse_scripts/subst.sh $cluster_ha_node_file "cortx.node.type" "ha_node"
-    # Create HA machine id file
-    auto_gen_ha_path="$cfgmap_path/auto-gen-ha-$namespace"
-    mkdir -p $auto_gen_ha_path
-    echo $uuid_str > $auto_gen_ha_path/id
-
-    # Copy cluster template
-    cp "$cfgmap_path/templates/cluster-template.yaml" "$auto_gen_path/cluster.yaml"
-
-    # Insert all node info stored in "node-info" folder into "cluster.yaml" file
-    cluster_uuid=$(UUID=$(uuidgen); echo ${UUID//-/})
-    extract_output=""
-    node_info_folder="$cfgmap_path/node-info-$namespace"
-    ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cortx.cluster.id" $cluster_uuid
-
-    # Populate the storage set info
-    storage_set_name=$(parseSolution 'solution.common.storage_sets.name')
-    storage_set_name=$(echo $storage_set_name | cut -f2 -d'>')
-    storage_set_dur_sns=$(parseSolution 'solution.common.storage_sets.durability.sns')
-    storage_set_dur_sns=$(echo $storage_set_dur_sns | cut -f2 -d'>')
-    storage_set_dur_dix=$(parseSolution 'solution.common.storage_sets.durability.dix')
-    storage_set_dur_dix=$(echo $storage_set_dur_dix | cut -f2 -d'>')
-
-    ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.name" $storage_set_name
-    ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.durability.sns" $storage_set_dur_sns
-    ./parse_scripts/subst.sh "$auto_gen_path/cluster.yaml" "cluster.storage_sets.durability.dix" $storage_set_dur_dix
-
-    for fname in ./cortx-cloud-helm-pkg/cortx-configmap/node-info-$namespace/*; do
-        if [ "$extract_output" == "" ]
-        then
-            extract_output="$(./parse_scripts/yaml_extract_block.sh $fname)"
-        else
-            extract_output="$extract_output"$'\n'"$(./parse_scripts/yaml_extract_block.sh $fname)"
-        fi
-    done
-    ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 4 "cluster.storage_sets.nodes"
-
+    # Populate the cluster storage volumes
     for cvg_index in "${cvg_index_list[@]}"; do
-        storage_cvg_data_auto_gen_file="$storage_info_temp_folder/cluster-storage-$cvg_index-data.yaml"
-        filter="solution.storage.$cvg_index.devices.data.d*.device"
-        cvg_devices_output=$(parseSolution $filter)
-        IFS=';' read -r -a cvg_dev_var_val_array <<< "$cvg_devices_output"
-        for cvg_dev_var_val_element in "${cvg_dev_var_val_array[@]}"; do
-            cvg_dev=$(echo $cvg_dev_var_val_element | cut -f2 -d'>')
-            echo "- $cvg_dev" >> $storage_cvg_data_auto_gen_file
+        cvg_key="solution.storage.${cvg_index}"
+        cvg_name="$(parseSolution "${cvg_key}.name" | cut -f2 -d'>' || true)"
+        cvg_type="$(parseSolution "${cvg_key}.type" | cut -f2 -d'>' || true)"
+        cvg_metadata_device=$(parseSolution "${cvg_key}.devices.metadata.device" | cut -f2 -d'>' || true)
+
+        helm_install_args+=(
+            --set "clusterStorageVolumes.${cvg_name}.type=${cvg_type}"
+            --set "clusterStorageVolumes.${cvg_name}.metadataDevices[0]=${cvg_metadata_device}"
+        )
+
+        IFS=';' read -r -a cvg_dev_var_val_array <<< "$(parseSolution "solution.storage.${cvg_index}.devices.data.d*.device" || true)"
+        for idx in "${!cvg_dev_var_val_array[@]}"; do
+            cvg_dev=$(echo "${cvg_dev_var_val_array[idx]}" | cut -f2 -d'>')
+            helm_install_args+=(
+                --set "clusterStorageVolumes.${cvg_name}.dataDevices[${idx}]=${cvg_dev}"
+            )
         done
-        
-        # Substitute all the variables in the template file
-        storage_info_gen_file="$storage_info_folder/cluster-storage-$cvg_index-info.yaml"
-        cp "$cfgmap_path/templates/cluster-storage-template.yaml" $storage_info_gen_file
-
-        cvg_name_output=$(parseSolution "solution.storage.$cvg_index.name")
-        cvg_name=$(echo $cvg_name_output | cut -f2 -d'>')
-        ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.name" $cvg_name
-
-        cvg_type_output=$(parseSolution "solution.storage.$cvg_index.type")
-        cvg_type=$(echo $cvg_type_output | cut -f2 -d'>')
-        ./parse_scripts/subst.sh $storage_info_gen_file "cortx.storage.type" $cvg_type
-        
-        cvg_metadata_output=$(parseSolution "solution.storage.$cvg_index.devices.metadata.device")
-        cvg_metadata=$(echo $cvg_metadata_output | cut -f2 -d'>')
-        ./parse_scripts/subst.sh $storage_info_gen_file "cortx.metadata.dev_partition" $cvg_metadata
-        
-        extract_output="$(./parse_scripts/yaml_extract_block.sh $storage_cvg_data_auto_gen_file)"
-        ./parse_scripts/yaml_insert_block.sh "$storage_info_gen_file" "$extract_output" 4 "cortx.data.dev_partition"
     done
-    # Remove "storage-info-<namespace>/temp_folder"
-    rm -rf $storage_info_temp_folder
-    # Insert data device info stored in 'storage-info-<namespace>' folder into 'cluster-storage-node.yaml' file
-    extract_output=""
-    for fname in ./cortx-cloud-helm-pkg/cortx-configmap/storage-info-$namespace/*; do
-        if [ "$extract_output" == "" ]
-        then
-            extract_output="$(./parse_scripts/yaml_extract_block.sh $fname)"
-        else
-            extract_output="$extract_output"$'\n'"$(./parse_scripts/yaml_extract_block.sh $fname)"
+
+    helm install \
+        "cortx-cfgmap-${namespace}" \
+        cortx-cloud-helm-pkg/cortx-configmap \
+        --set fullnameOverride="cortx-cfgmap-${namespace}" \
+        "${helm_install_args[@]}"
+
+    # Create node machine ID config maps
+    for node in "${node_name_list[@]}"; do
+        auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
+
+        kubectl create configmap "cortx-data-machine-id-cfgmap-${node}-${namespace}" \
+            --namespace="${namespace}" \
+            --from-file="${auto_gen_path}/data"
+
+        kubectl create configmap "cortx-server-machine-id-cfgmap-${node}-${namespace}" \
+            --namespace="${namespace}" \
+            --from-file="${auto_gen_path}/server"
+
+        if ((num_motr_client > 0)); then
+            # Create client machine ID config maps
+            kubectl create configmap "cortx-client-machine-id-cfgmap-${node}-${namespace}" \
+                --namespace="${namespace}" \
+                --from-file="${auto_gen_path}/client"
         fi
     done
-    ./parse_scripts/yaml_insert_block.sh "$auto_gen_path/cluster.yaml" "$extract_output" 4 "cluster.storage_list"
 
-    # Delete node-info-<namespace> folder
-    rm -rf "$cfgmap_path/node-info-$namespace"
-    # Delete storage-info-<namespace> folder
-    rm -rf "$cfgmap_path/storage-info-$namespace"
+    # Create control machine ID config map
+    kubectl create configmap "cortx-control-machine-id-cfgmap-${namespace}" \
+        --namespace="${namespace}" \
+        --from-file="${auto_gen_control_path}"
 
-    # Create config maps
-    auto_gen_path="$cfgmap_path/auto-gen-cfgmap-$namespace"
-    kubectl_cmd_output=$(kubectl create configmap "cortx-cfgmap-$namespace" \
-                        --namespace=$namespace \
-                        --from-file=$auto_gen_path)
-    if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-        printf "Exit early. Create config map 'cortx-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
-        exit 1
-    fi
-    echo $kubectl_cmd_output
-
-    # Create data machine ID config maps
-    for i in "${!node_name_list[@]}"; do
-        auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace/data"
-        kubectl_cmd_output=$(kubectl create configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}-$namespace" \
-                            --namespace=$namespace \
-                            --from-file=$auto_gen_cfgmap_path)
-        if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-            printf "Exit early. Create config map 'cortx-data-machine-id-cfgmap-${node_name_list[i]}-$namespace' failed with error:\n$kubectl_cmd_output\n"
-            exit 1
-        fi
-    done
-    echo $kubectl_cmd_output
-
-    # Create server machine ID config maps
-    for i in "${!node_name_list[@]}"; do
-        auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace/server"
-        kubectl_cmd_output=$(kubectl create configmap "cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace" \
-                            --namespace=$namespace \
-                            --from-file=$auto_gen_cfgmap_path)
-        if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-            printf "Exit early. Create config map 'cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace' failed with error:\n$kubectl_cmd_output\n"
-            exit 1
-        fi
-    done
-    echo $kubectl_cmd_output
-
-    # Create control machine ID config maps
-    auto_gen_control_path="$cfgmap_path/auto-gen-control-$namespace"
-    kubectl_cmd_output=$(kubectl create configmap "cortx-control-machine-id-cfgmap-$namespace" \
-                        --namespace=$namespace \
-                        --from-file=$auto_gen_control_path)
-    if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-        printf "Exit early. Create config map 'cortx-control-machine-id-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
-        exit 1
-    fi
-    echo $kubectl_cmd_output
-
-    # Create HA machine ID config maps
-    auto_gen_ha_path="$cfgmap_path/auto-gen-ha-$namespace"
-    kubectl_cmd_output=$(kubectl create configmap "cortx-ha-machine-id-cfgmap-$namespace" \
-                        --namespace=$namespace \
-                        --from-file=$auto_gen_ha_path)
-    if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-        printf "Exit early. Create config map 'cortx-ha-machine-id-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
-        exit 1
-    fi
-    echo $kubectl_cmd_output
-
-    if [[ $num_motr_client -gt 0 ]]; then
-        # Create client machine ID config maps
-        for i in "${!node_name_list[@]}"; do
-            auto_gen_cfgmap_path="$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace/client"
-            kubectl_cmd_output=$(kubectl create configmap "cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace" \
-                                --namespace=$namespace \
-                                --from-file=$auto_gen_cfgmap_path)
-            if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-                printf "Exit early. Create config map 'cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace' failed with error:\n$kubectl_cmd_output\n"
-                exit 1
-                fi
-        done
-        echo $kubectl_cmd_output
-    fi
-
-    # Create SSL cert config map
-    ssl_cert_path="$cfgmap_path/ssl-cert"
-    kubectl_cmd_output=$(kubectl create configmap "cortx-ssl-cert-cfgmap-$namespace" \
-                        --namespace=$namespace \
-                        --from-file=$ssl_cert_path)
-    if [[ "$kubectl_cmd_output" == *"no such file or directory"* ]]; then
-        printf "Exit early. Create config map 'cortx-ssl-cert-cfgmap-$namespace' failed with error:\n$kubectl_cmd_output\n"
-        exit 1
-    fi
-    echo $kubectl_cmd_output
+    # Create HA machine ID config map
+    kubectl create configmap "cortx-ha-machine-id-cfgmap-${namespace}" \
+        --namespace="${namespace}" \
+        --from-file="${auto_gen_ha_path}"
 }
 
 function deployCortxSecrets()
@@ -895,10 +795,10 @@ function deployCortxSecrets()
     secrets="$(./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "${yaml_content_path}" 2)"
 
     new_secret_gen_file="${secret_auto_gen_path}/${secret_fname}.yaml"
-    cp "${cfgmap_path}/templates/secret-template.yaml" "${new_secret_gen_file}"
+    cp "${cfgmap_path}/other/secret-template.yaml" "${new_secret_gen_file}"
     ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${secret_fname}"
     ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets}"
-        
+
     kubectl_cmd_output=$(kubectl create -f "${new_secret_gen_file}" --namespace="${namespace}" 2>&1)
 
     if [[ "${kubectl_cmd_output}" == *"BadRequest"* ]]; then
@@ -940,7 +840,7 @@ function waitForAllDeploymentsAvailable()
     (while true; do sleep 1; echo -n "."; done)&
     DOTPID=$!
     trap "silentKill $DOTPID" 0
-    
+
     # Initial wait
     FAIL=0
     kubectl wait --for=condition=available --timeout="$TIMEOUT" $@
@@ -973,39 +873,44 @@ function deployCortxControl()
     printf "# Deploy CORTX Control                                  \n"
     printf "########################################################\n"
 
-    cortxcontrol_image=$(parseSolution 'solution.images.cortxcontrol')
-    cortxcontrol_image=$(echo $cortxcontrol_image | cut -f2 -d'>')
+    local control_image
+    local control_service_type
+    local control_service_ports_https
+    local control_machineid
+    control_image=$(getSolutionValue 'solution.images.cortxcontrol')
+    control_service_type=$(getSolutionValue 'solution.common.external_services.control.type')
+    control_service_ports_https=$(getSolutionValue 'solution.common.external_services.control.ports.https')
+    control_machineid=$(cat "${cfgmap_path}/auto-gen-control-${namespace}/id")
 
-    external_services_type=$(parseSolution 'solution.common.external_services.type')
-    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+    local optional_values=()
+    local control_service_nodeports_https
+    control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
+    [[ -n ${control_service_nodeports_https} ]] && optional_values+=(--set cortxcontrol.service.loadbal.nodePorts.https="${control_service_nodeports_https}")
 
-    cortxcontrol_machineid=$(cat $cfgmap_path/auto-gen-control-$namespace/id)
-
-    num_nodes=1
-    helm install "cortx-control-$namespace" cortx-cloud-helm-pkg/cortx-control \
+    helm install "cortx-control-${namespace}" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control" \
-        --set cortxcontrol.image=$cortxcontrol_image \
+        --set cortxcontrol.image="${control_image}" \
         --set cortxcontrol.service.loadbal.name="cortx-control-loadbal-svc" \
-        --set cortxcontrol.service.loadbal.type="$external_services_type" \
+        --set cortxcontrol.service.loadbal.type="${control_service_type}" \
+        --set cortxcontrol.service.loadbal.ports.https="${control_service_ports_https}" \
         --set cortxcontrol.cfgmap.mountpath="/etc/cortx/solution" \
-        --set cortxcontrol.cfgmap.name="cortx-cfgmap-$namespace" \
+        --set cortxcontrol.cfgmap.name="cortx-cfgmap-${namespace}" \
         --set cortxcontrol.cfgmap.volmountname="config001" \
-        --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+        --set cortxcontrol.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
         --set cortxcontrol.sslcfgmap.volmountname="ssl-config001" \
         --set cortxcontrol.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxcontrol.machineid.value="$cortxcontrol_machineid" \
-        --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-$namespace" \
-        --set cortxcontrol.localpathpvc.mountpath="$local_storage" \
+        --set cortxcontrol.machineid.value="${control_machineid}" \
+        --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-${namespace}" \
+        --set cortxcontrol.localpathpvc.mountpath="${local_storage}" \
         --set cortxcontrol.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
-        --set cortxcontrol.serviceaccountname="$serviceAccountName" \
-        --set namespace=$namespace \
-        -n $namespace
-
+        --set cortxcontrol.serviceaccountname="${serviceAccountName}" \
+        --set namespace="${namespace}" \
+        "${optional_values[@]}" \
+        --namespace "${namespace}"
 
     printf "\nWait for CORTX Control to be ready"
-    waitForAllDeploymentsAvailable 300s "CORTX Control" deployment/cortx-control
-    if [ $? -ne 0 ]; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Control" deployment/cortx-control; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1057,13 +962,11 @@ function deployCortxData()
 
     # Wait for all cortx-data deployments to be ready
     printf "\nWait for CORTX Data to be ready"
-    declare -a deployments
+    local deployments=()
     for i in "${!node_selector_list[@]}"; do
-        node_name=${node_name_list[i]}
-        deployments[${#deployments[@]}]="deployment/cortx-data-${node_name}"
+        deployments+=("deployment/cortx-data-${node_name_list[i]}")
     done
-    waitForAllDeploymentsAvailable 300s "CORTX Data" ${deployments[@]}
-    if [ $? -ne 0 ]; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1077,11 +980,20 @@ function deployCortxServer()
     printf "########################################################\n"
     printf "# Deploy CORTX Server                                   \n"
     printf "########################################################\n"
-    cortxserver_image=$(parseSolution 'solution.images.cortxserver')
-    cortxserver_image=$(echo $cortxserver_image | cut -f2 -d'>')
-
-    external_services_type=$(parseSolution 'solution.common.external_services.type')
-    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
+    local cortxserver_image
+    local hax_port
+    local s3_num_inst
+    local s3_start_port_num
+    local s3_service_type
+    local s3_service_ports_http
+    local s3_service_ports_https
+    cortxserver_image=$(getSolutionValue 'solution.images.cortxserver')
+    s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
+    s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
+    s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
+    s3_num_inst="$(getSolutionValue 'solution.common.s3.num_inst')"
+    s3_start_port_num="$(getSolutionValue 'solution.common.s3.start_port_num')"
+    hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
 
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
@@ -1089,44 +1001,44 @@ function deployCortxServer()
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
 
-        cortxserver_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/server/id)
+        cortxserver_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[$i]}-${namespace}/server/id")
 
-        helm install "cortx-server-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-server \
-            --set cortxserver.name="cortx-server-$node_name" \
-            --set cortxserver.image=$cortxserver_image \
-            --set cortxserver.nodeselector=$node_selector \
-            --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-$node_name" \
-            --set cortxserver.service.headless.name="cortx-server-headless-svc-$node_name" \
-            --set cortxserver.service.loadbal.name="cortx-server-loadbal-svc-$node_name" \
-            --set cortxserver.service.loadbal.type="$external_services_type" \
-            --set cortxserver.cfgmap.name="cortx-cfgmap-$namespace" \
-            --set cortxserver.cfgmap.volmountname="config001-$node_name" \
+        helm install "cortx-server-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-server \
+            --set cortxserver.name="cortx-server-${node_name}" \
+            --set cortxserver.image="${cortxserver_image}" \
+            --set cortxserver.nodeselector="${node_selector}" \
+            --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-${node_name}" \
+            --set cortxserver.service.headless.name="cortx-server-headless-svc-${node_name}" \
+            --set cortxserver.service.loadbal.name="cortx-server-loadbal-svc-${node_name}" \
+            --set cortxserver.service.loadbal.type="${s3_service_type}" \
+            --set cortxserver.service.loadbal.ports.http="${s3_service_ports_http}" \
+            --set cortxserver.service.loadbal.ports.https="${s3_service_ports_https}" \
+            --set cortxserver.cfgmap.name="cortx-cfgmap-${namespace}" \
+            --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
             --set cortxserver.cfgmap.mountpath="/etc/cortx/solution" \
-            --set cortxserver.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+            --set cortxserver.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
             --set cortxserver.sslcfgmap.volmountname="ssl-config001" \
             --set cortxserver.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxserver.machineid.value="$cortxserver_machineid" \
-            --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-$node_name" \
-            --set cortxserver.localpathpvc.mountpath="$local_storage" \
+            --set cortxserver.machineid.value="${cortxserver_machineid}" \
+            --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
+            --set cortxserver.localpathpvc.mountpath="${local_storage}" \
             --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxserver.s3.numinst=$(extractBlock 'solution.common.s3.num_inst') \
-            --set cortxserver.s3.startportnum=$(extractBlock 'solution.common.s3.start_port_num') \
-            --set cortxserver.hax.port=$(extractBlock 'solution.common.hax.port_num') \
+            --set cortxserver.s3.numinst="${s3_num_inst}" \
+            --set cortxserver.s3.startportnum="${s3_start_port_num}" \
+            --set cortxserver.hax.port="${hax_port}" \
             --set cortxserver.secretinfo="secret-info.txt" \
-            --set cortxserver.serviceaccountname="$serviceAccountName" \
-            --set namespace=$namespace \
-            -n $namespace
+            --set cortxserver.serviceaccountname="${serviceAccountName}" \
+            --set namespace="${namespace}" \
+            --namespace "${namespace}"
     done
 
     printf "\nWait for CORTX Server to be ready"
     # Wait for all cortx-data deployments to be ready
-    declare -a deployments
+    local deployments=()
     for i in "${!node_selector_list[@]}"; do
-        node_name=${node_name_list[i]}
-        deployments[${#deployments[@]}]="deployment/cortx-server-${node_name}"
+        deployments+=("deployment/cortx-server-${node_name_list[i]}")
     done
-    waitForAllDeploymentsAvailable 300s "CORTX Server" ${deployments[@]}
-    if [ $? -ne 0 ]; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1169,8 +1081,7 @@ function deployCortxHa()
         -n $namespace
 
     printf "\nWait for CORTX HA to be ready"
-    waitForAllDeploymentsAvailable 120s "CORTX HA" deployment/cortx-ha
-    if [ $? -ne 0 ]; then
+    if ! waitForAllDeploymentsAvailable 120s "CORTX HA" deployment/cortx-ha; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1184,9 +1095,6 @@ function deployCortxClient()
     printf "########################################################\n"
     cortxclient_image=$(parseSolution 'solution.images.cortxclient')
     cortxclient_image=$(echo $cortxclient_image | cut -f2 -d'>')
-
-    external_services_type=$(parseSolution 'solution.common.external_services.type')
-    external_services_type=$(echo $external_services_type | cut -f2 -d'>')
 
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
@@ -1203,10 +1111,7 @@ function deployCortxClient()
             --set cortxclient.secretinfo="secret-info.txt" \
             --set cortxclient.serviceaccountname="$serviceAccountName" \
             --set cortxclient.motr.numclientinst=$num_motr_client \
-            --set cortxclient.service.clusterip.name="cortx-client-clusterip-svc-$node_name" \
             --set cortxclient.service.headless.name="cortx-client-headless-svc-$node_name" \
-            --set cortxclient.service.loadbal.name="cortx-client-loadbal-svc-$node_name" \
-            --set cortxclient.service.loadbal.type="$external_services_type" \
             --set cortxclient.cfgmap.name="cortx-cfgmap-$namespace" \
             --set cortxclient.cfgmap.volmountname="config001-$node_name" \
             --set cortxclient.cfgmap.mountpath="/etc/cortx/solution" \
@@ -1334,7 +1239,7 @@ count=0
 for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
     cvg_name=$(echo $cvg_var_val_element | cut -f2 -d'>')
     cvg_filter=$(echo $cvg_var_val_element | cut -f1 -d'>')
-    cvg_index=$(echo $cvg_filter | cut -f3 -d'.')    
+    cvg_index=$(echo $cvg_filter | cut -f3 -d'.')
     cvg_index_list[$count]=$cvg_index
     count=$((count+1))
 done
