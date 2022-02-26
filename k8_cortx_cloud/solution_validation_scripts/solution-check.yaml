@@ -48,6 +48,7 @@ solution:
     external_services:
       s3:
         type: required
+        count: required
         ports:
           http: required
           https: required

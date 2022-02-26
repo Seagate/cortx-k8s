@@ -54,6 +54,7 @@ services:
   io:
     name: cortx-io-svc
     type: ClusterIP
+    count: 1
     ports:
       http: 8000
       https: 8443

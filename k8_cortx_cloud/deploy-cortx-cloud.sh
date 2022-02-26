@@ -285,6 +285,7 @@ function deployKubernetesPrereqs()
     hax_service_name=$(getSolutionValue 'solution.common.hax.service_name')
     hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
     s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
+    s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
 
@@ -307,6 +308,7 @@ function deployKubernetesPrereqs()
         --set services.hax.name="${hax_service_name}" \
         --set services.hax.port="${hax_service_port}" \
         --set services.io.type="${s3_service_type}" \
+        --set services.io.count="${s3_service_count}" \
         --set services.io.ports.http="${s3_service_ports_http}" \
         --set services.io.ports.https="${s3_service_ports_https}" \
         "${optional_values[@]}" \
