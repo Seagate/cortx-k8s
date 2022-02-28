@@ -208,7 +208,7 @@ This section contains the CORTX and third-party authentication information used 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
 | `secrets.name`           | Name for the Kubernetes secret CORTX uses to store solution-specific secrets.           | `cortx-secret`            |
-| `secrets.content.openldap_admin_secret`          | Administrator password for the OpenLDAP required service        | `seagate1` |
+| `secrets.content.openldap_admin_secret`          | Administrator password for the OpenLDAP required service (deprecated) | `seagate1` |
 | `secrets.content.kafka_admin_secret`          | Administrator password for the Kafka required service        | `Seagate@123` |
 | `secrets.content.consul_admin_secret`          | Administrator password for the Consul required service        | `Seagate@123` |
 | `secrets.content.common_admin_secret`          | Administrator password for the CORTX common services        | `Seagate@123` |
@@ -222,20 +222,17 @@ This section contains the CORTX and third-party images used to deploy CORTX on K
 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `images.cortxcontrolprov`          | Image name (registry, repository, & tag) for the CORTX Control Provisioner components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxcontrol`              | Image name (registry, repository, & tag) for the CORTX Control components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxdataprov`             | Image name (registry, repository, & tag) for the CORTX Data Provisioner components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxdata`                 | Image name (registry, repository, & tag) for the CORTX Data components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxserverprov`           | Image name (registry, repository, & tag) for the CORTX Server Provisioner components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxserver`               | Image name (registry, repository, & tag) for the CORTX Server components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxha`          | Image name (registry, repository, & tag) for the CORTX HA components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxclient`          | Image name (registry, repository, & tag) for the CORTX Client components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.openldap`          | Image name (registry, repository, & tag) for the OpenLDAP required service   | `ghcr.io/seagate/symas-openldap:2.4.58` |
-| `images.consul`          | Image name (registry, repository, & tag) for the Consul required service   | `ghcr.io/seagate/consul:1.10.0` |
-| `images.kafka`          | Image name (registry, repository, & tag) for the Kafka required service   | `ghcr.io/seagate/kafka:3.0.0-debian-10-r7` |
-| `images.zookeeper`          | Image name (registry, repository, & tag) for the Zookeeper required service   | `ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182` |
-| `images.rancher`          | Image name (registry, repository, & tag) for the Rancher Local Path Provisioner container   | `ghcr.io/seagate/local-path-provisioner:v0.0.20` |
-| `images.busybox`          | Image name (registry, repository, & tag) for the utility busybox container   | `ghcr.io/seagate/busybox:latest` |
+| `images.cortxcontrol`    | Image registry, repository, & tag for the CORTX Control components   | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxdata`       | Image registry, repository, & tag for the CORTX Data components      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxserver`     | Image registry, repository, & tag for the CORTX Server components    | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxha`         | Image registry, repository, & tag for the CORTX HA components        | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxclient`     | Image registry, repository, & tag for the CORTX Client components    | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.openldap`        | Image registry, repository, & tag for the OpenLDAP required service  | `ghcr.io/seagate/symas-openldap:2.4.58` |
+| `images.consul`          | Image registry, repository, & tag for the Consul required service    | `ghcr.io/seagate/consul:1.10.0` |
+| `images.kafka`           | Image registry, repository, & tag for the Kafka required service     | `ghcr.io/seagate/kafka:3.0.0-debian-10-r7` |
+| `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service | `ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182` |
+| `images.rancher`         | Image registry, repository, & tag for the Rancher Local Path Provisioner container   | `ghcr.io/seagate/local-path-provisioner:v0.0.20` |
+| `images.busybox`         | Image registry, repository, & tag for the utility busybox container   | `ghcr.io/seagate/busybox:latest` |
 
 ### Common parameters
 
@@ -243,7 +240,21 @@ This section contains common paramaters that applies to all CORTX Data nodes.
 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `_TODO_`       | TBD | `TBD` |
+| `_TODO_`                          | TODO       | `TODO` |
+| `common.storage_provisioner_path` | TODO       | `/mnt/fs-local-volume` |
+| `common.container_path.local`     | TODO      | `/etc/cortx` |
+| `common.container_path.shared`    | TODO      | `/share` |
+| `common.container_path.log`       | TOD       | `/etc/cortx/log` |
+| `common.s3.default_iam_users.auth_admin`      | TBD | `sgiamadmin` |
+| `common.s3.default_iam_users.auth_user`       | TBD | `user_name` |
+| `common.s3.num_inst`              | TODO       | `2` |
+| `common.s3.start_port_num`        | TODO      | `28051` |
+| `common.s3.max_start_timeout`     | TODO      | `240` |
+| `common.motr.num_client_inst`     | TODO      | `0` |
+| `common.motr.start_port_num`      | TODO       | `29000` |
+| `common.hax.procotol` | Protocol that is used to communicate with HAX components running across Server and Data Pods. | `https` | 
+| `common.hax.service_name` | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
+| `common.hax.port_num` | Port number that is used to communicate with HAX components running across Server and Data Pods. | `22003` |
 
 ### Storage parameters
 
