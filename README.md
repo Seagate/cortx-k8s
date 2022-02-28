@@ -95,6 +95,7 @@ For reference material, we have provided existing Kubernetes deployment models t
 
 1.  [Seagate Internal Jenkins Job](http://eos-jenkins.mero.colo.seagate.com/job/Cortx-kubernetes/job/setup-kubernetes-cluster/)
 2.  [CORTX on AWS and Kubernetes - Quick Install Guide](https://github.com/Seagate/cortx-k8s/blob/main/doc/cortx-aws-k8s-installation.md)
+3.  [CORTX on Minikube - Quick Install Guide](https://github.com/Seagate/cortx-k8s/blob/main/doc/cortx-minikube-k8s-installation.md)
 
 Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster, please open an [Issue](https://github.com/Seagate/cortx-k8s/issues) in this repository for further troubleshooting.
 
