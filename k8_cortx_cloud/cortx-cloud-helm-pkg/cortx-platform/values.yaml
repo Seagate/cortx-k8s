@@ -54,4 +54,9 @@ services:
   io:
     name: cortx-io-svc
     type: ClusterIP
-    #port: <!-- SEE ./templates/cortx-io-svc.yaml FOR PORT DETAILS -->#
+    ports:
+      http: 8000
+      https: 8443
+    nodePorts:
+      http: ""
+      https: ""

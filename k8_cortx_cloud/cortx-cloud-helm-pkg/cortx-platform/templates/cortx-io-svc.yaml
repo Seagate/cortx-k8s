@@ -1,18 +1,26 @@
 apiVersion: v1
 kind: Service
+{{- $svc := .Values.services.io }}
 metadata:
-  name: {{ .Values.services.io.name }}
+  name: {{ $svc.name }}
   namespace: {{ .Values.namespace.name }}
 spec:
-  type: {{ .Values.services.io.type }}
+  type: {{ $svc.type }}
   selector:
     cortx.io/service-type: "cortx-server"
   ports:
+    {{- $nodePortAllowed := or (eq $svc.type "NodePort") (eq $svc.type "LoadBalancer") }}
     - name: cortx-rgw-http
       protocol: TCP
-      port: 8000
+      port: {{ $svc.ports.http }}
       targetPort: 8000
+      {{- if and $nodePortAllowed (not (empty $svc.nodePorts.http)) }}
+      nodePort: {{ $svc.nodePorts.http }}
+      {{- end }}
     - name: cortx-rgw-https
       protocol: TCP
-      port: 8443
+      port: {{ $svc.ports.https }}
       targetPort: 8443
+      {{- if and $nodePortAllowed (not (empty $svc.nodePorts.https)) }}
+      nodePort: {{ $svc.nodePorts.https }}
+      {{- end }}
