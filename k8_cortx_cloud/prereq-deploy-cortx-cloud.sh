@@ -1,7 +1,51 @@
 #!/bin/bash
 
-disk=${1:-''}
-solution_yaml=${2:-'solution.yaml'}
+SCRIPT=$(readlink -f "$0")
+DIR=$(dirname "${SCRIPT}")
+SCRIPT_NAME=$(basename "${SCRIPT}")
+
+# Script defaults
+disk=""
+solution_yaml="solution.yaml"
+persist_fs_mount_path=false
+default_fs_type="ext4"
+
+function usage() {
+    cat << EOF
+
+Usage:
+    ${SCRIPT_NAME} -d DISK [-p] [-s SOLUTION_CONFIG_FILE] 
+    ${SCRIPT_NAME} -h
+
+Options:
+    -h              Prints this help information.
+    -d <DISK>       REQUIRED. The path of the disk or device to mount for
+                    secondary storage.
+    -p              The prereq script will attempt to update /etc/fstab
+                    with an appropriate mountpoint for persistent reboots.
+    -s <FILE>       The cluster solution configuration file. Can
+                    also be set with the CORTX_SOLUTION_CONFIG_FILE
+                    environment variable. Defaults to 'solution.yaml'.
+
+EOF
+}
+
+while getopts hd:s:pt: opt; do
+    case ${opt} in
+        h )
+            printf "%s\n" "${SCRIPT_NAME}"
+            usage
+            exit 0
+            ;;
+        d ) disk=${OPTARG} ;;
+        s ) solution_yaml=${OPTARG} ;;
+        p ) persist_fs_mount_path=true ;;
+        * )
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
 
 if [[ "$disk" == *".yaml"* ]]; then
     temp=$disk
@@ -27,8 +71,8 @@ fi
 
 if [[ "$disk" == "" && "$is_master_node" = false ]]
 then
-    echo "Invalid input paramters"
-    echo "./prereq-deploy-cortx-cloud.sh <disk-partition> [<solution-yaml-file>]"
+    echo "ERROR: Invalid input parameters"
+    usage
     exit 1
 fi
 
@@ -54,9 +98,10 @@ function parseSolution()
     # Check that all of the required parameters have been passed in
     if [ "$solution_yaml" == "" ]
     then
-        echo "Invalid input parameters"
+        echo "ERROR: Invalid input parameters"
         echo "<input yaml file>             = $solution_yaml"
         echo "[<yaml path filter> OPTIONAL] = $2"
+        usage
         exit 1
     fi
 
@@ -64,6 +109,7 @@ function parseSolution()
     if [ ! -f $solution_yaml ]
     then
         echo "ERROR: $solution_yaml does not exist"
+        usage
         exit 1
     fi
 
@@ -131,9 +177,44 @@ function prepCortxDeployment()
         echo "$fs_mount_path already mounted..."
     else
         mkdir -p $fs_mount_path
-        echo y | mkfs.ext4 $disk
-        mount -t ext4 $disk $fs_mount_path
+        echo y | mkfs.${default_fs_type} $disk
+        mount -t ${default_fs_type} $disk $fs_mount_path
     fi
+
+    ###################################################################
+    ### CORTX-27775
+    ### THIS CODE BLOCK PERSISTS THE MOUNT POINT IN /etc/fstab
+    ### THIS FIX RESOLVES REBOOT ISSUES WITH PREREQ STORAGE AND REBOOTS
+    ###################################################################
+    # If -p (persistence flag) was passed in from command line
+    if [[ "${persist_fs_mount_path}" == "true" ]]; then
+        printf "Persistence of %s at %s enabled:\n" ${disk} ${fs_mount_path}
+
+        local backup_chars
+        local blk_uuid
+        local exists_in_fstab
+
+        # As the disk passed in will either already have been mounted by the user or by the script,
+        # the blkid command will return the UUID of the mounted filesystem either way
+        blk_uuid=$(blkid ${disk} -o export | grep UUID | awk '{split($0,a,"="); print a[2]}')
+
+        # Check /etc/fstab for presence of requested disk
+        exists_in_fstab=$(grep ${blk_uuid} /etc/fstab)
+        if [[ "${exists_in_fstab}" == "" ]]; then
+            # /etc/fstab does not contain a mountpoint for the desired disk and path
+            backup_chars=$(date +%s)
+            printf "\tBacking up existing '/etc/fstab' to '/etc/fstab.%s.backup'\n" "${backup_chars}"
+            cp /etc/fstab "/etc/fstab.${backup_chars}.backup"
+            printf "UUID=%s  %s      %s   defaults 0 0\n" ${blk_uuid} ${fs_mount_path} ${default_fs_type} >> /etc/fstab
+            printf "\t'/etc/fstab' has been updated to persist %s at %s.\n\tIt should be manually verified for correctness prior to system reboot.\n\n" ${disk} ${fs_mount_path}
+        else
+            # /etc/fstab contains a mountpoint for the desired disk and path
+            printf "\t'/etc/fstab' already contains a mountpoint entry for %s at path %s.\n\tIf this is not expected, it should be manually edited.\n\n" ${disk} ${fs_mount_path}
+        fi
+    fi
+    ###################################################################
+    ### END CORTX-27775
+    ###################################################################
 
     # Prep for Rancher Local Path Provisioner deployment
     echo "Create folder '$fs_mount_path/local-path-provisioner'"
