@@ -66,7 +66,7 @@ CORTX on Kubernetes consists of five primary components:
 
     CORTX on Kubernetes currently requires the `vm.max_map_count` set to a specific minimum level of `30000000` (thirty million) on the Kubernetes Nodes which `cortx-data` Pods will run.
     - The `prereq-deploy-cortx-cloud.sh` script will set this value prior to deployment if you choose to utilize it.
-    - The `cortx-data` Pods include an initContainer that will check for this minimal value and halt deployment if not met. 
+    - The `cortx-data` Pods include an initContainer that will check for this minimal value and halt deployment if not met.
 
 4.  **Local path provisioner**
 
@@ -95,7 +95,7 @@ For reference material, we have provided existing Kubernetes deployment models t
 
 1.  [Seagate Internal Jenkins Job](http://eos-jenkins.mero.colo.seagate.com/job/Cortx-kubernetes/job/setup-kubernetes-cluster/)
 2.  [CORTX on AWS and Kubernetes - Quick Install Guide](doc/cortx-aws-k8s-installation.md)
-3.  [CORTX on Minikube - Quick Install Guide](doc/cortx-minikube-k8s-installation.md)
+3.  [CORTX on minikube - Quick Install Guide](doc/cortx-minikube-k8s-installation.md)
 
 Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster, please open an [Issue](https://github.com/Seagate/cortx-k8s/issues) in this repository for further troubleshooting.
 
@@ -134,9 +134,9 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 2.  Update or clone `./k8_cortx_cloud/solution.yaml` to reflect your environment. The most common and expected updates are reflected below:
     - Update all passwords in solution.yaml. The `csm-secret` should include one special character in cortx-secret.
-    - Update the images section with cortx-all image tag desired to be used. 
+    - Update the images section with cortx-all image tag desired to be used.
         - Each specific release of the CORTX on Kubernetes code will point to a specific predefined container image.
-        - This can be overriden as desired.
+        - This can be overridden as desired.
     - Update SNS and DIX durability values. The default value for both parameters is `1+0+0`.
     - Update storage cvg devices for data and metadata with respect to the devices in your environment.
     - Update nodes section with proper node hostnames from your Kubernetes cluster.
@@ -192,7 +192,7 @@ Run the `destroy-cortx-cloud.sh` script, passing in the path to the previously u
 
 ## Solution YAML Overview
 
-The CORTX solution consists of all paramaters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution file and extract information they need to deploy and destroy CORTX.
+The CORTX solution consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution file and extract information they need to deploy and destroy CORTX.
 
 All paths below are prefixed with `solution.` for fully-qualified naming.
 ### Global parameters
@@ -214,7 +214,7 @@ This section contains the CORTX and third-party authentication information used 
 | `secrets.content.common_admin_secret`          | Administrator password for the CORTX common services        | `Seagate@123` |
 | `secrets.content.s3_auth_admin_secret`          | Administrator password for the S3 Auth CORTX component        | `ldapadmin` |
 | `secrets.content.csm_auth_admin_secret`          | Administrator password for the CSM Auth CORTX component        | `seagate2` |
-| `secrets.content.csm_mgmt_admin_secret`          | Administrator password for the CSM Managment CORTX component   | `Cortxadmin@123` |
+| `secrets.content.csm_mgmt_admin_secret`          | Administrator password for the CSM Management CORTX component   | `Cortxadmin@123` |
 
 ### Image parameters
 
@@ -239,11 +239,19 @@ This section contains the CORTX and third-party images used to deploy CORTX on K
 
 ### Common parameters
 
-This section contains common paramaters that applies to all CORTX Data nodes.
+This section contains common parameters that applies to all CORTX Data nodes.
 
 | Name                     | Description                                                                             | Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `_TODO_`       | TBD | `TBD` |
+| `common.external_services.s3.type`       | Kubernetes Service type for external access to S3 IO. Required. | `NodePort` |
+| `common.external_services.s3.count`      | The number of service instances to create when service type is LoadBalancer. Required. | `1` |
+| `common.external_services.s3.ports.http` | Non-secure (http) port number used for S3 IO. Required. | `8000` |
+| `common.external_services.s3.ports.https` | Secure (https) service port number for S3 IO. Required. | `8443` |
+| `common.external_services.s3.nodePorts.http` | Node port for non-secure (http) S3 IO. Optional. | |
+| `common.external_services.s3.nodePorts.https` | Node port for secure (https) S3 IO. Optional. | |
+| `common.external_services.control.type` | Kubernetes Service type for external access to CSM Management API. Required. | `NodePort` |
+| `common.external_services.control.ports.https` | Secure (https) service port number for CSM Management API. Required. | `8081` |
+| `common.external_services.control.nodePorts.https` | Node port for secure (https) CSM Management API. Optional. | |
 
 ### Storage parameters
 
