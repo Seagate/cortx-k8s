@@ -112,7 +112,7 @@ while IFS= read -r line; do
 
   if [[ ${pod_name} != "NAME" && ${pod_status} != "Evicted" ]]; then
     if [[ ${nodename} ]] && \
-       [[ ${nodename} != $(kubectl get pod "${pod_name}" -o jsonpath={.spec.nodeName} || true) ]]; then
+       [[ ${nodename} != $(kubectl get pod "${pod_name}" -o jsonpath='{.spec.nodeName}' || true) ]]; then
       continue
     fi
     pods_found=$((pods_found+1))
