@@ -78,17 +78,12 @@ fi
 
 # Check services load balance
 count=0
-printf "${INFO}| Checking Services: Load Balancer |${NC}\n"
+printf "${INFO}| Checking Services: cortx-control-loadbal-svc |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
     if [[ "${status[0]}" != "" ]]; then
-        printf "${status[0]}..."
-        if [[ "${status[1]}" != "LoadBalancer" ]]; then
-            printf "${FAILED}FAILED${NC}\n"
-        else
-            printf "${PASSED}PASSED${NC}\n"
-            count=$((count+1))
-        fi
+        printf "${status[0]}...${PASSED}PASSED${NC}"
+        count=$((count+1))
     fi
 done <<< "$(kubectl get services --namespace=$namespace | grep 'cortx-control-loadbal-')"
 
@@ -417,17 +412,12 @@ fi
 # Check services load balance
 count=0
 num_load_bal=$num_nodes
-printf "${INFO}| Checking Services: Load Balancer |${NC}\n"
+printf "${INFO}| Checking Services: cortx-server-loadbal-svc |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
     if [[ "${status[0]}" != "" ]]; then
-        printf "${status[0]}..."
-        if [[ "${status[1]}" != "LoadBalancer" ]]; then
-            printf "${FAILED}FAILED${NC}\n"
-        else
-            printf "${PASSED}PASSED${NC}\n"
-            count=$((count+1))
-        fi
+        printf "${status[0]}...${PASSED}PASSED${NC}"
+        count=$((count+1))
     fi
 done <<< "$(kubectl get services --namespace=$namespace | grep 'cortx-server-loadbal-')"
 
