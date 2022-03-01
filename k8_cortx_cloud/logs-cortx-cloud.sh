@@ -112,7 +112,7 @@ while IFS= read -r line; do
 
   if [[ ${pod_name} != "NAME" && ${pod_status} != "Evicted" ]]; then
     if [[ ${nodename} ]] && \
-       [[ ${nodename} != $(kubectl get pod "${pod_name}" -o jsonpath={.spec.nodeName}) ]]; then
+       [[ ${nodename} != $(kubectl get pod "${pod_name}" -o jsonpath={.spec.nodeName} || true) ]]; then
       continue
     fi
     pods_found=$((pods_found+1))
@@ -135,7 +135,7 @@ while IFS= read -r line; do
     esac
   fi
 
-done <<< "$(kubectl get pods)"
+done <<< "$(kubectl get pods || true)"
 
 if [[ ${nodename} ]] && [[ ${pods_found} == "0" ]]; then
   printf "\n❌ No pods are running on the node: \"%s\".\n" "${nodename}"
