@@ -9,6 +9,8 @@ then
     exit 1
 fi
 
+failcount=0
+
 FAILED='\033[0;31m'       #RED
 PASSED='\033[0;32m'       #GREEN
 ALERT='\033[0;33m'        #YELLOW
@@ -40,6 +42,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -51,6 +54,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check pods
@@ -63,6 +67,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -74,6 +79,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services load balance
@@ -91,6 +97,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage local
@@ -103,6 +110,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -116,6 +124,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -127,12 +136,14 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 #########################################################################################
@@ -156,6 +167,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -167,6 +179,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check pods
@@ -179,6 +192,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -190,6 +204,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services headless
@@ -201,6 +216,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -212,6 +228,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services cluster IP
@@ -223,6 +240,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -234,6 +252,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage local
@@ -246,6 +265,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -259,6 +279,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -270,6 +291,7 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage block devices
@@ -282,6 +304,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -295,6 +318,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -306,6 +330,7 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 #########################################################################################
@@ -329,6 +354,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -340,6 +366,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check pods
@@ -352,6 +379,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -363,6 +391,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services headless
@@ -374,6 +403,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -385,6 +415,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services cluster IP
@@ -396,6 +427,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -407,6 +439,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services load balance
@@ -425,6 +458,7 @@ if [[ $num_load_bal -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage local
@@ -437,6 +471,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -450,6 +485,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -461,6 +497,7 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 #########################################################################################
@@ -483,6 +520,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -494,6 +532,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check pods
@@ -506,6 +545,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -517,6 +557,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services headless
@@ -528,6 +569,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -539,6 +581,7 @@ if [[ $num_nodes -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage local
@@ -551,6 +594,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -564,6 +608,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -575,6 +620,7 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 
@@ -607,6 +653,7 @@ if [[ $num_motr_client -gt 0 ]]; then
             printf "${status[0]}..."
             if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
                 printf "${FAILED}FAILED${NC}\n"
+                failcount=$((failcount+1))
             else
                 printf "${PASSED}PASSED${NC}\n"
                 count=$((count+1))
@@ -618,6 +665,7 @@ if [[ $num_motr_client -gt 0 ]]; then
         printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
     else
         printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+        failcount=$((failcount+1))
     fi
 
     # Check pods
@@ -630,6 +678,7 @@ if [[ $num_motr_client -gt 0 ]]; then
             printf "${status[0]}..."
             if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
                 printf "${FAILED}FAILED${NC}\n"
+                failcount=$((failcount+1))
             else
                 printf "${PASSED}PASSED${NC}\n"
                 count=$((count+1))
@@ -641,6 +690,7 @@ if [[ $num_motr_client -gt 0 ]]; then
         printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
     else
         printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+        failcount=$((failcount+1))
     fi
 
     # Check services headless
@@ -652,6 +702,7 @@ if [[ $num_motr_client -gt 0 ]]; then
             printf "${status[0]}..."
             if [[ "${status[1]}" != "ClusterIP" ]]; then
                 printf "${FAILED}FAILED${NC}\n"
+                failcount=$((failcount+1))
             else
                 printf "${PASSED}PASSED${NC}\n"
                 count=$((count+1))
@@ -663,6 +714,7 @@ if [[ $num_motr_client -gt 0 ]]; then
         printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
     else
         printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+        failcount=$((failcount+1))
     fi
 
     # Check storage local
@@ -675,6 +727,7 @@ if [[ $num_motr_client -gt 0 ]]; then
             printf "PVC: ${status[0]}..."
             if [[ "${status[1]}" != "Bound" ]]; then
                 printf "${FAILED}FAILED${NC}\n"
+                failcount=$((failcount+1))
             else
                 printf "${PASSED}PASSED${NC}\n"
                 count=$((count+1))
@@ -688,6 +741,7 @@ if [[ $num_motr_client -gt 0 ]]; then
             printf "PV: ${status[5]}..."
             if [[ "${status[4]}" != "Bound" ]]; then
                 printf "${FAILED}FAILED${NC}\n"
+                failcount=$((failcount+1))
             else
                 printf "${PASSED}PASSED${NC}\n"
                 count=$((count+1))
@@ -699,6 +753,7 @@ if [[ $num_motr_client -gt 0 ]]; then
         printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
     else
         printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+        failcount=$((failcount+1))
     fi
 fi
 
@@ -737,6 +792,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -748,6 +804,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check Pods
@@ -761,6 +818,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -772,6 +830,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services cluster IP
@@ -784,6 +843,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -795,6 +855,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage local
@@ -807,6 +868,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -820,6 +882,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -831,6 +894,7 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 printf "${ALERT}### Kafka${NC}\n"
@@ -845,6 +909,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -856,6 +921,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check Pods
@@ -869,6 +935,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -880,6 +947,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services cluster IP
@@ -892,6 +960,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -903,6 +972,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services headless
@@ -915,6 +985,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -926,6 +997,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage local
@@ -938,6 +1010,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -951,6 +1024,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -962,6 +1036,7 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 printf "${ALERT}### Zookeeper${NC}\n"
@@ -976,6 +1051,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -987,6 +1063,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check Pods
@@ -1000,6 +1077,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1011,6 +1089,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services cluster IP
@@ -1023,6 +1102,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1034,6 +1114,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services headless
@@ -1046,6 +1127,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1057,6 +1139,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage local
@@ -1069,6 +1152,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1082,6 +1166,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1093,6 +1178,7 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 printf "${ALERT}### Consul${NC}\n"
@@ -1107,6 +1193,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1118,6 +1205,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check DaemonSet
@@ -1130,6 +1218,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[3]}" != "$num_worker_nodes" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1141,6 +1230,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check Pods
@@ -1154,6 +1244,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1165,6 +1256,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services cluster IP
@@ -1177,6 +1269,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1188,6 +1281,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check services headless
@@ -1200,6 +1294,7 @@ while IFS= read -r line; do
         printf "${status[0]}..."
         if [[ "${status[1]}" != "ClusterIP" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1211,6 +1306,7 @@ if [[ $num_items -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
 fi
 
 # Check storage local
@@ -1223,6 +1319,7 @@ while IFS= read -r line; do
         printf "PVC: ${status[0]}..."
         if [[ "${status[1]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1236,6 +1333,7 @@ while IFS= read -r line; do
         printf "PV: ${status[5]}..."
         if [[ "${status[4]}" != "Bound" ]]; then
             printf "${FAILED}FAILED${NC}\n"
+            failcount=$((failcount+1))
         else
             printf "${PASSED}PASSED${NC}\n"
             count=$((count+1))
@@ -1247,4 +1345,15 @@ if [[ $num_pvs_pvcs -eq $count ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
 else
     printf "OVERALL STATUS: ${FAILED}FAILED${NC}\n"
+    failcount=$((failcount+1))
+fi
+
+printf -- "------------------------------------------\n"
+
+if (( ${failcount} > 0 )); then
+    printf "${FAILED}${failcount} status checks failed${NC}\n\n"
+    exit 1
+else
+    printf "${PASSED}All status checks passed${NC}\n\n"
+    exit 0
 fi
