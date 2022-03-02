@@ -257,7 +257,7 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(($num_nodes*2))
+num_pvs_pvcs=$(( num_nodes * 2 ))
 printf "${INFO}| Checking Storage: Local [PVCs/PVs] |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -296,7 +296,7 @@ fi
 
 # Check storage block devices
 count=0
-num_pvs_pvcs=$((($num_nodes*$num_devices)*2))
+num_pvs_pvcs=$(( (num_nodes * num_devices) * 2 ))
 printf "${INFO}| Checking Storage: Block Devices [PVCs/PVs] |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -463,7 +463,7 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(($num_nodes*2))
+num_pvs_pvcs=$(( num_nodes * 2 ))
 printf "${INFO}| Checking Storage: Local [PVCs/PVs] |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -586,7 +586,7 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(($num_nodes*2))
+num_pvs_pvcs=$(( num_nodes * 2 ))
 printf "${INFO}| Checking Storage: Local [PVCs/PVs] |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -719,7 +719,7 @@ if [[ $num_motr_client -gt 0 ]]; then
 
     # Check storage local
     count=0
-    num_pvs_pvcs=$(($num_nodes*2))
+    num_pvs_pvcs=$(( num_nodes * 2 ))
     printf "${INFO}| Checking Storage: Local [PVCs/PVs] |${NC}\n"
     while IFS= read -r line; do
         IFS=" " read -r -a status <<< "$line"
@@ -886,7 +886,7 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(($num_replicas*2))
+num_pvs_pvcs=$(( num_replicas * 2 ))
 printf "${INFO}| Checking Storage: Local [PVCs/PVs] |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -1028,7 +1028,7 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(($num_replicas*2))
+num_pvs_pvcs=$(( num_replicas * 2 ))
 printf "${INFO}| Checking Storage: Local [PVCs/PVs] |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -1118,7 +1118,7 @@ else
 fi
 
 # Check Pods
-num_items=$(($num_replicas+$num_worker_nodes))
+num_items=$(( num_replicas + num_worker_nodes ))
 count=0
 printf "${INFO}| Checking Pods |${NC}\n"
 while IFS= read -r line; do
@@ -1195,7 +1195,7 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(($num_replicas*2))
+num_pvs_pvcs=$(( num_replicas * 2 ))
 printf "${INFO}| Checking Storage: Local [PVCs/PVs] |${NC}\n"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "$line"
@@ -1234,7 +1234,7 @@ fi
 
 printf -- "------------------------------------------\n"
 
-if (( ${failcount} > 0 )); then
+if (( failcount > 0 )); then
     printf "${FAILED}${failcount} status checks failed${NC}\n\n"
     exit 1
 else
