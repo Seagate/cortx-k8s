@@ -761,8 +761,8 @@ fi
 #########################################################################################
 while IFS= read -r line; do
     IFS=" " read -r -a node_name <<< "${line}"
-    if [[ "${node_name}" != "NAME" ]]; then
-        output=$(kubectl describe nodes ${node_name} | grep Taints | grep NoSchedule)
+    if [[ "${node_name[0]}" != "NAME" ]]; then
+        output=$(kubectl describe nodes ${node_name[0]} | grep Taints | grep NoSchedule)
         if [[ "${output}" == "" ]]; then
             num_worker_nodes=$((num_worker_nodes+1))
         fi
