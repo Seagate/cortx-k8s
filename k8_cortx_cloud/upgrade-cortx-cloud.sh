@@ -107,7 +107,7 @@ function validate_cortx_pods_status() {
 function cold_upgrade() {
     # Shutdown all CORTX Pods
     "${DIR}/shutdown-cortx-cloud.sh" "${SOLUTION_FILE}"
-
+    
     update_cortx_pod "${control_pod}" "${cortxcontrol_image}"
     update_cortx_pod "${ha_pod}" "${cortxha_image}"
     upgrade_cortx_deployments 'cortx-data-' "${cortxdata_image}"
@@ -117,7 +117,6 @@ function cold_upgrade() {
     if [[ -z ${cortx_deployments} ]]; then
         printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
     else
-        printf "Updating CORTX Deployments to use image %s\n" "${UPGRADE_IMAGE}"
         while IFS= read -r deployment; do
             kubectl patch deployment "${deployment}" --type json -p='[{"op": "add", "path": "/spec/template/spec/initContainers/0/env/-", "value": {"name": "UPGRADE_MODE", "value": "COLD"}}]';
         done <<< "${cortx_deployments}"
