@@ -20,11 +20,11 @@ NC='\033[0m'              #NO COLOUR
 
 function parseSolution()
 {
-    ./parse_scripts/parse_yaml.sh ${solution_yaml} $1
+    ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
 }
 
 namespace=$(parseSolution 'solution.namespace')
-namespace=$(echo ${namespace} | cut -f2 -d'>')
+namespace=$(echo "${namespace}" | cut -f2 -d'>')
 
 #########################################################################################
 # CORTX Control
@@ -49,7 +49,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get deployments --namespace=${namespace} | grep 'cortx-control')"
+done <<< "$(kubectl get deployments --namespace="${namespace}" | grep 'cortx-control')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -74,7 +74,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pods --namespace=${namespace} | grep 'cortx-control-')"
+done <<< "$(kubectl get pods --namespace="${namespace}" | grep 'cortx-control-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -92,7 +92,7 @@ while IFS= read -r line; do
         printf "${status[0]}...${PASSED}PASSED${NC}"
         count=$((count+1))
     fi
-done <<< "$(kubectl get services --namespace=${namespace} | grep 'cortx-control-loadbal-')"
+done <<< "$(kubectl get services --namespace="${namespace}" | grep 'cortx-control-loadbal-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -117,7 +117,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=${namespace} | grep 'cortx-control-fs-local-pvc')"
+done <<< "$(kubectl get pvc --namespace="${namespace}" | grep 'cortx-control-fs-local-pvc')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -131,7 +131,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=${namespace} | grep 'cortx-control-fs-local-pvc')"
+done <<< "$(kubectl get pv --namespace="${namespace}" | grep 'cortx-control-fs-local-pvc')"
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -151,9 +151,9 @@ fi
 # CORTX Data
 #########################################################################################
 nodes_names=$(parseSolution 'solution.nodes.node*.name')
-num_nodes=$(echo ${nodes_names} | grep -o '>' | wc -l)
+num_nodes=$(echo "${nodes_names}" | grep -o '>' | wc -l)
 device_names=$(parseSolution 'solution.storage.cvg*.devices*.device')
-num_devices=$(echo ${device_names} | grep -o '>' | wc -l)
+num_devices=$(echo "${device_names}" | grep -o '>' | wc -l)
 
 printf "${ALERT}######################################################${NC}\n"
 printf "${ALERT}# CORTX Data                                          ${NC}\n"
@@ -174,7 +174,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get deployments --namespace=${namespace} | grep 'cortx-data-')"
+done <<< "$(kubectl get deployments --namespace="${namespace}" | grep 'cortx-data-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -199,7 +199,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pods --namespace=${namespace} | grep 'cortx-data-')"
+done <<< "$(kubectl get pods --namespace="${namespace}" | grep 'cortx-data-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -223,7 +223,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get services --namespace=${namespace} | grep 'cortx-data-headless-')"
+done <<< "$(kubectl get services --namespace="${namespace}" | grep 'cortx-data-headless-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -247,7 +247,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get services --namespace=${namespace} | grep 'cortx-data-clusterip-')"
+done <<< "$(kubectl get services --namespace="${namespace}" | grep 'cortx-data-clusterip-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -272,7 +272,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=${namespace} | grep 'cortx-data-fs-local-pvc')"
+done <<< "$(kubectl get pvc --namespace="${namespace}" | grep 'cortx-data-fs-local-pvc')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -286,7 +286,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=${namespace} | grep 'cortx-data-fs-local-pvc')"
+done <<< "$(kubectl get pv --namespace="${namespace}" | grep 'cortx-data-fs-local-pvc')"
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -311,7 +311,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=${namespace} | grep 'cortx-data-' | grep -v 'cortx-data-fs-local-pvc')"
+done <<< "$(kubectl get pvc --namespace="${namespace}" | grep 'cortx-data-' | grep -v 'cortx-data-fs-local-pvc')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -325,7 +325,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=${namespace} | grep 'cortx-data-' | grep -v 'cortx-data-fs-local-pvc')"
+done <<< "$(kubectl get pv --namespace="${namespace}" | grep 'cortx-data-' | grep -v 'cortx-data-fs-local-pvc')"
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -338,9 +338,9 @@ fi
 # CORTX Server
 #########################################################################################
 nodes_names=$(parseSolution 'solution.nodes.node*.name')
-num_nodes=$(echo ${nodes_names} | grep -o '>' | wc -l)
+num_nodes=$(echo "${nodes_names}" | grep -o '>' | wc -l)
 device_names=$(parseSolution 'solution.storage.cvg*.devices*.device')
-num_devices=$(echo ${device_names} | grep -o '>' | wc -l)
+num_devices=$(echo "${device_names}" | grep -o '>' | wc -l)
 
 printf "${ALERT}######################################################${NC}\n"
 printf "${ALERT}# CORTX Server                                        ${NC}\n"
@@ -361,7 +361,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get deployments --namespace=${namespace} | grep 'cortx-server-')"
+done <<< "$(kubectl get deployments --namespace="${namespace}" | grep 'cortx-server-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -386,7 +386,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pods --namespace=${namespace} | grep 'cortx-server-')"
+done <<< "$(kubectl get pods --namespace="${namespace}" | grep 'cortx-server-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -410,7 +410,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get services --namespace=${namespace} | grep 'cortx-server-headless-')"
+done <<< "$(kubectl get services --namespace="${namespace}" | grep 'cortx-server-headless-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -434,7 +434,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get services --namespace=${namespace} | grep 'cortx-server-clusterip-')"
+done <<< "$(kubectl get services --namespace="${namespace}" | grep 'cortx-server-clusterip-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -453,7 +453,7 @@ while IFS= read -r line; do
         printf "${status[0]}...${PASSED}PASSED${NC}"
         count=$((count+1))
     fi
-done <<< "$(kubectl get services --namespace=${namespace} | grep 'cortx-server-loadbal-')"
+done <<< "$(kubectl get services --namespace="${namespace}" | grep 'cortx-server-loadbal-')"
 
 if [[ ${num_load_bal} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -478,7 +478,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=${namespace} | grep 'cortx-server-fs-local-pvc')"
+done <<< "$(kubectl get pvc --namespace="${namespace}" | grep 'cortx-server-fs-local-pvc')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -492,7 +492,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=${namespace} | grep 'cortx-server-fs-local-pvc')"
+done <<< "$(kubectl get pv --namespace="${namespace}" | grep 'cortx-server-fs-local-pvc')"
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -506,7 +506,7 @@ fi
 #########################################################################################
 num_nodes=1
 device_names=$(parseSolution 'solution.storage.cvg*.devices*.device')
-num_devices=$(echo ${device_names} | grep -o '>' | wc -l)
+num_devices=$(echo "${device_names}" | grep -o '>' | wc -l)
 
 printf "${ALERT}######################################################${NC}\n"
 printf "${ALERT}# CORTX HA                                            ${NC}\n"
@@ -527,7 +527,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get deployments --namespace=${namespace} | grep 'cortx-ha')"
+done <<< "$(kubectl get deployments --namespace="${namespace}" | grep 'cortx-ha')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -552,7 +552,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pods --namespace=${namespace} | grep 'cortx-ha-')"
+done <<< "$(kubectl get pods --namespace="${namespace}" | grep 'cortx-ha-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -576,7 +576,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get services --namespace=${namespace} | grep 'cortx-ha-headless-')"
+done <<< "$(kubectl get services --namespace="${namespace}" | grep 'cortx-ha-headless-')"
 
 if [[ ${num_nodes} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -601,7 +601,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pvc --namespace=${namespace} | grep 'cortx-ha-fs-local-pvc')"
+done <<< "$(kubectl get pvc --namespace="${namespace}" | grep 'cortx-ha-fs-local-pvc')"
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -615,7 +615,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done <<< "$(kubectl get pv --namespace=${namespace} | grep 'cortx-ha-fs-local-pvc')"
+done <<< "$(kubectl get pv --namespace="${namespace}" | grep 'cortx-ha-fs-local-pvc')"
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -627,7 +627,7 @@ fi
 
 function extractBlock()
 {
-    ./parse_scripts/yaml_extract_block.sh ${solution_yaml} $1
+    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
 }
 
 num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
@@ -637,9 +637,9 @@ if [[ ${num_motr_client} -gt 0 ]]; then
     # CORTX Client
     #########################################################################################
     nodes_names=$(parseSolution 'solution.nodes.node*.name')
-    num_nodes=$(echo ${nodes_names} | grep -o '>' | wc -l)
+    num_nodes=$(echo "${nodes_names}" | grep -o '>' | wc -l)
     device_names=$(parseSolution 'solution.storage.cvg*.devices*.device')
-    num_devices=$(echo ${device_names} | grep -o '>' | wc -l)
+    num_devices=$(echo "${device_names}" | grep -o '>' | wc -l)
 
     printf "${ALERT}######################################################${NC}\n"
     printf "${ALERT}# CORTX Client                                        ${NC}\n"
@@ -660,7 +660,7 @@ if [[ ${num_motr_client} -gt 0 ]]; then
                 count=$((count+1))
             fi
         fi
-    done <<< "$(kubectl get deployments --namespace=${namespace} | grep 'cortx-client')"
+    done <<< "$(kubectl get deployments --namespace="${namespace}" | grep 'cortx-client')"
 
     if [[ ${num_nodes} -eq ${count} ]]; then
         printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -685,7 +685,7 @@ if [[ ${num_motr_client} -gt 0 ]]; then
                 count=$((count+1))
             fi
         fi
-    done <<< "$(kubectl get pods --namespace=${namespace} | grep 'cortx-client-')"
+    done <<< "$(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')"
 
     if [[ ${num_nodes} -eq ${count} ]]; then
         printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -709,7 +709,7 @@ if [[ ${num_motr_client} -gt 0 ]]; then
                 count=$((count+1))
             fi
         fi
-    done <<< "$(kubectl get services --namespace=${namespace} | grep 'cortx-client-headless-')"
+    done <<< "$(kubectl get services --namespace="${namespace}" | grep 'cortx-client-headless-')"
 
     if [[ ${num_nodes} -eq ${count} ]]; then
         printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -734,7 +734,7 @@ if [[ ${num_motr_client} -gt 0 ]]; then
                 count=$((count+1))
             fi
         fi
-    done <<< "$(kubectl get pvc --namespace=${namespace} | grep 'cortx-client-fs-local-pvc')"
+    done <<< "$(kubectl get pvc --namespace="${namespace}" | grep 'cortx-client-fs-local-pvc')"
 
     while IFS= read -r line; do
         IFS=" " read -r -a status <<< "${line}"
@@ -748,7 +748,7 @@ if [[ ${num_motr_client} -gt 0 ]]; then
                 count=$((count+1))
             fi
         fi
-    done <<< "$(kubectl get pv --namespace=${namespace} | grep 'cortx-client-fs-local-pvc')"
+    done <<< "$(kubectl get pv --namespace="${namespace}" | grep 'cortx-client-fs-local-pvc')"
 
     if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
         printf "OVERALL STATUS: ${PASSED}PASSED${NC}\n"
@@ -764,7 +764,7 @@ fi
 while IFS= read -r line; do
     IFS=" " read -r -a node_name <<< "${line}"
     if [[ "${node_name[0]}" != "NAME" ]]; then
-        output=$(kubectl describe nodes ${node_name[0]} | grep Taints | grep NoSchedule)
+        output=$(kubectl describe nodes "${node_name[0]}" | grep Taints | grep NoSchedule)
         if [[ "${output}" == "" ]]; then
             num_worker_nodes=$((num_worker_nodes+1))
         fi
