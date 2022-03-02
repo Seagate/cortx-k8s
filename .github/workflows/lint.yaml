@@ -37,6 +37,7 @@ jobs:
             solution_validation_scripts
           ignore_names: >-
             deploy-cortx-cloud.sh
+            destroy-cortx-cloud.sh
             generate-cvg-yaml.sh
             prereq-deploy-cortx-cloud.sh
             shutdown-cortx-cloud.sh
