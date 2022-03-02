@@ -10,6 +10,11 @@ solution_yaml="solution.yaml"
 persist_fs_mount_path=false
 default_fs_type="ext4"
 
+# This value will separate `/dev/sdc` or `/dev/sdc1` device paths to symlinks created under
+# `/dev/cortx/sdc` or `/dev/cortx/sdc1`
+symlink_block_devices=false
+symlink_block_devices_separator=cortx
+
 function usage() {
     cat << EOF
 
@@ -23,6 +28,9 @@ Options:
                     secondary storage.
     -p              The prereq script will attempt to update /etc/fstab
                     with an appropriate mountpoint for persistent reboots.
+
+    -b              TODO CORTX-27775 More details for symlink_block_devices
+
     -s <FILE>       The cluster solution configuration file. Can
                     also be set with the CORTX_SOLUTION_CONFIG_FILE
                     environment variable. Defaults to 'solution.yaml'.
@@ -30,7 +38,7 @@ Options:
 EOF
 }
 
-while getopts hd:s:pt: opt; do
+while getopts hd:s:pb opt; do
     case ${opt} in
         h )
             printf "%s\n" "${SCRIPT_NAME}"
@@ -40,6 +48,7 @@ while getopts hd:s:pt: opt; do
         d ) disk=${OPTARG} ;;
         s ) solution_yaml=${OPTARG} ;;
         p ) persist_fs_mount_path=true ;;
+        b ) symlink_block_devices=true ;;
         * )
             usage >&2
             exit 1
@@ -182,7 +191,7 @@ function prepCortxDeployment()
     fi
 
     ###################################################################
-    ### CORTX-27775
+    ### CORTX-27775 - PART 1
     ### THIS CODE BLOCK PERSISTS THE MOUNT POINT IN /etc/fstab
     ### THIS FIX RESOLVES REBOOT ISSUES WITH PREREQ STORAGE AND REBOOTS
     ###################################################################
@@ -213,7 +222,7 @@ function prepCortxDeployment()
         fi
     fi
     ###################################################################
-    ### END CORTX-27775
+    ### END CORTX-27775 - PART 1
     ###################################################################
 
     # Prep for Rancher Local Path Provisioner deployment
@@ -230,6 +239,77 @@ function prepCortxDeployment()
         count=$((count+1))
         sleep 1s
     done
+
+
+    ###################################################################
+    ### CORTX-27775 - PART 2
+    ###################################################################
+    if [[ "${symlink_block_devices}" == "true" ]]; then
+        symlinkBlockDevices
+    fi
+    ###################################################################
+    ### END CORTX-27775 - PART 2
+    ###################################################################
+}
+
+function join_array()
+{
+  local IFS="$1"
+  shift
+  echo "$*"
+}
+
+function symlinkBlockDevices()
+{
+
+    local node_list=()
+    local device_paths=()
+
+    # Get the node names from the solution.yaml
+    echo "NODES:"
+    filter="solution.nodes.node*.name"
+    node_output=$(parseSolution ${solution_yaml} ${filter})
+    IFS=';' read -r -a node_array <<< "${node_output}"
+    for node_element in "${node_array[@]}"
+    do
+        node_list+=($(echo ${node_element} | cut -f2 -d'>'))
+    done
+    echo $(join_array "," "${node_list[@]}")
+
+    # Get the device paths from the solution.yaml
+    echo "DEVICE PATHS:"
+    filter="solution.storage.cvg*.devices*.device"
+    device_output=$(parseSolution ${solution_yaml} ${filter})
+    IFS=';' read -r -a device_array <<< "${device_output}"
+    for device_element in "${!device_array[@]}"
+    do
+        device_paths+=($(echo ${device_array[${device_element}]} | cut -f2 -d'>')) 
+    done
+    echo $(join_array "," "${device_paths[@]}")
+
+
+    ## Iterate over node list
+    ##  Run job with script defined in YAML body (kc apply -f jobs/symlink-block-devices-job.yaml)
+    ##      Pass in list of device paths cat'ed from ${mnt_blk_info_fname}
+    ##      Pass in ${symlink_block_devices_separator}
+    ##      Find device via $(ls -l /dev/disk/by-id | grep xyz) and symlink
+
+    ## Wait for all Jobs to complete successfully
+    ## If timeout, Wait again
+    ## If timeout, fail and exit out of installer with user directives.
+
+    ## Update solution.yaml used as input with new symlink_block_device_paths
+    ## and output to {solution}-symlink.yaml and notify user to use new 
+    ## {solution}-symlink.yaml for input to `deploy-cortx-cloud.sh`
+
+
+    ## IF THIS CODE RAN IN DEPLOY-CORTX-CLOUD, THE FOLLOWING WOULD NEED TO HAPPEN
+        ## Update "mnt-blk-info.txt" files already copied elsewhere
+        ## cp $cortx_blk_data_mnt_info_path local-mount-file.txt
+        ## sed "%s/\/dev\//\/dev\/${symlink_block_devices_separator}\/" ......
+        ## cp local-mount-file.txt $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/${mnt_blk_info_fname}
+        ## cp local-mount-file.txt $(pwd)/cortx-cloud-helm-pkg/cortx-data/${mnt_blk_info_fname}
+
 }
 
 function prepOpenLdapDeployment()

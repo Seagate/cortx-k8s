@@ -53,7 +53,7 @@ while IFS= read -r line; do
 
         if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
             num_openldap_replicas=$num_worker_nodes
-            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
+            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/${node_list_info_fname}
             if [[ -s $node_list_info_path ]]; then
                 printf "\n" >> $node_list_info_path
             fi
@@ -398,7 +398,7 @@ function deployOpenLDAP()
         --set openldap.servicename="openldap-svc" \
         --set openldap.storageclass="openldap-local-storage" \
         --set openldap.storagesize="5Gi" \
-        --set openldap.nodelistinfo="node-list-info.txt" \
+        --set openldap.nodelistinfo="${node_list_info_fname}" \
         --set openldap.numreplicas=$num_openldap_replicas \
         --set openldap.password=$openldap_password \
         --set openldap.image=$image \
@@ -598,8 +598,8 @@ function deployCortxLocalBlockStorage()
     printf "######################################################\n"
     helm install "cortx-data-blk-data-$namespace" cortx-cloud-helm-pkg/cortx-data-blk-data \
         --set cortxblkdata.storageclass="cortx-local-blk-storage-$namespace" \
-        --set cortxblkdata.nodelistinfo="node-list-info.txt" \
-        --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
+        --set cortxblkdata.nodelistinfo="${node_list_info_fname}" \
+        --set cortxblkdata.mountblkinfo="${mnt_blk_info_fname}" \
         --set cortxblkdata.storage.volumemode="Block" \
         --set namespace=$namespace \
         -n $namespace
@@ -937,8 +937,8 @@ function deployCortxData()
             --set cortxdata.name="cortx-data-$node_name" \
             --set cortxdata.image=$cortxdata_image \
             --set cortxdata.nodeselector=$node_selector \
-            --set cortxdata.mountblkinfo="mnt-blk-info.txt" \
-            --set cortxdata.nodelistinfo="node-list-info.txt" \
+            --set cortxdata.mountblkinfo="${mnt_blk_info_fname}" \
+            --set cortxdata.nodelistinfo="${node_list_info_fname}" \
             --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
             --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
             --set cortxdata.cfgmap.name="cortx-cfgmap-$namespace" \
