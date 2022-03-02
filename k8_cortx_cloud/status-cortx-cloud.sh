@@ -764,7 +764,6 @@ while IFS= read -r line; do
     if [[ "${node_name}" != "NAME" ]]; then
         output=$(kubectl describe nodes ${node_name} | grep Taints | grep NoSchedule)
         if [[ "${output}" == "" ]]; then
-            node_list_str="${num_worker_nodes} ${node_name}"
             num_worker_nodes=$((num_worker_nodes+1))
         fi
     fi
