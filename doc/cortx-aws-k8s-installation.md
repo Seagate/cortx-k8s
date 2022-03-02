@@ -457,6 +457,56 @@ chmod +x s3-benchmark
 | S3 | Multiple IPs (cortx-server-clusterip-svc pods) | tcp/443, tcp/80
 | IAM | Multiple IPs (cortx-server-clusterip-svc pods) | tcp/9443
 
+## 6 CloudFormation Guide
+
+The steps in this guide can be automated using AWS CloudFormation.
+The `k8_cortx_cloud/cloudformation.py` script in this repo generates CloudFormation templates in JSON form.
+
+First, ensure the
+[prerequisites](cortx-aws-k8s-installation.md#1-prerequisites)
+above for the AWS environment are satisfied
+(VPC, cluster security group, and key pair are required).
+The template will include as parameters the other setup options,
+such as instance type and disk size.
+By default the script generates a template following the setup in this guide
+(3 nodes, 2 metadata and 4 data disks per node).
+Since CloudFormation has limited support for changing the cardinality of nodes and disks,
+the script accepts command line arguments to customize the number of nodes, disks, and CVGs and generate a new template.
+The help menu accessible by calling the script with `--help` lists available options.
+To get a CloudFormation template with the default config, run
+
+    ./k8_cortx_cloud/cloudformation.py > template.json
+
+A default CloudFormation template
+(following this guide)
+is available
+[here](../k8_cortx_cloud/cloudformation_3node.json).
+
+You can now upload the template to
+[CloudFormation on the AWS console](https://console.aws.amazon.com/cloudformation)
+by clicking "Create Stack".
+The wizard will allow you to configure the CORTX stack before deployment.
+After choosing a name for the stack,
+review the list of parameters.
+Most of these have default values,
+but it's possible to adjust the software versions in use, disk configuration, etc.
+After making any adjustments,
+continue through the wizard and create the CloudFormation stack.
+CloudFormation will now provision the required resources and start the deployment process.
+
+> If you'd like to watch the progress of the deployment,
+> you can SSH to the EC2 instances provisioned for the stack,
+> then view the log produced by the deployment script by running
+> `tail -f /tmp/install.log`.
+> The Control Plane node will show the full Kubernetes and CORTX deployment.
+
+Once setup is complete (the default setup should take ~15 minutes),
+the stack will transition to the CREATE_COMPLETE state.
+You can then check the Outputs tab to find the private IP address of the control plane node.
+You're now ready to try out CORTX! Continue from
+[Section 4](#4-using-cortx),
+replacing `$ClusterControlPlaneIP` with the IP from the Outputs when connecting via SSH.
+
 ## Tested by:
 
 Feb 22, 2022: Tim Shaffer (tim.shaffer@seagate.com)
