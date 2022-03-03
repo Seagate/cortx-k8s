@@ -130,8 +130,8 @@ spec:
               readOnly: true
             {{- end }}
           ports:
-          - containerPort: 8000
-          - containerPort: 8443
+          - containerPort: {{ printf "%d" ( add $i 22751 ) }}
+          - containerPort: {{ printf "%d" ( add $i 23001 ) }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- end }}

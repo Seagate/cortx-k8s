@@ -63,8 +63,15 @@ cortx:
     auth_secret: s3_auth_admin_secret
     s3:
       endpoints:
-      - http://<<.Values.cortx.io.svc>>:80
+      - http://<<.Values.cortx.io.svc>>:80                              #Deprecated
+      - https://<<.Values.cortx.io.svc>>:443                            #Deprecated
+    public:                                    
+      endpoints:                               
+      - http://<<.Values.cortx.io.svc>>:80                  
       - https://<<.Values.cortx.io.svc>>:443
+    service:
+      endpoints:
+        <<.Values.cortx.rgw.service>>
     io_max_units: 8
     max_start_timeout: <<.Values.cortx.max_start_timeout>>
     limits:

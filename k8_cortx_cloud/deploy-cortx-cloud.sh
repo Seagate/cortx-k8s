@@ -271,6 +271,7 @@ function deployKubernetesPrereqs()
         --set namespace.name="$namespace" \
         --set services.hax.name=$(extractBlock 'solution.common.hax.service_name') \
         --set services.hax.port=$(extractBlock 'solution.common.hax.port_num') \
+        --set services.io.numinst=$(extractBlock 'solution.common.s3.num_inst') \
         -n $namespace
 
 }
@@ -581,6 +582,7 @@ function deleteStaleAutoGenFolders()
 }
 
 num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
+num_rgw_inst=$(extractBlock 'solution.common.s3.num_inst')
 function deployCortxConfigMap()
 {
     printf "########################################################\n"
@@ -617,7 +619,16 @@ function deployCortxConfigMap()
     do
         rgw_endpoints="$rgw_endpoints"$'\n'"  - ""tcp://cortx-server-headless-svc-""${node_name_list[$i]}"":21001"
     done
-
+    
+    rgw_service_endpoints=""
+    rgw_http_port=22751
+    rgw_https_port=23001
+    for j in "${!node_name_list[@]}"
+    do
+        rgw_service_endpoints="$rgw_service_endpoints"$'\n'"- ""http://cortx-server-headless-svc-""${node_name_list[$j]}"":$(($rgw_http_port))"
+        rgw_service_endpoints="$rgw_service_endpoints"$'\n'"- ""https://cortx-server-headless-svc-""${node_name_list[$j]}"":$(($rgw_https_port))"       
+    done
+    
     ios_endpoints=""
     for i in "${!node_name_list[@]}"
     do
@@ -680,6 +691,7 @@ function deployCortxConfigMap()
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$rgw_endpoints" 8 "cortx.client.rgw"
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$hare_client_endpoints" 8 "cortx.hare.hax.client"
         ./parse_scripts/yaml_insert_block.sh $new_gen_file "$motr_client_endpoints" 8 "cortx.motr.client"
+        ./parse_scripts/yaml_insert_block.sh $new_gen_file "$rgw_service_endpoints" 8 "cortx.rgw.service"
         ./parse_scripts/subst.sh $new_gen_file "cortx.external.consul.endpoints" $consul_endpoint
         ./parse_scripts/subst.sh $new_gen_file "cortx.io.svc" "cortx-io-svc"
         ./parse_scripts/subst.sh $new_gen_file "cortx.hare.hax.svc.protocol" "$(extractBlock 'solution.common.hax.protocol')"
