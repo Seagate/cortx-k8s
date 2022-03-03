@@ -1,0 +1,99 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: symlink-block-devices-${NODE_SHORT_NAME}
+  labels:
+    cortx.io/task: symlink-block-devices
+    kubernetes.io/hostname: ${NODE_NAME}
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        cortx.io/task: symlink-block-devices
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ${NODE_NAME}
+      restartPolicy: Never
+      volumes:
+      - name: node-devices
+        hostPath:
+          path: /dev
+          type: Directory
+      containers:
+      - name: symlink-block-devices-task
+        image: ${CORTX_IMAGE}
+        command: 
+        - "bash"
+        - "-c"
+        - |
+          #!/bin/bash
+          printf "#############################################################################\n"
+          printf "# Creating block device symlinks for %s\n" ${JOB_NODE_NAME}
+          printf "#############################################################################\n"
+          printf "Symlink path separator:\t ${JOB_SYMLINK_PATH_SEPARATOR}\n"
+          printf "Device paths:\t\t${JOB_DEVICE_PATHS}\n"
+          printf "Creating symlinks...\n"
+
+          # If symlink sub-directory does not exist, create it
+          if [[ ! -d /job/dev/${JOB_SYMLINK_PATH_SEPARATOR} ]]; then
+            mkdir -p /job/dev/${JOB_SYMLINK_PATH_SEPARATOR}
+          fi
+
+          ERROR_COUNT=0
+
+          IFS=',' read -r -a DEVICE_PATH_ARRAY <<< "${JOB_DEVICE_PATHS}"
+          for INDEX in "${!DEVICE_PATH_ARRAY[@]}"
+          do
+            ITER_DEVICE_PATH=${DEVICE_PATH_ARRAY[${INDEX}]}    
+            printf "\tDevice Path:\t\t\t%s\n" ${ITER_DEVICE_PATH}
+
+            # We use basename here since the `ls -l /dev/disk/by-id` command 
+            # only shows the actual device name and not path elements in its symlink
+            ITER_DEVICE_NAME=$(basename ${ITER_DEVICE_PATH})
+            printf "\tDevice Name:\t\t\t%s\n" ${ITER_DEVICE_NAME}
+            
+            # Look up the block device id based upon host system `/dev/disk/by-id` mappings
+            ITER_BLK_ID=$(ls -l /job/dev/disk/by-id | grep ${ITER_DEVICE_NAME} | awk '{print $9}')
+            printf "\tBlock Device Id:\t\t%s\n" ${ITER_BLK_ID}
+
+            # We use the entire device path here and only replace `/dev/` to account for devices with multiple levels of depth
+            ITER_SYMLINK_SRC_PATH="/dev/disk/by-id/${ITER_BLK_ID}"
+            ITER_SYMLINK_TGT_PATH="/dev/${JOB_SYMLINK_PATH_SEPARATOR}/${ITER_DEVICE_PATH/\/dev\/}"
+            printf "\tGenerated symlink source path:\t\t%s\n" "${ITER_SYMLINK_SRC_PATH}"
+            printf "\tGenerated symlink target path:\t\t%s\n" "${ITER_SYMLINK_TGT_PATH}"
+            
+            # We prefix the symlink target path with `/job` here, since that is
+            # how the host file system is accessed inside the job.
+            # The `/job` prefix is not needed for the symlink source path, as the
+            # shell if fine with creating a pointer to something that does not exist.
+            ln -s ${ITER_SYMLINK_SRC_PATH} /job${ITER_SYMLINK_TGT_PATH}
+
+            if [[ "$?" == "0" ]]; then
+              printf "\tSymlink creation succeeded!\n"
+            else
+              printf "\tERROR: Symlink creation failed\n"
+              ((ERROR_COUNT++))
+            fi
+            printf "\n"
+          done
+
+          if [[ "${ERROR_COUNT}" -gt 0 ]]; then
+            printf "\tERROR: %s symlink creation(s) failed. Check the Job logs and verify expected behavior.\n" ${ERROR_COUNT}
+            exit 1
+          fi
+        env:
+          # Kubernetes Node name
+        - name: JOB_NODE_NAME
+          value: ${NODE_NAME}
+          # Comma-separated list of device paths
+        - name: JOB_DEVICE_PATHS
+          value: ${DEVICE_PATHS}
+          # String injected as a path separator in `/dev/...` symlinks
+        - name: JOB_SYMLINK_PATH_SEPARATOR
+          value: ${SYMLINK_PATH_SEPARATOR}
+        securityContext:
+          privileged: false
+        volumeMounts:
+          - name: node-devices
+            mountPath: /job/dev

@@ -13,32 +13,50 @@ default_fs_type="ext4"
 # This value will separate `/dev/sdc` or `/dev/sdc1` device paths to symlinks created under
 # `/dev/cortx/sdc` or `/dev/cortx/sdc1`
 symlink_block_devices=false
-symlink_block_devices_separator=cortx
+symlink_block_devices_separator="cortx"
 
 function usage() {
     cat << EOF
 
 Usage:
-    ${SCRIPT_NAME} -d DISK [-p] [-s SOLUTION_CONFIG_FILE] 
+    ${SCRIPT_NAME} -d DISK [-s SOLUTION_CONFIG_FILE] [-p] [[-b] [-c SEPARATOR]]
     ${SCRIPT_NAME} -h
 
 Options:
     -h              Prints this help information.
+
     -d <DISK>       REQUIRED. The path of the disk or device to mount for
                     secondary storage.
-    -p              The prereq script will attempt to update /etc/fstab
-                    with an appropriate mountpoint for persistent reboots.
-
-    -b              TODO CORTX-27775 More details for symlink_block_devices
-
+    
     -s <FILE>       The cluster solution configuration file. Can
                     also be set with the CORTX_SOLUTION_CONFIG_FILE
                     environment variable. Defaults to 'solution.yaml'.
 
+    -p              The prereq script will attempt to update /etc/fstab
+                    with an appropriate mountpoint for persistent reboots.
+
+    -b              Create symlinks for persistent block device access, based
+                    upon device paths defined in 'solution.yaml' and the
+                    symlink path separator defined with the '-c' option.
+                    As an example, '/dev/sdc' will have a new symlink available via
+                    '/dev/cortx/sdc' for persistent access across reboots.
+                    This option will also create an updated '{solution}-symlink.yaml'
+                    file that should be used for subsequent deployment with
+                    'deploy-cortx-cloud.sh'.
+
+    -c              The symlink path separator used in conjunction with '-b'
+                    option to create symlinks for persistent block device access.
+                    Defaults to 'cortx'.
+
 EOF
 }
 
-while getopts hd:s:pb opt; do
+# Parameter parsing breaks when errant arguments are passed in prior to -* options
+# Script should ignore arguments that are before any defined flags in getopts
+# This should only be an error condition / edge case.
+# ' ./{SCRIPT_NAME} random-string -s solution.yaml -b -c "cortx123" ' breaks getopts parsing
+
+while getopts hd:s:pbc: opt; do
     case ${opt} in
         h )
             printf "%s\n" "${SCRIPT_NAME}"
@@ -49,6 +67,11 @@ while getopts hd:s:pb opt; do
         s ) solution_yaml=${OPTARG} ;;
         p ) persist_fs_mount_path=true ;;
         b ) symlink_block_devices=true ;;
+        c ) symlink_block_devices_separator=${OPTARG} ;;
+        \?) 
+            usage >&2
+            exit 1
+            ;;
         * )
             usage >&2
             exit 1
@@ -81,6 +104,17 @@ fi
 if [[ "$disk" == "" && "$is_master_node" = false ]]
 then
     echo "ERROR: Invalid input parameters"
+    usage
+    exit 1
+fi
+
+# Validate symlink_block_devices_separator is a valid path string
+# Examples:
+# 'cortx' is acceptable
+# 'c&rtx#' is not
+results=$(echo "${symlink_block_devices_separator}"  | grep -x -E -e  '[-_A-Za-z0-9]+(/[-_A-Za-z0-9]*)*')
+if [[ "${results}" == "" ]]; then
+    echo "ERROR: Invalid input parameters - the symlink_block_devices_separator '-c' must be a valid path-compatible string."
     usage
     exit 1
 fi
@@ -207,8 +241,8 @@ function prepCortxDeployment()
         # the blkid command will return the UUID of the mounted filesystem either way
         blk_uuid=$(blkid ${disk} -o export | grep UUID | awk '{split($0,a,"="); print a[2]}')
 
-        # Check /etc/fstab for presence of requested disk
-        exists_in_fstab=$(grep ${blk_uuid} /etc/fstab)
+        # Check /etc/fstab for presence of requested disk or filesystem mount path
+        exists_in_fstab=$(grep "${blk_uuid}\|${fs_mount_path}" /etc/fstab)
         if [[ "${exists_in_fstab}" == "" ]]; then
             # /etc/fstab does not contain a mountpoint for the desired disk and path
             backup_chars=$(date +%s)
@@ -239,17 +273,6 @@ function prepCortxDeployment()
         count=$((count+1))
         sleep 1s
     done
-
-
-    ###################################################################
-    ### CORTX-27775 - PART 2
-    ###################################################################
-    if [[ "${symlink_block_devices}" == "true" ]]; then
-        symlinkBlockDevices
-    fi
-    ###################################################################
-    ### END CORTX-27775 - PART 2
-    ###################################################################
 }
 
 function join_array()
@@ -259,25 +282,48 @@ function join_array()
   echo "$*"
 }
 
+
+## Function 'symlinkBlockDevices' - enabled via the '-b' flag
+## ----------------------------------------------------------
+##      Create symlinks for persistent block device access, based
+##      upon device paths defined in 'solution.yaml' and the 
+##      symlink path separator defined with the '-c' option.
+##      As an example, '/dev/sdc' will have a new symlink available via
+##      '/dev/cortx/sdc' for persistent access across reboots.
+##      This option will also create an updated '{solution}-symlink.yaml'
+##      file that should be used for subsequent deployment with 
+##      'deploy-cortx-cloud.sh'.
+## 
+##      Background
+##      - This implementation is meant to be invoked from a control-plane 
+##        node with local kubectl accessand requires parsing node information
+##        from solution.yaml
+##      - An alternative implementation would be to be run on the individual
+##        node itself, using NODE_NAME=$(hostname) with no need for looping
+##        through nodes defined in solution.yaml, but requiring local kubectl access.
 function symlinkBlockDevices()
 {
+    printf "####################################################\n"
+    printf "# Create Block Device Symlinks                      \n"
+    printf "####################################################\n"
 
+    # Local variables
+    local filter
     local node_list=()
     local device_paths=()
+    local job_template="$(pwd)/cortx-cloud-3rd-party-pkg/templates/job-symlink-block-devices.yaml.template"
+    local template_vars='${NODE_NAME}:${NODE_SHORT_NAME}:${DEVICE_PATHS}:${SYMLINK_PATH_SEPARATOR}:${CORTX_IMAGE}'
+    local job_file="jobs-symlink-block-devices-$(hostname | cut -f1 -d'.').yaml"
 
-    # Get the node names from the solution.yaml
-    echo "NODES:"
-    filter="solution.nodes.node*.name"
-    node_output=$(parseSolution ${solution_yaml} ${filter})
-    IFS=';' read -r -a node_array <<< "${node_output}"
-    for node_element in "${node_array[@]}"
-    do
-        node_list+=($(echo ${node_element} | cut -f2 -d'>'))
-    done
-    echo $(join_array "," "${node_list[@]}")
+    # Template replacement variable
+    export SYMLINK_PATH_SEPARATOR=${symlink_block_devices_separator}
 
-    # Get the device paths from the solution.yaml
-    echo "DEVICE PATHS:"
+    # Retrieve CORTX container image specified in solution.yaml
+    filter="solution.images.cortxcontrol"
+    cortx_image_yaml=$(parseSolution ${solution_yaml} ${filter})
+    export CORTX_IMAGE=$(echo ${cortx_image_yaml} | cut -f2 -d'>')
+    
+    # Create comma-separated string from the device paths in solution.yaml
     filter="solution.storage.cvg*.devices*.device"
     device_output=$(parseSolution ${solution_yaml} ${filter})
     IFS=';' read -r -a device_array <<< "${device_output}"
@@ -285,30 +331,59 @@ function symlinkBlockDevices()
     do
         device_paths+=($(echo ${device_array[${device_element}]} | cut -f2 -d'>')) 
     done
-    echo $(join_array "," "${device_paths[@]}")
+    # Template replacement variable
+    export DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
+    
+    # Prepare local templated Job definition
+    if [[ -f ${job_file} ]]; then
+        rm ${job_file}
+    fi
 
+    # Iterate over the defined nodes in solution.yaml
+    filter="solution.nodes.node*.name"
+    node_output=$(parseSolution ${solution_yaml} ${filter})
+    IFS=';' read -r -a node_array <<< "${node_output}"
+    for node_element in "${node_array[@]}"
+    do
+        # Template replacement variable
+        export NODE_NAME="$(echo ${node_element} | cut -f2 -d'>')"
+        export NODE_SHORT_NAME=$(echo ${NODE_NAME} | cut -f1 -d'.')
 
-    ## Iterate over node list
-    ##  Run job with script defined in YAML body (kc apply -f jobs/symlink-block-devices-job.yaml)
-    ##      Pass in list of device paths cat'ed from ${mnt_blk_info_fname}
-    ##      Pass in ${symlink_block_devices_separator}
-    ##      Find device via $(ls -l /dev/disk/by-id | grep xyz) and symlink
+        # Generate templated Job definition
+        envsubst "${template_vars}" < "${job_template}" >> ${job_file}
+        printf "\n---\n" >> ${job_file}
 
-    ## Wait for all Jobs to complete successfully
-    ## If timeout, Wait again
-    ## If timeout, fail and exit out of installer with user directives.
+        # Delete previous jobs that may exist for this specific node
+        kubectl delete jobs -l "cortx.io/task=symlink-block-devices" -l "kubernetes.io/hostname=${NODE_NAME}" --ignore-not-found
+    done
 
-    ## Update solution.yaml used as input with new symlink_block_device_paths
-    ## and output to {solution}-symlink.yaml and notify user to use new 
-    ## {solution}-symlink.yaml for input to `deploy-cortx-cloud.sh`
+    # Apply templated Job definitions to Kubernetes
+    kubectl apply -f ${job_file}
 
+    # Wait for all Jobs to complete successfully
+    printf "Waiting for 'symlink-block-devices' Jobs to complete successfully...\n"
+    sleep 10
+    kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s
 
-    ## IF THIS CODE RAN IN DEPLOY-CORTX-CLOUD, THE FOLLOWING WOULD NEED TO HAPPEN
-        ## Update "mnt-blk-info.txt" files already copied elsewhere
-        ## cp $cortx_blk_data_mnt_info_path local-mount-file.txt
-        ## sed "%s/\/dev\//\/dev\/${symlink_block_devices_separator}\/" ......
-        ## cp local-mount-file.txt $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/${mnt_blk_info_fname}
-        ## cp local-mount-file.txt $(pwd)/cortx-cloud-helm-pkg/cortx-data/${mnt_blk_info_fname}
+    ##  If timeout, wait again
+    if [[ "$?" != "0" ]]; then
+        printf "Timed out waiting for Jobs to complete successfully. Will attempt to wait again...\n"
+        kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s
+
+        ##  If timeout again, fail and exit out of installer with user directives.
+        if [[ "$?" != "0" ]]; then
+            printf "Timed out waiting for Jobs to complete successfully again. Corrective user action should be taken.\n"
+            exit 1
+        fi
+    fi
+
+    # Update solution.yaml used as input with new symlink_block_device_paths
+    # and output to {solution}-symlink.yaml and notify user to use new 
+    # {solution}-symlink.yaml for input to `deploy-cortx-cloud.sh`
+    SYMLINK_SOLUTION_YAML=${solution_yaml/\.yaml/-symlink\.yaml}
+    printf "Saving an updated solution.yaml file at %s\n" ${SYMLINK_SOLUTION_YAML}
+    printf "Use this new file when running 'deploy-cortx-cloud.sh' in the future to use your symlinked block devices.\n"
+    sed "s/\/dev/\/dev\/${SYMLINK_PATH_SEPARATOR}/g" ${solution_yaml} > ${SYMLINK_SOLUTION_YAML}
 
 }
 
@@ -342,6 +417,16 @@ namespace=$(echo $namespace | cut -f2 -d'>')
 # Install helm this is a master node
 if [[ "$is_master_node" = true ]]; then
     installHelm
+
+    ###################################################################
+    ### CORTX-27775 - PART 2
+    ###################################################################
+    if [[ "${symlink_block_devices}" == "true" ]]; then
+        symlinkBlockDevices
+    fi
+    ###################################################################
+    ### END CORTX-27775 - PART 2
+    ###################################################################
 fi
 
 # Perform the following functions if the 'disk' is provided
