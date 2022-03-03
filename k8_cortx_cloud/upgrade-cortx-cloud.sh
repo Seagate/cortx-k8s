@@ -285,7 +285,7 @@ case "${UPGRADE_TYPE}" in
         ;;
 esac
 
-sleep 50;
+sleep 90;
 # Validate if All CORTX Pods are running After upgrade is successful
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 validate_cortx_pods_status
