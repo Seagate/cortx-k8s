@@ -200,7 +200,7 @@ All paths below are prefixed with `solution.` for fully-qualified naming and are
 
 | Name                     | Description                                                                             | Default Value           |
 | ------------------------ | --------------------------------------------------------------------------------------- | ----------------------- |
-| `namespace`              | The kubernetes namespace for CORTX Pods to be deployed in.                              | `default`               |
+| `namespace`              | The Kubernetes namespace for CORTX Pods to be deployed in.                              | `default`               |
 
 ### Secret parameters
 
@@ -254,7 +254,7 @@ This section contains common parameters that affect all CORTX components running
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
 | `common.motr.num_client_inst`                         | TODO       | `0` |
 | `common.motr.start_port_num`                          | TODO       | `29000` |
-| `common.hax.procotol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` | 
+| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` | 
 | `common.hax.service_name`                             | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
 | `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
 | `common.external_services.s3.type`                    | Kubernetes Service type for external access to S3 IO                                              | `NodePort` |
