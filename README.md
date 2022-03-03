@@ -194,83 +194,101 @@ Run the `destroy-cortx-cloud.sh` script, passing in the path to the previously u
 
 The CORTX solution consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution file and extract information they need to deploy and destroy CORTX.
 
-All paths below are prefixed with `solution.` for fully-qualified naming.
+All paths below are prefixed with `solution.` for fully-qualified naming and are required to have a value unless explicitly marked as _(Optional)_ below.
+
 ### Global parameters
 
-| Name                     | Description                                                                             | Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `namespace`              | The kubernetes namespace for CORTX Pods to be deployed in.                              | `default`            |
+| Name                     | Description                                                                             | Default Value           |
+| ------------------------ | --------------------------------------------------------------------------------------- | ----------------------- |
+| `namespace`              | The Kubernetes namespace for CORTX Pods to be deployed in.                              | `default`               |
 
 ### Secret parameters
 
 This section contains the CORTX and third-party authentication information used to deploy CORTX on Kubernetes.
 
-| Name                     | Description                                                                             | Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `secrets.name`           | Name for the Kubernetes secret CORTX uses to store solution-specific secrets.           | `cortx-secret`            |
-| `secrets.content.openldap_admin_secret`          | Administrator password for the OpenLDAP required service        | `seagate1` |
-| `secrets.content.kafka_admin_secret`          | Administrator password for the Kafka required service        | `Seagate@123` |
-| `secrets.content.consul_admin_secret`          | Administrator password for the Consul required service        | `Seagate@123` |
-| `secrets.content.common_admin_secret`          | Administrator password for the CORTX common services        | `Seagate@123` |
-| `secrets.content.s3_auth_admin_secret`          | Administrator password for the S3 Auth CORTX component        | `ldapadmin` |
-| `secrets.content.csm_auth_admin_secret`          | Administrator password for the CSM Auth CORTX component        | `seagate2` |
-| `secrets.content.csm_mgmt_admin_secret`          | Administrator password for the CSM Management CORTX component   | `Cortxadmin@123` |
+| Name                                      | Description                                                                             | Default Value           |
+| ----------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------- |
+| `secrets.name`                            | Name for the Kubernetes Secret CORTX uses to store solution-specific secrets            | `cortx-secret`          |
+| `secrets.content.openldap_admin_secret`   | Administrator password for the OpenLDAP required service (deprecated)                   | `seagate1`              |
+| `secrets.content.kafka_admin_secret`      | Administrator password for the Kafka required service                                   | `Seagate@123`           |
+| `secrets.content.consul_admin_secret`     | Administrator password for the Consul required service                                  | `Seagate@123`           |
+| `secrets.content.common_admin_secret`     | Administrator password for the CORTX common services                                    | `Seagate@123`           |
+| `secrets.content.s3_auth_admin_secret`    | Administrator password for the S3 Auth CORTX component                                  | `ldapadmin`             |
+| `secrets.content.csm_auth_admin_secret`   | Administrator password for the CSM Auth CORTX component                                 | `seagate2`              |
+| `secrets.content.csm_mgmt_admin_secret`   | Administrator password for the CSM Management CORTX component                           | `Cortxadmin@123`        |
 
 ### Image parameters
 
 This section contains the CORTX and third-party images used to deploy CORTX on Kubernetes.
 
-| Name                     | Description                                                                             | Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `images.cortxcontrolprov`          | Image name (registry, repository, & tag) for the CORTX Control Provisioner components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxcontrol`              | Image name (registry, repository, & tag) for the CORTX Control components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxdataprov`             | Image name (registry, repository, & tag) for the CORTX Data Provisioner components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxdata`                 | Image name (registry, repository, & tag) for the CORTX Data components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxserverprov`           | Image name (registry, repository, & tag) for the CORTX Server Provisioner components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxserver`               | Image name (registry, repository, & tag) for the CORTX Server components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxha`          | Image name (registry, repository, & tag) for the CORTX HA components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.cortxclient`          | Image name (registry, repository, & tag) for the CORTX Client components   | `ghcr.io/seagate/cortx-all:2.0.0-stable-custom-ci` |
-| `images.openldap`          | Image name (registry, repository, & tag) for the OpenLDAP required service   | `ghcr.io/seagate/symas-openldap:2.4.58` |
-| `images.consul`          | Image name (registry, repository, & tag) for the Consul required service   | `ghcr.io/seagate/consul:1.10.0` |
-| `images.kafka`          | Image name (registry, repository, & tag) for the Kafka required service   | `ghcr.io/seagate/kafka:3.0.0-debian-10-r7` |
-| `images.zookeeper`          | Image name (registry, repository, & tag) for the Zookeeper required service   | `ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182` |
-| `images.rancher`          | Image name (registry, repository, & tag) for the Rancher Local Path Provisioner container   | `ghcr.io/seagate/local-path-provisioner:v0.0.20` |
-| `images.busybox`          | Image name (registry, repository, & tag) for the utility busybox container   | `ghcr.io/seagate/busybox:latest` |
+| Name                     | Description                                                                            | Default Value           |
+| ------------------------ | -------------------------------------------------------------------------------------- | ----------------------- |
+| `images.cortxcontrol`    | Image registry, repository, & tag for the CORTX Control components                     | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxdata`       | Image registry, repository, & tag for the CORTX Data components                        | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxserver`     | Image registry, repository, & tag for the CORTX Server components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxha`         | Image registry, repository, & tag for the CORTX HA components                          | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxclient`     | Image registry, repository, & tag for the CORTX Client components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.openldap`        | Image registry, repository, & tag for the OpenLDAP required service                    | `ghcr.io/seagate/symas-openldap:2.4.58`     |
+| `images.consul`          | Image registry, repository, & tag for the Consul required service                      | `ghcr.io/seagate/consul:1.10.0`             |
+| `images.kafka`           | Image registry, repository, & tag for the Kafka required service                       | `ghcr.io/seagate/kafka:3.0.0-debian-10-r7`  |
+| `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service                   | `ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182` |
+| `images.rancher`         | Image registry, repository, & tag for the Rancher Local Path Provisioner container     | `ghcr.io/seagate/local-path-provisioner:v0.0.20` |
+| `images.busybox`         | Image registry, repository, & tag for the utility busybox container                    | `ghcr.io/seagate/busybox:latest`            |
 
 ### Common parameters
 
-This section contains common parameters that applies to all CORTX Data nodes.
+> :warning: This section is actively under construction!
 
-| Name                     | Description                                                                             | Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `common.external_services.s3.type`       | Kubernetes Service type for external access to S3 IO. Required. | `NodePort` |
-| `common.external_services.s3.count`      | The number of service instances to create when service type is LoadBalancer. Required. | `1` |
-| `common.external_services.s3.ports.http` | Non-secure (http) port number used for S3 IO. Required. | `8000` |
-| `common.external_services.s3.ports.https` | Secure (https) service port number for S3 IO. Required. | `8443` |
-| `common.external_services.s3.nodePorts.http` | Node port for non-secure (http) S3 IO. Optional. | |
-| `common.external_services.s3.nodePorts.https` | Node port for secure (https) S3 IO. Optional. | |
-| `common.external_services.control.type` | Kubernetes Service type for external access to CSM Management API. Required. | `NodePort` |
-| `common.external_services.control.ports.https` | Secure (https) service port number for CSM Management API. Required. | `8081` |
-| `common.external_services.control.nodePorts.https` | Node port for secure (https) CSM Management API. Optional. | |
+This section contains common parameters that affect all CORTX components running on Kubernetes.
+
+| Name                                                  | Description                                                     | Default Value       |
+| ----------------------------------------------------- | --------------------------------------------------------------- | ------------------- |
+| `common.storage_provisioner_path`                     | TODO       | `/mnt/fs-local-volume` |
+| `common.container_path.local`                         | TODO       | `/etc/cortx` |
+| `common.container_path.shared`                        | TODO       | `/share` |
+| `common.container_path.log`                           | TODO       | `/etc/cortx/log` |
+| `common.s3.default_iam_users.auth_admin`              | Username for the default administrative user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `sgiamadmin` |
+| `common.s3.default_iam_users.auth_user`               | Username for the default user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `user_name` |
+| `common.s3.num_inst`                                  | TODO       | `2` |
+| `common.s3.start_port_num`                            | TODO       | `28051` |
+| `common.s3.max_start_timeout`                         | TODO       | `240` |
+| `common.motr.num_client_inst`                         | TODO       | `0` |
+| `common.motr.start_port_num`                          | TODO       | `29000` |
+| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` | 
+| `common.hax.service_name`                             | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
+| `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
+| `common.external_services.s3.type`                    | Kubernetes Service type for external access to S3 IO                                              | `NodePort` |
+| `common.external_services.s3.count`                   | The number of service instances to create when service type is `LoadBalancer`                     | `1` |
+| `common.external_services.s3.ports.http`              | Non-secure (http) port number used for S3 IO                                                      | `8000` |
+| `common.external_services.s3.ports.https`             | Secure (https) service port number for S3 IO                                                      | `8443` |
+| `common.external_services.s3.nodePorts.http`          |  _(Optional)_ Node port for non-secure (http) S3 IO                                               | None |
+| `common.external_services.s3.nodePorts.https`         |  _(Optional)_ Node port for secure (https) S3 IO                                                  | None |
+| `common.external_services.control.type`               | Kubernetes Service type for external access to CSM Management API                                 | `NodePort` |
+| `common.external_services.control.ports.https`        | Secure (https) service port number for CSM Management API.                                        | `8081` |
+| `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | None |
+| `common.resource_allocation.*.storage`                | The desired storage space allocated to PVCs used by that component                                | See `solution.yaml` |
+| `common.resource_allocation.*.resources.requests.*`   | CPU & Memory requested for Pods managed by a specific component                                   | See `solution.yaml` |
+| `common.resource_allocation.*.resources.limits.*`     | CPU & Memory limits for Pods managed by a specific component                                      | See `solution.yaml` |
 
 ### Storage parameters
 
+> :warning: This section is actively under construction!
+
 The metadata and data drives are defined in this section. All drives must be the same across all nodes on which CORTX Data will be deployed. A minimum of 1 CVG of type `ios` with one metadata drive and one data drive is required.
 
-| Name                     | Description                                                                             | Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `_TODO_`       | TBD | `TBD` |
+| Name                     | Description                                                                             | Default Value           |
+| ------------------------ | --------------------------------------------------------------------------------------- | ----------------------- |
+| `_TODO_`                 | TBD                                                                                     | `TBD`                   |
 
 ### Node parameters
 
 This section contains information about all the worker nodes used to deploy CORTX cloud cluster. All nodes must have all the metadata and data drives mentioned in the "Storage" section above.
 
-| Name                     | Description                                                                             | Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | --------------- |
-| `nodes.node1.name`       | Kubernetes node name for the first node in the Kubernetes cluster available to deploy CORTX components. | `node-1` |
-| `nodes.node2.name`       | Kubernetes node name for the second node in the Kubernetes cluster available to deploy CORTX components. | `node-2` |
-| `...`                    | ...                                                                                     | `...`
-| `nodes.nodeN.name`       | Kubernetes node name for the Nth node in the Kubernetes cluster available to deploy CORTX components. | `""` |
+| Name                     | Description                                                                                              | Default Value           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `nodes.node1.name`       | Kubernetes node name for the first node in the Kubernetes cluster available to deploy CORTX components.  | `node-1`                |
+| `nodes.node2.name`       | Kubernetes node name for the second node in the Kubernetes cluster available to deploy CORTX components. | `node-2`                |
+| `nodes.node{N}.name`     | Kubernetes node name for the Nth node in the Kubernetes cluster available to deploy CORTX components.    | None                    |
 
 ## Troubleshooting
 
