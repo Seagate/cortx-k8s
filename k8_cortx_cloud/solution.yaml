@@ -52,6 +52,7 @@ solution:
     external_services:
       s3:
         type: NodePort
+        count: 1
         ports:
           http: 8000
           https: 8443

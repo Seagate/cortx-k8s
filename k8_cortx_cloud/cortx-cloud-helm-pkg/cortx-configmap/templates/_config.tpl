@@ -1,4 +1,5 @@
 {{- define "config.yaml" -}}
+{{- $ioSvcName := printf "%s-0" .Values.cortxIoServiceName -}}
 cortx:
   external:
     {{- if .Values.externalKafka.enabled }}
@@ -40,15 +41,15 @@ cortx:
   s3:                                                               # DEPRECATED - ENTIRE S3 KEY
     iam:
       endpoints:
-      - https://{{ .Values.cortxIoServiceName }}:9443
-      - http://{{ .Values.cortxIoServiceName }}:9080
+      - https://{{ $ioSvcName }}:9443
+      - http://{{ $ioSvcName }}:9080
     data:
       endpoints:
-      - http://{{ .Values.cortxIoServiceName }}:80
-      - https://{{ .Values.cortxIoServiceName }}:443
+      - http://{{ $ioSvcName }}:80
+      - https://{{ $ioSvcName }}:443
     internal:
       endpoints:
-      - http://{{ .Values.cortxIoServiceName }}:28049
+      - http://{{ $ioSvcName }}:28049
     {{- with .Values.cortxS3.instanceCount }}
     service_instances: {{ . | int }}
     {{- end }}
@@ -62,16 +63,16 @@ cortx:
   rgw:
     iam:                                                            # DEPRECATED - IAM KEY
       endpoints:
-      - https://{{ .Values.cortxIoServiceName }}:8443
-      - http://{{ .Values.cortxIoServiceName }}:8000
+      - https://{{ $ioSvcName }}:8443
+      - http://{{ $ioSvcName }}:8000
     data:
       endpoints:
-      - http://{{ .Values.cortxIoServiceName }}:8000
-      - https://{{ .Values.cortxIoServiceName }}:8443
+      - http://{{ $ioSvcName }}:8000
+      - https://{{ $ioSvcName }}:8443
     s3:
       endpoints:
-      - http://{{ .Values.cortxIoServiceName }}:8000
-      - https://{{ .Values.cortxIoServiceName }}:8443
+      - http://{{ $ioSvcName }}:8000
+      - https://{{ $ioSvcName }}:8443
     {{- with .Values.cortxS3.instanceCount }}
     service_instances: {{ . | int }}
     {{- end }}
@@ -154,7 +155,7 @@ cortx:
     email_address: cortx@seagate.com
     agent:
       endpoints:
-      - https://{{ .Values.cortxIoServiceName }}:8081
+      - https://{{ $ioSvcName }}:8081
     limits:
       services:
       - name: agent

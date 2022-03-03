@@ -1,26 +1,32 @@
+{{- $svc := .Values.services.io -}}
+{{- $isLB := eq $svc.type "LoadBalancer" -}}
+{{- $nodePortAllowed := or (eq $svc.type "NodePort") $isLB -}}
+{{- $svcCount := ternary $svc.count 1 $isLB | int -}}
+{{- $root := . -}}
+{{- range $i := until $svcCount -}}
 apiVersion: v1
 kind: Service
-{{- $svc := .Values.services.io }}
 metadata:
-  name: {{ $svc.name }}
-  namespace: {{ .Values.namespace.name }}
+  name: {{ printf "%s-%d" $svc.name $i | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $root.Values.namespace.name }}
 spec:
   type: {{ $svc.type }}
   selector:
     cortx.io/service-type: "cortx-server"
   ports:
-    {{- $nodePortAllowed := or (eq $svc.type "NodePort") (eq $svc.type "LoadBalancer") }}
     - name: cortx-rgw-http
       protocol: TCP
       port: {{ $svc.ports.http }}
       targetPort: 8000
       {{- if and $nodePortAllowed (not (empty $svc.nodePorts.http)) }}
-      nodePort: {{ $svc.nodePorts.http }}
+      nodePort: {{ add $svc.nodePorts.http $i }}
       {{- end }}
     - name: cortx-rgw-https
       protocol: TCP
       port: {{ $svc.ports.https }}
       targetPort: 8443
       {{- if and $nodePortAllowed (not (empty $svc.nodePorts.https)) }}
-      nodePort: {{ $svc.nodePorts.https }}
+      nodePort: {{ add $svc.nodePorts.https $i }}
       {{- end }}
+---
+{{- end }}
