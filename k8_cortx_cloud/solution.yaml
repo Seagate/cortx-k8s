@@ -11,11 +11,11 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrol: cortx-docker.colo.seagate.com/seagate/cortx-all:2.0.0-2192-custom-ci
-    cortxdata: cortx-docker.colo.seagate.com/seagate/cortx-all:2.0.0-2192-custom-ci
-    cortxserver: cortx-docker.colo.seagate.com/seagate/cortx-rgw:2.0.0-120-custom-ci
-    cortxha: cortx-docker.colo.seagate.com/seagate/cortx-all:2.0.0-2192-custom-ci
-    cortxclient: cortx-docker.colo.seagate.com/seagate/cortx-all:2.0.0-2192-custom-ci
+    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-664
+    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-664
+    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-664
+    cortxha: ghcr.io/seagate/cortx-all:2.0.0-664
+    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-664
     openldap: ghcr.io/seagate/symas-openldap:2.4.58
     consul: ghcr.io/seagate/consul:1.10.0
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
