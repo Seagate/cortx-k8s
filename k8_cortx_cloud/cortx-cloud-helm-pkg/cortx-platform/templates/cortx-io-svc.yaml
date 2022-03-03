@@ -11,11 +11,11 @@ spec:
     - name: http-port80
       protocol: TCP
       port: 80
-      targetPort: 8000
+      targetPort: 80
     - name: https-port443
       protocol: TCP
       port: 443
-      targetPort: 8443
+      targetPort: 443
     - name: port28049
       protocol: TCP
       port: 28049
