@@ -23,6 +23,15 @@ spec:
   clusterIP: None
   selector:
     app: {{ .Values.cortxserver.name }}
+  ports:
+    - name: cortx-rgw-http
+      protocol: TCP
+      port: 22751
+      targetPort: 22751
+    - name: cortx-rgw-https
+      protocol: TCP
+      port: 23001
+      targetPort: 23001
 ---
 apiVersion: v1
 kind: Service
@@ -36,9 +45,9 @@ spec:
   ports:
     - name: cortx-rgw-http
       protocol: TCP
-      port: 80
-      targetPort: 8000
+      port: 22751
+      targetPort: 22751
     - name: cortx-rgw-https
       protocol: TCP
-      port: 443
-      targetPort: 8443
+      port: 23001
+      targetPort: 23001
