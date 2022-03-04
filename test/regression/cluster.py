@@ -134,7 +134,7 @@ class Cluster:
             # TODO: parameterize user
             user = 'root'
             node = self.cluster_data['nodes'][0]
-            stdout = subprocess.Popen(['ssh', f'{user}@{node}', f'lsblk {blkdev}'],
+            stdout = subprocess.Popen(['ssh', f'{user}@{node}', f'lsblk {blkdev}'], # nosec B602
                                       stdout=subprocess.PIPE).communicate()[0]
             for line in stdout.splitlines():
                 line = line.decode('utf-8')
@@ -181,7 +181,6 @@ class Cluster:
         """Run prereq script on all nodes
         First copy the prereq script and solution file to the
         node.  Then run the script."""
-
         if not self.cluster_data:
             print("Cannot run prereq-deploy-cortx-cloud.sh.  No cluster config file specified.")
             return
@@ -198,7 +197,7 @@ class Cluster:
                                    'prereq-deploy-cortx-cloud.sh')
                     ]
             print(f"------------- prereq {node} --------------\n")
-            result += RemoteRun(node, self.user).scp(files, '/tmp/cortx-k8s')
+            result += RemoteRun(node, self.user).scp(files, '/tmp/cortx-k8s') # nosec B108
             result += RemoteRun(node, self.user).run(
                                   f'cd /tmp/cortx-k8s; '
                                   f'./prereq-deploy-cortx-cloud.sh {blkdev} '
@@ -257,13 +256,3 @@ class Cluster:
                 result = 1
 
         return result
-
-
-class Client:
-    def __init__(self, accesskey=None, endpoints=[], clientsvr=None):
-        """Represents an S3 client."""
-        self.accesskey = accesskey
-        self.endpoints = endpoints
-        if not isinstance(self.endpoints, list):
-            self.endpoints = [self.endpoints]
-        self.clientsvr = clientsvr
