@@ -179,7 +179,6 @@ class Cluster:
 
     def run_prereq(self):
         """Run prereq script on all nodes
-
         First copy the prereq script and solution file to the
         node.  Then run the script."""
 
@@ -262,7 +261,7 @@ class Cluster:
 
 class Client:
     def __init__(self, accesskey=None, endpoints=[], clientsvr=None):
-        """ Represents an S3 client."""
+        """Represents an S3 client."""
         self.accesskey = accesskey
         self.endpoints = endpoints
         if not isinstance(self.endpoints, list):

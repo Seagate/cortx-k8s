@@ -1,6 +1,5 @@
 import datetime
 import os
-import shlex
 import subprocess
 import sys
 import time
@@ -26,7 +25,6 @@ class Logger:
 
     def __init__(self, logfile=None):
         """Class for facilitationg test output
-
         Key elements:
           * Prepend a timestamp
           * Support terminal colord output"""
