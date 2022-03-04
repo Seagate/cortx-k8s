@@ -24,10 +24,10 @@ class Logger:
     ENDC = '\033[0m'
 
     def __init__(self, logfile=None):
-        """Class for facilitationg test output
-        Key elements:
-          * Prepend a timestamp
-          * Support terminal colord output"""
+        """Class for facilitationg test output"""
+        #Key elements:
+        #  * Prepend a timestamp
+        #  * Support terminal colord output
 
         # Default is to log only things that are logged all the time
         # By raising this level you can get more verbose logging

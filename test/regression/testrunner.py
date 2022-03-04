@@ -150,11 +150,11 @@ class TestList:
 
 class Test:
     def __init__(self, name, id_, cmd):
-        """Represents a single regression test
-        Parameters:
-          * name of the test
-          * test id (e.g. TEST-DEPLOY-0001)
-          * cmd to run -- any executable"""
+        """Represents a single regression test"""
+        #Parameters:
+        #  * name of the test
+        #  * test id (e.g. TEST-DEPLOY-0001)
+        #  * cmd to run -- any executable
         self.name = name
         self.id = id_
         self.cmd = cmd

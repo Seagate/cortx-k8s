@@ -6,8 +6,8 @@ template files are functioning as expected.  These tests are not
 comprehensive CORTX system tests.
 
 ## Test Pre-Requisites
-*  Your system has kubectl access to an existing Kubernetes cluster that meets CORTX requirements.
-*  There is no existing CORTX cluster running.  (The tests assume that a new CORTX cluster can be deployed.)
+*    Your system has kubectl access to an existing Kubernetes cluster that meets CORTX requirements.
+*    There is no existing CORTX cluster running.  (The tests assume that a new CORTX cluster can be deployed.)
 
 ## Test Configuration
 There is a file in this directory called `example_config.yaml`.  This defines customizations
