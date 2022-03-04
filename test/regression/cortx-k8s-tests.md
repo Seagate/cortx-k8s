@@ -25,7 +25,6 @@ describe your desired CORTX cluster:
   * cvg1, cvg2, etc: Definitions of the one or more CVGs.  Each has the following two fields:
 
     * metadata: Device that stores metadata (there may be only one per cvg in this format)
-
     * data: List of devices that store data
 
 * See `example_config.yaml` for other configuration options
