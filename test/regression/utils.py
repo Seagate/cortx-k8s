@@ -24,7 +24,7 @@ class Logger:
     ENDC = '\033[0m'
 
     def __init__(self, logfile=None):
-        """Class for facilitationg test output"""
+        """Class for facilitationg test output."""
         #Key elements:
         #  * Prepend a timestamp
         #  * Support terminal colord output
@@ -106,7 +106,7 @@ class StopWatch:
 def run(cmd, cwd=None, return_stdout=False):
     print(f"Running: {cmd}, cwd={cwd}")
     stdout = []
-    proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE,
+    proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, # nosec B603
                             stderr=subprocess.STDOUT)
     while True:
         out = proc.stdout.readline().decode('utf-8')

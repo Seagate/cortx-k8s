@@ -178,7 +178,7 @@ class Cluster:
                                             '../../k8_cortx_cloud'))
 
     def run_prereq(self):
-        """Run prereq script on all nodes"""
+        """Run prereq script on all nodes."""
         #First copy the prereq script and solution file to the
         #node.  Then run the script.
         if not self.cluster_data:

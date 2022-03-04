@@ -150,7 +150,7 @@ class TestList:
 
 class Test:
     def __init__(self, name, id_, cmd):
-        """Represents a single regression test"""
+        """Represents a single regression test."""
         #Parameters:
         #  * name of the test
         #  * test id (e.g. TEST-DEPLOY-0001)
@@ -160,7 +160,7 @@ class Test:
         self.cmd = cmd
 
     def run(self):
-        proc = subprocess.Popen(shlex.split(self.cmd), stdout=subprocess.PIPE,
+        proc = subprocess.Popen(shlex.split(self.cmd), stdout=subprocess.PIPE, # nosec B603
                                 stderr=subprocess.STDOUT)
         while True:
             out = proc.stdout.readline()
