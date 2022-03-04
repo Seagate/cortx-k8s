@@ -9,7 +9,7 @@
 
 
 import os
-import subprocess
+import subprocess  # nosec
 from yaml import safe_load, dump
 
 import utils

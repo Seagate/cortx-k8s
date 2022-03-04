@@ -9,7 +9,7 @@ import sys
 import re
 import os
 import shlex
-import subprocess
+import subprocess  # nosec
 import argparse
 import time
 
