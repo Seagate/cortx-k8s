@@ -16,14 +16,11 @@ describe your desired CORTX cluster:
 
 * **nodes:** The list of hostnames CORTX should be deployed on
 * **storage:** The description of the storage to be used.
-
   * Note: The storage configuration must be identical for all CORTX nodes
   * local-fs: Path to the devices used for local storage.  This will be formatted as a file system on each node.
   * cvg1, cvg2, etc: Definitions of the one or more CVGs.  Each has the following two fields:
-
     * metadata: Device that stores metadata (there may be only one per cvg in this format)
     * data: List of devices that store data
-
 * See `example_config.yaml` for other configuration options
 
 The test framework uses this file as input and generates a solution.yaml file based on the
