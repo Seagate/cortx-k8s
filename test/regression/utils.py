@@ -42,10 +42,9 @@ class Logger:
     def timestamp(self):
         if self.shortdate:
             datestr = datetime.datetime.now().strftime('%H:%M:%S')
-            return datestr + ' '
         else:
             datestr = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            return datestr + ' '
+        return datestr + ' '
 
     def log(self, s='', prefix=None, level=0, color=None, log_timestamp=True):
         if level > self.loglevel:
@@ -92,7 +91,7 @@ class Logger:
 
 class StopWatch:
     def __init__(self):
-        """Simple stopwatch utility"""
+        """Simple stopwatch utility."""
         self.starttime = 0
         self.stoptime = 0
 
@@ -122,13 +121,12 @@ def run(cmd, cwd=None, return_stdout=False):
     result = proc.wait()
     if return_stdout:
         return result, '\n'.join(stdout)
-    else:
-        return result
+    return result
 
 
 class RemoteRun:
     def __init__(self, host, user):
-        """Class for facilitating running remote commands"""
+        """Class for facilitating running remote commands."""
         self.host = host
         self.user = user
 

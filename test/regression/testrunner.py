@@ -31,6 +31,7 @@ def get_duration_str(start, stop):
 
 class TestList:
     def __init__(self, source, vars_):
+        """Represents a test list."""
         filename = None
         if isinstance(source, str):
             filename = source
@@ -155,7 +156,6 @@ class Test:
           * name of the test
           * test id (e.g. TEST-DEPLOY-0001)
           * cmd to run -- any executable"""
-        
         self.name = name
         self.id = id_
         self.cmd = cmd

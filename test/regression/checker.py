@@ -27,6 +27,7 @@ from utils import Logger
 class Checker:
 
     def __init__(self, logger=None):
+        """Helper class to process pass/fail results."""
         if not logger:
             logger = Logger()
         self.logger = logger
@@ -60,7 +61,6 @@ class Checker:
             self.logger.logpass('*'*40)
             self.logger.log()
             return 0
-        
 
     def test_pass(self, msg):
         self.logger.logpass('PASS  ' + msg)

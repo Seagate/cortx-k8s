@@ -19,8 +19,7 @@ from utils import RemoteRun, Logger
 class Cluster:
 
     def __init__(self, solution_file, cluster_file=None, logger=None, logdir=None):
-        """ Represents a CORTX cluster """
-
+        """Represents a CORTX cluster."""
         if cluster_file and cluster_file.lower() == 'none':
             # Special case -- this allows for the special name
             # of "none" for the cluster file to allow tests that
@@ -108,11 +107,13 @@ class Cluster:
         # Set cortx version
         #
         if cortx_ver:
-            image_url_base = 'ghcr.io/seagate/cortx-all'
             images = solution['solution']['images']
             for image in images:
-                if image.startswith('cortx'):
-                    images[image] = image_url_base + ':' + cortx_ver
+                if image == 'cortxserver':
+                    if 'cortx_rgw' in cortx_ver:
+                        images[image] = cortx_ver['cortx_rgw']
+                elif image.startswith('cortx'):
+                    images[image] = cortx_ver['cortx_all']
 
         #
         # Set nodes
@@ -203,6 +204,7 @@ class Cluster:
                                   f'cd /tmp/cortx-k8s; '
                                   f'./prereq-deploy-cortx-cloud.sh {blkdev} '
                                   f'{os.path.basename(self.solution_file)}')
+            result += RemoteRun(node, self.user).run('rm -rf /tmp/cortx-k8s')
             print("\n\n")
 
         return result
@@ -260,7 +262,7 @@ class Cluster:
 
 class Client:
     def __init__(self, accesskey=None, endpoints=[], clientsvr=None):
-        """ Represents an S3 client"""
+        """ Represents an S3 client."""
         self.accesskey = accesskey
         self.endpoints = endpoints
         if not isinstance(self.endpoints, list):
