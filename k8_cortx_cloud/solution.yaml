@@ -6,7 +6,7 @@ solution:
       kafka_admin_secret: Seagate@123
       consul_admin_secret: Seagate@123
       common_admin_secret: Seagate@123
-      s3_auth_admin_secret: ldapadmin   # WL: Should this be removed as well?
+      s3_auth_admin_secret: cortxadmin
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
