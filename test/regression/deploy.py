@@ -17,5 +17,5 @@ if __name__ == "__main__":
         if result != 0:
             sys.exit(1)
 
-    #result = cluster.deploy()
-    #sys.exit(result)
+    result = cluster.deploy()
+    sys.exit(result)
