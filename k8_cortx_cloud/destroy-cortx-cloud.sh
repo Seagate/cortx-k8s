@@ -357,7 +357,7 @@ function delete3rdPartyPVCs()
         kubectl delete pvc $volume_claim
     done
 
-    volume_claims=$(kubectl get pvc --namespace=${namespace} | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|cortx|3rd-party" | cut -f1 -d " ")
+    volume_claims=$(kubectl get pvc --namespace=$"{namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|cortx|3rd-party" | cut -f1 -d " ")
     echo $volume_claims
     for volume_claim in $volume_claims
     do
