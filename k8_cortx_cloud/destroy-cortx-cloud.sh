@@ -289,6 +289,14 @@ function deleteKafkaZookeper()
     helm uninstall zookeeper -n "default"
 }
 
+function deleteOpenLdap()
+{
+    ## BAckwards compatibility check
+    ## CORTX deployment of OpenLdap stopped with v0.2.0.
+    ## This function is useful for deployments prior to v0.2.0
+    ## that need this cleanup method.
+}
+
 function deleteSecrets()
 {
     printf "########################################################\n"
