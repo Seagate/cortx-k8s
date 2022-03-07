@@ -1,0 +1,132 @@
+# Default values for cortx-configmap.
+
+# clusterName is the name of the CORTX cluster
+clusterName: cortx-cluster
+
+# clusterId is the unique ID number of the CORTX cluster
+clusterId: ""
+
+# clusterStorageVolumes is a Dictionary of container volume groups.
+# e.g:
+# clusterStorageVolumes:
+#   cvg-01:
+#     type: ios
+#     metadataDevices:
+#       - /dev/sdc
+#     dataDevices:
+#       - /dev/sdd
+#       - /dev/sde
+#       - /dev/sdf
+clusterStorageVolumes: {}
+
+# clusterStorageSets is a Dictionary of storage sets.
+# e.g.:
+# clusterStorageSets:
+#   storage-set-1:
+#     durability:
+#       sns: 1+0+0
+#       dix: 1+0+0
+#     controlUuid: "bfcb40c12e9f4fa4b924a787886a40b6"
+#     haUuid: "0789bc5f5f544197a5c204ed5d68ab07"
+#     nodes:
+#       ssc-vm-g4-rhev4-0009.colo.seagate.com:
+#         serverUuid: 50b3871d48fa4032bf27a211b4088df7
+#         dataUuid: "8466d0079fd44cd38164d8e31f5cd067"
+#         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
+#       ssc-vm-g4-rhev4-0010.colo.seagate.com:
+#         serverUuid: "05ceb17b5cdf47538db1bb89ccc247d2"
+#         dataUuid: "eb79cc372c7443cbac768db4313cc0e8"
+#         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
+# UUIDs are optional and if omitted, will be randomly generated, with
+# the exception of client UUIDs, which will not be configured if omitted.
+clusterStorageSets: {}
+
+# externalKafka allows configuring an external Kafka service
+externalKafka:
+  enabled: false
+  endpoints:
+    - tcp://kafka.default.svc.cluster.local:9092
+  adminUser: admin
+  adminSecretName: kafka_admin_secret
+
+# externalLdap allows configuring an external LDAP service
+externalLdap:
+  enabled: false
+  endpoints:
+    - ldap://openldap-svc.default.svc.cluster.local:389
+    - ssl://openldap-svc.default.svc.cluster.local:636
+  servers: []
+  baseDn: dc=seagate,dc=com
+  adminUser: admin
+  adminSecretName: openldap_admin_secret
+
+# externalConsul allows configuring an external Consul service
+externalConsul:
+  enabled: false
+  endpoints:
+    - tcp://consul-server.default.svc.cluster.local:8301
+    - http://consul-server.default.svc.cluster.local:8500
+  adminUser: admin
+  adminSecretName: consul_admin_secret
+
+# cortxVersion is a version string representing the CORTX version being
+# installed
+# e.g.:
+# cortxVersion: 2.0.0-624-custom-ci
+cortxVersion: "unknown"
+
+# cortxSetupSize configures the default resource usage of CORTX components
+# e.g.:
+# cortxSetupSize: small | medium | large
+cortxSetupSize: small
+
+# cortxStoragePaths allows configuring the location of CORTX filesystem paths
+cortxStoragePaths:
+  shared: "/share"                                              # DEPRECATED
+  local: "/etc/cortx"
+  log: "/etc/cortx/log"
+  config: "/etc/cortx"
+
+# cortxIoServiceName is the name of the IO service
+cortxIoServiceName: "cortx-io-svc"
+
+# cortxS3 allows configuring CORTX S3 settings
+##TODO Evaluate merging with below cortxRGW section to align with underlying config.yaml keys
+cortxS3:
+  instanceCount: 2
+  maxStartTimeout: 240
+
+# cortxS3 allows configuring CORTX S3 settings
+cortxRgw:
+  authAdmin: cortx-admin
+  authUser: cortx-user
+  # The below value should match the corresponding key in solution.yaml
+  # and is generally not changed by default.
+  authSecret: s3_auth_admin_secret
+  rgwServiceHttpEndpoints: []
+  rgwServiceHttpsEndpoints: []
+
+# cortxHA allows configuring CORTX HA settings
+cortxHa:
+  haxService:
+    protocol: https
+    name: cortx-hax-svc
+    port: 22003
+
+#cortxHare allows configuring CORTX HARE settings
+cortxHare:
+  haxDataEndpoints: []
+  haxServerEndpoints: []
+  haxClientEndpoints: []
+
+# cortxMotr allows configuring CORTX MOTR settings
+cortxMotr:
+  clientEndpoints: []
+  confdEndpoints: []
+  iosEndpoints: []
+  rgwEndpoints: []
+
+# cortxSecretName is the name of the Secret mounted in CORTX Pods
+cortxSecretName: "cortx-secret"
+# cortxSecretValues: is a Dictionary of CORTX secret names and values
+cortxSecretValues: {}

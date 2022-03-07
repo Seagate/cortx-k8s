@@ -54,7 +54,7 @@ ClusterTag=cortx-k8s-cl03
 SubnetId=subnet-070838693db278eab
 # Security Group ID for the cluster
 SecurityGroupId=sg-0585145ff6b831b77
-# CentOS 7.9 AMI ID. See https://wiki.centos.org/Cloud/AWS 
+# CentOS 7.9 AMI ID for us-west-1. See https://wiki.centos.org/Cloud/AWS for other regions
 AmiID=ami-08d2d8b00f270d03b
 # Instance type
 InstanceType=c5.2xlarge
@@ -224,7 +224,7 @@ At this stage the Kubernetes cluster should be fully operational
 
 ### 3.1 Clone Cortx-K8s framework
 ```
-git clone -b stable https://github.com/Seagate/cortx-k8s.git
+git clone -b v0.0.22 https://github.com/Seagate/cortx-k8s.git
 ```
 ### 3.2 Update cluster configuration
 CORTX deployment framework can be configured through a single file  cortx-k8s/k8_cortx_cloud/solution.yaml
@@ -252,6 +252,15 @@ grep -v $LogsDevice devices1.txt | awk '{print "/dev/"$1}' > devices.txt
 ```
 
 #### 3.2.2 Update solution.yaml
+First, make sure `yq` is installed on the local machine.
+You can download the current version from GitHub:
+```
+wget https://github.com/mikefarah/yq/releases/download/v4.19.1/yq_linux_amd64 -O /usr/bin/yq
+chmod +x /usr/bin/yq
+```
+If you don't have root access, it's not necessary to install `yq` system-wide;
+ensure that it's somewhere on your `$PATH` and executable.
+
 The following command will configure 2 CVGs with 1 metadata and 2 data drives. Update this command according to the actual configuration. 
 Note: number of CVGs should be equal to the amount of Motr instances (see num_inst parameter in the solution.yaml)
 ```
@@ -260,6 +269,14 @@ mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.
 # Update list of disks and list of nodes in the solutions.yaml file.
 ./cortx-k8s/k8_cortx_cloud/generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs 2 --data 2 --solution ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig  --datasize $DiskSize --metadatasize $DiskSize > ./cortx-k8s/k8_cortx_cloud/solution.yaml
 ```
+
+The memory allocation and resource utilization for the nodes can also be configured in `solution.yaml`.
+The c5.2xlarge instances used in this guide have too little memory for the default `large` configuration,
+so change to `small`.
+```
+yq -i '.solution.common.setup_size = "small"' cortx-k8s/k8_cortx_cloud/solution.yaml
+```
+
 #### 3.2.2.1 Update the images tag.
 
 - If you are using your own generated cortx-all image, update the image tag on the solution.yaml file:
@@ -267,11 +284,14 @@ mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.
 - Example;
 ```
  images:
-    cortxcontrolprov: cortx-all:2.0.0-0
-    cortxcontrol: cortx-all:2.0.0-0
-    cortxdataprov: cortx-all:2.0.0-0
-    cortxdata: cortx-all:2.0.0-0
-  ```
+   cortxcontrolprov: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxdataprov: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxdata: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxserver: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxha: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+   cortxclient: ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci
+```
 
 #### 3.2.3 Advanced configuration options
 <details>
@@ -317,12 +337,6 @@ AWS EC2 instances provisioned on step 2.2 have 1 disk for 3rd party apps (/dev/n
 for ip in $ClusterIPs; do echo $ip; ssh $SSH_FLAGS centos@$ip "cd cortx-k8s/k8_cortx_cloud; sudo ./prereq-deploy-cortx-cloud.sh /dev/$LogsDevice" </dev/null & done
 ```
 
-#### 3.4.1 Install Helm on the cluster control plane
-Current script version doesn't deploy Helm - it will be fixed later.
-```
-ssh $SSH_FLAGS centos@$ClusterControlPlaneIP "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3; chmod 700 get_helm.sh; ./get_helm.sh"
-```
-
 ### 3.5 Deploy CORTX
 > **NOTE**: For Motr + Hare only cortx cluster make number of s3 instance as 0 (solution -> common -> s3 -> num_inst) in cortx-k8s/k8_cortx_cloud/solution.yaml
 ```
@@ -343,8 +357,8 @@ ssh $SSH_FLAGS centos@$ClusterControlPlaneIP
 
 kubectl get pod
 
-DataPod=`kubectl get pod | grep cortx-data-pod | grep Running | awk '{print $1}' | head -1`
-kubectl exec -i $DataPod -c cortx-motr-hax -- hctl status
+DataPod=`kubectl get pod --field-selector=status.phase=Running --selector cortx.io/service-type=cortx-data -o jsonpath={.items[0].metadata.name}`
+kubectl exec -i $DataPod -c cortx-hax -- hctl status
 ```
 In the hctl status output validate that all services are "started". It may take several minutes for s3server instances to move from "offline" to "started"
 
@@ -388,7 +402,7 @@ ssh $SSH_FLAGS centos@$ClusterControlPlaneIP
 ### 4.1 Use CORTX CSM (Management API) to provision an S3 account
 ```
 # Define CSM IP in the cluster
-export CSM_IP=`kubectl get svc cortx-control-clusterip-svc -ojsonpath='{.spec.clusterIP}'`
+export CSM_IP=`kubectl get svc cortx-control-loadbal-svc -ojsonpath='{.spec.clusterIP}'`
 
 # Authenticate using CORTX credentials (as defined in solutions.yaml on step 3.2)
 curl -v -d '{"username": "cortxadmin", "password": "Cortxadmin@123"}' https://$CSM_IP:8081/api/v2/login --insecure
@@ -416,33 +430,34 @@ export AWS_DEFAULT_REGION=us-east-1
 CORTX S3 and IAM interfaces are available through multiple IPs (one IP per worker node). An external load balancer can be used to aggregate all traffic
 ```
 # Define one of the data IPs in the cluster 
-export DATA_IP=`kubectl get svc | grep cortx-data-clusterip-svc | head -1 | awk '{print $3}'`
+export SERVER_IP=`kubectl get svc | grep cortx-server-clusterip-svc | head -1 | awk '{print $3}'`
 
 # Create an IAM user and get credentials for this user
-aws --no-verify-ssl --endpoint-url https://$DATA_IP:9443 iam create-user --user-name bob
-aws --no-verify-ssl --endpoint-url https://$DATA_IP:9443 iam create-access-key --user-name bob
-aws --no-verify-ssl --endpoint-url https://$DATA_IP:9443 iam list-users
+aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam create-user --user-name bob
+aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam create-access-key --user-name bob
+aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam list-users
 
 # Create an S3 bucket and upload a file 
-aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 ls
-aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 mb s3://cortx-aws-works
-aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 cp awscliv2.zip s3://cortx-aws-works
+aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 ls
+aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 mb s3://cortx-aws-works
+aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 cp awscliv2.zip s3://cortx-aws-works
 ```
 
 ### 4.4 Test performance using s3-benchmark
 ```
 curl -OL https://github.com/dvassallo/s3-benchmark/raw/master/build/linux-amd64/s3-benchmark
 chmod +x s3-benchmark
-./s3-benchmark -bucket-name s3-benchmark -endpoint http://$DATA_IP:80
+./s3-benchmark -bucket-name s3-benchmark -endpoint http://$SERVER_IP:80
 ```
 
 ## 5 IPs and Ports to communicate with CORTX
 | Interface | IP(s) | Port(s)
 | --- | --- | --- |
-| Management | cortx-control-clusterip-svc K8s service | tcp/8081
-| S3 | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/443, tcp/80
-| IAM | Multiple IPs (cortx-data-clusterip-svc pods) | tcp/9443
+| Management | cortx-control-loadbal-svc K8s service | tcp/8081
+| S3 | Multiple IPs (cortx-server-clusterip-svc pods) | tcp/443, tcp/80
+| IAM | Multiple IPs (cortx-server-clusterip-svc pods) | tcp/9443
 
 ## Tested by:
 
+Feb 22, 2022: Tim Shaffer (tim.shaffer@seagate.com)
 Nov 12, 2021: Rose Wambui (rose.wambui@seagate.com) and Justin Woo (justin.woo@seagate.com) 

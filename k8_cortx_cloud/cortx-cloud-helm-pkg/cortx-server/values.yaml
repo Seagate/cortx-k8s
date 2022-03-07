@@ -17,7 +17,10 @@ cortxserver:
       name: cortx-server-headless-svc
     loadbal:
       name: cortx-server-loadbal-svc
-      type: LoadBalancer
+      type: NodePort
+      ports:
+        http: 8000
+        https: 8443
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001

@@ -2,4 +2,4 @@
 # which will utilize the "cortx-k8s-admins" group as the main
 # CODEOWNERS functional unit for all code.
 
-*   @cortx-k8s-admins
+*   @Seagate/cortx-k8s-admin

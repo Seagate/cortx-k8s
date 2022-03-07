@@ -51,9 +51,9 @@ spec:
         command: 
           - /bin/sh
         {{- if eq .Values.cortxclient.image  "ghcr.io/seagate/centos:7" }}
-        args: 
+        args:
           - -c
-          - sleep 3650d
+          - sleep $(shuf -i 5-10 -n 1)s
         {{- else }}
         args: 
           - -c
