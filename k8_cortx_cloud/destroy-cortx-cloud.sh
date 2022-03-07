@@ -248,21 +248,13 @@ function deleteCortxConfigmap()
     for i in "${!node_name_list[@]}"; do
         kubectl delete configmap "cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
         rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
-        
+
         if [[ $num_motr_client -gt 0 ]]; then
             # Delete client machine id config map
             kubectl delete configmap "cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
             rm -rf "$cfgmap_path/auto-gen-client--${node_name_list[i]}-$namespace"
         fi
     done
-
-    # Delete client machine id config maps
-    for i in "${!node_name_list[@]}"; do
-        kubectl delete configmap "cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
-        rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
-
-    done
-
     # Delete control machine id config map
     kubectl delete configmap "cortx-control-machine-id-cfgmap-$namespace" --namespace=$namespace
     rm -rf "$cfgmap_path/auto-gen-control-$namespace"
@@ -270,15 +262,16 @@ function deleteCortxConfigmap()
     kubectl delete configmap "cortx-ha-machine-id-cfgmap-$namespace" --namespace=$namespace
     rm -rf "$cfgmap_path/auto-gen-ha-$namespace"
     # Delete CORTX config maps
-    kubectl delete configmap "cortx-cfgmap-$namespace" --namespace=$namespace
-    rm -rf "$cfgmap_path/auto-gen-cfgmap-$namespace"
+    # Silence "release not found" messages in case of an older deploy, or manual cleanup
+    helm uninstall "cortx-cfgmap-${namespace}" --namespace="${namespace}" 2> >(grep -v 'uninstall.*not found' || true)
+    rm -rf "${cfgmap_path}/auto-gen-cfgmap-${namespace}"
 
-    rm -rf "$cfgmap_path/node-info-$namespace"
-    rm -rf "$cfgmap_path/storage-info-$namespace"
-
-    # Delete SSL cert config map
-    ssl_cert_path="$cfgmap_path/ssl-cert"
-    kubectl delete configmap "cortx-ssl-cert-cfgmap-$namespace" --namespace=$namespace
+    ## Backwards compatibility check
+    ## If CORTX is undeployed with a newer undeploy script, it can get into
+    ## a broken state that is difficult to observe since the `svc/cortx-io-svc`
+    ## will never be deleted. This explicit delete prevents that from happening.
+    kubectl delete configmap "cortx-cfgmap-${namespace}" --namespace="${namespace}" --ignore-not-found=true
+    kubectl delete configmap "cortx-ssl-cert-cfgmap-${namespace}" --namespace="${namespace}" --ignore-not-found=true
 }
 
 #############################################################
@@ -453,20 +446,22 @@ function deleteStorageProvisioner()
 
 function helmChartCleanup()
 {
+    printf "########################################################\n"
+    printf "# Uninstalling leftover Helm Charts                    #\n"
+    printf "########################################################\n"
     print_header=true
-    helm_ls_header=true
-    while IFS= read -r line; do
-        IFS=" " read -r -a my_array <<< "$line"
-        if [[ "$helm_ls_header" = true ]]; then
-            helm_ls_header=false
-            continue
-        fi
-        if [[ "$print_header" = true ]]; then
-            printf "Helm chart cleanup:\n"
-            print_header=false
-        fi
-        helm uninstall ${my_array[0]} -n "default"
-    done <<< "$(helm ls | grep 'consul\|cortx\|kafka\|openldap\|zookeeper')"
+    local charts
+    charts="$(helm list | { grep '^consul\|^cortx\|^kafka\|^openldap\|^zookeeper' || true; })"
+    if [[ -n ${charts} ]]; then
+        while IFS= read -r line; do
+            IFS=" " read -r -a my_array <<< "${line}"
+            if [[ ${print_header} = true ]]; then
+                printf "Helm chart cleanup:\n"
+                print_header=false
+            fi
+            helm uninstall "${my_array[0]}" -n "default"
+        done <<< "${charts}"
+    fi
 }
 
 function deleteKubernetesPrereqs()
@@ -476,7 +471,7 @@ function deleteKubernetesPrereqs()
     printf "########################################################\n"
     helm delete cortx-platform
 
-    ## Backwards compatability check
+    ## Backwards compatibility check
     ## If CORTX is undeployed with a newer undeploy script, it can get into
     ## a broken state that is difficult to observe since the `svc/cortx-io-svc`
     ## will never be deleted. This explicit delete prevents that from happening.
@@ -556,7 +551,6 @@ fi
 deleteKubernetesPrereqs
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_np" = true) || "$namespace" == "default" ]]; then
     deleteStorageProvisioner
-
     helmChartCleanup
 fi
 deleteCortxNamespace

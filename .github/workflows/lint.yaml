@@ -28,6 +28,19 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run Shellcheck
-        uses: Seagate/action-shellcheck@1.1.0
-        # Temporarily pass until files are fixed
-        continue-on-error: true
+        uses: Seagate/action-shellcheck@203a3fd018dfe73f8ae7e3aa8da2c149a5f41c33
+        with:
+          # Temporarily ignore these until they are fixed
+          ignore_paths: >-
+            openldap-replication
+            parse_scripts
+            solution_validation_scripts
+          ignore_names: >-
+            deploy-cortx-cloud.sh
+            destroy-cortx-cloud.sh
+            generate-cvg-yaml.sh
+            prereq-deploy-cortx-cloud.sh
+            shutdown-cortx-cloud.sh
+            start-cortx-cloud.sh
+            status-cortx-cloud.sh
+            upgrade-cortx-cloud.sh

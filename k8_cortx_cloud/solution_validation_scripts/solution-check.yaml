@@ -11,10 +11,10 @@ solution:
       csm_auth_admin_secret: required
       csm_mgmt_admin_secret: required
   images:
-    cortxcontrolprov: required
     cortxcontrol: required
-    cortxdataprov: required
     cortxdata: required
+    cortxserver: required
+    cortxha: required
     openldap: required
     consul: required
     kafka: required
@@ -28,6 +28,9 @@ solution:
       shared: required
       log: required
     s3:
+      default_iam_users:
+        auth_admin: required
+        auth_user: required
       num_inst: required
       start_port_num: required
     motr:
@@ -43,7 +46,16 @@ solution:
         sns: required
         dix: required
     external_services:
-      type: required
+      s3:
+        type: required
+        count: required
+        ports:
+          http: required
+          https: required
+      control:
+        type: required
+        ports:
+          https: required
     resource_allocation:
       consul:
         server:

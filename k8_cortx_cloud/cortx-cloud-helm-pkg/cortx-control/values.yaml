@@ -7,7 +7,11 @@ cortxcontrol:
   service:
     loadbal:
       name: cortx-control-loadbal-svc
-      type: LoadBalancer
+      type: NodePort
+      ports:
+        https: 8081
+      nodePorts:
+        https: ""
   cfgmap:
     mountpath: /etc/cortx/solution
     name: cortx-control-cfgmap001
