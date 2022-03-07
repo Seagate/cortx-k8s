@@ -24,19 +24,11 @@ while IFS= read -r line; do
     fi
 done <<< "$(./solution_validation_scripts/solution-validation.sh $solution_yaml)"
 
-# Delete old "node-list-info.txt" file
-find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
-
-max_openldap_inst=3 # Default max openldap instances
 max_consul_inst=3
 max_kafka_inst=3
-num_openldap_replicas=0 # Default the number of actual openldap instances
 num_worker_nodes=0
 not_ready_node_list=[]
 not_ready_node_count=0
-# Create a file consist of a list of node info and up to 'max_openldap_inst'
-# number of nodes. This file is used by OpenLDAP helm chart and will be deleted
-# at the end of this script.
 while IFS= read -r line; do
     IFS=" " read -r -a my_array <<< "$line"
     node_name="${my_array[0]}"
@@ -50,15 +42,6 @@ while IFS= read -r line; do
     if [[ "$output" == "" ]]; then
         node_list_str="$num_worker_nodes $node_name"
         num_worker_nodes=$((num_worker_nodes+1))
-
-        if [[ "$num_worker_nodes" -le "$max_openldap_inst" ]]; then
-            num_openldap_replicas=$num_worker_nodes
-            node_list_info_path=$(pwd)/cortx-cloud-3rd-party-pkg/openldap/node-list-info.txt
-            if [[ -s $node_list_info_path ]]; then
-                printf "\n" >> $node_list_info_path
-            fi
-            printf "$node_list_str" >> $node_list_info_path
-        fi
     fi
 
 done <<< "$(kubectl get nodes --no-headers)"
@@ -386,60 +369,6 @@ function deployConsul()
 
 }
 
-function deployOpenLDAP()
-{
-    printf "######################################################\n"
-    printf "# Deploy openLDAP                                     \n"
-    printf "######################################################\n"
-    openldap_password=$(parseSolution 'solution.secrets.content.openldap_admin_secret')
-    openldap_password=$(echo $openldap_password | cut -f2 -d'>')
-    image=$(parseSolution 'solution.images.openldap')
-    image=$(echo $image | cut -f2 -d'>')
-
-    helm install "openldap" cortx-cloud-3rd-party-pkg/openldap \
-        --set openldap.servicename="openldap-svc" \
-        --set openldap.storageclass="openldap-local-storage" \
-        --set openldap.storagesize="5Gi" \
-        --set openldap.nodelistinfo="node-list-info.txt" \
-        --set openldap.numreplicas=$num_openldap_replicas \
-        --set openldap.password=$openldap_password \
-        --set openldap.image=$image \
-        --set openldap.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.openldap.resources.requests.memory') \
-        --set openldap.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.openldap.resources.requests.cpu') \
-        --set openldap.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.openldap.resources.limits.memory') \
-        --set openldap.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.openldap.resources.limits.cpu')
-
-    # Wait for all openLDAP pods to be ready
-    printf "\nWait for openLDAP PODs to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
-            IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
-            if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods -A | grep 'openldap')"
-
-        if [[ $count -eq $num_openldap_replicas ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-
-    printf "===========================================================\n"
-    printf "Setup OpenLDAP replication                                 \n"
-    printf "===========================================================\n"
-    # Run replication script
-    if [[ $num_openldap_replicas -gt 1 ]]; then
-        ./cortx-cloud-3rd-party-pkg/openldap-replication/replication.sh --rootdnpassword $openldap_password
-    fi
-}
-
 function splitDockerImage()
 {
     IFS='/' read -ra image <<< "$1"
@@ -578,7 +507,7 @@ function waitForThirdParty()
                 count=$((count+1))
                 break
             fi
-        done <<< "$(kubectl get pods -A | grep 'consul\|kafka\|openldap\|zookeeper')"
+        done <<< "$(kubectl get pods -A | grep 'consul\|kafka\|zookeeper')"
 
         if [[ $count -eq 0 ]]; then
             break
@@ -671,15 +600,6 @@ function deployCortxConfigMap()
         --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
         --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
     )
-
-    # Build OpenLDAP server values dynamically from running pods
-    readonly openldap_endpoint="openldap-svc.default.svc.cluster.local"
-    IFS=" " read -r -a pods <<< "$(kubectl get pods --all-namespaces --selector name=openldap-connect --output jsonpath='{.items[*].metadata.name}' || true)"
-    for idx in "${!pods[@]}"; do
-        helm_install_args+=(
-            --set "externalLdap.servers[${idx}]=${pods[idx]}.${openldap_endpoint}"
-        )
-    done
 
     for idx in "${!node_name_list[@]}"; do
         helm_install_args+=(
@@ -1160,7 +1080,6 @@ function cleanup()
     # Delete files that contain disk partitions on the worker nodes
     # and the node info
     #################################################################
-    find $(pwd)/cortx-cloud-3rd-party-pkg/openldap -name "node-list-info*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
     find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
@@ -1212,7 +1131,6 @@ fi
 if [[ (${#namespace_list[@]} -le 1 && "$found_match_nsp" = true) || "$namespace" == "default" ]]; then
     deployRancherProvisioner
     deployConsul
-    deployOpenLDAP
     deployZookeeper
     deployKafka
     waitForThirdParty

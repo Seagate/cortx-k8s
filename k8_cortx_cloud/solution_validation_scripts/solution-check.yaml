@@ -3,7 +3,6 @@ solution:
   secrets:
     name: required
     content:
-      openldap_admin_secret: required
       kafka_admin_secret: required
       consul_admin_secret: required
       common_admin_secret: required
@@ -15,7 +14,6 @@ solution:
     cortxdata: required
     cortxserver: required
     cortxha: required
-    openldap: required
     consul: required
     kafka: required
     zookeeper: required
@@ -75,14 +73,6 @@ solution:
             limits:
               memory: required
               cpu: required
-      openldap:
-        resources:
-          requests:
-            memory: required
-            cpu: required
-          limits:
-            memory: required
-            cpu: required
       zookeeper:
         storage_request_size: required
         data_log_dir_request_size: required

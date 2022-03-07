@@ -49,17 +49,6 @@ externalKafka:
   adminUser: admin
   adminSecretName: kafka_admin_secret
 
-# externalLdap allows configuring an external LDAP service
-externalLdap:
-  enabled: false
-  endpoints:
-    - ldap://openldap-svc.default.svc.cluster.local:389
-    - ssl://openldap-svc.default.svc.cluster.local:636
-  servers: []
-  baseDn: dc=seagate,dc=com
-  adminUser: admin
-  adminSecretName: openldap_admin_secret
-
 # externalConsul allows configuring an external Consul service
 externalConsul:
   enabled: false

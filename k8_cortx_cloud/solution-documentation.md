@@ -10,7 +10,6 @@ the CORTX cloud.
 ## 2. Secrets (solution.secrets)
    * Name of the CORTX secret is defined in "solution.secrets.name".
    * The CORTX secret keys are defined in "solution.secrets.content" for the following components:
-      * OpenLDAP
       * Kafka
       * Consul
       * Common
