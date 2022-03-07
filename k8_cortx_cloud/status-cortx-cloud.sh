@@ -66,7 +66,6 @@ failcount=0
 # CORTX Control
 #########################################################################################
 num_nodes=1
-
 alert_msg "######################################################"
 alert_msg "# CORTX Control                                       "
 alert_msg "######################################################"
@@ -196,7 +195,6 @@ num_devices=$(echo "${device_names}" | grep -o '>' | wc -l)
 alert_msg "######################################################"
 alert_msg "# CORTX Data                                          "
 alert_msg "######################################################"
-# Check deployments
 # Check deployments
 count=0
 msg_info "| Checking Deployments |"
@@ -482,7 +480,7 @@ else
     failcount=$((failcount+1))
 fi
 
-# Check services load balaNOFORMATe
+# Check services load balancer
 count=0
 num_load_bal=${num_nodes}
 msg_info "| Checking Services: cortx-server-loadbal-svc |"
@@ -1271,10 +1269,9 @@ fi
 printf -- "------------------------------------------\n"
 
 if (( failcount > 0 )); then
-    msg_failed "${failcount} status checks failed "
+    msg "${RED}${failcount} status checks failed${NOFORMAT}\n\n"
     exit 1
 else
-    msg_passed "All status checks passed"
-    printf "\n"
+    msg "${GREEN}All status checks passed${NOFORMAT}\n\n"
     exit 0
 fi
