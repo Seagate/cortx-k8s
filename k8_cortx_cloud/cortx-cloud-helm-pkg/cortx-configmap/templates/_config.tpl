@@ -141,9 +141,9 @@ cortx:
     interface_type: tcp                                             #DEPRECATED
     interface_family: inet
     transport_type: libfab
-    md_size: 10
+    md_size: {{ .Values.cortxMotr.md_size }}
     ios:
-      group_size: 1
+      group_size: {{ .Values.cortxMotr.group_size }}
       endpoints: {{- toYaml .Values.cortxMotr.iosEndpoints | nindent 6 }}
     confd:
       endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}

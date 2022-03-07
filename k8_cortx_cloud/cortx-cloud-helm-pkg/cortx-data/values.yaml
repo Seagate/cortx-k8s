@@ -10,6 +10,7 @@ cortxdata:
   motr:
     startportnum: 29000
     numiosinst: 1
+    group_size: 1
   hax:
     port: 22003
   service:

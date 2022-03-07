@@ -125,6 +125,8 @@ cortxMotr:
   confdEndpoints: []
   iosEndpoints: []
   rgwEndpoints: []
+  md_size: 10
+  group_size: 1
 
 # cortxSecretName is the name of the Secret mounted in CORTX Pods
 cortxSecretName: "cortx-secret"

@@ -301,7 +301,9 @@ spec:
               readOnly: true
             {{- end }}
           ports:
-          - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+          {{- range $j := until ($.Values.cortxdata.motr.group_size | int) }
+          - containerPort: {{ printf "%d" (add $j $.Values.cortxdata.motr.startportnum) }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- end }}
