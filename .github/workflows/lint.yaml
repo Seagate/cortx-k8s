@@ -42,5 +42,4 @@ jobs:
             prereq-deploy-cortx-cloud.sh
             shutdown-cortx-cloud.sh
             start-cortx-cloud.sh
-            status-cortx-cloud.sh
             upgrade-cortx-cloud.sh
