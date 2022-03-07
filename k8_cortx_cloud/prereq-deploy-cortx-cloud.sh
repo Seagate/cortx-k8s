@@ -200,7 +200,6 @@ function cleanupFolders()
     printf "# Clean up                                          \n"
     printf "####################################################\n"
     # cleanup
-    rm -rf /etc/3rd-party/openldap /var/data/3rd-party/*
     rm -rf $fs_mount_path/local-path-provisioner/*
 }
 
@@ -387,14 +386,6 @@ function symlinkBlockDevices()
 
 }
 
-function prepOpenLdapDeployment()
-{
-    # Prep for OpenLDAP deployment
-    mkdir -p /etc/3rd-party/openldap
-    mkdir -p /var/data/3rd-party
-    mkdir -p /var/log/3rd-party
-}
-
 function installHelm()
 {
     printf "####################################################\n"
@@ -434,5 +425,4 @@ if [[ "$disk" != "" ]]; then
     cleanupFolders
     increaseResources
     prepCortxDeployment
-    prepOpenLdapDeployment
 fi
