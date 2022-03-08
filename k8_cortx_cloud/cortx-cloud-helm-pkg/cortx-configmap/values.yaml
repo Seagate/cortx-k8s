@@ -103,6 +103,8 @@ cortxRgw:
   # The below value should match the corresponding key in solution.yaml
   # and is generally not changed by default.
   authSecret: s3_auth_admin_secret
+  rgwServiceHttpEndpoints: []
+  rgwServiceHttpsEndpoints: []
 
 # cortxHA allows configuring CORTX HA settings
 cortxHa:

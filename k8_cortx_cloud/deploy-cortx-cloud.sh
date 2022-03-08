@@ -309,8 +309,8 @@ function deployKubernetesPrereqs()
         --set services.hax.port="${hax_service_port}" \
         --set services.io.type="${s3_service_type}" \
         --set services.io.count="${s3_service_count}" \
-        --set services.io.ports.http="${s3_service_ports_http}" \
-        --set services.io.ports.https="${s3_service_ports_https}" \
+        --set services.io.ports.http="80" \
+        --set services.io.ports.https="443" \
         "${optional_values[@]}" \
         --namespace "${namespace}"
 }
@@ -688,6 +688,8 @@ function deployCortxConfigMap()
             --set "cortxMotr.confdEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22002"
             --set "cortxMotr.iosEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:21001"
             --set "cortxMotr.rgwEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:21001"
+            --set "cortxRgw.rgwServiceHttpEndpoints[${idx}]=http://cortx-server-headless-svc-${node_name_list[${idx}]}:22751"
+            --set "cortxRgw.rgwServiceHttpsEndpoints[${idx}]=https://cortx-server-headless-svc-${node_name_list[${idx}]}:23001"
         )
     done
 

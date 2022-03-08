@@ -67,12 +67,20 @@ cortx:
       - http://{{ $ioSvcName }}:8000
     data:
       endpoints:
-      - http://{{ $ioSvcName }}:8000
-      - https://{{ $ioSvcName }}:8443
+      - http://{{ $ioSvcName }}:800
+      - https://{{ $ioSvcName }}:443
     s3:
       endpoints:
-      - http://{{ $ioSvcName }}:8000
-      - https://{{ $ioSvcName }}:8443
+      - http://{{ $ioSvcName }}:80
+      - https://{{ $ioSvcName }}:443
+    public:
+      endpoints:
+      - http://{{ $ioSvcName }}:80
+      - https://{{ $ioSvcName }}:443
+    service:
+      endpoints:
+      {{- toYaml .Values.cortxRgw.rgwServiceHttpEndpoints | nindent 8 }}
+      {{- toYaml .Values.cortxRgw.rgwServiceHttpsEndpoints | nindent 8 }}
     {{- with .Values.cortxS3.instanceCount }}
     service_instances: {{ . | int }}
     {{- end }}
