@@ -48,14 +48,14 @@ spec:
       - name: cortx-setup
         image: {{ .Values.cortxclient.image }}
         imagePullPolicy: IfNotPresent
-        command: 
+        command:
           - /bin/sh
         {{- if eq .Values.cortxclient.image  "ghcr.io/seagate/centos:7" }}
         args:
           - -c
           - sleep $(shuf -i 5-10 -n 1)s
         {{- else }}
-        args: 
+        args:
           - -c
           {{- if .Values.cortxclient.machineid.value }}
           - set -x;
@@ -136,7 +136,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/hare_setup start --config yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
               sleep infinity;
           {{- end }}
           volumeMounts:
