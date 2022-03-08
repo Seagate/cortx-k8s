@@ -6,20 +6,29 @@
 
 ## Table of Contents
 
-1.  [Project Overview](#project-overview)
-2.  [Reference Architecture](#reference-architecture)
-3.  [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites)
-4.  [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
-5.  [Quick Starts](#quick-starts)
-    1.  [Using the prereq deploy script (Optional)](#using-the-prereq-deploy-script-optional)
-    2.  [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
-    3.  [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
-    4.  [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
-    5.  [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
-    6.  [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
-6.  [Solution YAML Overview](#solution-yaml-overview)
-7.  [Troubleshooting](#troubleshooting)
-8.  [License](#license)
+- [CORTX on Kubernetes](#cortx-on-kubernetes)
+  - [Table of Contents](#table-of-contents)
+  - [Project Overview](#project-overview)
+  - [Reference Architecture](#reference-architecture)
+  - [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites)
+  - [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
+  - [Quick Starts](#quick-starts)
+    - [Using the prereq deploy script (Optional)](#using-the-prereq-deploy-script-optional)
+    - [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
+    - [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
+    - [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
+    - [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
+    - [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
+  - [Solution YAML Overview](#solution-yaml-overview)
+    - [Global parameters](#global-parameters)
+    - [Secret parameters](#secret-parameters)
+    - [Image parameters](#image-parameters)
+    - [Common parameters](#common-parameters)
+    - [Storage parameters](#storage-parameters)
+    - [Node parameters](#node-parameters)
+  - [Troubleshooting](#troubleshooting)
+    - [Using stub containers](#using-stub-containers)
+  - [License](#license)
 
 ## Project Overview
 
@@ -172,7 +181,8 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 ### Using CORTX on Kubernetes
 
-**_TODO_** Port https://seagate-systems.atlassian.net/wiki/spaces/PUB/pages/754155622/CORTX+Kubernetes+N-Pod+Deployment+and+Upgrade+Document+using+Services+Framework#5.-Understanding-Management-and-S3-Endpoints-and-configuring-External-Load-balancer-service(Optional) here or into a linked `doc/readme` file.
+For more information on how to access CORTX endpoints please go through 
+[CORTX Endpoints](doc/cortx-on-k8s.md)
 
 ### Log collection for CORTX on Kubernetes
 
