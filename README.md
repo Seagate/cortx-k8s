@@ -106,10 +106,11 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
    2.  Run prerequisite script on all worker nodes in the cluster, and any untainted control nodes which allow Pod scheduling. `<disk>` is a required input to run this script. This disk should NOT be any of the devices listed in `solution.storage.cvg*` in the `solution.yaml` file:
 
    ```bash
-   sudo ./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
+   sudo ./prereq-deploy-cortx-cloud.sh -d <disk> [ -s <solution-file> ]
    ```
 
-   :information_source: `<solution-file>` is an optional input to run `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml`.
+    - The `-d <disk>` flag is a required flag to pass the path of the disk or device to mount for secondary storage to the `prereq-deploy-cortx-cloud.sh` script. This should be in the format of `/dev/sdb` etc.
+    - The `-s <solution-file>` flag is an optional flag to the `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml` if the `-s` flag is not supplied.
 
 ### Deploying CORTX on Kubernetes
 
