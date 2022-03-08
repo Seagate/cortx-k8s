@@ -121,6 +121,9 @@ cortx:
     {{- if gt (len .Values.cortxMotr.clientEndpoints) 0 }}
       - name: motr_client
         num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
+        num_subscriptions: 1
+        subscriptions:
+        - fdmi
         endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
     {{- end }}
     limits:
