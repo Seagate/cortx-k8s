@@ -67,7 +67,7 @@ cortx:
       - http://{{ $ioSvcName }}:8000
     data:
       endpoints:
-      - http://{{ $ioSvcName }}:800
+      - http://{{ $ioSvcName }}:80
       - https://{{ $ioSvcName }}:443
     s3:
       endpoints:
