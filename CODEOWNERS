@@ -1,5 +1,0 @@
-# This is a global CODEOWNERS file for the cortx-k8s repository,
-# which will utilize the "cortx-k8s-admins" group as the main
-# CODEOWNERS functional unit for all code.
-
-*   @Seagate/cortx-k8s-admin
