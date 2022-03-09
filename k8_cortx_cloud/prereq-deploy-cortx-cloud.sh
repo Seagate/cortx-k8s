@@ -238,7 +238,7 @@ function prepCortxDeployment()
 
         # Check if we are running on busybox / using busybox's blkid binary,
         # as it does not support the commands below
-        if (( "$(blkid -V)" != "" )); then
+        if [[ -n "$(blkid -V)" ]]; then
             # As the disk passed in will either already have been mounted by the user or by the script,
             # the blkid command will return the UUID of the mounted filesystem either way
             blk_uuid=$(blkid ${disk} -o export | grep UUID | awk '{split($0,a,"="); print a[2]}')
