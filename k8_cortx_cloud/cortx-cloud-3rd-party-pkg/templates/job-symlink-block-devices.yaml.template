@@ -23,7 +23,7 @@ spec:
       containers:
       - name: symlink-block-devices-task
         image: ${CORTX_IMAGE}
-        command: 
+        command:
         - "bash"
         - "-c"
         - |
@@ -45,11 +45,11 @@ spec:
           do
             printf "\tDevice Path:\t\t\t%s\n" ${ITER_DEVICE_PATH}
 
-            # We use basename here since the `ls -l /dev/disk/by-id` command 
+            # We use basename here since the `ls -l /dev/disk/by-id` command
             # only shows the actual device name and not path elements in its symlink
             ITER_DEVICE_NAME=$(basename ${ITER_DEVICE_PATH})
             printf "\tDevice Name:\t\t\t%s\n" ${ITER_DEVICE_NAME}
-            
+
             # Look up the block device id based upon host system `/dev/disk/by-id` mappings
             ITER_BLK_ID=$(ls -l /job/dev/disk/by-id | grep "/${ITER_DEVICE_NAME}$" | awk '{print $9}')
             printf "\tBlock Device Id:\t\t%s\n" ${ITER_BLK_ID}
@@ -59,7 +59,7 @@ spec:
             ITER_SYMLINK_TGT_PATH="/dev/${JOB_SYMLINK_PATH_SEPARATOR}/${ITER_DEVICE_PATH/\/dev\/}"
             printf "\tGenerated symlink source path:\t\t%s\n" "${ITER_SYMLINK_SRC_PATH}"
             printf "\tGenerated symlink target path:\t\t%s\n" "${ITER_SYMLINK_TGT_PATH}"
-            
+
             # We prefix the symlink target path with `/job` here, since that is
             # how the host file system is accessed inside the job.
             # The `/job` prefix is not needed for the symlink source path, as the
