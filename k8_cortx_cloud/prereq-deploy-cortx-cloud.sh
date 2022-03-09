@@ -6,7 +6,7 @@ SCRIPT_NAME=$(basename "${SCRIPT}")
 
 # Script defaults
 disk=""
-solution_yaml="solution.yaml"
+solution_yaml="${CORTX_SOLUTION_CONFIG_FILE:-solution.yaml}"
 persist_fs_mount_path=false
 default_fs_type="ext4"
 
@@ -27,7 +27,7 @@ Options:
 
     -d <DISK>       REQUIRED. The path of the disk or device to mount for
                     secondary storage.
-    
+
     -s <FILE>       The cluster solution configuration file. Can
                     also be set with the CORTX_SOLUTION_CONFIG_FILE
                     environment variable. Defaults to 'solution.yaml'.
@@ -68,7 +68,7 @@ while getopts hd:s:pbc: opt; do
         p ) persist_fs_mount_path=true ;;
         b ) symlink_block_devices=true ;;
         c ) symlink_block_devices_separator=${OPTARG} ;;
-        \?) 
+        \?)
             usage >&2
             exit 1
             ;;
@@ -139,25 +139,25 @@ function parseYaml
 function parseSolution()
 {
     # Check that all of the required parameters have been passed in
-    if [ "$solution_yaml" == "" ]
+    if [ "${1}" == "" ]
     then
         echo "ERROR: Invalid input parameters"
-        echo "<input yaml file>             = $solution_yaml"
-        echo "[<yaml path filter> OPTIONAL] = $2"
+        echo "Input YAML file is an empty string"
+        echo "[<yaml path filter> OPTIONAL] = ${2}"
         usage
         exit 1
     fi
 
     # Check if the file exists
-    if [ ! -f $solution_yaml ]
+    if [ ! -f ${1} ]
     then
-        echo "ERROR: $solution_yaml does not exist"
+        echo "ERROR: ${1} does not exist"
         usage
         exit 1
     fi
 
     # Store the parsed output in a single string
-    PARSED_OUTPUT=$(parseYaml $solution_yaml)
+    PARSED_OUTPUT=$(parseYaml ${1})
     # Remove any additional indent '.' characters
     PARSED_OUTPUT=$(echo ${PARSED_OUTPUT//../.})
 
@@ -165,26 +165,26 @@ function parseSolution()
     OUTPUT=""
 
     # Check if we need to do any filtering
-    if [ "$2" == "" ]
+    if [ "${2}" == "" ]
     then
-        OUTPUT=$PARSED_OUTPUT
+        OUTPUT=${PARSED_OUTPUT}
     else
         # Split parsed output into an array of vars and vals
-        IFS=';' read -r -a PARSED_VAR_VAL_ARRAY <<< "$PARSED_OUTPUT"
+        IFS=';' read -r -a PARSED_VAR_VAL_ARRAY <<< "${PARSED_OUTPUT}"
         # Loop the var val tuple array
         for VAR_VAL_ELEMENT in "${PARSED_VAR_VAL_ARRAY[@]}"
         do
             # Get the var and val from the tuple
-            VAR=$(echo $VAR_VAL_ELEMENT | cut -f1 -d'>')
+            VAR=$(echo ${VAR_VAL_ELEMENT} | cut -f1 -d'>')
             # Check is the filter matches the var
-            if [[ $VAR == $2 ]]
+            if [[ ${VAR} == ${2} ]]
             then
                 # If the OUTPUT is empty set it otherwise append
-                if [ "$OUTPUT" == "" ]
+                if [ "${OUTPUT}" == "" ]
                 then
-                    OUTPUT=$VAR_VAL_ELEMENT
+                    OUTPUT=${VAR_VAL_ELEMENT}
                 else
-                    OUTPUT=$OUTPUT";"$VAR_VAL_ELEMENT
+                    OUTPUT=${OUTPUT}";"${VAR_VAL_ELEMENT}
                 fi
             fi
         done
@@ -236,22 +236,28 @@ function prepCortxDeployment()
         local blk_uuid
         local exists_in_fstab
 
-        # As the disk passed in will either already have been mounted by the user or by the script,
-        # the blkid command will return the UUID of the mounted filesystem either way
-        blk_uuid=$(blkid ${disk} -o export | grep UUID | awk '{split($0,a,"="); print a[2]}')
-
-        # Check /etc/fstab for presence of requested disk or filesystem mount path
-        exists_in_fstab=$(grep "${blk_uuid}\|${fs_mount_path}" /etc/fstab)
-        if [[ "${exists_in_fstab}" == "" ]]; then
-            # /etc/fstab does not contain a mountpoint for the desired disk and path
-            backup_chars=$(date +%s)
-            printf "\tBacking up existing '/etc/fstab' to '/etc/fstab.%s.backup'\n" "${backup_chars}"
-            cp /etc/fstab "/etc/fstab.${backup_chars}.backup"
-            printf "UUID=%s  %s      %s   defaults 0 0\n" ${blk_uuid} ${fs_mount_path} ${default_fs_type} >> /etc/fstab
-            printf "\t'/etc/fstab' has been updated to persist %s at %s.\n\tIt should be manually verified for correctness prior to system reboot.\n\n" ${disk} ${fs_mount_path}
+        # Check if we are running on busybox / using busybox's blkid binary,
+        # as it does not support the commands below
+        if (( "$(blkid --version)" != "" )); then
+            # As the disk passed in will either already have been mounted by the user or by the script,
+            # the blkid command will return the UUID of the mounted filesystem either way
+            blk_uuid=$(blkid ${disk} -o export | grep UUID | awk '{split($0,a,"="); print a[2]}')
+            if [[ "${blk_uuid}" != "" ]]; then
+                # Check /etc/fstab for presence of requested disk or filesystem mount path
+                if ! grep -e "${blk_uuid}" -e "${fs_mount_path}" /etc/fstab; then
+                    # /etc/fstab does not contain a mountpoint for the desired disk and path
+                    backup_chars=$(date +%s)
+                    printf "\tBacking up existing '/etc/fstab' to '/etc/fstab.%s.backup'\n" "${backup_chars}"
+                    cp /etc/fstab "/etc/fstab.${backup_chars}.backup"
+                    printf "UUID=%s  %s      %s   defaults 0 0\n" ${blk_uuid} ${fs_mount_path} ${default_fs_type} >> /etc/fstab
+                    printf "\t'/etc/fstab' has been updated to persist %s at %s.\n\tIt should be manually verified for correctness prior to system reboot.\n\n" ${disk} ${fs_mount_path}
+                else
+                    # /etc/fstab contains a mountpoint for the desired disk and path
+                    printf "\t'/etc/fstab' already contains a mountpoint entry for %s at path %s.\n\tIf this is not expected, it should be manually edited.\n\n" ${disk} ${fs_mount_path}
+                fi
+            fi
         else
-            # /etc/fstab contains a mountpoint for the desired disk and path
-            printf "\t'/etc/fstab' already contains a mountpoint entry for %s at path %s.\n\tIf this is not expected, it should be manually edited.\n\n" ${disk} ${fs_mount_path}
+            printf "This script is attempting to use an unsupported 'blkid' binary. Please use a compatible util-linux version of 'blkid' instead."
         fi
     fi
     ###################################################################
@@ -285,17 +291,17 @@ function join_array()
 ## Function 'symlinkBlockDevices' - enabled via the '-b' flag
 ## ----------------------------------------------------------
 ##      Create symlinks for persistent block device access, based
-##      upon device paths defined in 'solution.yaml' and the 
+##      upon device paths defined in 'solution.yaml' and the
 ##      symlink path separator defined with the '-c' option.
 ##      As an example, '/dev/sdc' will have a new symlink available via
 ##      '/dev/cortx/sdc' for persistent access across reboots.
 ##      This option will also create an updated '{solution}-symlink.yaml'
-##      file that should be used for subsequent deployment with 
+##      file that should be used for subsequent deployment with
 ##      'deploy-cortx-cloud.sh'.
-## 
+##
 ##      Background
-##      - This implementation is meant to be invoked from a control-plane 
-##        node with local kubectl accessand requires parsing node information
+##      - This implementation is meant to be invoked from a control-plane
+##        node with local kubectl access and requires parsing node information
 ##        from solution.yaml
 ##      - An alternative implementation would be to be run on the individual
 ##        node itself, using NODE_NAME=$(hostname) with no need for looping
@@ -312,7 +318,7 @@ function symlinkBlockDevices()
     local device_paths=()
     local job_template="$(pwd)/cortx-cloud-3rd-party-pkg/templates/job-symlink-block-devices.yaml.template"
     local template_vars='${NODE_NAME}:${NODE_SHORT_NAME}:${DEVICE_PATHS}:${SYMLINK_PATH_SEPARATOR}:${CORTX_IMAGE}'
-    local job_file="jobs-symlink-block-devices-$(hostname | cut -f1 -d'.').yaml"
+    local job_file="jobs-symlink-block-devices-$(hostname -s).yaml"
 
     # Template replacement variable
     export SYMLINK_PATH_SEPARATOR=${symlink_block_devices_separator}
@@ -320,23 +326,21 @@ function symlinkBlockDevices()
     # Retrieve CORTX container image specified in solution.yaml
     filter="solution.images.cortxcontrol"
     cortx_image_yaml=$(parseSolution ${solution_yaml} ${filter})
-    export CORTX_IMAGE=$(echo ${cortx_image_yaml} | cut -f2 -d'>')
-    
+    export CORTX_IMAGE="${cortx_image_yaml#*>}"
+
     # Create comma-separated string from the device paths in solution.yaml
     filter="solution.storage.cvg*.devices*.device"
     device_output=$(parseSolution ${solution_yaml} ${filter})
     IFS=';' read -r -a device_array <<< "${device_output}"
-    for device_element in "${!device_array[@]}"
+    for device_path in "${device_array[@]}"
     do
-        device_paths+=($(echo ${device_array[${device_element}]} | cut -f2 -d'>')) 
+        device_paths+=(${device_path#*>})
     done
     # Template replacement variable
     export DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
-    
+
     # Prepare local templated Job definition
-    if [[ -f ${job_file} ]]; then
-        rm ${job_file}
-    fi
+    rm -f ${job_file}
 
     # Iterate over the defined nodes in solution.yaml
     filter="solution.nodes.node*.name"
@@ -345,8 +349,8 @@ function symlinkBlockDevices()
     for node_element in "${node_array[@]}"
     do
         # Template replacement variable
-        export NODE_NAME="$(echo ${node_element} | cut -f2 -d'>')"
-        export NODE_SHORT_NAME=$(echo ${NODE_NAME} | cut -f1 -d'.')
+        export NODE_NAME="${node_element#*>}"
+        export NODE_SHORT_NAME="${NODE_NAME%%.*}"
 
         # Generate templated Job definition
         envsubst "${template_vars}" < "${job_template}" >> ${job_file}
@@ -365,25 +369,24 @@ function symlinkBlockDevices()
     kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s
 
     ##  If timeout, wait again
-    if [[ "$?" != "0" ]]; then
+    if (( $? != 0 )); then
         printf "Timed out waiting for Jobs to complete successfully. Will attempt to wait again...\n"
         kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s
 
         ##  If timeout again, fail and exit out of installer with user directives.
-        if [[ "$?" != "0" ]]; then
+        if (( $? != 0 )); then
             printf "Timed out waiting for Jobs to complete successfully again. Corrective user action should be taken.\n"
             exit 1
         fi
     fi
 
     # Update solution.yaml used as input with new symlink_block_device_paths
-    # and output to {solution}-symlink.yaml and notify user to use new 
+    # and output to {solution}-symlink.yaml and notify user to use new
     # {solution}-symlink.yaml for input to `deploy-cortx-cloud.sh`
-    SYMLINK_SOLUTION_YAML=${solution_yaml/\.yaml/-symlink\.yaml}
+    SYMLINK_SOLUTION_YAML="${solution_yaml%.yaml}-symlink.yaml"
     printf "Saving an updated solution.yaml file at %s\n" ${SYMLINK_SOLUTION_YAML}
     printf "Use this new file when running 'deploy-cortx-cloud.sh' in the future to use your symlinked block devices.\n"
-    sed "s/\/dev/\/dev\/${SYMLINK_PATH_SEPARATOR}/g" ${solution_yaml} > ${SYMLINK_SOLUTION_YAML}
-
+    sed "s#/dev#/dev/${SYMLINK_PATH_SEPARATOR}#g" ${solution_yaml} > ${SYMLINK_SOLUTION_YAML}
 }
 
 function installHelm()

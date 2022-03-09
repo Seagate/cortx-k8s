@@ -36,16 +36,13 @@ spec:
           printf "Creating symlinks...\n"
 
           # If symlink sub-directory does not exist, create it
-          if [[ ! -d /job/dev/${JOB_SYMLINK_PATH_SEPARATOR} ]]; then
-            mkdir -p /job/dev/${JOB_SYMLINK_PATH_SEPARATOR}
-          fi
+          mkdir -p /job/dev/${JOB_SYMLINK_PATH_SEPARATOR}
 
           ERROR_COUNT=0
 
           IFS=',' read -r -a DEVICE_PATH_ARRAY <<< "${JOB_DEVICE_PATHS}"
-          for INDEX in "${!DEVICE_PATH_ARRAY[@]}"
+          for ITER_DEVICE_PATH in "${DEVICE_PATH_ARRAY[@]}"
           do
-            ITER_DEVICE_PATH=${DEVICE_PATH_ARRAY[${INDEX}]}    
             printf "\tDevice Path:\t\t\t%s\n" ${ITER_DEVICE_PATH}
 
             # We use basename here since the `ls -l /dev/disk/by-id` command 
@@ -54,7 +51,7 @@ spec:
             printf "\tDevice Name:\t\t\t%s\n" ${ITER_DEVICE_NAME}
             
             # Look up the block device id based upon host system `/dev/disk/by-id` mappings
-            ITER_BLK_ID=$(ls -l /job/dev/disk/by-id | grep ${ITER_DEVICE_NAME} | awk '{print $9}')
+            ITER_BLK_ID=$(ls -l /job/dev/disk/by-id | grep "/${ITER_DEVICE_NAME}$" | awk '{print $9}')
             printf "\tBlock Device Id:\t\t%s\n" ${ITER_BLK_ID}
 
             # We use the entire device path here and only replace `/dev/` to account for devices with multiple levels of depth
@@ -69,7 +66,7 @@ spec:
             # shell if fine with creating a pointer to something that does not exist.
             ln -s ${ITER_SYMLINK_SRC_PATH} /job${ITER_SYMLINK_TGT_PATH}
 
-            if [[ "$?" == "0" ]]; then
+            if (( $? == 0 )); then
               printf "\tSymlink creation succeeded!\n"
             else
               printf "\tERROR: Symlink creation failed\n"
@@ -78,7 +75,7 @@ spec:
             printf "\n"
           done
 
-          if [[ "${ERROR_COUNT}" -gt 0 ]]; then
+          if (( ERROR_COUNT > 0 )); then
             printf "\tERROR: %s symlink creation(s) failed. Check the Job logs and verify expected behavior.\n" ${ERROR_COUNT}
             exit 1
           fi
