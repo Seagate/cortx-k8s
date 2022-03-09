@@ -285,7 +285,22 @@ case "${UPGRADE_TYPE}" in
         ;;
 esac
 
-sleep 90;
+printf "\nWait for All CORTX PODs to be ready"
+while true; do
+    while IFS= read -r line; do
+        IFS=" " read -r -a pod_status <<< "$line"
+        IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+        if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+            if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
+                printf "\n'${pod_status[0]}' pod failed to start. Exit early.\n"
+                exit 1
+            fi
+            break
+        fi
+    done <<< "$(kubectl get pods --namespace=$namespace | grep "$cortx_pod_filter")"
+    sleep 1s
+done
+
 # Validate if All CORTX Pods are running After upgrade is successful
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 validate_cortx_pods_status
