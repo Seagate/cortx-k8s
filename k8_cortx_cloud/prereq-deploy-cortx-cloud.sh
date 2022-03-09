@@ -234,7 +234,6 @@ function prepCortxDeployment()
 
         local backup_chars
         local blk_uuid
-        local exists_in_fstab
 
         # Check if we are running on busybox / using busybox's blkid binary,
         # as it does not support the commands below
@@ -244,8 +243,7 @@ function prepCortxDeployment()
             blk_uuid=$(blkid -s UUID -o value "${disk}")
             if [[ "${blk_uuid}" != "" ]]; then
                 # Check /etc/fstab for presence of requested disk or filesystem mount path
-                exists_in_fstab=$(grep -e "${blk_uuid}" -e "${fs_mount_path}" /etc/fstab)
-                if [[ "${exists_in_fstab}" == "" ]]; then
+                if ! grep -q -e "${blk_uuid}" -e "${fs_mount_path}" /etc/fstab; then
                     # /etc/fstab does not contain a mountpoint for the desired disk and path
                     backup_chars=$(date +%s)
                     printf "\tBacking up existing '/etc/fstab' to '/etc/fstab.%s.backup'\n" "${backup_chars}"
