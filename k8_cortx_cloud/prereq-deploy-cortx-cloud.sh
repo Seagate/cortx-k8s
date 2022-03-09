@@ -241,7 +241,7 @@ function prepCortxDeployment()
         if [[ -n "$(blkid -V)" ]]; then
             # As the disk passed in will either already have been mounted by the user or by the script,
             # the blkid command will return the UUID of the mounted filesystem either way
-            blk_uuid=$(blkid ${disk} -o export | grep UUID | awk '{split($0,a,"="); print a[2]}')
+            blk_uuid=$(blkid -s UUID -o value "${disk}")
             if [[ "${blk_uuid}" != "" ]]; then
                 # Check /etc/fstab for presence of requested disk or filesystem mount path
                 exists_in_fstab=$(grep -e "${blk_uuid}" -e "${fs_mount_path}" /etc/fstab)
