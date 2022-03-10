@@ -459,18 +459,20 @@ function deployKafka()
     splitDockerImage "${image}"
     printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
 
-    _KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:=1000}
-    _KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:=1000}
-    _KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:=1000}
+    local kafka_cfg_log_segment_delete_delay_ms=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:-1000}
+    local kafka_cfg_log_flush_offset_checkpoint_interval_ms=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:-1000}
+    local kafka_cfg_log_retention_check_interval_ms=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:-1000}
+    local tmp_kafka_envvars_yaml="tmp-kafka.yaml"
 
-    TMP_KAFKA_ENVVARS_YAML=tmp-kafka.yaml
-    echo "extraEnvVars:" > ${TMP_KAFKA_ENVVARS_YAML}
-    echo "- name: KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS" >> ${TMP_KAFKA_ENVVARS_YAML}
-    echo "  value: \"${_KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS}\"" >> ${TMP_KAFKA_ENVVARS_YAML}
-    echo "- name: KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS" >> ${TMP_KAFKA_ENVVARS_YAML}
-    echo "  value: \"${_KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS}\"" >> ${TMP_KAFKA_ENVVARS_YAML}
-    echo "- name: KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS" >> ${TMP_KAFKA_ENVVARS_YAML}
-    echo "  value: \"${_KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS}\"" >> ${TMP_KAFKA_ENVVARS_YAML}
+    cat > ${tmp_kafka_envvars_yaml} << EOF
+extraEnvVars:
+- name: KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS
+  value: "${kafka_cfg_log_segment_delete_delay_ms}"
+- name: KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTEL_MS
+  value: "${kafka_cfg_log_flush_offset_checkpoint_interval_ms}"
+- name: KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS
+  value: "${kafka_cfg_log_retention_check_interval_ms}"
+EOF
 
     helm install kafka bitnami/kafka \
         --set zookeeper.enabled=false \
@@ -499,10 +501,10 @@ function deployKafka()
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.enabled=true \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --values ${TMP_KAFKA_ENVVARS_YAML}  \
+        --values ${tmp_kafka_envvars_yaml}  \
         --wait
 
-    rm ${TMP_KAFKA_ENVVARS_YAML}
+    rm ${tmp_kafka_envvars_yaml}
 
     printf "\n\n"
 }
