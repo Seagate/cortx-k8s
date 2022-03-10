@@ -46,7 +46,7 @@ while IFS= read -r line; do
     fi
 
 done <<< "$(kubectl get nodes --no-headers)"
-printf "Number of worker nodes detected: ${num_worker_nodes}\n"
+printf "Number of worker nodes detected: %s\n" "${num_worker_nodes}"
 
 
 # Check for nodes listed in the solution file are in "Ready" state. If not, ask
@@ -185,7 +185,7 @@ do
     if [[ -s ${cortx_blk_data_node_list_info_path} ]]; then
         printf "\n" >> "${cortx_blk_data_node_list_info_path}"
     fi
-    printf "${node_info_str}" >> "${cortx_blk_data_node_list_info_path}"
+    printf "%s" "${node_info_str}" >> "${cortx_blk_data_node_list_info_path}"
 
     count=$((count+1))
 done
@@ -213,7 +213,7 @@ do
     if [[ -s ${cortx_blk_data_mnt_info_path} ]]; then
         printf "\n" >> "${cortx_blk_data_mnt_info_path}"
     fi
-    printf "${mnt_blk_info}" >> "${cortx_blk_data_mnt_info_path}"
+    printf "%s" "${mnt_blk_info}" >> "${cortx_blk_data_mnt_info_path}"
 done
 
 # Copy device info file from CORTX local block helm to CORTX data
@@ -401,7 +401,7 @@ function deployZookeeper()
     image=$(parseSolution 'solution.images.zookeeper')
     image=$(echo "${image}" | cut -f2 -d'>')
     splitDockerImage "${image}"
-    printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
+    printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
 
     helm install zookeeper bitnami/zookeeper \
         --set image.tag="${tag}" \
@@ -457,7 +457,7 @@ function deployKafka()
     image=$(parseSolution 'solution.images.kafka')
     image=$(echo "${image}" | cut -f2 -d'>')
     splitDockerImage "${image}"
-    printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
+    printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
 
     local kafka_cfg_log_segment_delete_delay_ms=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:-1000}
     local kafka_cfg_log_flush_offset_checkpoint_interval_ms=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:-1000}
@@ -1070,7 +1070,7 @@ function deployCortxClient()
             IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
             if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
                 if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+                    printf "\n'%s' pod deployment did not complete. Exit early.\n" "${pod_status[0]}"
                     exit 1
                 fi
                 break
