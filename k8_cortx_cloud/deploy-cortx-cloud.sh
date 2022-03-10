@@ -7,7 +7,7 @@ storage_class='local-path'
 serviceAccountName=cortx-sa
 
 # Check if the file exists
-if [ ! -f ${solution_yaml} ]
+if [[ ! -f ${solution_yaml} ]]
 then
     echo "ERROR: ${solution_yaml} does not exist"
     exit 1
@@ -51,7 +51,7 @@ printf "Number of worker nodes detected: ${num_worker_nodes}\n"
 # Check for nodes listed in the solution file are in "Ready" state. If not, ask
 # the users whether they want to continue to deploy or exit early
 exit_early=false
-if [ ${not_ready_node_count} -gt 0 ]; then
+if [[ ${not_ready_node_count} -gt 0 ]]; then
     echo "Number of 'NotReady' worker nodes detected in the cluster: ${not_ready_node_count}"
     echo "List of 'NotReady' worker nodes:"
     for not_ready_node in "${not_ready_node_list[@]}"; do
@@ -766,10 +766,10 @@ function waitForAllDeploymentsAvailable()
     # Initial wait
     FAIL=0
     kubectl wait --for=condition=available --timeout="${TIMEOUT}" $@
-    if [ $? -ne 0 ]; then
+    if [[ $? -ne 0 ]]; then
         # Secondary wait
         kubectl wait --for=condition=available --timeout="${TIMEOUT}" $@
-        if [ $? -ne 0 ]; then
+        if [[ $? -ne 0 ]]; then
             # Still timed out.  This is a failure
             FAIL=1
         fi
@@ -779,7 +779,7 @@ function waitForAllDeploymentsAvailable()
     trap - 0
     ELAPSED=$((SECONDS - START))
     echo
-    if [ ${FAIL} -eq 0 ]; then
+    if [[ ${FAIL} -eq 0 ]]; then
         echo "Deployment ${DEPL_STR} available after ${ELAPSED} seconds"
     else
         echo "Deployment ${DEPL_STR} timed out after ${ELAPSED} seconds"
