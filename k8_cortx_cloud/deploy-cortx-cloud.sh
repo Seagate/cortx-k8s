@@ -305,6 +305,8 @@ function deployKubernetesPrereqs()
 ##########################################################
 function deployRancherProvisioner()
 {
+    local image
+
     # Add the HashiCorp Helm Repository:
     helm repo add hashicorp https://helm.releases.hashicorp.com
     helm repo update hashicorp
@@ -333,6 +335,8 @@ function deployRancherProvisioner()
 
 function deployConsul()
 {
+    local image
+
     printf "######################################################\n"
     printf "# Deploy Consul                                       \n"
     printf "######################################################\n"
@@ -372,6 +376,9 @@ function deployConsul()
 
 function splitDockerImage()
 {
+    local image
+    local tag_arr
+
     IFS='/' read -ra image <<< "$1"
     IFS=':' read -ra tag_arr <<< "${image[2]}"
     registry="${image[0]}"
@@ -382,6 +389,8 @@ function splitDockerImage()
 
 function deployZookeeper()
 {
+    local image
+
     printf "######################################################\n"
     printf "# Deploy Zookeeper                                    \n"
     printf "######################################################\n"
@@ -439,6 +448,8 @@ function deployZookeeper()
 
 function deployKafka()
 {
+    local image
+
     printf "######################################################\n"
     printf "# Deploy Kafka                                        \n"
     printf "######################################################\n"
