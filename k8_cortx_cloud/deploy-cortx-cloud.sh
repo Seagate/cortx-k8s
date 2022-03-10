@@ -773,6 +773,8 @@ function waitForAllDeploymentsAvailable()
     START=${SECONDS}
     (while true; do sleep 1; echo -n "."; done)&
     DOTPID=$!
+    # expand var now, not later
+    # shellcheck disable=SC2064
     trap "silentKill ${DOTPID}" 0
 
     # Initial wait
