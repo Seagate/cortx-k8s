@@ -60,7 +60,7 @@ if [[ ${not_ready_node_count} -gt 0 ]]; then
     done
 
     printf "\nContinue CORTX Cloud deployment could lead to unexpeted results.\n"
-    read -p "Do you want to continue (y/n, yes/no)? " reply
+    read -p "Do you want to continue (y/n, yes/no)? " -r reply
     if [[ "${reply}" =~ ^(y|Y)*.(es)$ || "${reply}" =~ ^(y|Y)$ ]]; then
         exit_early=false
     elif [[ "${reply}" =~ ^(n|N)*.(o)$ || "${reply}" =~ ^(n|N)$ ]]; then
