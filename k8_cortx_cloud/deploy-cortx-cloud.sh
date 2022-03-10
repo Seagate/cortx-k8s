@@ -779,11 +779,9 @@ function waitForAllDeploymentsAvailable()
 
     # Initial wait
     FAIL=0
-    kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"
-    if [[ $? -ne 0 ]]; then
+    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
         # Secondary wait
-        kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"
-        if [[ $? -ne 0 ]]; then
+        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
             # Still timed out.  This is a failure
             FAIL=1
         fi
