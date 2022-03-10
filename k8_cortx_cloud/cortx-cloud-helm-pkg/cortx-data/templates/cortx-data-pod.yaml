@@ -81,15 +81,15 @@ spec:
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxdata.image }}
-        imagePullPolicy: IfNotPresent        
-        command: 
+        imagePullPolicy: IfNotPresent
+        command:
           - /bin/sh
         {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
-        args: 
+        args:
           - -c
           - sleep $(shuf -i 5-10 -n 1)s
         {{- else }}
-        args: 
+        args:
           - -c
           {{- if .Values.cortxdata.machineid.value }}
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
@@ -136,13 +136,13 @@ spec:
             readOnly: true
           {{- end }}
         env:
-          - name: MACHINE_ID            
+          - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxdata.machineid.value | quote }}
         ports:
         - containerPort: 5050
       - name: node-config
         image: {{ .Values.cortxdata.image }}
-        imagePullPolicy: IfNotPresent        
+        imagePullPolicy: IfNotPresent
         command:
           - /nodeconfig/entrypoint.sh
         volumeMounts:
@@ -155,10 +155,10 @@ spec:
         - name: cortx-hax
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
+          {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
-          command: 
+          command:
             - /bin/sh
           args:
             - -c
@@ -175,11 +175,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -190,7 +185,7 @@ spec:
         - name: cortx-motr-confd
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
+          {{- if eq .Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command:
@@ -232,11 +227,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
@@ -253,7 +243,7 @@ spec:
               value: {{ $.Values.cortxdata.name }}
             - name: IO_INDEX
               value: {{ printf "%d" (add 1 $i) | quote }}
-          {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}          
+          {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command:
@@ -295,11 +285,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
-            {{- range $.Files.Lines $.Values.cortxdata.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
           ports:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
           securityContext:
