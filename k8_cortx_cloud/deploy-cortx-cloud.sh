@@ -967,8 +967,8 @@ function deployCortxData()
             --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="$local_storage" \
             --set cortxdata.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxdata.motr.numiosinst=$num_io_instances \
-            --set cortxdata.motr.group_size=$group_size \
+            --set cortxdata.motr.numiosinst="${num_io_instances}" \
+            --set cortxdata.motr.group_size="${group_size}" \
             --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
             --set cortxdata.hax.port=$(extractBlock 'solution.common.hax.port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
