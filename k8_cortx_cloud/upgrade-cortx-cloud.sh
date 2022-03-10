@@ -10,7 +10,7 @@ SCRIPT=$(readlink -f "$0")
 DIR=$(dirname "${SCRIPT}")
 SCRIPT_NAME=$(basename "${SCRIPT}")
 PIDFILE=/tmp/${SCRIPT_NAME}.pid
-TIMEDELAY="20"
+TIMEDELAY="30"
 
 readonly SCRIPT
 readonly DIR
@@ -103,6 +103,39 @@ function validate_cortx_pods_status() {
         exit 1
     fi
 }
+function wait_for_cortx_pods() {
+    num_nodes=0
+    while IFS= read -r line; do
+        IFS=" " read -r -a deployments <<< "${line}"
+        num_nodes=$((num_nodes+1))
+    done <<< "$(kubectl get deployments --namespace="${NAMESPACE}" | grep "${cortx_deployment_filter}")"
+    while true; do
+        count=0
+        while IFS= read -r line; do
+            IFS=" " read -r -a pod_status <<< "${line}"
+            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
+            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+                sleep "${TIMEDELAY}"
+                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
+                    printf "\n %s pod failed to start. Exit early.\n" "${pod_status[0]}"
+                    exit 1
+                fi
+                break
+            fi
+            count=$((count+1))
+        done <<< "$(kubectl get pods --namespace="${NAMESPACE}" | grep "${cortx_pod_filter}")"
+
+        if [[ "${num_nodes}" -eq "${count}" ]]; then
+            break
+        else
+            printf "."
+        fi
+        sleep 50;
+    done
+    printf "\n\n"
+    printf "All CORTX pods have been started"
+    printf "\n\n"
+}
 
 function cold_upgrade() {
     # Shutdown all CORTX Pods
@@ -143,7 +176,7 @@ function update_cortx_pod() {
 function resume_cortx_pod() {
     pod_name="$1"
     kubectl rollout resume deployment "${pod_name}";
-    sleep ${TIMEDELAY};
+    sleep "${TIMEDELAY}";
     printf "########################################################\n"
     printf "# Upgrade Sccessful for %s \n" "${pod_name}"
     printf "#######################################################\n\n"
@@ -285,7 +318,10 @@ case "${UPGRADE_TYPE}" in
         ;;
 esac
 
-sleep 90;
+# Wait for all CORTX Pods to be ready
+printf "\nWait for CORTX Pods to be ready"
+wait_for_cortx_pods
+
 # Validate if All CORTX Pods are running After upgrade is successful
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 validate_cortx_pods_status
