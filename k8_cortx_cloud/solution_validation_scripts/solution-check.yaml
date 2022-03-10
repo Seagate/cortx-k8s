@@ -36,6 +36,8 @@ solution:
     motr:
       num_client_inst: required
       start_port_num: required
+      md_size: required
+      group_size: required
     hax:
       protocol: required
       service_name: required

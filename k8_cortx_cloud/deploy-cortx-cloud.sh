@@ -670,6 +670,8 @@ function deployCortxConfigMap()
         --set cortxHa.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
         --set cortxS3.instanceCount="$(extractBlock 'solution.common.s3.num_inst' || true)"
         --set cortxS3.maxStartTimeout="$(extractBlock 'solution.common.s3.max_start_timeout' || true)"
+        --set cortxMotr.md_size="$(extractBlock 'solution.common.motr.md_size' || true)"
+        --set cortxMotr.group_size="$(extractBlock 'solution.common.motr.group_size' || true)"
         --set cortxStoragePaths.local="${local_storage}"
         --set cortxStoragePaths.shared="${shared_storage}"
         --set cortxStoragePaths.log="${log_storage}"
@@ -944,6 +946,8 @@ function deployCortxData()
         node_selector=${node_selector_list[i]}
 
         cortxdata_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data/id)
+        group_size=$(parseSolution 'solution.common.motr.group_size' | cut -f2 -d'>')
+        num_io_instances=$((${#cvg_index_list[@]} / group_size))
 
         helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
             --set cortxdata.name="cortx-data-$node_name" \
@@ -963,7 +967,8 @@ function deployCortxData()
             --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
             --set cortxdata.localpathpvc.mountpath="$local_storage" \
             --set cortxdata.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
+            --set cortxdata.motr.numiosinst="${num_io_instances}" \
+            --set cortxdata.motr.group_size="${group_size}" \
             --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
             --set cortxdata.hax.port=$(extractBlock 'solution.common.hax.port_num') \
             --set cortxdata.secretinfo="secret-info.txt" \
