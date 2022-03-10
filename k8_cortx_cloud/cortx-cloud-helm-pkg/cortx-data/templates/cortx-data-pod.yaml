@@ -301,7 +301,7 @@ spec:
               readOnly: true
             {{- end }}
           ports:
-          {{- range $j := until ($.Values.cortxdata.motr.group_size | int) }
+          {{- range $j := until ($.Values.cortxdata.motr.group_size | int) }}
           - containerPort: {{ printf "%d" (add $j $.Values.cortxdata.motr.startportnum) }}
           {{- end }}
           securityContext:
