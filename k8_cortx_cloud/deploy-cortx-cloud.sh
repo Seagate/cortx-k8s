@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2312
+
 solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
 
