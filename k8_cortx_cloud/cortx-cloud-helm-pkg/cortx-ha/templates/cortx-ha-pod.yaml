@@ -85,7 +85,7 @@ spec:
             readOnly: true
           {{- end }}
         env:
-          - name: MACHINE_ID            
+          - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxha.machineid.value | quote }}
         ports:
         - containerPort: 5050
@@ -113,11 +113,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxha.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxha.name }}
@@ -146,11 +141,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxha.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxha.name }}
@@ -179,11 +169,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxha.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxha.name }}
