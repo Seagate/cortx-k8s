@@ -23,7 +23,9 @@ The following environment should exist in AWS prior to further deployment:
        - AWS CLI installed and configured
      - NAT GW for outgoing Internet access from the cluster (private) subnet
    - Cluster subnet
-     - Security group with SSH (tcp/22) access from the Bastion subnet
+     - Private subnet for the worker and control plane nodes
+     - Currently, all nodes reside in the same availability zone
+     - Security group with SSH (tcp/22) access from the Bastion subnet and traffic allowed between cluster nodes
  <p align="center">
     <img src="pics/cortx-aws-k8s-before-installation.jpg">
  </p>

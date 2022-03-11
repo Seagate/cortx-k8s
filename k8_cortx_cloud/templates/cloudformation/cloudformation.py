@@ -105,7 +105,7 @@ def template():
             },
 
             "Subnet": {
-                "Description": "Name of an existing subnet for the cluster.",
+                "Description": "Name of a private subnet for the cluster. Note that all nodes will reside in the same availability zone.",
                 "Type": "AWS::EC2::Subnet::Id",
             },
             "SecurityGroup": {
