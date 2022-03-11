@@ -45,22 +45,13 @@ def template():
             "VersionDeploymentRepo": {
                 "Description": "Version of cortx-k8s repo to build from. Can be either a branch or tagged release.",
                 "Type": "String",
+                # See note below on prereq script before version bump
                 "Default": "v0.0.22"
-            },
-
-            "ImageCORTXControlProv": {
-                "Type": "String",
-                "Default": "ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci"
             },
             "ImageCORTXControl": {
                 "Type": "String",
                 "Default": "ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci"
             },
-            "ImageCORTXDataProv": {
-                "Type": "String",
-                "Default": "ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci"
-            },
-
             "ImageCORTXData": {
                 "Type": "String",
                 "Default": "ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci"
@@ -278,22 +269,26 @@ def prepare(name):
         "wget --no-verbose https://github.com/mikefarah/yq/releases/download/v4.19.1/yq_linux_amd64 -O /usr/bin/yq",
         "chmod +x /usr/bin/yq",
 
-        "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
-        "yum install -y docker-ce docker-ce-cli containerd.io",
-        "systemctl start docker",
-        "systemctl enable docker",
-        "usermod -aG docker centos",
-
-        "cat <<EOF | tee /etc/modules-load.d/k8s.conf",
+        "cat <<EOF | tee /etc/modules-load.d/containerd.conf",
+        "overlay",
         "br_netfilter",
         "EOF",
+        "modprobe overlay",
+        "modprobe br_netfilter",
 
-        "cat <<EOF | tee /etc/sysctl.d/k8s.conf",
+        "cat <<EOF | tee /etc/sysctl.d/99-kubernetes-cri.conf",
+        "net.bridge.bridge-nf-call-iptables  = 1",
+        "net.ipv4.ip_forward = 1",
         "net.bridge.bridge-nf-call-ip6tables = 1",
-        "net.bridge.bridge-nf-call-iptables = 1",
         "EOF",
-
         "sysctl --system",
+
+        "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
+        "yum install -y containerd.io",
+        "mkdir -p /etc/containerd",
+        "containerd config default > /etc/containerd/config.toml",
+        "systemctl enable containerd",
+        "systemctl restart containerd",
 
         "cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo",
         "[kubernetes]",
@@ -369,14 +364,15 @@ def cortx_prepare(cvgs, datas):
         {"Fn::Sub": "git clone -b ${VersionDeploymentRepo} https://github.com/Seagate/cortx-k8s.git"},
         "mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig",
         {"Fn::Sub": "./cortx-k8s/k8_cortx_cloud/generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs {} --data {} --solution ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig  --datasize ${{DiskSizeMotr}}Gi --metadatasize ${{DiskSizeMotr}}Gi > ./cortx-k8s/k8_cortx_cloud/solution.yaml".format(cvgs, datas)},
+        #TODO after bump to version with https://github.com/Seagate/cortx-k8s/pull/144
+        # update prereq script args. Should be:
+        #     ./prereq-deploy-cortx-cloud.sh -d /dev/sdb
         "(cd cortx-k8s/k8_cortx_cloud/ && ./prereq-deploy-cortx-cloud.sh /dev/sdb)",
         "yq -i '",
         {"Fn::Sub": '  .solution.common.setup_size = "${SetupSize}"'},
         {"Fn::Sub": '| .solution.common.storage_sets.durability.sns = "${DurabilitySNS}"'},
         {"Fn::Sub": '| .solution.common.storage_sets.durability.dix = "${DurabilityDIX}"'},
-        {"Fn::Sub": '| .solution.images.cortxcontrolprov = "${ImageCORTXControlProv}"'},
         {"Fn::Sub": '| .solution.images.cortxcontrol = "${ImageCORTXControl}"'},
-        {"Fn::Sub": '| .solution.images.cortxdataprov = "${ImageCORTXDataProv}"'},
         {"Fn::Sub": '| .solution.images.cortxdata = "${ImageCORTXData}"'},
         {"Fn::Sub": '| .solution.images.cortxserver = "${ImageCORTXServer}"'},
         {"Fn::Sub": '| .solution.images.cortxha = "${ImageCORTXHA}"'},
