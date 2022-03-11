@@ -250,7 +250,6 @@ def prepare(name):
     return [
         "#!/bin/bash",
         "set -xeuo pipefail",
-        "exec >/tmp/install.log 2>&1",
         "env",
         "cd /root",
 

@@ -131,7 +131,8 @@ CloudFormation will now provision the required resources and start the deploymen
 > If you'd like to watch the progress of the deployment,
 > you can SSH to the EC2 instances provisioned for the stack,
 > then view the log produced by the deployment script by running
-> `tail -f /tmp/install.log`.
+> `journalctl -u cloud-final`.
+> Passing the `-f` option will show live progress.
 > The Control Plane node will show the full Kubernetes and CORTX deployment.
 
 Once setup is complete (the default setup should take ~15 minutes),
