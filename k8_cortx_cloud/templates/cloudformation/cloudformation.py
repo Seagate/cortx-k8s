@@ -413,13 +413,13 @@ def device_list(disk_count):
 
 
 def node_list(worker_count):
-    out = []
+    out = ["NODE_DOMAIN=$(cat /etc/resolv.conf | grep search | awk '{print $2}')"]
     nodes = ['Worker{}ENI'.format(i) for i in range(worker_count)]
     nodes.append('ControlPlaneENI')
     for e in nodes:
         out.append({"Fn::Sub": "NODE_IP=${{{}.PrimaryPrivateIpAddress}}".format(e)})
         out.append("SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\./-/g')")
-        out.append("NODE_NAME=$SHORT_NAME.ec2.internal")
+        out.append("NODE_NAME=$SHORT_NAME.$NODE_DOMAIN")
         out.append('echo "$NODE_NAME" >> nodes.txt')
         out.append('echo "$NODE_IP" "$NODE_NAME" "$SHORT_NAME" >> /etc/hosts')
     return out

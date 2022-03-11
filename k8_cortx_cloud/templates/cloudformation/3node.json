@@ -119,15 +119,7 @@
       "Default": "ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci",
       "Type": "String"
     },
-    "ImageCORTXControlProv": {
-      "Default": "ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci",
-      "Type": "String"
-    },
     "ImageCORTXData": {
-      "Default": "ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci",
-      "Type": "String"
-    },
-    "ImageCORTXDataProv": {
       "Default": "ghcr.io/seagate/cortx-all:2.0.0-642-custom-ci",
       "Type": "String"
     },
@@ -237,7 +229,6 @@
               [
                 "#!/bin/bash",
                 "set -xeuo pipefail",
-                "exec >/tmp/install.log 2>&1",
                 "env",
                 "cd /root",
                 "yum update -y",
@@ -254,26 +245,31 @@
                 "trap signal_cloudformation EXIT",
                 "wget --no-verbose https://github.com/mikefarah/yq/releases/download/v4.19.1/yq_linux_amd64 -O /usr/bin/yq",
                 "chmod +x /usr/bin/yq",
-                "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
-                "yum install -y docker-ce docker-ce-cli containerd.io",
-                "systemctl start docker",
-                "systemctl enable docker",
-                "usermod -aG docker centos",
-                "cat <<EOF | tee /etc/modules-load.d/k8s.conf",
+                "cat <<EOF | tee /etc/modules-load.d/containerd.conf",
+                "overlay",
                 "br_netfilter",
                 "EOF",
-                "cat <<EOF | tee /etc/sysctl.d/k8s.conf",
+                "modprobe overlay",
+                "modprobe br_netfilter",
+                "cat <<EOF | tee /etc/sysctl.d/99-kubernetes-cri.conf",
+                "net.bridge.bridge-nf-call-iptables  = 1",
+                "net.ipv4.ip_forward = 1",
                 "net.bridge.bridge-nf-call-ip6tables = 1",
-                "net.bridge.bridge-nf-call-iptables = 1",
                 "EOF",
                 "sysctl --system",
+                "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
+                "yum install -y containerd.io",
+                "mkdir -p /etc/containerd",
+                "containerd config default > /etc/containerd/config.toml",
+                "systemctl enable containerd",
+                "systemctl restart containerd",
                 "cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo",
                 "[kubernetes]",
                 "name=Kubernetes",
                 "baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\\$basearch",
                 "enabled=1",
                 "gpgcheck=1",
-                "repo_gpgcheck=1",
+                "repo_gpgcheck=0",
                 "gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg",
                 "exclude=kubelet kubeadm kubectl",
                 "EOF",
@@ -287,25 +283,26 @@
                 "EOF",
                 "udevadm control --reload-rules",
                 "udevadm trigger -c add -s block",
+                "NODE_DOMAIN=$(cat /etc/resolv.conf | grep search | awk '{print $2}')",
                 {
                   "Fn::Sub": "NODE_IP=${Worker0ENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 {
                   "Fn::Sub": "NODE_IP=${Worker1ENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 {
                   "Fn::Sub": "NODE_IP=${ControlPlaneENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 "cat <<EOF | tee devices.txt",
@@ -363,13 +360,7 @@
                   "Fn::Sub": "| .solution.common.storage_sets.durability.dix = \"${DurabilityDIX}\""
                 },
                 {
-                  "Fn::Sub": "| .solution.images.cortxcontrolprov = \"${ImageCORTXControlProv}\""
-                },
-                {
                   "Fn::Sub": "| .solution.images.cortxcontrol = \"${ImageCORTXControl}\""
-                },
-                {
-                  "Fn::Sub": "| .solution.images.cortxdataprov = \"${ImageCORTXDataProv}\""
                 },
                 {
                   "Fn::Sub": "| .solution.images.cortxdata = \"${ImageCORTXData}\""
@@ -565,7 +556,6 @@
               [
                 "#!/bin/bash",
                 "set -xeuo pipefail",
-                "exec >/tmp/install.log 2>&1",
                 "env",
                 "cd /root",
                 "yum update -y",
@@ -582,26 +572,31 @@
                 "trap signal_cloudformation EXIT",
                 "wget --no-verbose https://github.com/mikefarah/yq/releases/download/v4.19.1/yq_linux_amd64 -O /usr/bin/yq",
                 "chmod +x /usr/bin/yq",
-                "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
-                "yum install -y docker-ce docker-ce-cli containerd.io",
-                "systemctl start docker",
-                "systemctl enable docker",
-                "usermod -aG docker centos",
-                "cat <<EOF | tee /etc/modules-load.d/k8s.conf",
+                "cat <<EOF | tee /etc/modules-load.d/containerd.conf",
+                "overlay",
                 "br_netfilter",
                 "EOF",
-                "cat <<EOF | tee /etc/sysctl.d/k8s.conf",
+                "modprobe overlay",
+                "modprobe br_netfilter",
+                "cat <<EOF | tee /etc/sysctl.d/99-kubernetes-cri.conf",
+                "net.bridge.bridge-nf-call-iptables  = 1",
+                "net.ipv4.ip_forward = 1",
                 "net.bridge.bridge-nf-call-ip6tables = 1",
-                "net.bridge.bridge-nf-call-iptables = 1",
                 "EOF",
                 "sysctl --system",
+                "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
+                "yum install -y containerd.io",
+                "mkdir -p /etc/containerd",
+                "containerd config default > /etc/containerd/config.toml",
+                "systemctl enable containerd",
+                "systemctl restart containerd",
                 "cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo",
                 "[kubernetes]",
                 "name=Kubernetes",
                 "baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\\$basearch",
                 "enabled=1",
                 "gpgcheck=1",
-                "repo_gpgcheck=1",
+                "repo_gpgcheck=0",
                 "gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg",
                 "exclude=kubelet kubeadm kubectl",
                 "EOF",
@@ -615,25 +610,26 @@
                 "EOF",
                 "udevadm control --reload-rules",
                 "udevadm trigger -c add -s block",
+                "NODE_DOMAIN=$(cat /etc/resolv.conf | grep search | awk '{print $2}')",
                 {
                   "Fn::Sub": "NODE_IP=${Worker0ENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 {
                   "Fn::Sub": "NODE_IP=${Worker1ENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 {
                   "Fn::Sub": "NODE_IP=${ControlPlaneENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 "cat <<EOF | tee devices.txt",
@@ -666,13 +662,7 @@
                   "Fn::Sub": "| .solution.common.storage_sets.durability.dix = \"${DurabilityDIX}\""
                 },
                 {
-                  "Fn::Sub": "| .solution.images.cortxcontrolprov = \"${ImageCORTXControlProv}\""
-                },
-                {
                   "Fn::Sub": "| .solution.images.cortxcontrol = \"${ImageCORTXControl}\""
-                },
-                {
-                  "Fn::Sub": "| .solution.images.cortxdataprov = \"${ImageCORTXDataProv}\""
                 },
                 {
                   "Fn::Sub": "| .solution.images.cortxdata = \"${ImageCORTXData}\""
@@ -761,7 +751,6 @@
               [
                 "#!/bin/bash",
                 "set -xeuo pipefail",
-                "exec >/tmp/install.log 2>&1",
                 "env",
                 "cd /root",
                 "yum update -y",
@@ -778,26 +767,31 @@
                 "trap signal_cloudformation EXIT",
                 "wget --no-verbose https://github.com/mikefarah/yq/releases/download/v4.19.1/yq_linux_amd64 -O /usr/bin/yq",
                 "chmod +x /usr/bin/yq",
-                "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
-                "yum install -y docker-ce docker-ce-cli containerd.io",
-                "systemctl start docker",
-                "systemctl enable docker",
-                "usermod -aG docker centos",
-                "cat <<EOF | tee /etc/modules-load.d/k8s.conf",
+                "cat <<EOF | tee /etc/modules-load.d/containerd.conf",
+                "overlay",
                 "br_netfilter",
                 "EOF",
-                "cat <<EOF | tee /etc/sysctl.d/k8s.conf",
+                "modprobe overlay",
+                "modprobe br_netfilter",
+                "cat <<EOF | tee /etc/sysctl.d/99-kubernetes-cri.conf",
+                "net.bridge.bridge-nf-call-iptables  = 1",
+                "net.ipv4.ip_forward = 1",
                 "net.bridge.bridge-nf-call-ip6tables = 1",
-                "net.bridge.bridge-nf-call-iptables = 1",
                 "EOF",
                 "sysctl --system",
+                "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
+                "yum install -y containerd.io",
+                "mkdir -p /etc/containerd",
+                "containerd config default > /etc/containerd/config.toml",
+                "systemctl enable containerd",
+                "systemctl restart containerd",
                 "cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo",
                 "[kubernetes]",
                 "name=Kubernetes",
                 "baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\\$basearch",
                 "enabled=1",
                 "gpgcheck=1",
-                "repo_gpgcheck=1",
+                "repo_gpgcheck=0",
                 "gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg",
                 "exclude=kubelet kubeadm kubectl",
                 "EOF",
@@ -811,25 +805,26 @@
                 "EOF",
                 "udevadm control --reload-rules",
                 "udevadm trigger -c add -s block",
+                "NODE_DOMAIN=$(cat /etc/resolv.conf | grep search | awk '{print $2}')",
                 {
                   "Fn::Sub": "NODE_IP=${Worker0ENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 {
                   "Fn::Sub": "NODE_IP=${Worker1ENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 {
                   "Fn::Sub": "NODE_IP=${ControlPlaneENI.PrimaryPrivateIpAddress}"
                 },
                 "SHORT_NAME=ip-$(echo \"$NODE_IP\" | sed 's/\\./-/g')",
-                "NODE_NAME=$SHORT_NAME.ec2.internal",
+                "NODE_NAME=$SHORT_NAME.$NODE_DOMAIN",
                 "echo \"$NODE_NAME\" >> nodes.txt",
                 "echo \"$NODE_IP\" \"$NODE_NAME\" \"$SHORT_NAME\" >> /etc/hosts",
                 "cat <<EOF | tee devices.txt",
@@ -862,13 +857,7 @@
                   "Fn::Sub": "| .solution.common.storage_sets.durability.dix = \"${DurabilityDIX}\""
                 },
                 {
-                  "Fn::Sub": "| .solution.images.cortxcontrolprov = \"${ImageCORTXControlProv}\""
-                },
-                {
                   "Fn::Sub": "| .solution.images.cortxcontrol = \"${ImageCORTXControl}\""
-                },
-                {
-                  "Fn::Sub": "| .solution.images.cortxdataprov = \"${ImageCORTXDataProv}\""
                 },
                 {
                   "Fn::Sub": "| .solution.images.cortxdata = \"${ImageCORTXData}\""
