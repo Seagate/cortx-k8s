@@ -85,6 +85,7 @@ cortx:
         cpu:
           min: 250m
           max: 1000m
+    {{- tpl .Values.cortxRgw.extraConfiguration . | nindent 4 }}
   hare:
     hax:
       endpoints:
@@ -142,6 +143,7 @@ cortx:
         cpu:
           min: 250m
           max: 500m
+    {{- tpl .Values.cortxMotr.extraConfiguration . | nindent 4 }}
   csm:
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
