@@ -100,7 +100,8 @@ so `small` is the deafult in the template.
 ```
 </details>
 
-The `k8_cortx_cloud/cloudformation.py` script in this repo generates CloudFormation templates in JSON form.
+The `k8_cortx_cloud/templates/cloudformation/cloudformation.py`
+script in this repo generates CloudFormation templates in JSON form.
 The template will include as parameters the setup options,
 such as instance type and disk size.
 By default the script generates a template with the following configuration:
@@ -110,10 +111,10 @@ the script accepts command line arguments to customize the number of nodes, disk
 The help menu accessible by calling the script with `--help` lists available options.
 To get a CloudFormation template with the default config, run
 
-    ./k8_cortx_cloud/cloudformation.py > template.json
+    ./cloudformation.py > template.json
 
 A pre-generated CloudFormation template is available
-[here](../k8_cortx_cloud/cloudformation_3node.json)
+[here](../k8_cortx_cloud/templates/cloudformation/3node.json)
 if you'd like to use the default configuration.
 You can upload the template to
 [CloudFormation on the AWS console](https://console.aws.amazon.com/cloudformation)
