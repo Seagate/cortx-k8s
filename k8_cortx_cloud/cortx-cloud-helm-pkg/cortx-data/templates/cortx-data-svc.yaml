@@ -14,13 +14,16 @@ spec:
       targetPort: {{ .Values.cortxdata.hax.port }}
     - name: cortx-motr-confd-tcp
       protocol: TCP
-      port: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
-      targetPort: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
+      port: {{ printf "%d" (add .Values.cortxdata.motr.numcvg .Values.cortxdata.motr.startportnum) }}
+      targetPort: {{ printf "%d" (add .Values.cortxdata.motr.numcvg .Values.cortxdata.motr.startportnum) }}
     {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
-    - name: {{ printf "cortx-motr-ios-%03d-tcp" (add 1 $i) }}
+    {{- range $j := until ($.Values.cortxdata.motr.group_size | int) }}
+    {{- $n := printf "%d" (mul $i $.Values.cortxdata.motr.group_size) }}
+    - name: {{ printf "cortx-motr-ios-%03d-tcp" (add $n (add $j $.Values.cortxdata.motr.startportnum)) }}
       protocol: TCP
-      port: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
-      targetPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+      port: {{ printf "%d" (add $n (add $j $.Values.cortxdata.motr.startportnum)) }}
+      targetPort: {{ printf "%d" (add $n (add $j $.Values.cortxdata.motr.startportnum)) }}
+    {{- end }}
     {{- end }}
 ---
 apiVersion: v1
