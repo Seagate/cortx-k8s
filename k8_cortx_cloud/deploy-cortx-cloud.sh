@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2312
+
 solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
 
@@ -7,22 +9,22 @@ storage_class='local-path'
 serviceAccountName=cortx-sa
 
 # Check if the file exists
-if [ ! -f $solution_yaml ]
+if [[ ! -f ${solution_yaml} ]]
 then
-    echo "ERROR: $solution_yaml does not exist"
+    echo "ERROR: ${solution_yaml} does not exist"
     exit 1
 fi
 
 # Validate the "solution.yaml" file against the "solution_check.yaml" file
 while IFS= read -r line; do
-    echo "$line"
-    if [[ "$line" != *"Validate solution file result"* ]]; then
+    echo "${line}"
+    if [[ "${line}" != *"Validate solution file result"* ]]; then
         continue
     fi
-    if [[ "$line" == *"failed"* ]]; then
+    if [[ "${line}" == *"failed"* ]]; then
         exit 1
     fi
-done <<< "$(./solution_validation_scripts/solution-validation.sh $solution_yaml)"
+done <<< "$(./solution_validation_scripts/solution-validation.sh "${solution_yaml}")"
 
 max_consul_inst=3
 max_kafka_inst=3
@@ -30,39 +32,38 @@ num_worker_nodes=0
 not_ready_node_list=[]
 not_ready_node_count=0
 while IFS= read -r line; do
-    IFS=" " read -r -a my_array <<< "$line"
+    IFS=" " read -r -a my_array <<< "${line}"
     node_name="${my_array[0]}"
     node_status="${my_array[1]}"
-    if [[ "$node_status" == "NotReady" ]]; then
-        not_ready_node_list[$not_ready_node_count]="$node_name"
+    if [[ "${node_status}" == "NotReady" ]]; then
+        not_ready_node_list[${not_ready_node_count}]="${node_name}"
         not_ready_node_count=$((not_ready_node_count+1))
     fi
 
-    output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
-    if [[ "$output" == "" ]]; then
-        node_list_str="$num_worker_nodes $node_name"
+    output=$(kubectl describe nodes "${node_name}" | grep Taints | grep NoSchedule)
+    if [[ "${output}" == "" ]]; then
         num_worker_nodes=$((num_worker_nodes+1))
     fi
 
 done <<< "$(kubectl get nodes --no-headers)"
-printf "Number of worker nodes detected: $num_worker_nodes\n"
+printf "Number of worker nodes detected: %s\n" "${num_worker_nodes}"
 
 
 # Check for nodes listed in the solution file are in "Ready" state. If not, ask
 # the users whether they want to continue to deploy or exit early
 exit_early=false
-if [ $not_ready_node_count -gt 0 ]; then
-    echo "Number of 'NotReady' worker nodes detected in the cluster: $not_ready_node_count"
+if [[ ${not_ready_node_count} -gt 0 ]]; then
+    echo "Number of 'NotReady' worker nodes detected in the cluster: ${not_ready_node_count}"
     echo "List of 'NotReady' worker nodes:"
     for not_ready_node in "${not_ready_node_list[@]}"; do
-        echo "- $not_ready_node"
+        echo "- ${not_ready_node}"
     done
 
     printf "\nContinue CORTX Cloud deployment could lead to unexpeted results.\n"
-    read -p "Do you want to continue (y/n, yes/no)? " reply
-    if [[ "$reply" =~ ^(y|Y)*.(es)$ || "$reply" =~ ^(y|Y)$ ]]; then
+    read -p "Do you want to continue (y/n, yes/no)? " -r reply
+    if [[ "${reply}" =~ ^(y|Y)*.(es)$ || "${reply}" =~ ^(y|Y)$ ]]; then
         exit_early=false
-    elif [[ "$reply" =~ ^(n|N)*.(o)$ || "$reply" =~ ^(n|N)$ ]]; then
+    elif [[ "${reply}" =~ ^(n|N)*.(o)$ || "${reply}" =~ ^(n|N)$ ]]; then
         exit_early=true
     else
         echo "Invalid response."
@@ -70,19 +71,19 @@ if [ $not_ready_node_count -gt 0 ]; then
     fi
 fi
 
-if [[ "$exit_early" = true ]]; then
+if [[ "${exit_early}" = true ]]; then
     echo "Exit script early."
     exit 1
 fi
 
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
+    ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
 }
 
 function extractBlock()
 {
-    echo "$(./parse_scripts/yaml_extract_block.sh $solution_yaml $1)"
+    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
 }
 
 #######################################
@@ -111,11 +112,11 @@ function getSolutionValue()
 }
 
 namespace=$(parseSolution 'solution.namespace')
-namespace=$(echo $namespace | cut -f2 -d'>')
+namespace=$(echo "${namespace}" | cut -f2 -d'>')
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
 # Split parsed output into an array of vars and vals
-IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
+IFS=';' read -r -a parsed_var_val_array <<< "${parsed_node_output}"
 
 tainted_worker_node_list=[]
 num_tainted_worker_nodes=0
@@ -125,39 +126,39 @@ num_not_found_nodes=0
 # aren't tainted and allow scheduling.
 for parsed_var_val_element in "${parsed_var_val_array[@]}";
 do
-    node_name=$(echo $parsed_var_val_element | cut -f2 -d'>')
-    output_get_node=$(kubectl get nodes | grep $node_name)
-    output=$(kubectl describe nodes $node_name | grep Taints | grep NoSchedule)
-    if [[ "$output" != "" ]]; then
-        tainted_worker_node_list[$num_tainted_worker_nodes]=$node_name
+    node_name=$(echo "${parsed_var_val_element}" | cut -f2 -d'>')
+    output_get_node=$(kubectl get nodes | grep "${node_name}")
+    output=$(kubectl describe nodes "${node_name}" | grep Taints | grep NoSchedule)
+    if [[ "${output}" != "" ]]; then
+        tainted_worker_node_list[${num_tainted_worker_nodes}]=${node_name}
         num_tainted_worker_nodes=$((num_tainted_worker_nodes+1))
-    elif [[ "$output_get_node" == "" ]]; then
-        not_found_node_list[$num_not_found_nodes]=$node_name
+    elif [[ "${output_get_node}" == "" ]]; then
+        not_found_node_list[${num_not_found_nodes}]=${node_name}
         num_not_found_nodes=$((num_not_found_nodes+1))
     fi
 done
 # Print a list of tainted nodes and nodes that don't exist in the cluster
-if [[ $num_tainted_worker_nodes -gt 0 || $num_not_found_nodes -gt 0 ]]; then
+if [[ ${num_tainted_worker_nodes} -gt 0 || ${num_not_found_nodes} -gt 0 ]]; then
     echo "Can't deploy CORTX cloud."
-    if [[ $num_tainted_worker_nodes -gt 0 ]]; then
+    if [[ ${num_tainted_worker_nodes} -gt 0 ]]; then
         echo "List of tainted nodes:"
         for tainted_node_name in "${tainted_worker_node_list[@]}"; do
-            echo "- $tainted_node_name"
+            echo "- ${tainted_node_name}"
         done
     fi
-    if [[ $num_not_found_nodes -gt 0 ]]; then
+    if [[ ${num_not_found_nodes} -gt 0 ]]; then
         echo "List of nodes don't exist in the cluster:"
         for node_not_found in "${not_found_node_list[@]}"; do
-            echo "- $node_not_found"
+            echo "- ${node_not_found}"
         done
     fi
 fi
 
 # Delete disk & node info files from folders: cortx-data-blk-data, cortx-data
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
+find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
+find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
+find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
+find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
 
 # Create files consist of drives per node and files consist of drive sizes.
 # These files are used by the helm charts to deploy cortx data. These file
@@ -168,62 +169,62 @@ count=0
 
 mnt_blk_info_fname="mnt-blk-info.txt"
 node_list_info_fname="node-list-info.txt"
-cortx_blk_data_mnt_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/$mnt_blk_info_fname
-cortx_blk_data_node_list_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/$node_list_info_fname
+cortx_blk_data_mnt_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/${mnt_blk_info_fname}
+cortx_blk_data_node_list_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/${node_list_info_fname}
 
 count=0
 for var_val_element in "${parsed_var_val_array[@]}"
 do
-    node_name=$(echo $var_val_element | cut -f2 -d'>')
-    node_selector_list[count]=$node_name
-    shorter_node_name=$(echo $node_name | cut -f1 -d'.')
-    node_name_list[count]=$shorter_node_name
+    node_name=$(echo "${var_val_element}" | cut -f2 -d'>')
+    node_selector_list[count]=${node_name}
+    shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
+    node_name_list[count]=${shorter_node_name}
 
     # Get the node var from the tuple
-    node_info_str="$count $node_name"
-    if [[ -s $cortx_blk_data_node_list_info_path ]]; then
-        printf "\n" >> $cortx_blk_data_node_list_info_path
+    node_info_str="${count} ${node_name}"
+    if [[ -s ${cortx_blk_data_node_list_info_path} ]]; then
+        printf "\n" >> "${cortx_blk_data_node_list_info_path}"
     fi
-    printf "$node_info_str" >> $cortx_blk_data_node_list_info_path
+    printf "%s" "${node_info_str}" >> "${cortx_blk_data_node_list_info_path}"
 
     count=$((count+1))
 done
 
 # Copy cluster node info file from CORTX local block helm to CORTX data
-cp $cortx_blk_data_node_list_info_path $(pwd)/cortx-cloud-helm-pkg/cortx-data
+cp "${cortx_blk_data_node_list_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
 # Get the devices from the solution
 filter="solution.storage.cvg*.devices*.device"
-parsed_dev_output=$(parseSolution $filter)
-IFS=';' read -r -a parsed_dev_array <<< "$parsed_dev_output"
+parsed_dev_output=$(parseSolution "${filter}")
+IFS=';' read -r -a parsed_dev_array <<< "${parsed_dev_output}"
 
 # Get the sizes from the solution
 filter="solution.storage.cvg*.devices*.size"
-parsed_size_output=$(parseSolution $filter)
-IFS=';' read -r -a parsed_size_array <<< "$parsed_size_output"
+parsed_size_output=$(parseSolution "${filter}")
+IFS=';' read -r -a parsed_size_array <<< "${parsed_size_output}"
 
 # Write disk info (device name and size) to files (for cortx local blk storage and cortx data)
 for index in "${!parsed_dev_array[@]}"
 do
-    device=$(echo ${parsed_dev_array[$index]} | cut -f2 -d'>')
-    size=$(echo ${parsed_size_array[$index]} | cut -f2 -d'>')
-    mnt_blk_info="$device $size"
+    device=$(echo "${parsed_dev_array[index]}" | cut -f2 -d'>')
+    size=$(echo "${parsed_size_array[index]}" | cut -f2 -d'>')
+    mnt_blk_info="${device} ${size}"
 
-    if [[ -s $cortx_blk_data_mnt_info_path ]]; then
-        printf "\n" >> $cortx_blk_data_mnt_info_path
+    if [[ -s ${cortx_blk_data_mnt_info_path} ]]; then
+        printf "\n" >> "${cortx_blk_data_mnt_info_path}"
     fi
-    printf "$mnt_blk_info" >> $cortx_blk_data_mnt_info_path
+    printf "%s" "${mnt_blk_info}" >> "${cortx_blk_data_mnt_info_path}"
 done
 
 # Copy device info file from CORTX local block helm to CORTX data
-cp $cortx_blk_data_mnt_info_path $(pwd)/cortx-cloud-helm-pkg/cortx-data
+cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
 # Create CORTX namespace
-if [[ "$namespace" != "default" ]]; then
+if [[ "${namespace}" != "default" ]]; then
 
-    helm install "cortx-ns-$namespace" cortx-cloud-helm-pkg/cortx-platform \
+    helm install "cortx-ns-${namespace}" cortx-cloud-helm-pkg/cortx-platform \
         --set namespace.create="true" \
-        --set namespace.name="$namespace"
+        --set namespace.name="${namespace}"
 
 fi
 
@@ -231,15 +232,15 @@ count=0
 namespace_list=[]
 namespace_index=0
 while IFS= read -r line; do
-    if [[ $count -eq 0 ]]; then
+    if [[ ${count} -eq 0 ]]; then
         count=$((count+1))
         continue
     fi
-    IFS=" " read -r -a my_array <<< "$line"
+    IFS=" " read -r -a my_array <<< "${line}"
     if [[ "${my_array[0]}" != *"kube-"* \
             && "${my_array[0]}" != "default" \
             && "${my_array[0]}" != "local-path-storage" ]]; then
-        namespace_list[$namespace_index]=${my_array[0]}
+        namespace_list[${namespace_index}]=${my_array[0]}
         namespace_index=$((namespace_index+1))
     fi
     count=$((count+1))
@@ -304,56 +305,60 @@ function deployKubernetesPrereqs()
 ##########################################################
 function deployRancherProvisioner()
 {
+    local image
+
     # Add the HashiCorp Helm Repository:
     helm repo add hashicorp https://helm.releases.hashicorp.com
     helm repo update hashicorp
-    if [[ $storage_class == "local-path" ]]
+    if [[ ${storage_class} == "local-path" ]]
     then
         printf "Install Rancher Local Path Provisioner"
         rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
         # Clean up auto gen Rancher Provisioner folder in case it still exists and was not
         # clearned up previously by the destroy-cortx-cloud script.
-        rm -rf $rancher_prov_path
-        mkdir -p $rancher_prov_path
-        rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
-        cp $(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml $rancher_prov_file
+        rm -rf "${rancher_prov_path}"
+        mkdir -p "${rancher_prov_path}"
+        rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
+        cp "$(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml" "${rancher_prov_file}"
         image=$(parseSolution 'solution.images.rancher')
-        image=$(echo $image | cut -f2 -d'>')
-        ./parse_scripts/subst.sh $rancher_prov_file "rancher.image" $image
-        ./parse_scripts/subst.sh $rancher_prov_file "rancher.host_path" "$storage_prov_path/local-path-provisioner"
+        image=$(echo "${image}" | cut -f2 -d'>')
+        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.image" "${image}"
+        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.host_path" "${storage_prov_path}/local-path-provisioner"
 
         image=$(parseSolution 'solution.images.busybox')
-        image=$(echo $image | cut -f2 -d'>')
-        ./parse_scripts/subst.sh $rancher_prov_file "rancher.helperPod.image" $image
+        image=$(echo "${image}" | cut -f2 -d'>')
+        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.helperPod.image" "${image}"
 
-        kubectl create -f $rancher_prov_file
+        kubectl create -f "${rancher_prov_file}"
     fi
 }
 
 function deployConsul()
 {
+    local image
+
     printf "######################################################\n"
     printf "# Deploy Consul                                       \n"
     printf "######################################################\n"
     image=$(parseSolution 'solution.images.consul')
-    image=$(echo $image | cut -f2 -d'>')
+    image=$(echo "${image}" | cut -f2 -d'>')
 
     helm install "consul" hashicorp/consul \
         --set global.name="consul" \
-        --set global.image=$image \
+        --set global.image="${image}" \
         --set ui.enabled=false \
-        --set server.storageClass=$storage_class \
-        --set server.replicas=$num_consul_replicas \
-        --set server.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.memory') \
-        --set server.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu') \
-        --set server.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory') \
-        --set server.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu') \
+        --set server.storageClass=${storage_class} \
+        --set server.replicas="${num_consul_replicas}" \
+        --set server.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.memory')" \
+        --set server.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu')" \
+        --set server.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory')" \
+        --set server.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu')" \
         --set server.containerSecurityContext.server.allowPrivilegeEscalation=false \
-        --set server.storage=$(extractBlock 'solution.common.resource_allocation.consul.server.storage') \
-        --set client.resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory') \
-        --set client.resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu') \
-        --set client.resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory') \
-        --set client.resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu') \
+        --set server.storage="$(extractBlock 'solution.common.resource_allocation.consul.server.storage')" \
+        --set client.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory')" \
+        --set client.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu')" \
+        --set client.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory')" \
+        --set client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
         --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
         --wait
 
@@ -371,6 +376,9 @@ function deployConsul()
 
 function splitDockerImage()
 {
+    local image
+    local tag_arr
+
     IFS='/' read -ra image <<< "$1"
     IFS=':' read -ra tag_arr <<< "${image[2]}"
     registry="${image[0]}"
@@ -381,6 +389,8 @@ function splitDockerImage()
 
 function deployZookeeper()
 {
+    local image
+
     printf "######################################################\n"
     printf "# Deploy Zookeeper                                    \n"
     printf "######################################################\n"
@@ -389,24 +399,24 @@ function deployZookeeper()
     helm repo update bitnami
 
     image=$(parseSolution 'solution.images.zookeeper')
-    image=$(echo $image | cut -f2 -d'>')
+    image=$(echo "${image}" | cut -f2 -d'>')
     splitDockerImage "${image}"
-    printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
+    printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
 
     helm install zookeeper bitnami/zookeeper \
-        --set image.tag=$tag \
-        --set image.registry=$registry \
-        --set image.repository=$repository \
-        --set replicaCount=$num_kafka_replicas \
+        --set image.tag="${tag}" \
+        --set image.registry="${registry}" \
+        --set image.repository="${repository}" \
+        --set replicaCount="${num_kafka_replicas}" \
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
-        --set global.storageClass=$storage_class \
-        --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory') \
-        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu') \
-        --set resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.memory') \
-        --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.cpu') \
-        --set persistence.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size') \
-        --set persistence.dataLogDir.size=$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size') \
+        --set global.storageClass=${storage_class} \
+        --set resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory')" \
+        --set resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu')" \
+        --set resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.memory')" \
+        --set resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.cpu')" \
+        --set persistence.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size')" \
+        --set persistence.dataLogDir.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size')" \
         --set serviceAccount.create=true \
         --set serviceAccount.name="cortx-zookeeper" \
         --set serviceAccount.automountServiceAccountToken=false \
@@ -417,7 +427,7 @@ function deployZookeeper()
     while true; do
         count=0
         while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
+            IFS=" " read -r -a pod_status <<< "${line}"
             IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
             if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
                 count=$((count+1))
@@ -425,7 +435,7 @@ function deployZookeeper()
             fi
         done <<< "$(kubectl get pods -A | grep 'zookeeper')"
 
-        if [[ $count -eq 0 ]]; then
+        if [[ ${count} -eq 0 ]]; then
             break
         else
             printf "."
@@ -438,59 +448,63 @@ function deployZookeeper()
 
 function deployKafka()
 {
+    local image
+
     printf "######################################################\n"
     printf "# Deploy Kafka                                        \n"
     printf "######################################################\n"
 
     image=$(parseSolution 'solution.images.kafka')
-    image=$(echo $image | cut -f2 -d'>')
+    image=$(echo "${image}" | cut -f2 -d'>')
     splitDockerImage "${image}"
-    printf "\nRegistry: ${registry}\nRepository: ${repository}\nTag: ${tag}\n"
+    printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
 
-    _KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:=1000}
-    _KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:=1000}
-    _KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:=1000}
+    local kafka_cfg_log_segment_delete_delay_ms=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:-1000}
+    local kafka_cfg_log_flush_offset_checkpoint_interval_ms=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:-1000}
+    local kafka_cfg_log_retention_check_interval_ms=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:-1000}
+    local tmp_kafka_envvars_yaml="tmp-kafka.yaml"
 
-    TMP_KAFKA_ENVVARS_YAML=tmp-kafka.yaml
-    echo "extraEnvVars:" > $TMP_KAFKA_ENVVARS_YAML
-    echo "- name: KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS" >> $TMP_KAFKA_ENVVARS_YAML
-    echo "  value: \"${_KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS}\"" >> $TMP_KAFKA_ENVVARS_YAML
-    echo "- name: KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS" >> $TMP_KAFKA_ENVVARS_YAML
-    echo "  value: \"${_KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS}\"" >> $TMP_KAFKA_ENVVARS_YAML
-    echo "- name: KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS" >> $TMP_KAFKA_ENVVARS_YAML
-    echo "  value: \"${_KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS}\"" >> $TMP_KAFKA_ENVVARS_YAML
+    cat > ${tmp_kafka_envvars_yaml} << EOF
+extraEnvVars:
+- name: KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS
+  value: "${kafka_cfg_log_segment_delete_delay_ms}"
+- name: KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTEL_MS
+  value: "${kafka_cfg_log_flush_offset_checkpoint_interval_ms}"
+- name: KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS
+  value: "${kafka_cfg_log_retention_check_interval_ms}"
+EOF
 
     helm install kafka bitnami/kafka \
         --set zookeeper.enabled=false \
-        --set image.tag=$tag \
-        --set image.registry=$registry \
-        --set image.repository=$repository \
-        --set replicaCount=$num_kafka_replicas \
+        --set image.tag="${tag}" \
+        --set image.registry="${registry}" \
+        --set image.repository="${repository}" \
+        --set replicaCount="${num_kafka_replicas}" \
         --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
-        --set global.storageClass=$storage_class \
-        --set defaultReplicationFactor=$num_kafka_replicas \
-        --set offsetsTopicReplicationFactor=$num_kafka_replicas \
-        --set transactionStateLogReplicationFactor=$num_kafka_replicas \
+        --set global.storageClass=${storage_class} \
+        --set defaultReplicationFactor="${num_kafka_replicas}" \
+        --set offsetsTopicReplicationFactor="${num_kafka_replicas}" \
+        --set transactionStateLogReplicationFactor="${num_kafka_replicas}" \
         --set auth.enabled=false \
         --set allowAnonymousLogin=true \
         --set deleteTopicEnable=true \
         --set transactionStateLogMinIsr=2 \
-        --set resources.requests.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory') \
-        --set resources.requests.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu') \
-        --set resources.limits.memory=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory') \
-        --set resources.limits.cpu=$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu') \
-        --set persistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size') \
-        --set logPersistence.size=$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size') \
+        --set resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory')" \
+        --set resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu')" \
+        --set resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory')" \
+        --set resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu')" \
+        --set persistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size')" \
+        --set logPersistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size')" \
         --set serviceAccount.create=true \
         --set serviceAccount.name="cortx-kafka" \
         --set serviceAccount.automountServiceAccountToken=false \
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.enabled=true \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --values $TMP_KAFKA_ENVVARS_YAML  \
+        --values ${tmp_kafka_envvars_yaml}  \
         --wait
 
-    rm $TMP_KAFKA_ENVVARS_YAML
+    rm ${tmp_kafka_envvars_yaml}
 
     printf "\n\n"
 }
@@ -501,7 +515,7 @@ function waitForThirdParty()
     while true; do
         count=0
         while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
+            IFS=" " read -r -a pod_status <<< "${line}"
             IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
             if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
                 count=$((count+1))
@@ -509,7 +523,7 @@ function waitForThirdParty()
             fi
         done <<< "$(kubectl get pods -A | grep 'consul\|kafka\|zookeeper')"
 
-        if [[ $count -eq 0 ]]; then
+        if [[ ${count} -eq 0 ]]; then
             break
         else
             printf "."
@@ -527,25 +541,25 @@ function deployCortxLocalBlockStorage()
     printf "######################################################\n"
     printf "# Deploy CORTX Local Block Storage                    \n"
     printf "######################################################\n"
-    helm install "cortx-data-blk-data-$namespace" cortx-cloud-helm-pkg/cortx-data-blk-data \
-        --set cortxblkdata.storageclass="cortx-local-blk-storage-$namespace" \
+    helm install "cortx-data-blk-data-${namespace}" cortx-cloud-helm-pkg/cortx-data-blk-data \
+        --set cortxblkdata.storageclass="cortx-local-blk-storage-${namespace}" \
         --set cortxblkdata.nodelistinfo="node-list-info.txt" \
         --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
         --set cortxblkdata.storage.volumemode="Block" \
-        --set namespace=$namespace \
-        -n $namespace
+        --set namespace="${namespace}" \
+        -n "${namespace}"
 }
 
 function deleteStaleAutoGenFolders()
 {
     # Delete all stale auto gen folders
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-cfgmap-$namespace
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-control-$namespace
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-secret-$namespace
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/node-info-$namespace
-    rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/storage-info-$namespace
+    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-cfgmap-${namespace}"
+    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-control-${namespace}"
+    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-secret-${namespace}"
+    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/node-info-${namespace}"
+    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/storage-info-${namespace}"
     for i in "${!node_name_list[@]}"; do
-        rm -rf $(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name_list[i]}-$namespace
+        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name_list[i]}-${namespace}"
     done
 }
 
@@ -603,19 +617,19 @@ function deployCortxConfigMap()
 
     for idx in "${!node_name_list[@]}"; do
         helm_install_args+=(
-            --set "cortxHare.haxDataEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22001"
-            --set "cortxHare.haxServerEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:22001"
-            --set "cortxMotr.confdEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:22002"
-            --set "cortxMotr.iosEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[${idx}]}:21001"
-            --set "cortxMotr.rgwEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[${idx}]}:21001"
+            --set "cortxHare.haxDataEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[idx]}:22001"
+            --set "cortxHare.haxServerEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[idx]}:22001"
+            --set "cortxMotr.confdEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[idx]}:22002"
+            --set "cortxMotr.iosEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[idx]}:21001"
+            --set "cortxMotr.rgwEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[idx]}:21001"
         )
     done
 
     if ((num_motr_client > 0)); then
         for idx in "${!node_name_list[@]}"; do
             helm_install_args+=(
-                --set "cortxMotr.clientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[${idx}]}:21201"
-                --set "cortxHare.haxClientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[${idx}]}:22001"
+                --set "cortxMotr.clientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[idx]}:21201"
+                --set "cortxHare.haxClientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[idx]}:22001"
             )
         done
     fi
@@ -739,7 +753,7 @@ function deployCortxSecrets()
     printf "%s" "${secret_fname}" > ${server_secret_path}
     printf "%s" "${secret_fname}" > ${ha_secret_path}
 
-    if [[ $num_motr_client -gt 0 ]]; then
+    if [[ ${num_motr_client} -gt 0 ]]; then
         client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
         printf "%s" "${secret_fname}" > ${client_secret_path}
     fi
@@ -758,34 +772,34 @@ function waitForAllDeploymentsAvailable()
     DEPL_STR=$1
     shift
 
-    START=$SECONDS
+    START=${SECONDS}
     (while true; do sleep 1; echo -n "."; done)&
     DOTPID=$!
-    trap "silentKill $DOTPID" 0
+    # expand var now, not later
+    # shellcheck disable=SC2064
+    trap "silentKill ${DOTPID}" 0
 
     # Initial wait
     FAIL=0
-    kubectl wait --for=condition=available --timeout="$TIMEOUT" $@
-    if [ $? -ne 0 ]; then
+    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
         # Secondary wait
-        kubectl wait --for=condition=available --timeout="$TIMEOUT" $@
-        if [ $? -ne 0 ]; then
+        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
             # Still timed out.  This is a failure
             FAIL=1
         fi
     fi
 
-    silentKill $DOTPID
+    silentKill ${DOTPID}
     trap - 0
     ELAPSED=$((SECONDS - START))
     echo
-    if [ $FAIL -eq 0 ]; then
-        echo "Deployment $DEPL_STR available after $ELAPSED seconds"
+    if [[ ${FAIL} -eq 0 ]]; then
+        echo "Deployment ${DEPL_STR} available after ${ELAPSED} seconds"
     else
-        echo "Deployment $DEPL_STR timed out after $ELAPSED seconds"
+        echo "Deployment ${DEPL_STR} timed out after ${ELAPSED} seconds"
     fi
     echo
-    return $FAIL
+    return ${FAIL}
 }
 
 
@@ -845,7 +859,7 @@ function deployCortxData()
     printf "# Deploy CORTX Data                                     \n"
     printf "########################################################\n"
     cortxdata_image=$(parseSolution 'solution.images.cortxdata')
-    cortxdata_image=$(echo $cortxdata_image | cut -f2 -d'>')
+    cortxdata_image=$(echo "${cortxdata_image}" | cut -f2 -d'>')
 
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
@@ -853,33 +867,33 @@ function deployCortxData()
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
 
-        cortxdata_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/data/id)
+        cortxdata_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[i]}-${namespace}/data/id")
 
-        helm install "cortx-data-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-data \
-            --set cortxdata.name="cortx-data-$node_name" \
-            --set cortxdata.image=$cortxdata_image \
-            --set cortxdata.nodeselector=$node_selector \
+        helm install "cortx-data-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-data \
+            --set cortxdata.name="cortx-data-${node_name}" \
+            --set cortxdata.image="${cortxdata_image}" \
+            --set cortxdata.nodeselector="${node_selector}" \
             --set cortxdata.mountblkinfo="mnt-blk-info.txt" \
             --set cortxdata.nodelistinfo="node-list-info.txt" \
-            --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-$node_name" \
-            --set cortxdata.service.headless.name="cortx-data-headless-svc-$node_name" \
-            --set cortxdata.cfgmap.name="cortx-cfgmap-$namespace" \
-            --set cortxdata.cfgmap.volmountname="config001-$node_name" \
+            --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-${node_name}" \
+            --set cortxdata.service.headless.name="cortx-data-headless-svc-${node_name}" \
+            --set cortxdata.cfgmap.name="cortx-cfgmap-${namespace}" \
+            --set cortxdata.cfgmap.volmountname="config001-${node_name}" \
             --set cortxdata.cfgmap.mountpath="/etc/cortx/solution" \
-            --set cortxdata.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+            --set cortxdata.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
             --set cortxdata.sslcfgmap.volmountname="ssl-config001" \
             --set cortxdata.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxdata.machineid.value="$cortxdata_machineid" \
-            --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-$node_name" \
-            --set cortxdata.localpathpvc.mountpath="$local_storage" \
+            --set cortxdata.machineid.value="${cortxdata_machineid}" \
+            --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-${node_name}" \
+            --set cortxdata.localpathpvc.mountpath="${local_storage}" \
             --set cortxdata.localpathpvc.requeststoragesize="1Gi" \
             --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
-            --set cortxdata.motr.startportnum=$(extractBlock 'solution.common.motr.start_port_num') \
-            --set cortxdata.hax.port=$(extractBlock 'solution.common.hax.port_num') \
+            --set cortxdata.motr.startportnum="$(extractBlock 'solution.common.motr.start_port_num')" \
+            --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
             --set cortxdata.secretinfo="secret-info.txt" \
-            --set cortxdata.serviceaccountname="$serviceAccountName" \
-            --set namespace=$namespace \
-            -n $namespace
+            --set cortxdata.serviceaccountname="${serviceAccountName}" \
+            --set namespace="${namespace}" \
+            -n "${namespace}"
     done
 
     # Wait for all cortx-data deployments to be ready
@@ -923,7 +937,7 @@ function deployCortxServer()
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
 
-        cortxserver_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[$i]}-${namespace}/server/id")
+        cortxserver_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[i]}-${namespace}/server/id")
 
         helm install "cortx-server-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-server \
             --set cortxserver.name="cortx-server-${node_name}" \
@@ -974,33 +988,33 @@ function deployCortxHa()
     printf "# Deploy CORTX HA                                       \n"
     printf "########################################################\n"
     cortxha_image=$(parseSolution 'solution.images.cortxha')
-    cortxha_image=$(echo $cortxha_image | cut -f2 -d'>')
+    cortxha_image=$(echo "${cortxha_image}" | cut -f2 -d'>')
 
-    cortxha_machineid=$(cat $cfgmap_path/auto-gen-ha-$namespace/id)
+    cortxha_machineid=$(cat "${cfgmap_path}/auto-gen-ha-${namespace}/id")
 
     ##TOOD: cortxha.serviceaccountname should extract from solution.yaml ?
 
     num_nodes=1
-    helm install "cortx-ha-$namespace" cortx-cloud-helm-pkg/cortx-ha \
+    helm install "cortx-ha-${namespace}" cortx-cloud-helm-pkg/cortx-ha \
         --set cortxha.name="cortx-ha" \
-        --set cortxha.image=$cortxha_image \
+        --set cortxha.image="${cortxha_image}" \
         --set cortxha.secretinfo="secret-info.txt" \
         --set cortxha.serviceaccountname="ha-monitor" \
         --set cortxha.service.clusterip.name="cortx-ha-clusterip-svc" \
         --set cortxha.service.headless.name="cortx-ha-headless-svc" \
         --set cortxha.service.loadbal.name="cortx-ha-loadbal-svc" \
         --set cortxha.cfgmap.mountpath="/etc/cortx/solution" \
-        --set cortxha.cfgmap.name="cortx-cfgmap-$namespace" \
+        --set cortxha.cfgmap.name="cortx-cfgmap-${namespace}" \
         --set cortxha.cfgmap.volmountname="config001" \
-        --set cortxha.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+        --set cortxha.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
         --set cortxha.sslcfgmap.volmountname="ssl-config001" \
         --set cortxha.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxha.machineid.value="$cortxha_machineid" \
-        --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-$namespace" \
-        --set cortxha.localpathpvc.mountpath="$local_storage" \
+        --set cortxha.machineid.value="${cortxha_machineid}" \
+        --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-${namespace}" \
+        --set cortxha.localpathpvc.mountpath="${local_storage}" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
-        --set namespace=$namespace \
-        -n $namespace
+        --set namespace="${namespace}" \
+        -n "${namespace}"
 
     printf "\nWait for CORTX HA to be ready"
     if ! waitForAllDeploymentsAvailable 120s "CORTX HA" deployment/cortx-ha; then
@@ -1016,7 +1030,7 @@ function deployCortxClient()
     printf "# Deploy CORTX Client                                   \n"
     printf "########################################################\n"
     cortxclient_image=$(parseSolution 'solution.images.cortxclient')
-    cortxclient_image=$(echo $cortxclient_image | cut -f2 -d'>')
+    cortxclient_image=$(echo "${cortxclient_image}" | cut -f2 -d'>')
 
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
@@ -1024,47 +1038,47 @@ function deployCortxClient()
         node_name=${node_name_list[i]}
         node_selector=${node_selector_list[i]}
 
-        cortxclient_machineid=$(cat $cfgmap_path/auto-gen-${node_name_list[$i]}-$namespace/client/id)
+        cortxclient_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[i]}-${namespace}/client/id")
 
-        helm install "cortx-client-$node_name-$namespace" cortx-cloud-helm-pkg/cortx-client \
-            --set cortxclient.name="cortx-client-$node_name" \
-            --set cortxclient.image=$cortxclient_image \
-            --set cortxclient.nodeselector=$node_selector \
+        helm install "cortx-client-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-client \
+            --set cortxclient.name="cortx-client-${node_name}" \
+            --set cortxclient.image="${cortxclient_image}" \
+            --set cortxclient.nodeselector="${node_selector}" \
             --set cortxclient.secretinfo="secret-info.txt" \
-            --set cortxclient.serviceaccountname="$serviceAccountName" \
-            --set cortxclient.motr.numclientinst=$num_motr_client \
-            --set cortxclient.service.headless.name="cortx-client-headless-svc-$node_name" \
-            --set cortxclient.cfgmap.name="cortx-cfgmap-$namespace" \
-            --set cortxclient.cfgmap.volmountname="config001-$node_name" \
+            --set cortxclient.serviceaccountname="${serviceAccountName}" \
+            --set cortxclient.motr.numclientinst="${num_motr_client}" \
+            --set cortxclient.service.headless.name="cortx-client-headless-svc-${node_name}" \
+            --set cortxclient.cfgmap.name="cortx-cfgmap-${namespace}" \
+            --set cortxclient.cfgmap.volmountname="config001-${node_name}" \
             --set cortxclient.cfgmap.mountpath="/etc/cortx/solution" \
-            --set cortxclient.sslcfgmap.name="cortx-ssl-cert-cfgmap-$namespace" \
+            --set cortxclient.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
             --set cortxclient.sslcfgmap.volmountname="ssl-config001" \
             --set cortxclient.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxclient.machineid.value="$cortxclient_machineid" \
-            --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-$node_name" \
-            --set cortxclient.localpathpvc.mountpath="$local_storage" \
+            --set cortxclient.machineid.value="${cortxclient_machineid}" \
+            --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-${node_name}" \
+            --set cortxclient.localpathpvc.mountpath="${local_storage}" \
             --set cortxclient.localpathpvc.requeststoragesize="1Gi" \
-            --set namespace=$namespace \
-            -n $namespace
+            --set namespace="${namespace}" \
+            -n "${namespace}"
     done
 
     printf "\nWait for CORTX Client to be ready"
     while true; do
         count=0
         while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "$line"
+            IFS=" " read -r -a pod_status <<< "${line}"
             IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
             if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
                 if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod deployment did not complete. Exit early.\n"
+                    printf "\n'%s' pod deployment did not complete. Exit early.\n" "${pod_status[0]}"
                     exit 1
                 fi
                 break
             fi
             count=$((count+1))
-        done <<< "$(kubectl get pods --namespace=$namespace | grep 'cortx-client-')"
+        done <<< "$(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')"
 
-        if [[ $num_nodes -eq $count ]]; then
+        if [[ ${num_nodes} -eq ${count} ]]; then
             break
         else
             printf "."
@@ -1080,18 +1094,18 @@ function cleanup()
     # Delete files that contain disk partitions on the worker nodes
     # and the node info
     #################################################################
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-client -name "secret-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-control" -name "secret-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "secret-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-server" -name "secret-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-ha" -name "secret-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-client" -name "secret-*" -delete
 
-    rm -rf "$cfgmap_path/auto-gen-secret-$namespace"
+    rm -rf "${cfgmap_path}/auto-gen-secret-${namespace}"
 
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
 }
 
 ##########################################################
@@ -1104,7 +1118,7 @@ deployKubernetesPrereqs
 ##########################################################
 found_match_nsp=false
 for np in "${namespace_list[@]}"; do
-    if [[ "$np" == "$namespace" ]]; then
+    if [[ "${np}" == "${namespace}" ]]; then
         found_match_nsp=true
         break
     fi
@@ -1112,23 +1126,23 @@ done
 
 # Extract storage provisioner path from the "solution.yaml" file
 filter='solution.common.storage_provisioner_path'
-parse_storage_prov_output=$(parseSolution $filter)
+parse_storage_prov_output=$(parseSolution ${filter})
 # Get the storage provisioner var from the tuple
-storage_prov_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
+storage_prov_path=$(echo "${parse_storage_prov_output}" | cut -f2 -d'>')
 
 # Get number of consul replicas and make sure it doesn't exceed the limit
-num_consul_replicas=$num_worker_nodes
-if [[ "$num_worker_nodes" -gt "$max_consul_inst" ]]; then
-    num_consul_replicas=$max_consul_inst
+num_consul_replicas=${num_worker_nodes}
+if [[ "${num_worker_nodes}" -gt "${max_consul_inst}" ]]; then
+    num_consul_replicas=${max_consul_inst}
 fi
 
 # Get number of kafka replicas and make sure it doesn't exceed the limit
-num_kafka_replicas=$num_worker_nodes
-if [[ "$num_worker_nodes" -gt "$max_kafka_inst" ]]; then
-    num_kafka_replicas=$max_kafka_inst
+num_kafka_replicas=${num_worker_nodes}
+if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
+    num_kafka_replicas=${max_kafka_inst}
 fi
 
-if [[ (${#namespace_list[@]} -le 1 && "$found_match_nsp" = true) || "$namespace" == "default" ]]; then
+if [[ (${#namespace_list[@]} -le 1 && "${found_match_nsp}" = true) || "${namespace}" == "default" ]]; then
     deployRancherProvisioner
     deployConsul
     deployZookeeper
@@ -1141,26 +1155,26 @@ fi
 ##########################################################
 # Get the storage paths to use
 local_storage=$(parseSolution 'solution.common.container_path.local')
-local_storage=$(echo $local_storage | cut -f2 -d'>')
+local_storage=$(echo "${local_storage}" | cut -f2 -d'>')
 shared_storage=$(parseSolution 'solution.common.container_path.shared')
-shared_storage=$(echo $shared_storage | cut -f2 -d'>')
+shared_storage=$(echo "${shared_storage}" | cut -f2 -d'>')
 log_storage=$(parseSolution 'solution.common.container_path.log')
-log_storage=$(echo $log_storage | cut -f2 -d'>')
+log_storage=$(echo "${log_storage}" | cut -f2 -d'>')
 
 
 # Default path to CORTX configmap
 cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 
 cvg_output=$(parseSolution 'solution.storage.cvg*.name')
-IFS=';' read -r -a cvg_var_val_array <<< "$cvg_output"
+IFS=';' read -r -a cvg_var_val_array <<< "${cvg_output}"
 # Build CVG index list (ex: [cvg1, cvg2, cvg3])
 cvg_index_list=[]
 count=0
 for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
-    cvg_name=$(echo $cvg_var_val_element | cut -f2 -d'>')
-    cvg_filter=$(echo $cvg_var_val_element | cut -f1 -d'>')
-    cvg_index=$(echo $cvg_filter | cut -f3 -d'.')
-    cvg_index_list[$count]=$cvg_index
+    cvg_name=$(echo "${cvg_var_val_element}" | cut -f2 -d'>')
+    cvg_filter=$(echo "${cvg_var_val_element}" | cut -f1 -d'>')
+    cvg_index=$(echo "${cvg_filter}" | cut -f3 -d'.')
+    cvg_index_list[${count}]=${cvg_index}
     count=$((count+1))
 done
 
@@ -1174,7 +1188,7 @@ deployCortxControl
 deployCortxData
 deployCortxServer
 deployCortxHa
-if [[ $num_motr_client -gt 0 ]]; then
+if [[ ${num_motr_client} -gt 0 ]]; then
     deployCortxClient
 fi
 cleanup
