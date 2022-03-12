@@ -37,7 +37,7 @@ while true; do
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                printf "\n'${pod_status[0]}' pod failed to start. Exit early.\n"
+                printf "\n'%s' pod failed to start. Exit early.\n" "${pod_status[0]}"
                 exit 1
             fi
             break
@@ -74,7 +74,7 @@ while true; do
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                printf "\n'${pod_status[0]}' pod failed to start. Exit early.\n"
+                printf "\n'%s' pod failed to start. Exit early.\n" "${pod_status[0]}"
                 exit 1
             fi
             break
@@ -111,7 +111,7 @@ while true; do
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                printf "\n'${pod_status[0]}' pod failed to start. Exit early.\n"
+                printf "\n'%s' pod failed to start. Exit early.\n" "${pod_status[0]}"
                 exit 1
             fi
             break
@@ -148,7 +148,7 @@ while true; do
         IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
         if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
             if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                printf "\n'${pod_status[0]}' pod failed to start. Exit early.\n"
+                printf "\n'%s' pod failed to start. Exit early.\n" "${pod_status[0]}"
                 exit 1
             fi
             break
@@ -193,7 +193,7 @@ if [[ ${num_motr_client} -gt 0 ]]; then
             IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
             if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
                 if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'${pod_status[0]}' pod failed to start. Exit early.\n"
+                    printf "\n'%s' pod failed to start. Exit early.\n" "${pod_status[0]}"
                     exit 1
                 fi
                 break
