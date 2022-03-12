@@ -3,7 +3,7 @@
 solution_yaml=${1:-'solution.yaml'}
 
 # Check if the file exists
-if [ ! -f ${solution_yaml} ]
+if [[ ! -f ${solution_yaml} ]]
 then
     echo "ERROR: ${solution_yaml} does not exist"
     exit 1
