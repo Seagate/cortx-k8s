@@ -11,7 +11,7 @@ fi
 
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh ${solution_yaml} $1)"
+    ./parse_scripts/parse_yaml.sh ${solution_yaml} $1
 }
 
 namespace=$(parseSolution 'solution.namespace')
@@ -167,7 +167,7 @@ printf "\n\n"
 
 function extractBlock()
 {
-    echo "$(./parse_scripts/yaml_extract_block.sh ${solution_yaml} $1)"
+    ./parse_scripts/yaml_extract_block.sh ${solution_yaml} $1
 }
 
 num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
