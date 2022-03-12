@@ -619,13 +619,17 @@ function deployCortxConfigMap()
 
     local rgw_extra_config
     rgw_extra_config="$(extractBlock 'solution.common.s3.extra_configuration')"
-    if [[ -n ${rgw_extra_config} ]]; then
+    if [[ -n ${rgw_extra_config} \
+          && ${rgw_extra_config} != "null" \
+          && ${rgw_extra_config} != "~" ]]; then
         helm_install_args+=(--set cortxRgw.extraConfiguration="${rgw_extra_config}")
     fi
 
     local motr_extra_config
     motr_extra_config="$(extractBlock 'solution.common.motr.extra_configuration')"
-    if [[ -n ${motr_extra_config} ]]; then
+    if [[ -n ${motr_extra_config} \
+          && ${motr_extra_config} != "null" \
+          && ${motr_extra_config} != "~" ]]; then
         helm_install_args+=(--set cortxMotr.extraConfiguration="${motr_extra_config}")
     fi
 
