@@ -28,28 +28,6 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
-  s3:                                                               # DEPRECATED - ENTIRE S3 KEY
-    iam:
-      endpoints:
-      - https://{{ $ioSvcName }}:9443
-      - http://{{ $ioSvcName }}:9080
-    data:
-      endpoints:
-      - http://{{ $ioSvcName }}:80
-      - https://{{ $ioSvcName }}:443
-    internal:
-      endpoints:
-      - http://{{ $ioSvcName }}:28049
-    {{- with .Values.cortxS3.instanceCount }}
-    service_instances: {{ . | int }}
-    {{- end }}
-    io_max_units: 8
-    {{- with .Values.cortxS3.maxStartTimeout }}
-    max_start_timeout: {{ . | int }}
-    {{- end }}
-    auth_user: {{ .Values.cortxRgw.authUser }}
-    auth_admin: {{ .Values.cortxRgw.authAdmin }}
-    auth_secret: {{ .Values.cortxRgw.authSecret }}
   rgw:
     thread_pool_size: 10
     data_path: /var/cortx/radosgw/$clusterid
