@@ -93,7 +93,7 @@ function extractBlock()
 #   Wildcard paths are not accepted, e.g. "solution.nodes.node*.name".
 # Outputs:
 #   Writes the value to stdout. An empty string "" is printed if
-#   the value does not exist.
+#   the value does not exist, or the value is YAML `null` or `~`.
 # Returns:
 #   1 if the yaml path contains a wildcard, 0 otherwise.
 #######################################
@@ -108,7 +108,9 @@ function getSolutionValue()
     local value
     value=$(parseSolution "${yaml_path}")
     # discard everything before and including the first '>'
-    echo "${value#*>}"
+    value="${value#*>}"
+    [[ ${value} == "null" || ${value} == "~" ]] && value=""
+    echo "${value}"
 }
 
 namespace=$(parseSolution 'solution.namespace')

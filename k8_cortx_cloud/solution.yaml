@@ -55,14 +55,14 @@ solution:
           http: 8000
           https: 8443
         nodePorts:
-          http: ""
-          https: ""
+          http: null
+          https: null
       control:
         type: NodePort
         ports:
           https: 8081
         nodePorts:
-          https: ""
+          https: null
     resource_allocation:
       consul:
         server:
