@@ -231,36 +231,36 @@ This section contains the CORTX and third-party images used to deploy CORTX on K
 
 This section contains common parameters that affect all CORTX components running on Kubernetes.
 
-| Name                                                | Description                                                                                                                                      | Default Value          |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
-| `common.storage_provisioner_path`                   | TODO                                                                                                                                             | `/mnt/fs-local-volume` |
-| `common.container_path.local`                       | TODO                                                                                                                                             | `/etc/cortx`           |
-| `common.container_path.shared`                      | TODO                                                                                                                                             | `/share`               |
-| `common.container_path.log`                         | TODO                                                                                                                                             | `/etc/cortx/log`       |
-| `common.s3.default_iam_users.auth_admin`            | Username for the default administrative user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `sgiamadmin`           |
-| `common.s3.default_iam_users.auth_user`             | Username for the default user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above.                | `user_name`            |
-| `common.s3.num_inst`                                | TODO                                                                                                                                             | `2`                    |
-| `common.s3.start_port_num`                          | TODO                                                                                                                                             | `28051`                |
-| `common.s3.max_start_timeout`                       | TODO                                                                                                                                             | `240`                  |
-| `common.s3.extra_configuration`                     | _(Optional)_ Extra configuration settings to append to the RGW configuration. The value is a multi-line string included verbatim.                | `""`                   |
-| `common.motr.num_client_inst`                       | TODO                                                                                                                                             | `0`                    |
-| `common.motr.start_port_num`                        | TODO                                                                                                                                             | `29000`                |
-| `common.motr.extra_configuration`                   | _(Optional)_ Extra configuration settings to append to the Motr configuration. The value is a multi-line string included verbatim.               | `""`                   |
-| `common.hax.protocol`                               | Protocol that is used to communicate with HAX components running across Server and Data Pods.                                                    | `https`                |
-| `common.hax.service_name`                           | Service name that is used to communicate with HAX components running across Server and Data Pods.                                                | `cortx-hax-svc`        |
-| `common.hax.port_num`                               | Port number that is used to communicate with HAX components running across Server and Data Pods.                                                 | `22003`                |
-| `common.external_services.s3.type`                  | Kubernetes Service type for external access to S3 IO                                                                                             | `NodePort`             |
-| `common.external_services.s3.count`                 | The number of service instances to create when service type is `LoadBalancer`                                                                    | `1`                    |
-| `common.external_services.s3.ports.http`            | Non-secure (http) port number used for S3 IO                                                                                                     | `8000`                 |
-| `common.external_services.s3.ports.https`           | Secure (https) service port number for S3 IO                                                                                                     | `8443`                 |
-| `common.external_services.s3.nodePorts.http`        |  _(Optional)_ Node port for non-secure (http) S3 IO                                                                                              | `null`                 |
-| `common.external_services.s3.nodePorts.https`       |  _(Optional)_ Node port for secure (https) S3 IO                                                                                                 | `null`                 |
-| `common.external_services.control.type`             | Kubernetes Service type for external access to CSM Management API                                                                                | `NodePort`             |
-| `common.external_services.control.ports.https`      | Secure (https) service port number for CSM Management API.                                                                                       | `8081`                 |
-| `common.external_services.control.nodePorts.https`  | _(Optional)_ Node port for secure (https) CSM Management API.                                                                                    | `null`                 |
-| `common.resource_allocation.*.storage`              | The desired storage space allocated to PVCs used by that component                                                                               | See `solution.yaml`    |
-| `common.resource_allocation.*.resources.requests.*` | CPU & Memory requested for Pods managed by a specific component                                                                                  | See `solution.yaml`    |
-| `common.resource_allocation.*.resources.limits.*`   | CPU & Memory limits for Pods managed by a specific component                                                                                     | See `solution.yaml`    |
+| Name                                                  | Description                                                     | Default Value       |
+| ----------------------------------------------------- | --------------------------------------------------------------- | ------------------- |
+| `common.storage_provisioner_path`                     | TODO       | `/mnt/fs-local-volume` |
+| `common.container_path.local`                         | TODO       | `/etc/cortx` |
+| `common.container_path.shared`                        | TODO       | `/share` |
+| `common.container_path.log`                           | TODO       | `/etc/cortx/log` |
+| `common.s3.default_iam_users.auth_admin`              | Username for the default administrative user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `sgiamadmin` |
+| `common.s3.default_iam_users.auth_user`               | Username for the default user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `user_name` |
+| `common.s3.num_inst`                                  | TODO       | `2` |
+| `common.s3.start_port_num`                            | TODO       | `28051` |
+| `common.s3.max_start_timeout`                         | TODO       | `240` |
+| `common.s3.extra_configuration`                       | _(Optional)_ Extra configuration settings to append to the RGW configuration. The value is a multi-line string included verbatim.  | `""` |
+| `common.motr.num_client_inst`                         | TODO       | `0` |
+| `common.motr.start_port_num`                          | TODO       | `29000` |
+| `common.motr.extra_configuration`                     | _(Optional)_ Extra configuration settings to append to the Motr configuration. The value is a multi-line string included verbatim. | `""` |
+| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` | 
+| `common.hax.service_name`                             | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
+| `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
+| `common.external_services.s3.type`                    | Kubernetes Service type for external access to S3 IO                                              | `NodePort` |
+| `common.external_services.s3.count`                   | The number of service instances to create when service type is `LoadBalancer`                     | `1` |
+| `common.external_services.s3.ports.http`              | Non-secure (http) port number used for S3 IO                                                      | `8000` |
+| `common.external_services.s3.ports.https`             | Secure (https) service port number for S3 IO                                                      | `8443` |
+| `common.external_services.s3.nodePorts.http`          |  _(Optional)_ Node port for non-secure (http) S3 IO                                               | `null` |
+| `common.external_services.s3.nodePorts.https`         |  _(Optional)_ Node port for secure (https) S3 IO                                                  | `null` |
+| `common.external_services.control.type`               | Kubernetes Service type for external access to CSM Management API                                 | `NodePort` |
+| `common.external_services.control.ports.https`        | Secure (https) service port number for CSM Management API.                                        | `8081` |
+| `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | `null` |
+| `common.resource_allocation.*.storage`                | The desired storage space allocated to PVCs used by that component                                | See `solution.yaml` |
+| `common.resource_allocation.*.resources.requests.*`   | CPU & Memory requested for Pods managed by a specific component                                   | See `solution.yaml` |
+| `common.resource_allocation.*.resources.limits.*`     | CPU & Memory limits for Pods managed by a specific component                                      | See `solution.yaml` |
 
 ### Storage parameters
 
