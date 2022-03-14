@@ -8,14 +8,6 @@ cortx:
       admin: {{ .Values.externalKafka.adminUser }}
       secret: {{ .Values.externalKafka.adminSecretName }}
     {{- end }}
-    {{- if .Values.externalLdap.enabled }}
-    openldap:                                                       # DEPRECATED - OPENLDAP KEY
-      endpoints: {{- toYaml .Values.externalLdap.endpoints | nindent 8 }}
-      servers: {{- toYaml .Values.externalLdap.servers | nindent 8 }}
-      admin: {{ .Values.externalLdap.adminUser }}
-      secret: {{ .Values.externalLdap.adminSecretName }}
-      base_dn: {{ .Values.externalLdap.baseDn }}
-    {{- end }}
     {{- if .Values.externalConsul.enabled }}
     consul:
       endpoints: {{- toYaml .Values.externalConsul.endpoints | nindent 8 }}
@@ -26,8 +18,6 @@ cortx:
     release:
       name: CORTX
       version: {{ .Values.cortxVersion }}
-    environment_type: K8                                            # DEPRECATED
-    setup_size: {{ .Values.cortxSetupSize }}
     service:
       admin: admin
       secret: common_admin_secret
@@ -76,10 +66,6 @@ cortx:
     motr_max_rpc_msg_size: 524288
     motr_reconnect_interval: 5
     motr_reconnect_retry_count: 25
-    iam:                                                            # DEPRECATED - IAM KEY
-      endpoints:
-      - https://{{ $ioSvcName }}:443
-      - http://{{ $ioSvcName }}:80
     data:
       endpoints:
       - http://{{ $ioSvcName }}:80
@@ -96,9 +82,6 @@ cortx:
       endpoints:
       {{- toYaml .Values.cortxRgw.rgwServiceHttpEndpoints | nindent 8 }}
       {{- toYaml .Values.cortxRgw.rgwServiceHttpsEndpoints | nindent 8 }}
-    {{- with .Values.cortxS3.instanceCount }}
-    service_instances: {{ . | int }}
-    {{- end }}
     io_max_units: 8                                                 #HARDCODED
     {{- with .Values.cortxS3.maxStartTimeout }}
     max_start_timeout: {{ . | int }}
@@ -137,8 +120,6 @@ cortx:
           min: 250m
           max: 500m
   motr:
-    client_instances: {{ len .Values.cortxMotr.clientEndpoints }}   #DEPRECATED
-    interface_type: tcp                                             #DEPRECATED
     interface_family: inet
     transport_type: libfab
     md_size: {{ .Values.cortxMotr.md_size }}
@@ -176,8 +157,6 @@ cortx:
           min: 250m
           max: 500m
   csm:
-    auth_admin: authadmin
-    auth_secret: csm_auth_admin_secret
     mgmt_admin: cortxadmin
     mgmt_secret: csm_mgmt_admin_secret
     email_address: cortx@seagate.com
