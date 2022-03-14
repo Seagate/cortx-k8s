@@ -200,8 +200,8 @@ class Cluster:
             result += RemoteRun(node, self.user).scp(files, '/tmp/cortx-k8s') # nosec B108
             result += RemoteRun(node, self.user).run(
                                   f'cd /tmp/cortx-k8s; '
-                                  f'./prereq-deploy-cortx-cloud.sh {blkdev} '
-                                  f'{os.path.basename(self.solution_file)}')
+                                  f'./prereq-deploy-cortx-cloud.sh -d {blkdev} '
+                                  f'-s {os.path.basename(self.solution_file)}')
             result += RemoteRun(node, self.user).run('rm -rf /tmp/cortx-k8s')
             print("\n\n")
 
