@@ -188,9 +188,10 @@ All paths below are prefixed with `solution.` for fully-qualified naming and are
 
 ### Global parameters
 
-| Name                     | Description                                                                             | Default Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | ----------------------- |
-| `namespace`              | The Kubernetes namespace for CORTX Pods to be deployed in.                              | `default`               |
+| Name              | Description                                                                                                                  | Default Value |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `namespace`       | The Kubernetes namespace for CORTX Pods to be deployed in.                                                                   | `default`     |
+| `deployment_type` | The type of deployment. This determines which Kubernetes resources are created. Valid values are `standard` and `data-only`. | `standard`    |
 
 ### Secret parameters
 

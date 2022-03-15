@@ -1,5 +1,6 @@
 solution:
   namespace: required
+  deployment_type: required
   secrets:
     name: required
     content:

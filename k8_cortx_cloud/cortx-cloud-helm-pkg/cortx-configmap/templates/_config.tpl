@@ -30,6 +30,7 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
+  {{- if .Values.cortxRgw.enabled }}
   s3:                                                               # DEPRECATED - ENTIRE S3 KEY
     iam:
       endpoints:
@@ -88,14 +89,17 @@ cortx:
     {{- if .Values.cortxRgw.extraConfiguration }}
     {{- tpl .Values.cortxRgw.extraConfiguration . | nindent 4 }}
     {{- end }}
+  {{- end }}
   hare:
     hax:
       endpoints:
-      {{- with .Values.cortxHa.haxService }}
+      {{- with .Values.cortxHare.haxService }}
         - {{ .protocol }}://{{ .name }}:{{ .port }}
       {{- end }}
       {{- toYaml .Values.cortxHare.haxDataEndpoints | nindent 8 }}
+      {{- if .Values.cortxRgw.enabled }}
       {{- toYaml .Values.cortxHare.haxServerEndpoints | nindent 8 }}
+      {{- end }}
       {{- if gt (len .Values.cortxHare.haxClientEndpoints) 0 -}}
         {{- toYaml .Values.cortxHare.haxClientEndpoints | nindent 8 }}
       {{- end }}
@@ -118,12 +122,14 @@ cortx:
     confd:
       endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
     clients:
+    {{- if .Values.cortxRgw.enabled }}
       - name: rgw
         num_instances: 1  # number of instances *per-pod*
         endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
+    {{- end }}
     {{- if gt (len .Values.cortxMotr.clientEndpoints) 0 }}
       - name: motr_client
-        num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
+        num_instances: {{ .Values.cortxMotr.clientInstanceCount | int }}
         num_subscriptions: 1
         subscriptions:
         - fdmi
@@ -148,6 +154,7 @@ cortx:
     {{- if .Values.cortxMotr.extraConfiguration }}
     {{- tpl .Values.cortxMotr.extraConfiguration . | nindent 4 }}
     {{- end }}
+  {{- if .Values.cortxControl.enabled }}
   csm:
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
@@ -166,6 +173,8 @@ cortx:
         cpu:
           min: 250m
           max: 500m
+  {{- end }}
+  {{- if .Values.cortxHa.enabled }}
   ha:
     limits:
       services:
@@ -190,4 +199,5 @@ cortx:
         cpu:
           min: 250m
           max: 500m
+  {{- end }}
 {{- end -}}
