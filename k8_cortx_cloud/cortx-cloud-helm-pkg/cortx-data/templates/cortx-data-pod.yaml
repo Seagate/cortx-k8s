@@ -241,7 +241,7 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxdata.name }}
           ports:
-          - containerPort: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
+          - containerPort: {{ printf "%d" (add .Values.cortxdata.motr.numcvg .Values.cortxdata.motr.startportnum) }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
@@ -302,7 +302,8 @@ spec:
             {{- end }}
           ports:
           {{- range $j := until ($.Values.cortxdata.motr.group_size | int) }}
-          - containerPort: {{ printf "%d" (add $j $.Values.cortxdata.motr.startportnum) }}
+          {{- $n := printf "%d" (mul $i $.Values.cortxdata.motr.group_size) }}
+          - containerPort: {{ printf "%d" (add $n (add $j $.Values.cortxdata.motr.startportnum)) }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
