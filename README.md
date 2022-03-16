@@ -251,11 +251,11 @@ This section contains common parameters that affect all CORTX components running
 | `common.external_services.s3.count`                   | The number of service instances to create when service type is `LoadBalancer`                     | `1` |
 | `common.external_services.s3.ports.http`              | Non-secure (http) port number used for S3 IO                                                      | `8000` |
 | `common.external_services.s3.ports.https`             | Secure (https) service port number for S3 IO                                                      | `8443` |
-| `common.external_services.s3.nodePorts.http`          |  _(Optional)_ Node port for non-secure (http) S3 IO                                               | None |
-| `common.external_services.s3.nodePorts.https`         |  _(Optional)_ Node port for secure (https) S3 IO                                                  | None |
+| `common.external_services.s3.nodePorts.http`          |  _(Optional)_ Node port for non-secure (http) S3 IO                                               | `null` |
+| `common.external_services.s3.nodePorts.https`         |  _(Optional)_ Node port for secure (https) S3 IO                                                  | `null` |
 | `common.external_services.control.type`               | Kubernetes Service type for external access to CSM Management API                                 | `NodePort` |
 | `common.external_services.control.ports.https`        | Secure (https) service port number for CSM Management API.                                        | `8081` |
-| `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | None |
+| `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | `null` |
 | `common.resource_allocation.*.storage`                | The desired storage space allocated to PVCs used by that component                                | See `solution.yaml` |
 | `common.resource_allocation.*.resources.requests.*`   | CPU & Memory requested for Pods managed by a specific component                                   | See `solution.yaml` |
 | `common.resource_allocation.*.resources.limits.*`     | CPU & Memory limits for Pods managed by a specific component                                      | See `solution.yaml` |

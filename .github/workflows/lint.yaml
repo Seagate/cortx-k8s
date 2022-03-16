@@ -39,5 +39,4 @@ jobs:
             destroy-cortx-cloud.sh
             generate-cvg-yaml.sh
             prereq-deploy-cortx-cloud.sh
-            start-cortx-cloud.sh
             upgrade-cortx-cloud.sh

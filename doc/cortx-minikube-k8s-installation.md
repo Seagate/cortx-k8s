@@ -40,6 +40,7 @@ minikube start --driver=none
 
 Note minikube may fail to start in some setup due to driver issue, if this happens you can install the drivers here -> Drivers | minikube [(k8s.io)](https://minikube.sigs.k8s.io/docs/drivers/)
 
+Note if encounter this error "Exiting due to GUEST_MISSING_CONNTRACK: Sorry, Kubernetes 1.23.3 requires conntrack to be installed in root's path", run `sudo yum install conntrack` first.
 
 **5. Clone Cortx-K8s framework**
 
@@ -281,5 +282,7 @@ aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 ls
 ### Tested by:
 
 This document was tested on the following version: [v0.0.22](https://github.com/Seagate/cortx-k8s/releases/tag/v0.0.22)
+
+Mar 12, 2022: Bo Wei (bo.b.wei@seagate.com) using CentOS 7.9 on Red Hat CloudForms.
 
 Feb 23, 2022: Sayed Alfhad Shah(fahadshah2411@gmail.com), Rinku Kothiya(rinku.kothiya@seagate.com) and Rose Wambui(rose.wambui@seagate.com)
