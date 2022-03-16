@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e752fdd0839141119c3394e6bedd06a6)](https://app.codacy.com/gh/Seagate/cortx-k8s?utm_source=github.com&utm_medium=referral&utm_content=Seagate/cortx-k8s&utm_campaign=Badge_Grade_Settings)
 
-[CORTX Community Object Storage](http://cortx.io/) is 100% open-source object storage, uniquely optimized for mass capacity storage devices. This repository provides capability and support for deploying CORTX onto the [Kubernetes](https://kubernetes.io/) container orchestration platform.
+[CORTX Community Object Storage](https://github.com/Seagate/cortx) is 100% open-source object storage, uniquely optimized for mass capacity storage devices. This repository provides capability and support for deploying CORTX onto the [Kubernetes](https://kubernetes.io/) container orchestration platform.
 
 ## Table of Contents
 
@@ -10,7 +10,7 @@
 2.  [Reference Architecture](#reference-architecture)
 3.  [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites)
 4.  [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
-5.  [Quick Starts](#quick-starts)
+5.  [Getting Started](#getting-started)
     1.  [Using the prereq deploy script (Optional)](#using-the-prereq-deploy-script-optional)
     2.  [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
     3.  [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
@@ -76,17 +76,6 @@ CORTX on Kubernetes consists of five primary components:
        - You can manually create this path via the default values of `/mnt/fs-local-volume/local-path-provisioner` on every Kubernetes Node
        - Or you can customize the value of `solution.common.storage_provisioner_path` and create directories on every Kubernetes Node to match (i.e. `/mnt/cortx-k8s/local-volumes/local-path-provisioner`.
 
-5.  **OpenLDAP directories**
-
-    CORTX on Kubernetes currently leverages OpenLDAP as a required service. The deployment scripts require specific local directories to exist on the Kubernetes Nodes which OpenLDAP will run on.
-    - The `prereq-deploy-cortx-cloud.sh` script will ensure these directories exist, if you choose to utilize it.
-    - Or you can manually create the following directories on every Kubernetes Node to ensure functional operation of OpenLDAP:
-        1.  `/etc/3rd-party/openldap`
-        2.  `/var/data/3rd-party`
-        3.  `/var/log/3rd-party`
-
-    :information_source: _This requirement will be going away in a future release (some time after v0.0.20)_.
-
 ## Kubernetes Reference Deployments
 
 There are numerous ways to install and configure a complete Kubernetes cluster. As long as the prerequisites in the previous step are all satisfied, CORTX on Kubernetes should deploy successfully.
@@ -94,18 +83,18 @@ There are numerous ways to install and configure a complete Kubernetes cluster. 
 For reference material, we have provided existing Kubernetes deployment models that have been verified to work with CORTX on Kubernetes. These are only provided for reference and are not meant to be explicit deployment constraints.
 
 1.  [Seagate Internal Jenkins Job](http://eos-jenkins.mero.colo.seagate.com/job/Cortx-kubernetes/job/setup-kubernetes-cluster/)
-2.  [CORTX on AWS and Kubernetes - Quick Install Guide](doc/cortx-aws-k8s-installation.md)
-3.  [CORTX on minikube - Quick Install Guide](doc/cortx-minikube-k8s-installation.md)
+2.  [CORTX on AWS and Kubernetes - Quick Start Guide](doc/cortx-aws-k8s-installation.md)
+3.  [CORTX on minikube - Quick Start Guide](doc/cortx-minikube-k8s-installation.md)
 
 Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster, please open an [Issue](https://github.com/Seagate/cortx-k8s/issues) in this repository for further troubleshooting.
 
-## Quick Starts
+## Getting Started
 
-All steps in the following quick starts assume the proper prerequisites have been installed or configured as described in [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites) above.
+All steps in this section assume the proper prerequisites have been installed or configured as described in [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites) above.
 
 ### Using the prereq deploy script (Optional)
 
-If you have direct access to the underlying Kubernetes Nodes in your cluster, CORTX on Kubernetes provides a [prerequisite deployment script](https://github.com/Seagate/cortx-k8s/blob/main/k8_cortx_cloud/prereq-deploy-cortx-cloud.sh) that will configure the majority of the low-level system configuration requirements prior to CORTX deployment. This is not a required step if you choose to ensure all the [prerequisites](#cortx-on-kubernetes-prerequisites) mentioned above are satisfied manually.
+If you have direct access to the underlying Kubernetes Nodes in your cluster, CORTX on Kubernetes provides a [prerequisite deployment script](k8_cortx_cloud/prereq-deploy-cortx-cloud.sh) that will configure the majority of the low-level system configuration requirements prior to CORTX deployment. This is not a required step if you choose to ensure all the [prerequisites](#cortx-on-kubernetes-prerequisites) mentioned above are satisfied manually.
 
    1.  Copy `prereq-deploy-cortx-cloud.sh` script, and the solution yaml file to all worker nodes:
 
@@ -117,10 +106,11 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
    2.  Run prerequisite script on all worker nodes in the cluster, and any untainted control nodes which allow Pod scheduling. `<disk>` is a required input to run this script. This disk should NOT be any of the devices listed in `solution.storage.cvg*` in the `solution.yaml` file:
 
    ```bash
-   sudo ./prereq-deploy-cortx-cloud.sh <disk> [<solution-file>]
+   sudo ./prereq-deploy-cortx-cloud.sh -d <disk> [ -s <solution-file> ]
    ```
 
-   :information_source: `<solution-file>` is an optional input to run `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml`.
+   - The `-d <disk>` flag is a required flag to pass the path of the disk or device to mount for secondary storage to the `prereq-deploy-cortx-cloud.sh` script. This should be in the format of `/dev/sdb` etc.
+   - The `-s <solution-file>` flag is an optional flag to the `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml` if the `-s` flag is not supplied.
 
 ### Deploying CORTX on Kubernetes
 
@@ -261,11 +251,11 @@ This section contains common parameters that affect all CORTX components running
 | `common.external_services.s3.count`                   | The number of service instances to create when service type is `LoadBalancer`                     | `1` |
 | `common.external_services.s3.ports.http`              | Non-secure (http) port number used for S3 IO                                                      | `8000` |
 | `common.external_services.s3.ports.https`             | Secure (https) service port number for S3 IO                                                      | `8443` |
-| `common.external_services.s3.nodePorts.http`          |  _(Optional)_ Node port for non-secure (http) S3 IO                                               | None |
-| `common.external_services.s3.nodePorts.https`         |  _(Optional)_ Node port for secure (https) S3 IO                                                  | None |
+| `common.external_services.s3.nodePorts.http`          |  _(Optional)_ Node port for non-secure (http) S3 IO                                               | `null` |
+| `common.external_services.s3.nodePorts.https`         |  _(Optional)_ Node port for secure (https) S3 IO                                                  | `null` |
 | `common.external_services.control.type`               | Kubernetes Service type for external access to CSM Management API                                 | `NodePort` |
 | `common.external_services.control.ports.https`        | Secure (https) service port number for CSM Management API.                                        | `8081` |
-| `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | None |
+| `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | `null` |
 | `common.resource_allocation.*.storage`                | The desired storage space allocated to PVCs used by that component                                | See `solution.yaml` |
 | `common.resource_allocation.*.resources.requests.*`   | CPU & Memory requested for Pods managed by a specific component                                   | See `solution.yaml` |
 | `common.resource_allocation.*.resources.limits.*`     | CPU & Memory limits for Pods managed by a specific component                                      | See `solution.yaml` |

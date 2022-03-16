@@ -1,0 +1,6 @@
+tests:
+  file: alltests.yaml
+
+testlist:
+ - test_deploy_basic
+ - test_deploy_stub

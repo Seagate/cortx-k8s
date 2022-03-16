@@ -8,14 +8,6 @@ cortx:
       admin: {{ .Values.externalKafka.adminUser }}
       secret: {{ .Values.externalKafka.adminSecretName }}
     {{- end }}
-    {{- if .Values.externalLdap.enabled }}
-    openldap:                                                       # DEPRECATED - OPENLDAP KEY
-      endpoints: {{- toYaml .Values.externalLdap.endpoints | nindent 8 }}
-      servers: {{- toYaml .Values.externalLdap.servers | nindent 8 }}
-      admin: {{ .Values.externalLdap.adminUser }}
-      secret: {{ .Values.externalLdap.adminSecretName }}
-      base_dn: {{ .Values.externalLdap.baseDn }}
-    {{- end }}
     {{- if .Values.externalConsul.enabled }}
     consul:
       endpoints: {{- toYaml .Values.externalConsul.endpoints | nindent 8 }}
