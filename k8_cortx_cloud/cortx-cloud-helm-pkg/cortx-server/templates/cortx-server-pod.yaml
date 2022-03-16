@@ -135,7 +135,6 @@ spec:
           args:
             - -c
             - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
-              sleep infinity;
           {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxserver.cfgmap.volmountname }}
