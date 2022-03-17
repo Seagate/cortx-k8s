@@ -242,8 +242,10 @@ This section contains common parameters that affect all CORTX components running
 | `common.s3.num_inst`                                  | TODO       | `2` |
 | `common.s3.start_port_num`                            | TODO       | `28051` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
+| `common.s3.extra_configuration`                       | _(Optional)_ Extra configuration settings to append to the RGW configuration. The value is a multi-line string included verbatim.  | `""` |
 | `common.motr.num_client_inst`                         | TODO       | `0` |
 | `common.motr.start_port_num`                          | TODO       | `29000` |
+| `common.motr.extra_configuration`                     | _(Optional)_ Extra configuration settings to append to the Motr configuration. The value is a multi-line string included verbatim. | `""` |
 | `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` | 
 | `common.hax.service_name`                             | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
 | `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
