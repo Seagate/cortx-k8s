@@ -772,8 +772,10 @@ function choosealpha()
 
 function pwgen()
 {
-    local first=$(choosealpha | awk '{printf "%s", $1}')
-    local rest=$({
+    local first
+    local rest
+    first=$(choosealpha | awk '{printf "%s", $1}')
+    rest=$({
         choose '!@#$%^'
         choose '0123456789'
         choose 'abcdefghijklmnopqrstuvwxyz'
