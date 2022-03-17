@@ -816,7 +816,7 @@ function deployCortxSecrets()
                 # No data for this field.  Generate a password.
                 pw=$(pwgen)
                 fcontent=${pw}
-                printf "Generated secret for %s: %s" "${field}" "${fcontent}"
+                printf "Generated secret for %s\n" "${field}"
             fi
             secrets+=( "  ${field}: ${fcontent}" )
         done
