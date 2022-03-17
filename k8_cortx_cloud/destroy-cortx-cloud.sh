@@ -323,8 +323,8 @@ function deleteSecrets()
     printf "########################################################\n"
     secret_name=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets.name")
     if [[ ! -z "${secret_name}" ]]; then
-        secret_fname=$(echo "${secret_name}" | cut -f2 -d'>')
-        kubectl delete secret $secret_name --namespace=$namespace
+        secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
+        kubectl delete secret "${secret_name}" --namespace=$namespace
 
         find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
         find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
