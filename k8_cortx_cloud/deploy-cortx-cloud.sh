@@ -33,13 +33,13 @@ function configurationCheck()
     if [[ -z "${secret_name}" ]] && [[ -z "${secret_nameref}" ]] ; then
         printf "Error: %s: solution>secrets>name or solution>secrets>name_ref must be specified\n" "${solution_yaml}"
         exit 1
-    elif [[ ! -z "${secret_name}" ]] && [[ ! -z "${secret_nameref}" ]] ; then
+    elif [[ -n "${secret_name}" ]] && [[ -n "${secret_nameref}" ]] ; then
         printf "Error: %s: Cannot specify both solution>secrets>name or solution>secrets>name_ref\n" "${solution_yaml}"
         exit 1
-    elif [[ ! -z "${secret_nameref}" ]] ; then
+    elif [[ -n "${secret_nameref}" ]] ; then
         # If a nameref is specified, verify that the named secret exists
         secret_nameref=$(echo "${secret_nameref}" | cut -f2 -d'>')
-        output=$(kubectl get secrets ${secret_nameref} --no-headers)
+        output=$(kubectl get secrets "${secret_nameref}" --no-headers)
         if [[ "${output}" == "" ]]; then
             printf "Error: %s: Expected Secrets object %s does not exist (solution>secrets>name_ref)\n" "${solution_yaml}" "${secret_nameref}"
             exit 1
@@ -762,18 +762,18 @@ function deployCortxConfigMap()
 # https://stackoverflow.com/a/26665585/508923
 function choose()
 {
-    echo ${1:RANDOM%${#1}:1} $RANDOM;
+    echo "${1:RANDOM%${#1}:1}" "${RANDOM}";
 }
 
 function choosealpha()
 {
-    echo $(choose '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    choose '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 }
 
 function pwgen()
 {
-    first=$(choosealpha) | awk '{printf "%s", $1}'
-    rest=$({
+    local first=$(choosealpha | awk '{printf "%s", $1}')
+    local rest=$({
         choose '!@#$%^'
         choose '0123456789'
         choose 'abcdefghijklmnopqrstuvwxyz'
@@ -797,7 +797,7 @@ function deployCortxSecrets()
     mkdir -p "${secret_auto_gen_path}"
     secret_name=$(parseSolution "solution.secrets.name")
     secret_nameref=$(parseSolution "solution.secrets.name_ref")
-    if [[ ! -z "${secret_name}" ]]; then
+    if [[ -n "${secret_name}" ]]; then
         # Process secrets from solution.yaml
         cortx_secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
         secrets=()
@@ -807,14 +807,14 @@ function deployCortxSecrets()
                        "s3_auth_admin_secret"
                        "csm_auth_admin_secret"
                        "csm_mgmt_admin_secret")
-        for field in ${secret_fields[@]}; do
+        for field in "${secret_fields[@]}"; do
             fname=$(parseSolution "solution.secrets.content.${field}")
             fcontent=$(echo "${fname}" | cut -f2 -d'>')
             if [[ -z ${fcontent} ]]; then
                 # No data for this field.  Generate a password.
                 pw=$(pwgen)
                 fcontent=${pw}
-                echo "Generated secret for $field: $fcontent"
+                printf "Generated secret for %s: %s" "${field}" "${fcontent}"
             fi
             secrets+=( "  ${field}: ${fcontent}" )
         done
@@ -832,7 +832,7 @@ function deployCortxSecrets()
         fi
         echo "${kubectl_cmd_output}"
 
-    elif [[ ! -z "${secret_nameref}" ]]; then
+    elif [[ -n "${secret_nameref}" ]]; then
         cortx_secret_name=$(echo "${secret_nameref}" | cut -f2 -d'>')
         printf "Installing CORTX with existing Secrets %s.\n" "${cortx_secret_name}"
         
@@ -1301,7 +1301,7 @@ cleanup
 data_service_name="cortx-io-svc-0"
 data_service_default_user="sgiamadmin"
 control_service_name="cortx-control-loadbal-svc"
-cortrol_service_default_user="cortxadmin"
+control_service_default_user="cortxadmin"
 
 echo "
 -----------------------------------------------------------
