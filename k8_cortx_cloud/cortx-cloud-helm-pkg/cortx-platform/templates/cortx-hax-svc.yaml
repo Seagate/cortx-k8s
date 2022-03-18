@@ -10,5 +10,5 @@ spec:
   ports:
     - name: cortx-hax-tcp
       protocol: TCP
-      port: {{ .Values.services.hax.port }}
-      targetPort: {{ .Values.services.hax.port }}
+      port: {{ .Values.services.hax.port | int }}
+      targetPort: hax

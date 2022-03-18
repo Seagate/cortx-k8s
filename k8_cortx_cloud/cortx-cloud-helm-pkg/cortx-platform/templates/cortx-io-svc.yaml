@@ -17,14 +17,14 @@ spec:
     - name: cortx-rgw-http
       protocol: TCP
       port: {{ $svc.ports.http }}
-      targetPort: 22751
+      targetPort: rgw-http
       {{- if and $nodePortAllowed (not (empty $svc.nodePorts.http)) }}
       nodePort: {{ add $svc.nodePorts.http $i }}
       {{- end }}
     - name: cortx-rgw-https
       protocol: TCP
       port: {{ $svc.ports.https }}
-      targetPort: 23001
+      targetPort: rgw-https
       {{- if and $nodePortAllowed (not (empty $svc.nodePorts.https)) }}
       nodePort: {{ add $svc.nodePorts.https $i }}
       {{- end }}
