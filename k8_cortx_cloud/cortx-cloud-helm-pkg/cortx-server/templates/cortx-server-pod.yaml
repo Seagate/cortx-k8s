@@ -120,8 +120,8 @@ spec:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxserver.name }}
           ports:
-          - containerPort: 8000
-          - containerPort: 8443
+          - containerPort: 22751
+          - containerPort: 23001
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-hax

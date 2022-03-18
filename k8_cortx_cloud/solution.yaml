@@ -10,11 +10,11 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-670
-    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-670
-    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-670
-    cortxha: ghcr.io/seagate/cortx-all:2.0.0-670
-    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-670
+    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-686
+    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-686
+    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-686
+    cortxha: ghcr.io/seagate/cortx-all:2.0.0-686
+    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-686
     consul: ghcr.io/seagate/consul:1.10.0
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
     zookeeper: ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182
@@ -32,7 +32,6 @@ solution:
         auth_admin: "sgiamadmin"
         auth_user: "user_name"
         #auth_secret defined above in solution.secrets.content.s3_auth_admin_secret
-      num_inst: 2
       start_port_num: 28051
       max_start_timeout: 240
       extra_configuration: ""
@@ -54,8 +53,8 @@ solution:
         type: NodePort
         count: 1
         ports:
-          http: 8000
-          https: 8443
+          http: 80
+          https: 443
         nodePorts:
           http: null
           https: null
