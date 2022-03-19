@@ -197,11 +197,11 @@ All paths below are prefixed with `solution.` for fully-qualified naming and are
 This section contains the CORTX and third-party authentication information used to deploy CORTX on Kubernetes.
 
 A Kubernetes Secret is used to hold the various passwords and secret keys needed by the various components.
-  - If the `secrets.name` field is specified, then CORTX will create and populate this Secret object, using this specified name.  For any `secrets.content` fields that are not specified or do not have a value specified, CORTX will generate a random password.
-  - If the `secrets.external_secret` field is specified, then CORTX will expect a Secret object to already exist with the specified name, which contains the passwords for these fields.  This allows an admin to specify passwords outside of solution.yaml.  Note: If an `screts.external_secret` is used, then the specified Secret must define _all_ CORTX-required secrets.
+- If the `secrets.name` field is specified, then CORTX will create and populate this Secret object, using this specified name.  For any `secrets.content` fields that are not specified or do not have a value specified, CORTX will generate a random password.
+- If the `secrets.external_secret` field is specified, then CORTX will expect a Secret object to already exist with the specified name, which contains the passwords for these fields.  This allows an admin to specify passwords outside of solution.yaml.  Note: If an `screts.external_secret` is used, then the specified Secret must define _all_ CORTX-required secrets.
 
 :bulb: To create a new Secret object with admin-specified values for required CORTX secrets:
-```
+```bash
 kubectl create secret generic my-cortx-secret \
   --from-literal=common_admin_secret=Password1@123 \
   --from-literal=consul_admin_secret=Password2@123 \
