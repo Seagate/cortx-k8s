@@ -322,7 +322,7 @@ function deleteSecrets()
     printf "# Delete Secrets                                       #\n"
     printf "########################################################\n"
     secret_name=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets.name")
-    if [[ ! -z "${secret_name}" ]]; then
+    if [[ -n "${secret_name}" ]]; then
         secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
         kubectl delete secret "${secret_name}" --namespace=$namespace
 

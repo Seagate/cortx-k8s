@@ -844,7 +844,7 @@ function deployCortxSecrets()
         ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets_block}"
         kubectl_create_secret_cmd="kubectl create -f ${new_secret_gen_file} --namespace=${namespace}"
         if ! ${kubectl_create_secret_cmd}; then
-            printf "Exit early. Create secret failed with error:\n%s\n" "${kubectl_cmd_output}"
+            printf "Exit early.  Failed to create Secret '%s'\n" "${new_secret_name}"
             exit 1
         fi
 
