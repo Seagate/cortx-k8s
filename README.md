@@ -221,6 +221,7 @@ kubectl create secret generic my-cortx-secret \
 | `secrets.content.s3_auth_admin_secret`    | Administrator password for the S3 Auth CORTX component                                  | `""`                    |
 | `secrets.content.csm_auth_admin_secret`   | Administrator password for the CSM Auth CORTX component                                 | `""`                    |
 | `secrets.content.csm_mgmt_admin_secret`   | Administrator password for the CSM Management CORTX component                           | `""`                    |
+| `secrets.external_secret`                 | Name of previously existing Secret that contains CORTX-required secrets.  Note: This field is mutually exclusive with `secrets.name`. | |
 
 ### Image parameters
 
