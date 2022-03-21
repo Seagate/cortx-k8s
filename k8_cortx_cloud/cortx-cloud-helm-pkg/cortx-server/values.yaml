@@ -19,8 +19,8 @@ cortxserver:
       name: cortx-server-loadbal-svc
       type: NodePort
       ports:
-        http: 8000
-        https: 8443
+        http: 80
+        https: 443
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
