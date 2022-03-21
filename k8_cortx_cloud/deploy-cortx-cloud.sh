@@ -651,8 +651,7 @@ function deployCortxConfigMap()
         --set cortxHa.haxService.protocol="$(extractBlock 'solution.common.hax.protocol' || true)"
         --set cortxHa.haxService.name="$(extractBlock 'solution.common.hax.service_name' || true)"
         --set cortxHa.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
-        --set cortxS3.instanceCount="$(extractBlock 'solution.common.s3.num_inst' || true)"
-        --set cortxS3.maxStartTimeout="$(extractBlock 'solution.common.s3.max_start_timeout' || true)"
+        --set cortxRgw.maxStartTimeout="$(extractBlock 'solution.common.s3.max_start_timeout' || true)"
         --set cortxStoragePaths.local="${local_storage}"
         --set cortxStoragePaths.shared="${shared_storage}"
         --set cortxStoragePaths.log="${log_storage}"
@@ -661,6 +660,8 @@ function deployCortxConfigMap()
         --set cortxSetupSize="$(extractBlock 'solution.common.setup_size' || true)"
         --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
         --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
+        --set cortxIoService.ports.http="$(getSolutionValue 'solution.common.external_services.s3.ports.http')"
+        --set cortxIoService.ports.https="$(getSolutionValue 'solution.common.external_services.s3.ports.https')"
     )
 
     local rgw_extra_config
