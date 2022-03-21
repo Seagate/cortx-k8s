@@ -32,7 +32,7 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 ![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s.jpg)
 
 CORTX on Kubernetes consists of five primary components:
-1.  Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul), [Apache Kafka](https://kafka.apache.org/).
+1.  Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul) and [Apache Kafka](https://kafka.apache.org/).
 
 2.  CORTX Control Pods
     -  These pods maintain the CORTX control plane
