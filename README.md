@@ -52,6 +52,8 @@ CORTX on Kubernetes consists of five primary components:
 
 ## CORTX on Kubernetes Prerequisites
 
+For additional discussion on infrastructure prerequisites in support of other Kubernetes capabilities prior to installing CORTX, please reference the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md) guide.
+
 1.  **[Helm](https://helm.sh/)**
 
     CORTX on Kubernetes is provided via Helm Charts. As such, you will need Helm installed locally to deploy CORTX on Kubernetes. You can find the specific installation instructions for your local platform via the [Installing Helm](https://helm.sh/docs/intro/install/) section of the official Helm documentation.
@@ -60,15 +62,17 @@ CORTX on Kubernetes consists of five primary components:
 
     CORTX on Kubernetes currently expects all Kubernetes Nodes to have a uniform device/drive setup across the Kubernetes cluster. This is to say that CORTX on Kubernetes expects all Kubernetes Nodes to have the same `/dev/sdb`, `/dev/sdc`, `/dev/sdN`, etc device paths on every node.
 
-    :information_source: _This requirement will be going away in a future release (some time after v0.0.20)_.
+3. **Persistent disk naming and node reboot support**
 
-3.  **Required kernel parameters**
+    For configuration options in support of persistent device naming and stability across Kubernetes Node reboot support, reference the [Persistent disk naming and node reboot support](/doc/prereq-deploy-use-cases.md#persistent-disk-naming-and-node-reboot-support) section of the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md) guide.
+
+4.  **Required kernel parameters**
 
     CORTX on Kubernetes currently requires the `vm.max_map_count` set to a specific minimum level of `30000000` (thirty million) on the Kubernetes Nodes which `cortx-data` Pods will run.
     - The `prereq-deploy-cortx-cloud.sh` script will set this value prior to deployment if you choose to utilize it.
     - The `cortx-data` Pods include an initContainer that will check for this minimal value and halt deployment if not met.
 
-4.  **Local path provisioner**
+5.  **Local path provisioner**
 
     CORTX on Kubernetes currently uses the [Rancher Local Provisioner](https://github.com/rancher/local-path-provisioner) to manage some dynamic provisioning of local storage for prerequisite services.
     - The `prereq-deploy-cortx-cloud.sh` script will ensure this directory exists, if you choose to utilize it.
