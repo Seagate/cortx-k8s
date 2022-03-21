@@ -32,7 +32,7 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 ![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s.jpg)
 
 CORTX on Kubernetes consists of five primary components:
-1.  Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul), [Apache Kafka](https://kafka.apache.org/), and [OpenLDAP](https://www.openldap.org/).
+1.  Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul) and [Apache Kafka](https://kafka.apache.org/).
 
 2.  CORTX Control Pods
     -  These pods maintain the CORTX control plane
@@ -218,7 +218,6 @@ This section contains the CORTX and third-party images used to deploy CORTX on K
 | `images.cortxserver`     | Image registry, repository, & tag for the CORTX Server components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
 | `images.cortxha`         | Image registry, repository, & tag for the CORTX HA components                          | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
 | `images.cortxclient`     | Image registry, repository, & tag for the CORTX Client components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
-| `images.openldap`        | Image registry, repository, & tag for the OpenLDAP required service                    | `ghcr.io/seagate/symas-openldap:2.4.58`     |
 | `images.consul`          | Image registry, repository, & tag for the Consul required service                      | `ghcr.io/seagate/consul:1.10.0`             |
 | `images.kafka`           | Image registry, repository, & tag for the Kafka required service                       | `ghcr.io/seagate/kafka:3.0.0-debian-10-r7`  |
 | `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service                   | `ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182` |
