@@ -3,12 +3,12 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      kafka_admin_secret:
-      consul_admin_secret:
-      common_admin_secret:
-      s3_auth_admin_secret:
-      csm_auth_admin_secret:
-      csm_mgmt_admin_secret:
+      kafka_admin_secret: null
+      consul_admin_secret: null
+      common_admin_secret: null
+      s3_auth_admin_secret: null
+      csm_auth_admin_secret: null
+      csm_mgmt_admin_secret: null
   images:
     cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-670
     cortxdata: ghcr.io/seagate/cortx-all:2.0.0-670
