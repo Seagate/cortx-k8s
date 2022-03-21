@@ -66,13 +66,13 @@ For additional discussion on infrastructure prerequisites in support of other Ku
 
     For configuration options in support of persistent device naming and stability across Kubernetes Node reboot support, reference the [Persistent disk naming and node reboot support](/doc/prereq-deploy-use-cases.md#persistent-disk-naming-and-node-reboot-support) section of the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md) guide.
 
-3.  **Required kernel parameters**
+4.  **Required kernel parameters**
 
     CORTX on Kubernetes currently requires the `vm.max_map_count` set to a specific minimum level of `30000000` (thirty million) on the Kubernetes Nodes which `cortx-data` Pods will run.
     - The `prereq-deploy-cortx-cloud.sh` script will set this value prior to deployment if you choose to utilize it.
     - The `cortx-data` Pods include an initContainer that will check for this minimal value and halt deployment if not met.
 
-4.  **Local path provisioner**
+5.  **Local path provisioner**
 
     CORTX on Kubernetes currently uses the [Rancher Local Provisioner](https://github.com/rancher/local-path-provisioner) to manage some dynamic provisioning of local storage for prerequisite services.
     - The `prereq-deploy-cortx-cloud.sh` script will ensure this directory exists, if you choose to utilize it.

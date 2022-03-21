@@ -10,7 +10,7 @@ This document is a collection of prerequisite use cases that are beneficial to c
 
 ### Background
 
-CORTX's goal is to deliver object storage capabilities which are optimized for mass capacity local storage devices. As such, CORTX expects to write to those local storage devices and requires them to be repeatedly accessible upon Kubernetes node reboot, failure, addition, etc. CORTX leverages the built-in storage concepts of [PersistentVolumes](#tbd) to work with the underlying local storage, but in addressing the local storage devices, concerns are introduced for satisfying the expectations of node reboot support and beyond. 
+CORTX's goal is to deliver object storage capabilities which are optimized for mass capacity local storage devices. As such, CORTX expects to write to those local storage devices and requires them to be repeatedly accessible upon Kubernetes node reboot, failure, addition, etc. CORTX leverages the built-in storage concepts of [PersistentVolumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) to work with the underlying local storage, but in addressing the local storage devices, concerns are introduced for satisfying the expectations of node reboot support and beyond. 
 
 The official Kubernetes [Local Persistence Volume Static Provisioner](https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner) captures these concerns explicitly in their [Operations](https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner/blob/master/docs/operations.md#operations) guide:
 
