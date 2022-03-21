@@ -15,6 +15,7 @@ cortx_secret_fields=("kafka_admin_secret"
                      "s3_auth_admin_secret"
                      "csm_auth_admin_secret"
                      "csm_mgmt_admin_secret")
+readonly cortx_secret_fields
 
 function parseSolution()
 {

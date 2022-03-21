@@ -198,9 +198,9 @@ This section contains the CORTX and third-party authentication information used 
 
 A Kubernetes Secret is used to hold the various passwords and secret keys needed by the various components.
 - If the `secrets.name` field is specified, then CORTX will create and populate this Secret object, using this specified name.  For any `secrets.content` fields that are not specified or do not have a value specified, CORTX will generate a random password.
-- If the `secrets.external_secret` field is specified, then CORTX will expect a Secret object to already exist with the specified name, which contains the passwords for these fields.  This allows an admin to specify passwords outside of solution.yaml.  Note: If an `screts.external_secret` is used, then the specified Secret must define _all_ CORTX-required secrets.
+- If the `secrets.external_secret` field is specified, then CORTX will expect a Kubernetes Secret object to already exist with the specified name, which contains the passwords for these fields.  This allows an admin to specify passwords outside of solution.yaml.  Note: If a `secrets.external_secret` is used, then the specified Secret must define _all_ CORTX-required passwords.
 
-:bulb: To create a new Secret object with admin-specified values for required CORTX secrets:
+:bulb: To create a new Kubernetes Secret object with admin-specified values for required CORTX passwords:
 ```bash
 kubectl create secret generic my-cortx-secret \
   --from-literal=common_admin_secret=Password1@123 \
@@ -214,13 +214,12 @@ kubectl create secret generic my-cortx-secret \
 | Name                                      | Description                                                                             | Default Value           |
 | ----------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------- |
 | `secrets.name`                            | Name for the Kubernetes Secret CORTX uses to store solution-specific secrets            | `cortx-secret`          |
-| `secrets.content.openldap_admin_secret`   | Administrator password for the OpenLDAP required service (deprecated)                   | `""`                    |
-| `secrets.content.kafka_admin_secret`      | Administrator password for the Kafka required service                                   | `""`                    |
-| `secrets.content.consul_admin_secret`     | Administrator password for the Consul required service                                  | `""`                    |
-| `secrets.content.common_admin_secret`     | Administrator password for the CORTX common services                                    | `""`                    |
-| `secrets.content.s3_auth_admin_secret`    | Administrator password for the S3 Auth CORTX component                                  | `""`                    |
-| `secrets.content.csm_auth_admin_secret`   | Administrator password for the CSM Auth CORTX component                                 | `""`                    |
-| `secrets.content.csm_mgmt_admin_secret`   | Administrator password for the CSM Management CORTX component                           | `""`                    |
+| `secrets.content.kafka_admin_secret`      | Administrator password for the Kafka required service                                   | `null`                  |
+| `secrets.content.consul_admin_secret`     | Administrator password for the Consul required service                                  | `null`                  |
+| `secrets.content.common_admin_secret`     | Administrator password for the CORTX common services                                    | `null`                  |
+| `secrets.content.s3_auth_admin_secret`    | Administrator password for the S3 Auth CORTX component                                  | `null`                  |
+| `secrets.content.csm_auth_admin_secret`   | Administrator password for the CSM Auth CORTX component                                 | `null`                  |
+| `secrets.content.csm_mgmt_admin_secret`   | Administrator password for the CSM Management CORTX component                           | `null`                  |
 | `secrets.external_secret`                 | Name of previously existing Secret that contains CORTX-required secrets.  Note: This field is mutually exclusive with `secrets.name`. | |
 
 ### Image parameters
