@@ -127,14 +127,12 @@ cortx:
         num_instances: 1  # number of instances *per-pod*
         endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
     {{- end }}
-    {{- if gt (len .Values.cortxMotr.clientEndpoints) 0 }}
-      - name: motr_client
-        num_instances: {{ .Values.cortxMotr.clientInstanceCount | int }}
-        num_subscriptions: 1
-        subscriptions:
-        - fdmi
-        endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
-    {{- end }}
+    - name: motr_client
+      num_instances: {{ .Values.cortxMotr.clientInstanceCount | int }}
+      num_subscriptions: 1
+      subscriptions:
+      - fdmi
+      endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
     limits:
       services:
       - name: ios
