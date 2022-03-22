@@ -94,12 +94,6 @@ cortxIoService:
 cortxControl:
   enabled: true
 
-# cortxS3 allows configuring CORTX S3 settings
-##TODO Evaluate merging with below cortxRGW section to align with underlying config.yaml keys
-cortxS3:
-  instanceCount: 2
-  maxStartTimeout: 240
-
 # cortxRgw allows configuring CORTX RGW settings
 cortxRgw:
   enabled: true
