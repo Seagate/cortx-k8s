@@ -26,7 +26,7 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.0.0
       - name: Run Shellcheck
         uses: Seagate/action-shellcheck@203a3fd018dfe73f8ae7e3aa8da2c149a5f41c33
         with:
@@ -40,3 +40,17 @@ jobs:
             generate-cvg-yaml.sh
             prereq-deploy-cortx-cloud.sh
             upgrade-cortx-cloud.sh
+
+  solution_yaml:
+    name: Solution YAML validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.0.0
+      - name: Validate solution.yaml
+        run: ./solution_validation_scripts/solution-validation.sh solution.yaml
+        shell: bash
+        working-directory: ./k8_cortx_cloud
+      - name: Validate solution_stub.yaml
+        run: ./solution_validation_scripts/solution-validation.sh solution_stub.yaml
+        shell: bash
+        working-directory: ./k8_cortx_cloud
