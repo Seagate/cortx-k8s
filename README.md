@@ -120,39 +120,44 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 1. Clone this repository to a machine with connectivity to your Kubernetes cluster:
 
-   ```bash
-   git clone https://github.com/Seagate/cortx-k8s
-   ```
+    ```bash
+    git clone https://github.com/Seagate/cortx-k8s
+    ```
 
->  :information_source: You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
+    >  :information_source: You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
 
 2. For initial deployments, copy the example solution configuration file [`./k8_cortx_cloud/solution.example.yaml`](k8_cortx_cloud/solution.example.yaml) to `./k8_cortx_cloud/solution.yaml` or to a filename of your choice.
 
 3. Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
 
     - Update all passwords. The `csm-secret` should include one special character in cortx-secret.
+
     - Update the images section with cortx-all image tag desired to be used.
         - Each specific release of the CORTX on Kubernetes code will point to a specific predefined container image.
         - This can be overridden as desired.
+
     - Update SNS and DIX durability values. The default value for both parameters is `1+0+0`.
+
     - Update storage cvg devices for data and metadata with respect to the devices in your environment.
+
     - Update nodes section with proper node hostnames from your Kubernetes cluster.
         - If the Kubernetes control plane nodes are required to be used for deployment, make sure to remove the taint from it before deploying CORTX.
         - For further details and reference, you can view the official Kubernetes documentation topic on [Taints & Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+
     - For further details on the solution configuration file specifics, review the [Solution YAML Overview](#solution-yaml-overview) section below.
 
 4. Run the `deploy-cortx-cloud.sh` script, passing in the path to your updated `solution.yaml` file.
 
-   ```bash
-   ./deploy-cortx-cloud.sh solution.yaml
-   ```
+    ```bash
+    ./deploy-cortx-cloud.sh solution.yaml
+    ```
 
 5. Validate CORTX on Kubernetes status
 
-   ```bash
-   DATA_POD=$(kubectl get pods -l cortx.io/service-type=cortx-data --no-headers | awk '{print $1}' | head -n 1)
-   kubectl exec -it $DATA_POD -c cortx-hax -- /bin/bash -c "hctl status"
-   ```
+    ```bash
+    DATA_POD=$(kubectl get pods -l cortx.io/service-type=cortx-data --no-headers | awk '{print $1}' | head -n 1)
+    kubectl exec -it $DATA_POD -c cortx-hax -- /bin/bash -c "hctl status"
+    ```
 
 ### Upgrading CORTX on Kubernetes
 
