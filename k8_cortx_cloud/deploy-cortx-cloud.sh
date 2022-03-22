@@ -16,23 +16,105 @@ DATA_ONLY_DEPLOYMENT=2
 
 DEPLOYMENT_MODE=1   # Set the deployment mode as per above number
 
-# Check if the file exists
-if [[ ! -f ${solution_yaml} ]]
-then
-    echo "ERROR: ${solution_yaml} does not exist"
-    exit 1
-fi
+cortx_secret_fields=("kafka_admin_secret"
+                     "consul_admin_secret"
+                     "common_admin_secret"
+                     "s3_auth_admin_secret"
+                     "csm_auth_admin_secret"
+                     "csm_mgmt_admin_secret")
+readonly cortx_secret_fields
 
-# Validate the "solution.yaml" file against the "solution_check.yaml" file
-while IFS= read -r line; do
-    echo "${line}"
-    if [[ "${line}" != *"Validate solution file result"* ]]; then
-        continue
+function parseSolution()
+{
+    ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
+}
+
+function extractBlock()
+{
+    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
+}
+
+#######################################
+# Get a scalar value given a YAML path in a solution.yaml file.
+# Arguments:
+#   A YAML path to lookup, e.g. "solution.common.external_services.s3.type".
+#   Wildcard paths are not accepted, e.g. "solution.nodes.node*.name".
+# Outputs:
+#   Writes the value to stdout. An empty string "" is printed if
+#   the value does not exist, or the value is YAML `null` or `~`.
+# Returns:
+#   1 if the yaml path contains a wildcard, 0 otherwise.
+#######################################
+function getSolutionValue()
+{
+    local yaml_path=$1
+    # Don't allow wildcard paths
+    if [[ ${yaml_path}  == *"*"* ]]; then
+        return 1
     fi
-    if [[ "${line}" == *"failed"* ]]; then
+
+    local value
+    value=$(parseSolution "${yaml_path}")
+    # discard everything before and including the first '>'
+    value="${value#*>}"
+    [[ ${value} == "null" || ${value} == "~" ]] && value=""
+    echo "${value}"
+}
+
+function configurationCheck()
+{
+    # Check if the file exists
+    if [[ ! -f ${solution_yaml} ]]
+    then
+        echo "ERROR: ${solution_yaml} does not exist"
         exit 1
     fi
-done <<< "$(./solution_validation_scripts/solution-validation.sh "${solution_yaml}")"
+
+    # Validate secrets configuration
+    secret_name=$(getSolutionValue "solution.secrets.name")
+    secret_ext=$(getSolutionValue "solution.secrets.external_secret")
+    if [[ -z "${secret_name}" && -z "${secret_ext}" ]] ; then
+        printf "Error: %s: solution.secrets.name or solution.secrets.external_secret must be specified\n" "${solution_yaml}"
+        exit 1
+    elif [[ -n "${secret_name}" && -n "${secret_ext}" ]] ; then
+        printf "Error: %s: Cannot specify both solution.secrets.name or solution.secrets.external_secret\n" "${solution_yaml}"
+        exit 1
+    elif [[ -n "${secret_ext}" ]] ; then
+        # If an external_secret is specified, verify that the named secret exists
+        output=$(kubectl get secrets "${secret_ext}" --no-headers)
+        if [[ -z "${output}" ]] ; then
+            printf "Error: %s: External Secret %s does not exist (solution.secrets.external_secret)\n" "${solution_yaml}" "${secret_ext}"
+            exit 1
+        fi
+
+        # Verify that all required cortx fields are present in the external secret
+        secret_output=$(kubectl describe secrets "${secret_ext}")
+        fail="false"
+        for field in "${cortx_secret_fields[@]}" ; do
+            if [[ "${secret_output}:" != *"${field}:"* ]] ; then
+                printf "Error: External Secret %s does not contain the required field '%s'\n" "${secret_ext}" "${field}"
+                fail="true"
+            fi
+        done
+        if [[ "${fail}" == "true" ]] ; then
+            exit 1
+        fi
+    fi
+
+    # Validate the "solution.yaml" file against the "solution_check.yaml" file
+    while IFS= read -r line; do
+        echo "${line}"
+        if [[ "${line}" != *"Validate solution file result"* ]]; then
+            continue
+        fi
+        if [[ "${line}" == *"failed"* ]]; then
+            exit 1
+        fi
+    done <<< "$(./solution_validation_scripts/solution-validation.sh "${solution_yaml}")"
+}
+
+# Initial solution.yaml / system state checks
+configurationCheck
 
 max_consul_inst=3
 max_kafka_inst=3
@@ -83,43 +165,6 @@ if [[ "${exit_early}" = true ]]; then
     echo "Exit script early."
     exit 1
 fi
-
-function parseSolution()
-{
-    ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
-}
-
-function extractBlock()
-{
-    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
-}
-
-#######################################
-# Get a scalar value given a YAML path in a solution.yaml file.
-# Arguments:
-#   A YAML path to lookup, e.g. "solution.common.external_services.s3.type".
-#   Wildcard paths are not accepted, e.g. "solution.nodes.node*.name".
-# Outputs:
-#   Writes the value to stdout. An empty string "" is printed if
-#   the value does not exist, or the value is YAML `null` or `~`.
-# Returns:
-#   1 if the yaml path contains a wildcard, 0 otherwise.
-#######################################
-function getSolutionValue()
-{
-    local yaml_path=$1
-    # Don't allow wildcard paths
-    if [[ ${yaml_path}  == *"*"* ]]; then
-        return 1
-    fi
-
-    local value
-    value=$(parseSolution "${yaml_path}")
-    # discard everything before and including the first '>'
-    value="${value#*>}"
-    [[ ${value} == "null" || ${value} == "~" ]] && value=""
-    echo "${value}"
-}
 
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
@@ -625,7 +670,25 @@ function deployCortxConfigMap()
         --set cortxSetupSize="$(extractBlock 'solution.common.setup_size' || true)"
         --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
         --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
+        --set cortxIoService.ports.http="$(getSolutionValue 'solution.common.external_services.s3.ports.http')"
+        --set cortxIoService.ports.https="$(getSolutionValue 'solution.common.external_services.s3.ports.https')"
     )
+
+    local rgw_extra_config
+    rgw_extra_config="$(extractBlock 'solution.common.s3.extra_configuration')"
+    if [[ -n ${rgw_extra_config} \
+          && ${rgw_extra_config} != "null" \
+          && ${rgw_extra_config} != "~" ]]; then
+        helm_install_args+=(--set cortxRgw.extraConfiguration="${rgw_extra_config}")
+    fi
+
+    local motr_extra_config
+    motr_extra_config="$(extractBlock 'solution.common.motr.extra_configuration')"
+    if [[ -n ${motr_extra_config} \
+          && ${motr_extra_config} != "null" \
+          && ${motr_extra_config} != "~" ]]; then
+        helm_install_args+=(--set cortxMotr.extraConfiguration="${motr_extra_config}")
+    fi
 
     for idx in "${!node_name_list[@]}"; do
         helm_install_args+=(
@@ -729,6 +792,40 @@ function deployCortxConfigMap()
         --from-file="${auto_gen_ha_path}"
 }
 
+function pwgen()
+{
+    # This function generates a random password that is
+    # 16 characters long, starts with an alphanumeric
+    # character, and contains at least one character each
+    # of upper case, lower case, digit, and a special character.
+
+    function choose()
+    {
+        seqlen=$1
+        charset=$2
+        # https://unix.stackexchange.com/a/230676
+        tr -dc "${charset}" < /dev/urandom | head -c "${seqlen}"
+    }
+
+    # Choose an alphanumeric char for the first char of the password
+    local first
+    first=$(choose 1 '[:alnum:]')
+
+    # Choose one of each of the required fields, plus 11 more
+    # characters, and shuffle them
+    local rest
+    rest=$({
+        choose 1 '!@#$%^'
+        choose 1 '[:digit:]'
+        choose 1 '[:lower:]'
+        choose 1 '[:upper:]'
+        choose 11 '[:alnum:]!@#$%^'
+    } | fold -w1 | shuf | tr -d '\n')
+
+    # Cat the first char plus remaining 15 chars
+    printf "%s%s" "${first}" "${rest}"
+}
+
 function deployCortxSecrets()
 {
     printf "########################################################\n"
@@ -738,38 +835,51 @@ function deployCortxSecrets()
     # in the "auto-gen-secret" folder
     secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
     mkdir -p "${secret_auto_gen_path}"
-    secret_name=$(parseSolution "solution.secrets.name")
-    secret_fname=$(echo "${secret_name}" | cut -f2 -d'>')
-    yaml_content_path=$(echo "${secret_name}" | cut -f1 -d'>')
-    yaml_content_path=${yaml_content_path/.name/".content"}
-    secrets="$(./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "${yaml_content_path}" 2)"
+    cortx_secret_name=$(getSolutionValue "solution.secrets.name")
+    cortx_secret_ext=$(getSolutionValue "solution.secrets.external_secret")
+    if [[ -n "${cortx_secret_name}" ]]; then
+        # Process secrets from solution.yaml
+        secrets=()
+        for field in "${cortx_secret_fields[@]}"; do
+            fcontent=$(getSolutionValue "solution.secrets.content.${field}")
+            if [[ -z ${fcontent} ]]; then
+                # No data for this field.  Generate a password.
+                pw=$(pwgen)
+                fcontent=${pw}
+                printf "Generated secret for %s\n" "${field}"
+            fi
+            secrets+=( "  ${field}: ${fcontent}" )
+        done
+        secrets_block=$( printf "%s\n" "${secrets[@]}" )
 
-    new_secret_gen_file="${secret_auto_gen_path}/${secret_fname}.yaml"
-    cp "${cfgmap_path}/other/secret-template.yaml" "${new_secret_gen_file}"
-    ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${secret_fname}"
-    ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets}"
+        new_secret_gen_file="${secret_auto_gen_path}/${cortx_secret_name}.yaml"
+        cp "${cfgmap_path}/other/secret-template.yaml" "${new_secret_gen_file}"
+        ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${cortx_secret_name}"
+        ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets_block}"
+        kubectl_create_secret_cmd="kubectl create -f ${new_secret_gen_file} --namespace=${namespace}"
+        if ! ${kubectl_create_secret_cmd}; then
+            printf "Exit early.  Failed to create Secret '%s'\n" "${cortx_secret_name}"
+            exit 1
+        fi
 
-    kubectl_cmd_output=$(kubectl create -f "${new_secret_gen_file}" --namespace="${namespace}" 2>&1)
-
-    if [[ "${kubectl_cmd_output}" == *"BadRequest"* ]]; then
-        printf "Exit early. Create secret failed with error:\n%s\n" "${kubectl_cmd_output}"
-        exit 1
+    elif [[ -n "${cortx_secret_ext}" ]]; then
+        cortx_secret_name="${cortx_secret_ext}"
+        printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
-    echo "${kubectl_cmd_output}"
 
     control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
     data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
     server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
     ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
 
-    printf "%s" "${secret_fname}" > ${control_secret_path}
-    printf "%s" "${secret_fname}" > ${data_secret_path}
-    printf "%s" "${secret_fname}" > ${server_secret_path}
-    printf "%s" "${secret_fname}" > ${ha_secret_path}
+    printf "%s" "${cortx_secret_name}" > ${control_secret_path}
+    printf "%s" "${cortx_secret_name}" > ${data_secret_path}
+    printf "%s" "${cortx_secret_name}" > ${server_secret_path}
+    printf "%s" "${cortx_secret_name}" > ${ha_secret_path}
 
     if [[ ${num_motr_client} -gt 0 ]]; then
         client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
-        printf "%s" "${secret_fname}" > ${client_secret_path}
+        printf "%s" "${cortx_secret_name}" > ${client_secret_path}
     fi
 }
 
@@ -1222,3 +1332,28 @@ if [[ $num_motr_client -gt 0 ]]; then
     deployCortxClient
 fi
 cleanup
+
+
+# Note: It is not ideal that some of these values are hard-coded here.
+#       The data comes from the helm charts and so there is no feasible
+#       way of getting the values otherwise.
+data_service_name="cortx-io-svc-0"  # present in cortx-platform/values.yaml... what to do?
+data_service_default_user="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
+control_service_name="cortx-control-loadbal-svc"  # hard coded in script above installing help or cortx-control
+control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templates/_config.tpl
+
+echo "
+-----------------------------------------------------------
+The CORTX cluster installation is complete.
+
+The S3 data service is accessible through the ${data_service_name} service.
+   Default IAM access key: ${data_service_default_user}
+   Default IAM secret key is accessible via:
+       kubectl get secrets/${cortx_secret_name} --template={{.data.s3_auth_admin_secret}} | base64 -d
+
+The CORTX control service is accessible through the ${control_service_name} service.
+   Default control username: ${control_service_default_user}
+   Default control password is accessible via:
+       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d
+-----------------------------------------------------------
+"
