@@ -3,12 +3,12 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      kafka_admin_secret: null
-      consul_admin_secret: null
-      common_admin_secret: null
-      s3_auth_admin_secret: null
-      csm_auth_admin_secret: null
-      csm_mgmt_admin_secret: null
+      kafka_admin_secret: Seagate@123
+      consul_admin_secret: Seagate@123
+      common_admin_secret: Seagate@123
+      s3_auth_admin_secret: ldapadmin
+      csm_auth_admin_secret: seagate2
+      csm_mgmt_admin_secret: Cortxadmin@123
   images:
     cortxcontrol: ghcr.io/seagate/centos:7
     cortxdata: ghcr.io/seagate/centos:7
