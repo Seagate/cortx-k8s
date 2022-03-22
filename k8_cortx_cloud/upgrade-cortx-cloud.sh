@@ -157,9 +157,17 @@ cortx_deployments="$(kubectl get deployments --namespace="${NAMESPACE}" --output
 if [[ -z ${cortx_deployments} ]]; then
     printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
 else
-    printf "Updating CORTX Deployments to use image %s\n" "${UPGRADE_IMAGE}"
+    RGW_IMAGE="${UPGRADE_IMAGE/cortx-all/cortx-rgw}"
+    printf "Updating CORTX Deployments to use:\n"
+    printf "   %s\n" "${UPGRADE_IMAGE}"
+    printf "   %s\n" "${RGW_IMAGE}"
     while IFS= read -r deployment; do
-        kubectl set image deployment "${deployment}" "*=${UPGRADE_IMAGE}"
+        if [[ "${deployment}" == "cortx-server-"* ]]; then
+            IMAGE="${RGW_IMAGE}"
+        else
+            IMAGE="${UPGRADE_IMAGE}"
+        fi
+        kubectl set image deployment "${deployment}" "*=${IMAGE}"
     done <<< "${cortx_deployments}"
     printf "\n"
 fi
