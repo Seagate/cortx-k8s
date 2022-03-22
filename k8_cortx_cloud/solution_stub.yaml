@@ -31,7 +31,6 @@ solution:
       default_iam_users:
         auth_admin: "sgiamadmin"
         auth_user: "user_name"
-      num_inst: 2
       start_port_num: 28051
       max_start_timeout: 240
       extra_configuration: ""
