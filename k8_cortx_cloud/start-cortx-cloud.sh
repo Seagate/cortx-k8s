@@ -2,8 +2,6 @@
 
 # shellcheck disable=SC2312
 
-set -u
-
 solution_yaml=${1:-'solution.yaml'}
 
 # Check if the file exists
