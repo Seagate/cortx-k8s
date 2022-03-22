@@ -1069,7 +1069,6 @@ function deployCortxServer()
             --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
             --set cortxserver.localpathpvc.mountpath="${local_storage}" \
             --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxserver.s3.numinst="${s3_num_inst}" \
             --set cortxserver.s3.startportnum="${s3_start_port_num}" \
             --set cortxserver.hax.port="${hax_port}" \
             --set cortxserver.secretinfo="secret-info.txt" \
