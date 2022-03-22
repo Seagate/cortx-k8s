@@ -1,5 +1,4 @@
 {{- define "config.yaml" -}}
-{{- $ioSvcName := printf "%s-0" .Values.cortxIoServiceName -}}
 cortx:
   external:
     {{- if .Values.externalKafka.enabled }}
@@ -31,53 +30,29 @@ cortx:
   utils:
     message_bus_backend: kafka
   {{- if .Values.cortxRgw.enabled }}
-  s3:                                                               # DEPRECATED - ENTIRE S3 KEY
-    iam:
-      endpoints:
-      - https://{{ $ioSvcName }}:9443
-      - http://{{ $ioSvcName }}:9080
-    data:
-      endpoints:
-      - http://{{ $ioSvcName }}:80
-      - https://{{ $ioSvcName }}:443
-    internal:
-      endpoints:
-      - http://{{ $ioSvcName }}:28049
-    {{- with .Values.cortxS3.instanceCount }}
-    service_instances: {{ . | int }}
-    {{- end }}
-    io_max_units: 8
-    {{- with .Values.cortxS3.maxStartTimeout }}
-    max_start_timeout: {{ . | int }}
-    {{- end }}
-    auth_user: {{ .Values.cortxRgw.authUser }}
-    auth_admin: {{ .Values.cortxRgw.authAdmin }}
-    auth_secret: {{ .Values.cortxRgw.authSecret }}
   rgw:
-    iam:                                                            # DEPRECATED - IAM KEY
-      endpoints:
-      - https://{{ $ioSvcName }}:8443
-      - http://{{ $ioSvcName }}:8000
-    data:
-      endpoints:
-      - http://{{ $ioSvcName }}:8000
-      - https://{{ $ioSvcName }}:8443
-    s3:
-      endpoints:
-      - http://{{ $ioSvcName }}:8000
-      - https://{{ $ioSvcName }}:8443
-    {{- with .Values.cortxS3.instanceCount }}
-    service_instances: {{ . | int }}
-    {{- end }}
-    io_max_units: 8                                                 #HARDCODED
-    {{- with .Values.cortxS3.maxStartTimeout }}
-    max_start_timeout: {{ . | int }}
-    {{- end }}
+    {{- $ioSvcName := required "A valid cortxIoService.name is required!" .Values.cortxIoService.name }}
+    {{- $iosvcHttpPort := required "A valid cortxIoService.ports.http is required!" .Values.cortxIoService.ports.http }}
+    {{- $iosvcHttpsPort := required "A valid cortxIoService.ports.https is required!" .Values.cortxIoService.ports.https }}
     auth_user: {{ .Values.cortxRgw.authUser }}
     auth_admin: {{ .Values.cortxRgw.authAdmin }}
     auth_secret: {{ .Values.cortxRgw.authSecret }}
+    s3:                                                        # deprecated
+      endpoints:
+      - http://{{ $ioSvcName }}:{{ $iosvcHttpPort }}
+      - https://{{ $ioSvcName }}:{{ $iosvcHttpsPort }}
+    public:
+      endpoints:
+      - http://{{ $ioSvcName }}:{{ $iosvcHttpPort }}
+      - https://{{ $ioSvcName }}:{{ $iosvcHttpsPort }}
+    service:
+      endpoints:
+      - http://:22751
+      - https://:23001
+    io_max_units: 8
+    max_start_timeout: {{ .Values.cortxRgw.maxStartTimeout | int }}
+    service_instances: 1
     limits:
-      num_services: 1                                               #HARDCODED
       services:
       - name: rgw
         memory:
@@ -123,9 +98,9 @@ cortx:
       endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
     clients:
     {{- if .Values.cortxRgw.enabled }}
-      - name: rgw
-        num_instances: 1  # number of instances *per-pod*
-        endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
+    - name: rgw
+      num_instances: 1  # number of instances *per-pod*
+      endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
     {{- end }}
     - name: motr_client
       num_instances: {{ .Values.cortxMotr.clientInstanceCount | int }}
@@ -154,6 +129,9 @@ cortx:
     {{- end }}
   {{- if .Values.cortxControl.enabled }}
   csm:
+    {{- $ioSvcName := required "A valid cortxIoService.name is required!" .Values.cortxIoService.name }}
+    {{- $iosvcHttpPort := required "A valid cortxIoService.ports.http is required!" .Values.cortxIoService.ports.http }}
+    {{- $iosvcHttpsPort := required "A valid cortxIoService.ports.https is required!" .Values.cortxIoService.ports.https }}
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
     mgmt_admin: cortxadmin

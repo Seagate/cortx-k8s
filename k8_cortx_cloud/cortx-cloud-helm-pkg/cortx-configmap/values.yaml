@@ -76,8 +76,19 @@ cortxStoragePaths:
   log: "/etc/cortx/log"
   config: "/etc/cortx"
 
-# cortxIoServiceName is the name of the IO service
-cortxIoServiceName: "cortx-io-svc"
+# cortxIoService allows configuring information about the external IO service.
+# All values must be specified.
+# e.g.
+# cortxIoService:
+#   name: cortx-io-svc-0
+#   ports:
+#     http: 80
+#     https: 443
+cortxIoService:
+  name: cortx-io-svc-0
+  ports:
+    http: ""
+    https: ""
 
 # cortxControl allows configuring CORTX CSM settings
 cortxControl:
@@ -89,7 +100,7 @@ cortxS3:
   instanceCount: 2
   maxStartTimeout: 240
 
-# cortxS3 allows configuring CORTX S3 settings
+# cortxRgw allows configuring CORTX RGW settings
 cortxRgw:
   enabled: true
   authAdmin: cortx-admin
@@ -97,6 +108,7 @@ cortxRgw:
   # The below value should match the corresponding key in solution.yaml
   # and is generally not changed by default.
   authSecret: s3_auth_admin_secret
+  maxStartTimeout: 240
   # An optional multi-line string that contains extra RGW configuration
   # settings. The string may contain template expressions, and is appended to
   # the end of the computed configuration.

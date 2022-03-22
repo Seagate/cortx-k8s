@@ -1,15 +1,6 @@
 solution:
   namespace: required
   deployment_type: required
-  secrets:
-    name: required
-    content:
-      kafka_admin_secret: required
-      consul_admin_secret: required
-      common_admin_secret: required
-      s3_auth_admin_secret: required
-      csm_auth_admin_secret: required
-      csm_mgmt_admin_secret: required
   images:
     cortxcontrol: required
     cortxdata: required

@@ -4,12 +4,12 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      kafka_admin_secret: Seagate@123
-      consul_admin_secret: Seagate@123
-      common_admin_secret: Seagate@123
-      s3_auth_admin_secret: cortxadmin
-      csm_auth_admin_secret: seagate2
-      csm_mgmt_admin_secret: Cortxadmin@123
+      kafka_admin_secret: null
+      consul_admin_secret: null
+      common_admin_secret: null
+      s3_auth_admin_secret: null
+      csm_auth_admin_secret: null
+      csm_mgmt_admin_secret: null
   images:
     cortxcontrol: ghcr.io/seagate/centos:7
     cortxdata: ghcr.io/seagate/centos:7
@@ -54,8 +54,8 @@ solution:
         type: NodePort
         count: 1
         ports:
-          http: 8000
-          https: 8443
+          http: 80
+          https: 443
         nodePorts:
           http: null
           https: null

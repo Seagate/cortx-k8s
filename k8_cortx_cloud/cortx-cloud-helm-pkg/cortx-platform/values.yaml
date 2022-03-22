@@ -56,8 +56,8 @@ services:
     type: ClusterIP
     count: 1
     ports:
-      http: 8000
-      https: 8443
+      http: 80
+      https: 443
     nodePorts:
       http: ""
       https: ""

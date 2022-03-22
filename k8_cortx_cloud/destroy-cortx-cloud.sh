@@ -308,19 +308,17 @@ function deleteSecrets()
     printf "########################################################\n"
     printf "# Delete Secrets                                       #\n"
     printf "########################################################\n"
-    output=$(./parse_scripts/parse_yaml.sh $solution_yaml "solution.secrets*.name")
-    IFS=';' read -r -a parsed_secret_name_array <<< "$output"
-    for secret_name in "${parsed_secret_name_array[@]}"
-    do
-        secret_name=$(echo $secret_name | cut -f2 -d'>')
-        kubectl delete secret "${secret_name}" --namespace="${namespace}" --ignore-not-found=true
-    done
+    secret_name=$(./parse_scripts/parse_yaml.sh "${solution_yaml}" "solution.secrets.name")
+    if [[ -n "${secret_name}" ]]; then
+        secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
+        kubectl delete secret "${secret_name}" --namespace="${namespace}"
 
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-client -name "secret-*" -delete
+        find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
+        find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
+        find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
+        find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
+        find $(pwd)/cortx-cloud-helm-pkg/cortx-client -name "secret-*" -delete
+    fi
 }
 
 function deleteConsul()
