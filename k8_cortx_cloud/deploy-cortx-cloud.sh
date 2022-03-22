@@ -1030,7 +1030,6 @@ function deployCortxServer()
     printf "########################################################\n"
     local cortxserver_image
     local hax_port
-    local s3_num_inst
     local s3_start_port_num
     local s3_service_type
     local s3_service_ports_http
@@ -1039,7 +1038,6 @@ function deployCortxServer()
     s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
-    s3_num_inst="$(getSolutionValue 'solution.common.s3.num_inst')"
     s3_start_port_num="$(getSolutionValue 'solution.common.s3.start_port_num')"
     hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
 
