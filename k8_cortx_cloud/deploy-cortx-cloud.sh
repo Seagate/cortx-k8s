@@ -329,6 +329,8 @@ function deployKubernetesPrereqs()
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
 
+    [[ ${deployment_type} == "data-only" ]] && s3_service_count=0
+
     local optional_values=()
     local s3_service_nodeports_http
     local s3_service_nodeports_https
@@ -976,6 +978,8 @@ function deployCortxControl()
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && optional_values+=(--set cortxcontrol.service.loadbal.nodePorts.https="${control_service_nodeports_https}")
 
+    [[ ${deployment_type} == "data-only" ]] && optional_values+=(--set cortxcontrol.service.loadbal.enabled=false)
+
     helm install "cortx-control-${namespace}" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control" \
         --set cortxcontrol.image="${control_image}" \
@@ -1366,8 +1370,11 @@ control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templat
 
 echo "
 -----------------------------------------------------------
-The CORTX cluster installation is complete.
 
+The CORTX cluster installation is complete."
+
+if [[ ${deployment_type} != "data-only" ]]; then
+    echo "
 The S3 data service is accessible through the ${data_service_name} service.
    Default IAM access key: ${data_service_default_user}
    Default IAM secret key is accessible via:
@@ -1376,6 +1383,7 @@ The S3 data service is accessible through the ${data_service_name} service.
 The CORTX control service is accessible through the ${control_service_name} service.
    Default control username: ${control_service_default_user}
    Default control password is accessible via:
-       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d
------------------------------------------------------------
-"
+       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+fi
+
+printf "\n-----------------------------------------------------------"
