@@ -126,8 +126,10 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 >  :information_source: You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
 
-2.  Update or clone `./k8_cortx_cloud/solution.yaml` to reflect your environment. The most common and expected updates are reflected below:
-    - Update all passwords in solution.yaml. The `csm-secret` should include one special character in cortx-secret.
+2.  For initial deployments, copy the example solution configuration file [`./k8_cortx_cloud/solution.example.yaml`](k8_cortx_cloud/solution.example.yaml) to `./k8_cortx_cloud/solution.yaml` or to a filename of your choice.
+
+3.  Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
+    - Update all passwords. The `csm-secret` should include one special character in cortx-secret.
     - Update the images section with cortx-all image tag desired to be used.
         - Each specific release of the CORTX on Kubernetes code will point to a specific predefined container image.
         - This can be overridden as desired.
@@ -136,9 +138,9 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
     - Update nodes section with proper node hostnames from your Kubernetes cluster.
         - If the Kubernetes control plane nodes are required to be used for deployment, make sure to remove the taint from it before deploying CORTX.
         - For further details and reference, you can view the official Kubernetes documentation topic on [Taints & Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
-    - For further details on `solution.yaml` specifics, review the [Solution YAML Overview](#solution-yaml-overview) below.
+    - For further details on the solution configuration file specifics, review the [Solution YAML Overview](#solution-yaml-overview) section below.
 
-3.  Run the `deploy-cortx-cloud.sh` script, passing in the path to your updated `solution.yaml` file.
+4.  Run the `deploy-cortx-cloud.sh` script, passing in the path to your updated `solution.yaml` file.
 
    ```bash
    ./deploy-cortx-cloud.sh solution.yaml
@@ -186,7 +188,9 @@ Run the `destroy-cortx-cloud.sh` script, passing in the path to the previously u
 
 ## Solution YAML Overview
 
-The CORTX solution consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution file and extract information they need to deploy and destroy CORTX.
+The CORTX solution configuration file consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution configuration file and extract information they need to deploy and destroy CORTX.
+
+An example solution configuration is provided by [`solution.example.yaml`](k8_cortx_cloud/solution.example.yaml).
 
 All paths below are prefixed with `solution.` for fully-qualified naming and are required to have a value unless explicitly marked as _(Optional)_ below.
 
@@ -265,7 +269,7 @@ This section contains common parameters that affect all CORTX components running
 | `common.motr.num_client_inst`                         | TODO       | `0` |
 | `common.motr.start_port_num`                          | TODO       | `29000` |
 | `common.motr.extra_configuration`                     | _(Optional)_ Extra configuration settings to append to the Motr configuration. The value is a multi-line string included verbatim. | `""` |
-| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` | 
+| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` |
 | `common.hax.service_name`                             | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
 | `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
 | `common.external_services.s3.type`                    | Kubernetes Service type for external access to S3 IO                                              | `NodePort` |
