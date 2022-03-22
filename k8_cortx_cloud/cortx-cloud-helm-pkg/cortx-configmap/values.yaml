@@ -90,8 +90,13 @@ cortxIoService:
     http: ""
     https: ""
 
+# cortxControl allows configuring CORTX CSM settings
+cortxControl:
+  enabled: true
+
 # cortxRgw allows configuring CORTX RGW settings
 cortxRgw:
+  enabled: true
   authAdmin: cortx-admin
   authUser: cortx-user
   # The below value should match the corresponding key in solution.yaml
@@ -110,19 +115,21 @@ cortxRgw:
 
 # cortxHA allows configuring CORTX HA settings
 cortxHa:
-  haxService:
-    protocol: https
-    name: cortx-hax-svc
-    port: 22003
+  enabled: true
 
 #cortxHare allows configuring CORTX HARE settings
 cortxHare:
   haxDataEndpoints: []
   haxServerEndpoints: []
   haxClientEndpoints: []
+  haxService:
+    protocol: https
+    name: cortx-hax-svc
+    port: 22003
 
 # cortxMotr allows configuring CORTX MOTR settings
 cortxMotr:
+  clientInstanceCount: 0
   clientEndpoints: []
   confdEndpoints: []
   iosEndpoints: []

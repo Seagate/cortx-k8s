@@ -1,5 +1,6 @@
 solution:
   namespace: required
+  deployment_type: required
   images:
     cortxcontrol: required
     cortxdata: required

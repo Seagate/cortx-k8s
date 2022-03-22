@@ -6,6 +6,7 @@ cortxcontrol:
   serviceaccountname: cortx-sa
   service:
     loadbal:
+      enabled: true
       name: cortx-control-loadbal-svc
       type: NodePort
       ports:

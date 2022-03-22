@@ -159,6 +159,14 @@ if [[ "${exit_early}" = true ]]; then
     exit 1
 fi
 
+deployment_type=$(getSolutionValue 'solution.deployment_type')
+case ${deployment_type} in
+    standard|data-only) printf "Deployment type: %s\n" "${deployment_type}" ;;
+    *)                  printf "Invalid deployment type '%s'\n" "${deployment_type}" ; exit 1 ;;
+esac
+
+printf "\n"
+
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
@@ -320,6 +328,8 @@ function deployKubernetesPrereqs()
     s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
+
+    [[ ${deployment_type} == "data-only" ]] && s3_service_count=0
 
     local optional_values=()
     local s3_service_nodeports_http
@@ -601,13 +611,17 @@ function deployCortxLocalBlockStorage()
 function deleteStaleAutoGenFolders()
 {
     # Delete all stale auto gen folders
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-cfgmap-${namespace}"
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-control-${namespace}"
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-secret-${namespace}"
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/node-info-${namespace}"
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/storage-info-${namespace}"
-    for i in "${!node_name_list[@]}"; do
-        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name_list[i]}-${namespace}"
+    for gen in \
+        auto-gen-cfgmap \
+        auto-gen-control \
+        auto-gen-ha \
+        auto-gen-secret \
+        node-info \
+        storage-info; do
+        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/${gen}-${namespace}"
+    done
+    for node_name in "${node_name_list[@]}"; do
+        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name}-${namespace}"
     done
 }
 
@@ -618,28 +632,40 @@ function generateMachineId()
     echo "${uuid//-}"
 }
 
+function generateMachineIds()
+{
+    printf "########################################################\n"
+    printf "# Generating CORTX Pod Machine IDs                      \n"
+    printf "########################################################\n"
+
+    local id_paths=()
+
+    if [[ ${deployment_type} != "data-only" ]]; then
+        id_paths+=(
+            "${cfgmap_path}/auto-gen-control-${namespace}"
+            "${cfgmap_path}/auto-gen-ha-${namespace}"
+        )
+    fi
+
+    for node in "${node_name_list[@]}"; do
+        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
+
+        id_paths+=("${auto_gen_path}/data")
+        [[ ${deployment_type} != "data-only" ]] && id_paths+=("${auto_gen_path}/server")
+        ((num_motr_client > 0)) && id_paths+=("${auto_gen_path}/client")
+    done
+
+    for path in "${id_paths[@]}"; do
+        mkdir -p "${path}"
+        generateMachineId > "${path}/id"
+    done
+}
+
 function deployCortxConfigMap()
 {
     printf "########################################################\n"
     printf "# Deploy CORTX Configmap                                \n"
     printf "########################################################\n"
-
-    readonly auto_gen_control_path="${cfgmap_path}/auto-gen-control-${namespace}"
-    readonly auto_gen_ha_path="${cfgmap_path}/auto-gen-ha-${namespace}"
-
-    # Create Pod machine IDs
-    for path in ${auto_gen_control_path} ${auto_gen_ha_path}; do
-        mkdir -p "${path}"
-        generateMachineId > "${path}/id"
-    done
-    for node in "${node_name_list[@]}"; do
-        auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-        mkdir -p "${auto_gen_path}"/{data,server,client}
-
-        generateMachineId > "${auto_gen_path}/data/id"
-        generateMachineId > "${auto_gen_path}/server/id"
-        ((num_motr_client > 0)) && generateMachineId > "${auto_gen_path}/client/id"
-    done
 
     # This assigns to a global $tag variable
     splitDockerImage "$(parseSolution 'solution.images.cortxdata' | cut -f2 -d'>' || true)"
@@ -648,9 +674,9 @@ function deployCortxConfigMap()
         --set externalKafka.enabled=true
         --set externalLdap.enabled=true
         --set externalConsul.enabled=true
-        --set cortxHa.haxService.protocol="$(extractBlock 'solution.common.hax.protocol' || true)"
-        --set cortxHa.haxService.name="$(extractBlock 'solution.common.hax.service_name' || true)"
-        --set cortxHa.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
+        --set cortxHare.haxService.protocol="$(extractBlock 'solution.common.hax.protocol' || true)"
+        --set cortxHare.haxService.name="$(extractBlock 'solution.common.hax.service_name' || true)"
+        --set cortxHare.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
         --set cortxRgw.maxStartTimeout="$(extractBlock 'solution.common.s3.max_start_timeout' || true)"
         --set cortxStoragePaths.local="${local_storage}"
         --set cortxStoragePaths.shared="${shared_storage}"
@@ -663,6 +689,14 @@ function deployCortxConfigMap()
         --set cortxIoService.ports.http="$(getSolutionValue 'solution.common.external_services.s3.ports.http')"
         --set cortxIoService.ports.https="$(getSolutionValue 'solution.common.external_services.s3.ports.https')"
     )
+
+    if [[ ${deployment_type} == "data-only" ]]; then
+        helm_install_args+=(
+            --set cortxRgw.enabled=false
+            --set cortxHa.enabled=false
+            --set cortxControl.enabled=false
+        )
+    fi
 
     local rgw_extra_config
     rgw_extra_config="$(extractBlock 'solution.common.s3.extra_configuration')"
@@ -691,6 +725,9 @@ function deployCortxConfigMap()
     done
 
     if ((num_motr_client > 0)); then
+        helm_install_args+=(
+            --set cortxMotr.clientInstanceCount="${num_motr_client}"
+        )
         for idx in "${!node_name_list[@]}"; do
             helm_install_args+=(
                 --set "cortxMotr.clientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[idx]}:21201"
@@ -707,19 +744,28 @@ function deployCortxConfigMap()
     helm_install_args+=(
         --set "clusterStorageSets.${storage_set_name}.durability.sns=${storage_set_dur_sns}"
         --set "clusterStorageSets.${storage_set_name}.durability.dix=${storage_set_dur_dix}"
-        --set "clusterStorageSets.${storage_set_name}.controlUuid=$(< "${auto_gen_control_path}/id")"
-        --set "clusterStorageSets.${storage_set_name}.haUuid=$(< "${auto_gen_ha_path}/id")"
     )
-    for node in "${node_name_list[@]}"; do
-        helm_install_args+=(
-            --set "clusterStorageSets.${storage_set_name}.nodes.${node}.dataUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/data/id")"
-            --set "clusterStorageSets.${storage_set_name}.nodes.${node}.serverUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/server/id")"
-        )
-        if ((num_motr_client > 0)); then
+
+    # UUIDs are selectively enabled based on deployment type
+    for type in control ha; do
+        local id_path="${cfgmap_path}/auto-gen-${type}-${namespace}/id"
+        if [[ -f ${id_path} ]]; then
             helm_install_args+=(
-                --set "clusterStorageSets.${storage_set_name}.nodes.${node}.clientUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/client/id")"
+                --set "clusterStorageSets.${storage_set_name}.${type}Uuid=$(< "${id_path}")"
             )
         fi
+    done
+
+    for node in "${node_name_list[@]}"; do
+        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
+        for type in data server client; do
+            local id_path="${auto_gen_path}/${type}/id"
+            if [[ -f ${id_path} ]]; then
+                helm_install_args+=(
+                    --set "clusterStorageSets.${storage_set_name}.nodes.${node}.${type}Uuid=$(< "${id_path}")"
+                )
+            fi
+        done
     done
 
     # Populate the cluster storage volumes
@@ -751,33 +797,26 @@ function deployCortxConfigMap()
 
     # Create node machine ID config maps
     for node in "${node_name_list[@]}"; do
-        auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-
-        kubectl create configmap "cortx-data-machine-id-cfgmap-${node}-${namespace}" \
-            --namespace="${namespace}" \
-            --from-file="${auto_gen_path}/data"
-
-        kubectl create configmap "cortx-server-machine-id-cfgmap-${node}-${namespace}" \
-            --namespace="${namespace}" \
-            --from-file="${auto_gen_path}/server"
-
-        if ((num_motr_client > 0)); then
-            # Create client machine ID config maps
-            kubectl create configmap "cortx-client-machine-id-cfgmap-${node}-${namespace}" \
-                --namespace="${namespace}" \
-                --from-file="${auto_gen_path}/client"
-        fi
+        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
+        for type in data server client; do
+            local id_path="${auto_gen_path}/${type}/id"
+            if [[ -f ${id_path} ]]; then
+                kubectl create configmap "cortx-${type}-machine-id-cfgmap-${node}-${namespace}" \
+                    --namespace="${namespace}" \
+                    --from-file="${id_path}"
+                fi
+        done
     done
 
-    # Create control machine ID config map
-    kubectl create configmap "cortx-control-machine-id-cfgmap-${namespace}" \
-        --namespace="${namespace}" \
-        --from-file="${auto_gen_control_path}"
-
-    # Create HA machine ID config map
-    kubectl create configmap "cortx-ha-machine-id-cfgmap-${namespace}" \
-        --namespace="${namespace}" \
-        --from-file="${auto_gen_ha_path}"
+    # Create control and HA machine ID config maps
+    for type in control ha; do
+        local id_path="${cfgmap_path}/auto-gen-{type}-${namespace}/id"
+        if [[ -f ${id_path} ]]; then
+            kubectl create configmap "cortx-${type}-machine-id-cfgmap-${namespace}" \
+                --namespace="${namespace}" \
+                --from-file="${id_path}"
+        fi
+    done
 }
 
 function pwgen()
@@ -917,6 +956,10 @@ function waitForAllDeploymentsAvailable()
 
 function deployCortxControl()
 {
+    if [[ ${deployment_type} == "data-only" ]]; then
+        return
+    fi
+
     printf "########################################################\n"
     printf "# Deploy CORTX Control                                  \n"
     printf "########################################################\n"
@@ -934,6 +977,8 @@ function deployCortxControl()
     local control_service_nodeports_https
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && optional_values+=(--set cortxcontrol.service.loadbal.nodePorts.https="${control_service_nodeports_https}")
+
+    [[ ${deployment_type} == "data-only" ]] && optional_values+=(--set cortxcontrol.service.loadbal.enabled=false)
 
     helm install "cortx-control-${namespace}" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control" \
@@ -1025,6 +1070,10 @@ function deployCortxData()
 
 function deployCortxServer()
 {
+    if [[ ${deployment_type} == "data-only" ]]; then
+        return
+    fi
+
     printf "########################################################\n"
     printf "# Deploy CORTX Server                                   \n"
     printf "########################################################\n"
@@ -1093,6 +1142,10 @@ function deployCortxServer()
 
 function deployCortxHa()
 {
+    if [[ ${deployment_type} == "data-only" ]]; then
+        return
+    fi
+
     printf "########################################################\n"
     printf "# Deploy CORTX HA                                       \n"
     printf "########################################################\n"
@@ -1291,6 +1344,7 @@ num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 
 deployCortxLocalBlockStorage
 deleteStaleAutoGenFolders
+generateMachineIds
 deployCortxConfigMap
 deployCortxSecrets
 deployCortxControl
@@ -1313,8 +1367,11 @@ control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templat
 
 echo "
 -----------------------------------------------------------
-The CORTX cluster installation is complete.
 
+The CORTX cluster installation is complete."
+
+if [[ ${deployment_type} != "data-only" ]]; then
+    echo "
 The S3 data service is accessible through the ${data_service_name} service.
    Default IAM access key: ${data_service_default_user}
    Default IAM secret key is accessible via:
@@ -1323,6 +1380,7 @@ The S3 data service is accessible through the ${data_service_name} service.
 The CORTX control service is accessible through the ${control_service_name} service.
    Default control username: ${control_service_default_user}
    Default control password is accessible via:
-       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d
------------------------------------------------------------
-"
+       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+fi
+
+printf "\n-----------------------------------------------------------"
