@@ -1,5 +1,3 @@
-# solution.yaml file will be removed in v0.3.0
-# please refer to solution.example.yaml instead
 solution:
   namespace: default
   deployment_type: standard
@@ -24,7 +22,7 @@ solution:
     rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
     busybox: ghcr.io/seagate/busybox:latest
   common:
-    setup_size: small
+    setup_size: large
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
       local: /etc/cortx
@@ -41,8 +39,6 @@ solution:
     motr:
       num_client_inst: 0
       start_port_num: 29000
-      md_size: 10
-      group_size: 1
       extra_configuration: ""
     hax:
       protocol: https

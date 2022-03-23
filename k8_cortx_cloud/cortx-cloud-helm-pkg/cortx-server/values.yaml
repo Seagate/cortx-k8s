@@ -6,7 +6,6 @@ cortxserver:
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   s3:
-    numinst: 2
     startportnum: 28051
   hax:
     port: 22003

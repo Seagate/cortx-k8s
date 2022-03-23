@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2312
+
 solution_yaml=${1:-'solution.yaml'}
 force_delete=${2:-''}
 
@@ -83,13 +85,11 @@ IFS=';' read -r -a parsed_var_val_array <<< "$parsed_node_output"
 find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
-node_selector_list=[] # long version
 count=0
 # Loop the var val tuple array
 for var_val_element in "${parsed_var_val_array[@]}"
 do
     node_name=$(echo $var_val_element | cut -f2 -d'>')
-    node_selector_list[count]=$node_name
     shorter_node_name=$(echo $node_name | cut -f1 -d'.')
     node_name_list[count]=$shorter_node_name
     count=$((count+1))
@@ -132,90 +132,93 @@ done <<< "$(kubectl get namespaces)"
 
 num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 
+function uninstallHelmChart()
+{
+    local chart=$1
+    local ns=()
+    [[ -n ${2:-} ]] && ns+=("--namespace=$2")
+    # Silence "release: not found" messages as those can be expected
+    helm uninstall "${chart}" "${ns[@]}" 2> >(grep -v 'uninstall.*release: not found')
+}
+
 #############################################################
 # Destroy CORTX Cloud functions
 #############################################################
 function deleteCortxClient()
 {
     printf "########################################################\n"
-    printf "# Delete CORTX Client                                   \n"
+    printf "# Delete CORTX Client                                  #\n"
     printf "########################################################\n"
-    for i in "${!node_selector_list[@]}"; do
-        helm uninstall "cortx-client-${node_name_list[$i]}-$namespace" -n $namespace
+    for node in "${node_name_list[@]}"; do
+        uninstallHelmChart "cortx-client-${node}-${namespace}" "${namespace}"
     done
 }
 
 function deleteCortxHa()
 {
     printf "########################################################\n"
-    printf "# Delete CORTX HA                                       \n"
+    printf "# Delete CORTX HA                                      #\n"
     printf "########################################################\n"
-    helm uninstall "cortx-ha-$namespace" -n $namespace
+    uninstallHelmChart "cortx-ha-${namespace}" "${namespace}"
 }
 
 function deleteCortxServer()
 {
     printf "########################################################\n"
-    printf "# Delete CORTX Server                                   \n"
+    printf "# Delete CORTX Server                                  #\n"
     printf "########################################################\n"
-    for i in "${!node_selector_list[@]}"; do
-        helm uninstall "cortx-server-${node_name_list[$i]}-$namespace" -n $namespace
+    for node in "${node_name_list[@]}"; do
+        uninstallHelmChart "cortx-server-${node}-${namespace}" "${namespace}"
     done
 }
 
 function deleteCortxData()
 {
     printf "########################################################\n"
-    printf "# Delete CORTX Data                                     \n"
+    printf "# Delete CORTX Data                                    #\n"
     printf "########################################################\n"
-    for i in "${!node_selector_list[@]}"; do
-        helm uninstall "cortx-data-${node_name_list[$i]}-$namespace" -n $namespace
+    for node in "${node_name_list[@]}"; do
+        uninstallHelmChart "cortx-data-${node}-${namespace}" "${namespace}"
     done
 }
 
 function deleteCortxControl()
 {
     printf "########################################################\n"
-    printf "# Delete CORTX Control                                  \n"
+    printf "# Delete CORTX Control                                 #\n"
     printf "########################################################\n"
-    helm uninstall "cortx-control-$namespace" -n $namespace
+    uninstallHelmChart "cortx-control-${namespace}" "${namespace}"
 }
 
 function waitForCortxPodsToTerminate()
 {
+    local count
     printf "\nWait for CORTX Pods to terminate"
     while true; do
         count=0
-        cortx_pods="$(kubectl get pods --namespace=$namespace | grep 'cortx' 2>&1)"
         while IFS= read -r line; do
-            if [[ "$line" == *"cortx"* ]]; then
-                count=$((count+1))
-            fi
-        done <<< "${cortx_pods}"
+            count=$(( count + 1 ))
+        done < <(kubectl get pods --namespace="${namespace}" | grep cortx 2>&1)
 
-        if [[ $count -eq 0 ]]; then
-            break
-        else
-            printf "."
-        fi
+        (( count == 0 )) && break || printf "."
         sleep 1s
     done
-    printf "\n\n"
+    printf ". Done.\n\n"
 }
 
 function deleteCortxLocalBlockStorage()
 {
-    printf "######################################################\n"
-    printf "# Delete CORTX Local Block Storage                    \n"
-    printf "######################################################\n"
-    helm uninstall "cortx-data-blk-data-$namespace" -n $namespace
+    printf "########################################################\n"
+    printf "# Delete CORTX Local Block Storage                     #\n"
+    printf "########################################################\n"
+    uninstallHelmChart "cortx-data-blk-data-${namespace}" "${namespace}"
 }
 
 function deleteCortxPVs()
 {
-    printf "######################################################\n"
-    printf "# Delete CORTX Persistent Volumes                     \n"
-    printf "######################################################\n"
+    printf "########################################################\n"
+    printf "# Delete CORTX Persistent Volumes                      #\n"
+    printf "########################################################\n"
     while IFS= read -r line; do
         if [[ $line != *"master"* && $line != *"AGE"* ]]
         then
@@ -229,7 +232,7 @@ function deleteCortxPVs()
                 kubectl delete pv ${pvc_line[0]}
             fi
         fi
-    done <<< "$(kubectl get pv -A)"
+    done < <(kubectl get pv --all-namespaces)
 }
 
 function deleteCortxConfigmap()
@@ -238,32 +241,26 @@ function deleteCortxConfigmap()
     printf "# Delete CORTX Configmap                               #\n"
     printf "########################################################\n"
     cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
-    # Delete data machine id config maps
-    for i in "${!node_name_list[@]}"; do
-        kubectl delete configmap "cortx-data-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
-        rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
 
+    for node in "${node_name_list[@]}"; do
+        for type in data server client; do
+            kubectl delete configmap \
+                "cortx-${type}-machine-id-cfgmap-${node}-${namespace}" \
+                --namespace="${namespace}" \
+                --ignore-not-found=true
+        done
+        rm -rf "${cfgmap_path}/auto-gen-${node}-${namespace}"
     done
-    # Delete server machine id config maps
-    for i in "${!node_name_list[@]}"; do
-        kubectl delete configmap "cortx-server-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
-        rm -rf "$cfgmap_path/auto-gen-${node_name_list[i]}-$namespace"
 
-        if [[ $num_motr_client -gt 0 ]]; then
-            # Delete client machine id config map
-            kubectl delete configmap "cortx-client-machine-id-cfgmap-${node_name_list[i]}-$namespace" --namespace=$namespace
-            rm -rf "$cfgmap_path/auto-gen-client--${node_name_list[i]}-$namespace"
-        fi
+    for type in control ha; do
+        kubectl delete configmap \
+            "cortx-${type}-machine-id-cfgmap-${namespace}" \
+            --namespace="${namespace}" \
+            --ignore-not-found=true
+        rm -rf "${cfgmap_path}/auto-gen-${type}-${namespace}"
     done
-    # Delete control machine id config map
-    kubectl delete configmap "cortx-control-machine-id-cfgmap-$namespace" --namespace=$namespace
-    rm -rf "$cfgmap_path/auto-gen-control-$namespace"
-    # Delete HA machine id config map
-    kubectl delete configmap "cortx-ha-machine-id-cfgmap-$namespace" --namespace=$namespace
-    rm -rf "$cfgmap_path/auto-gen-ha-$namespace"
-    # Delete CORTX config maps
-    # Silence "release not found" messages in case of an older deploy, or manual cleanup
-    helm uninstall "cortx-cfgmap-${namespace}" --namespace="${namespace}" 2> >(grep -v 'uninstall.*not found' || true)
+
+    uninstallHelmChart "cortx-cfgmap-${namespace}" "${namespace}"
     rm -rf "${cfgmap_path}/auto-gen-cfgmap-${namespace}"
 
     ## Backwards compatibility check
@@ -282,12 +279,12 @@ function deleteKafkaZookeper()
     printf "########################################################\n"
     printf "# Delete Kafka                                         #\n"
     printf "########################################################\n"
-    helm uninstall kafka -n "default"
+    uninstallHelmChart kafka default
 
     printf "########################################################\n"
     printf "# Delete Zookeeper                                     #\n"
     printf "########################################################\n"
-    helm uninstall zookeeper -n "default"
+    uninstallHelmChart zookeeper default
 }
 
 function deleteOpenLdap()
@@ -297,23 +294,13 @@ function deleteOpenLdap()
     ## This function is useful for deployments prior to v0.2.0
     ## that need this cleanup method.
 
-    openldap_array=[]
-    count=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a my_array <<< "$line"
-        openldap_array[count]="${my_array[1]}"
-        count=$((count+1))
-    done <<< "$(kubectl get pods -A | grep 'openldap-')"
+    kubectl get pods --namespace=default --output=name | grep '^pod/openldap-' |
+    while IFS= read -r pod; do
+        kubectl exec "${pod}" --namespace=default -- \
+            bash -c 'rm -rf /etc/3rd-party/* /var/data/3rd-party/* /var/log/3rd-party/*'
+    done
 
-    if [ ${#openldap_array[@]} -ne 0 ]; then
-        for openldap_pod_name in "${openldap_array[@]}"
-        do
-            kubectl exec -ti "${openldap_pod_name}" --namespace="default" -- bash -c \
-                'rm -rf /etc/3rd-party/* /var/data/3rd-party/* /var/log/3rd-party/*'
-        done
-
-        helm uninstall "openldap" -n "default"
-    fi
+    uninstallHelmChart openldap default
 }
 
 function deleteSecrets()
@@ -339,32 +326,23 @@ function deleteConsul()
     printf "########################################################\n"
     printf "# Delete Consul                                        #\n"
     printf "########################################################\n"
-    helm delete consul -n "default"
+    uninstallHelmChart consul default
 }
 
 function waitFor3rdPartyToTerminate()
 {
-    printf "\nWait for 3rd party to terminate"
+    local count
+    printf "\nWait for 3rd party Pods to terminate"
     while true; do
         count=0
-        pods="$(kubectl get pods 2>&1)"
         while IFS= read -r line; do
-            if [[ "$line" == *"kafka"* || \
-                 "$line" == *"zookeeper"* || \
-                 "$line" == *"openldap"* || \
-                 "$line" == *"consul"* ]]; then
-                count=$((count+1))
-            fi
-        done <<< "${pods}"
+            count=$(( count + 1 ))
+        done < <(kubectl get pods | grep -e kafka -e zookeeper -e openldap -e consul 2>&1)
 
-        if [[ $count -eq 0 ]]; then
-            break
-        else
-            printf "."
-        fi
+        (( count == 0 )) && break || printf "."
         sleep 1s
     done
-    printf "\n\n"
+    printf ". Done.\n\n"
 }
 
 function delete3rdPartyPVCs()
@@ -373,7 +351,7 @@ function delete3rdPartyPVCs()
     printf "# Delete Persistent Volume Claims                      #\n"
     printf "########################################################\n"
     volume_claims=$(kubectl get pvc --namespace=default | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|${openldap_pvc}|cortx|3rd-party" | cut -f1 -d " ")
-    echo $volume_claims
+    [[ -n ${volume_claims} ]] && echo "${volume_claims}"
     for volume_claim in $volume_claims
     do
         printf "Removing $volume_claim\n"
@@ -384,7 +362,7 @@ function delete3rdPartyPVCs()
     done
 
     volume_claims=$(kubectl get pvc --namespace="${namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|${openldap_pvc}|cortx|3rd-party" | cut -f1 -d " ")
-    echo $volume_claims
+    [[ -n ${volume_claims} ]] && echo "${volume_claims}"
     for volume_claim in $volume_claims
     do
         printf "Removing $volume_claim\n"
@@ -396,7 +374,7 @@ function delete3rdPartyPVCs()
 
     if [[ $namespace != 'default' ]]; then
         volume_claims=$(kubectl get pvc --namespace="${namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|${openldap_pvc}|cortx|3rd-party" | cut -f1 -d " ")
-        echo $volume_claims
+        [[ -n ${volume_claims} ]] && echo "${volume_claims}"
         for volume_claim in $volume_claims
         do
             printf "Removing $volume_claim\n"
@@ -414,7 +392,7 @@ function delete3rdPartyPVs()
     printf "# Delete Persistent Volumes                            #\n"
     printf "########################################################\n"
     persistent_volumes=$(kubectl get pv --namespace=default | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|cortx|3rd-party" | cut -f1 -d " ")
-    echo $persistent_volumes
+    [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
     for persistent_volume in $persistent_volumes
     do
         printf "Removing $persistent_volume\n"
@@ -426,7 +404,7 @@ function delete3rdPartyPVs()
 
     if [[ $namespace != 'default' ]]; then
         persistent_volumes=$(kubectl get pv --namespace=$namespace | grep -E "$pvc_consul_filter|$pvc_kafka_filter|$pvc_zookeeper_filter|cortx|3rd-party" | cut -f1 -d " ")
-        echo $persistent_volumes
+        [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
         for persistent_volume in $persistent_volumes
         do
             printf "Removing $persistent_volume\n"
@@ -441,9 +419,9 @@ function delete3rdPartyPVs()
 function deleteStorageProvisioner()
 {
     rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
-    rancher_prov_file="$rancher_prov_path/local-path-storage.yaml"
-    kubectl delete -f $rancher_prov_file
-    rm -rf $rancher_prov_path
+    rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
+    [[ -f ${rancher_prov_file} ]] && kubectl delete -f "${rancher_prov_file}"
+    rm -rf "${rancher_prov_path}"
 }
 
 function helmChartCleanup()
@@ -461,7 +439,7 @@ function helmChartCleanup()
                 printf "Helm chart cleanup:\n"
                 print_header=false
             fi
-            helm uninstall "${my_array[0]}" -n "default"
+            uninstallHelmChart "${my_array[0]}" default
         done <<< "${charts}"
     fi
 }
@@ -471,7 +449,7 @@ function deleteKubernetesPrereqs()
     printf "########################################################\n"
     printf "# Delete Cortx Kubernetes Prereqs                      #\n"
     printf "########################################################\n"
-    helm delete cortx-platform
+    uninstallHelmChart cortx-platform
 
     ## Backwards compatibility check
     ## If CORTX is undeployed with a newer undeploy script, it can get into
@@ -484,7 +462,7 @@ function deleteCortxNamespace()
 {
     # Delete CORTX namespace
     if [[ "$namespace" != "default" ]]; then
-        helm delete cortx-ns-$namespace
+        uninstallHelmChart "cortx-ns-${namespace}"
     fi
 
 }
