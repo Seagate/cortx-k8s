@@ -1,5 +1,3 @@
-# solution.yaml file will be removed in v0.3.0
-# please refer to solution.example.yaml instead
 solution:
   namespace: default
   deployment_type: standard
