@@ -14,7 +14,6 @@ solution:
     cortxdata: required
     cortxserver: required
     cortxha: required
-    openldap: required
     consul: required
     kafka: required
     zookeeper: required

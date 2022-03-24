@@ -3,19 +3,18 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      openldap_admin_secret: seagate1
       kafka_admin_secret: Seagate@123
       consul_admin_secret: Seagate@123
       common_admin_secret: Seagate@123
-      s3_auth_admin_secret: ldapadmin
+      s3_auth_admin_secret: cortxadmin
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrol: cortx-docker.colo.seagate.com/seagate/cortx-control:2.0.0-5134
-    cortxdata: cortx-docker.colo.seagate.com/seagate/cortx-data:2.0.0-5134
-    cortxserver: cortx-docker.colo.seagate.com/seagate/cortx-rgw:2.0.0-5134
-    cortxha: cortx-docker.colo.seagate.com/seagate/cortx-control:2.0.0-5134
-    cortxclient: cortx-docker.colo.seagate.com/seagate/cortx-control:2.0.0-5134
+    cortxcontrol: cortx-docker.colo.seagate.com/seagate/cortx-control:2.0.0-5451-custom-ci
+    cortxdata: cortx-docker.colo.seagate.com/seagate/cortx-data:2.0.0-5451-custom-ci
+    cortxserver: cortx-docker.colo.seagate.com/seagate/cortx-rgw:2.0.0-5451-custom-ci
+    cortxha: cortx-docker.colo.seagate.com/seagate/cortx-control:2.0.0-5451-custom-ci
+    cortxclient: cortx-docker.colo.seagate.com/seagate/cortx-control:2.0.0-5451-custom-ci
     openldap: ghcr.io/seagate/symas-openldap:2.4.58
     consul: ghcr.io/seagate/consul:1.10.0
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
@@ -58,14 +57,14 @@ solution:
           http: 22751
           https: 23001
         nodePorts:
-          http: ""
-          https: ""
+          http: null
+          https: null
       control:
         type: NodePort
         ports:
           https: 8081
         nodePorts:
-          https: ""
+          https: null
     resource_allocation:
       consul:
         server:
@@ -85,14 +84,6 @@ solution:
             limits:
               memory: 300Mi
               cpu: 100m
-      openldap:
-        resources:
-          requests:
-            memory: 1Gi
-            cpu: 2
-          limits:
-            memory: 1Gi
-            cpu: 2
       zookeeper:
         storage_request_size: 8Gi
         data_log_dir_request_size: 8Gi

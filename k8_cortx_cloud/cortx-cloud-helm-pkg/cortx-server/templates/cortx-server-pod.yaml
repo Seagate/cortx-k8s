@@ -116,11 +116,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxserver.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxserver.name }}
@@ -153,11 +148,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-            {{- range .Files.Lines .Values.cortxserver.secretinfo }}
-            - name: {{ printf "%s" . }}
-              mountPath: /etc/cortx/solution/secret
-              readOnly: true
-            {{- end }}
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxserver.name }}

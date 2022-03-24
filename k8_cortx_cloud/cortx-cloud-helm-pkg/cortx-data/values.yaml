@@ -9,6 +9,7 @@ cortxdata:
   serviceaccountname: cortx-sa
   motr:
     startportnum: 29000
+    numcvg: 2
     numiosinst: 1
     group_size: 1
   hax:
