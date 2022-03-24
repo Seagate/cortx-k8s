@@ -424,9 +424,12 @@ function deployConsul()
     kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
     kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}'
 
+
+    ### CORTX-28968 TODO
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    kubectl rollout restart statefulset/consul-server
-    kubectl rollout restart daemonset/consul-client
+    #kubectl rollout restart statefulset/consul-server
+    #kubectl rollout restart daemonset/consul-client
+    ### CORTX-28968 END TODO
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -651,7 +654,7 @@ function generateMachineIds()
         local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
 
         id_paths+=("${auto_gen_path}/data")
-        [[ ${deployment_type} != "data-only" ]] && id_paths+=("${auto_gen_path}/server")
+        # [[ ${deployment_type} != "data-only" ]] && id_paths+=("${auto_gen_path}/server")
         ((num_motr_client > 0)) && id_paths+=("${auto_gen_path}/client")
     done
 
@@ -715,12 +718,37 @@ function deployCortxConfigMap()
     for idx in "${!node_name_list[@]}"; do
         helm_install_args+=(
             --set "cortxHare.haxDataEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[idx]}:22001"
-            --set "cortxHare.haxServerEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[idx]}:22001"
             --set "cortxMotr.confdEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[idx]}:22002"
             --set "cortxMotr.iosEndpoints[${idx}]=tcp://cortx-data-headless-svc-${node_name_list[idx]}:21001"
-            --set "cortxMotr.rgwEndpoints[${idx}]=tcp://cortx-server-headless-svc-${node_name_list[idx]}:21001"
         )
     done
+
+    # Populate the cluster storage set
+    storage_set_name=$(parseSolution 'solution.common.storage_sets.name' | cut -f2 -d'>' || true)
+    storage_set_dur_sns=$(parseSolution 'solution.common.storage_sets.durability.sns' | cut -f2 -d'>' || true)
+    storage_set_dur_dix=$(parseSolution 'solution.common.storage_sets.durability.dix' | cut -f2 -d'>' || true)
+
+    ### TODO CORTX-28968
+    local server_instances_per_node="$(getSolutionValue 'solution.common.s3.instances_per_node')"
+    local count=0
+    # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
+    local server_pod_prefix="cortx-server"
+    local data_node_count=${#node_name_list[@]}
+    local total_server_pods=$(( data_node_count * server_instances_per_node ))
+
+    for (( count=0; count<${total_server_pods}; count++ )); do
+        local pod_name="${server_pod_prefix}-${count}"
+        ##TODO CORTX-28968 build out FQDN of server pods 
+        ## Evaluate if this should live inside Helm charts
+        ## ie {{- $serverName := printf "%s.%s.%s.svc.%s" $shortHost {{ $.Values.cortxRgw.headlessServiceName }} {{ $.Release.Namespace }} {{ $.clusterDomain }} -}}
+        helm_install_args+=(
+            --set "clusterStorageSets.${storage_set_name}.nodes.${pod_name}.serverUuid=${pod_name}"
+            --set "cortxMotr.rgwEndpoints[${count}]=tcp://${pod_name}.cortx-server-headless.${namespace}.svc:21001"
+            ## TODO CORTX-28968 - Revist if this endpoint is needed for each Pod or if we can have just one for the Service
+            --set "cortxHare.haxServerEndpoints[${count}]=tcp://${pod_name}.cortx-server-headless.${namespace}.svc:22001"
+        )
+    done
+    ### END CORTX-28968
 
     if ((num_motr_client > 0)); then
         helm_install_args+=(
@@ -733,11 +761,6 @@ function deployCortxConfigMap()
             )
         done
     fi
-
-    # Populate the cluster storage set
-    storage_set_name=$(parseSolution 'solution.common.storage_sets.name' | cut -f2 -d'>' || true)
-    storage_set_dur_sns=$(parseSolution 'solution.common.storage_sets.durability.sns' | cut -f2 -d'>' || true)
-    storage_set_dur_dix=$(parseSolution 'solution.common.storage_sets.durability.dix' | cut -f2 -d'>' || true)
 
     helm_install_args+=(
         --set "clusterStorageSets.${storage_set_name}.durability.sns=${storage_set_dur_sns}"
@@ -756,7 +779,7 @@ function deployCortxConfigMap()
 
     for node in "${node_name_list[@]}"; do
         local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-        for type in data server client; do
+        for type in data client; do
             local id_path="${auto_gen_path}/${type}/id"
             if [[ -f ${id_path} ]]; then
                 helm_install_args+=(
@@ -765,6 +788,7 @@ function deployCortxConfigMap()
             fi
         done
     done
+
 
     # Populate the cluster storage volumes
     for cvg_index in "${cvg_index_list[@]}"; do
@@ -787,6 +811,15 @@ function deployCortxConfigMap()
         done
     done
 
+    echo "${helm_install_args[@]}"
+
+    helm install \
+        "cortx-cfgmap-${namespace}" \
+        cortx-cloud-helm-pkg/cortx-configmap \
+        --set fullnameOverride="cortx-cfgmap-${namespace}" \
+        --dry-run -o yaml \
+        "${helm_install_args[@]}"
+
     helm install \
         "cortx-cfgmap-${namespace}" \
         cortx-cloud-helm-pkg/cortx-configmap \
@@ -796,7 +829,7 @@ function deployCortxConfigMap()
     # Create node machine ID config maps
     for node in "${node_name_list[@]}"; do
         local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-        for type in data server client; do
+        for type in data client; do
             local id_path="${auto_gen_path}/${type}/id"
             if [[ -f ${id_path} ]]; then
                 kubectl create configmap "cortx-${type}-machine-id-cfgmap-${node}-${namespace}" \
@@ -1086,47 +1119,31 @@ function deployCortxServer()
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
     hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
 
-    num_nodes=0
-    for i in "${!node_selector_list[@]}"; do
-        num_nodes=$((num_nodes+1))
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-
-        cortxserver_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[i]}-${namespace}/server/id")
-
-        helm install "cortx-server-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-server \
-            --set cortxserver.name="cortx-server-${node_name}" \
-            --set cortxserver.image="${cortxserver_image}" \
-            --set cortxserver.nodeselector="${node_selector}" \
-            --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-${node_name}" \
-            --set cortxserver.service.headless.name="cortx-server-headless-svc-${node_name}" \
-            --set cortxserver.service.loadbal.name="cortx-server-loadbal-svc-${node_name}" \
-            --set cortxserver.service.loadbal.type="${s3_service_type}" \
-            --set cortxserver.service.loadbal.ports.http="${s3_service_ports_http}" \
-            --set cortxserver.service.loadbal.ports.https="${s3_service_ports_https}" \
-            --set cortxserver.cfgmap.name="cortx-cfgmap-${namespace}" \
-            --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
-            --set cortxserver.cfgmap.mountpath="/etc/cortx/solution" \
-            --set cortxserver.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
-            --set cortxserver.sslcfgmap.volmountname="ssl-config001" \
-            --set cortxserver.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-            --set cortxserver.machineid.value="${cortxserver_machineid}" \
-            --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
-            --set cortxserver.localpathpvc.mountpath="${local_storage}" \
-            --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxserver.hax.port="${hax_port}" \
-            --set cortxserver.secretinfo="secret-info.txt" \
-            --set cortxserver.serviceaccountname="${serviceAccountName}" \
-            --set namespace="${namespace}" \
-            --namespace "${namespace}"
-    done
+    helm install "cortx-server-${namespace}" cortx-cloud-helm-pkg/cortx-server \
+        --set cortxserver.image="${cortxserver_image}" \
+        --set cortxserver.service.headless.name="cortx-server" \
+        --set cortxserver.service.loadbal.type="${s3_service_type}" \
+        --set cortxserver.service.loadbal.ports.http="${s3_service_ports_http}" \
+        --set cortxserver.service.loadbal.ports.https="${s3_service_ports_https}" \
+        --set cortxserver.cfgmap.name="cortx-cfgmap-${namespace}" \
+        --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
+        --set cortxserver.cfgmap.mountpath="/etc/cortx/solution" \
+        --set cortxserver.sslcfgmap.name="cortx-ssl-cert-cfgmap-${namespace}" \
+        --set cortxserver.sslcfgmap.volmountname="ssl-config001" \
+        --set cortxserver.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
+        --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
+        --set cortxserver.localpathpvc.mountpath="${local_storage}" \
+        --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
+        --set cortxserver.hax.port="${hax_port}" \
+        --set cortxserver.secretinfo="secret-info.txt" \
+        --set cortxserver.serviceaccountname="${serviceAccountName}" \
+        --set namespace="${namespace}" \
+        --namespace "${namespace}"
 
     printf "\nWait for CORTX Server to be ready"
     # Wait for all cortx-data deployments to be ready
-    local deployments=()
-    for i in "${!node_selector_list[@]}"; do
-        deployments+=("deployment/cortx-server-${node_name_list[i]}")
-    done
+    local deployments=("statefulset/cortx-server")
+
     if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1

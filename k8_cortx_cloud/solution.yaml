@@ -34,6 +34,8 @@ solution:
         auth_user: "user_name"
         #auth_secret defined above in solution.secrets.content.s3_auth_admin_secret
       max_start_timeout: 240
+      # TODO CORTX-28968 Add documentation inline and in README.md
+      instances_per_node: 3
       extra_configuration: ""
     motr:
       num_client_inst: 0

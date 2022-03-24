@@ -504,6 +504,12 @@ deleteCortxLocalBlockStorage
 deleteCortxPVs
 deleteCortxConfigmap
 
+
+### CORTX-28968 TODO
+#exit 
+### CORTX-28968 END TODO
+
+
 #############################################################
 # Destroy CORTX 3rd party
 #############################################################

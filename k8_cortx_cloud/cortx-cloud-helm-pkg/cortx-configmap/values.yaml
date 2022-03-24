@@ -6,6 +6,10 @@ clusterName: cortx-cluster
 # clusterId is the unique ID number of the CORTX cluster
 clusterId: ""
 
+# clusterDomain is the existing Kubernetes cluster domain name
+# https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+clusterDomain: cluster.local
+
 # clusterStorageVolumes is a Dictionary of container volume groups.
 # e.g:
 # clusterStorageVolumes:
@@ -97,6 +101,8 @@ cortxRgw:
   # and is generally not changed by default.
   authSecret: s3_auth_admin_secret
   maxStartTimeout: 240
+  headlessServiceName: cortx-server-headless
+  ##TODO CORTX-28968 Should this include a parameter for instanceCount and then autogenerate endpoints/UUID elements herein
   # An optional multi-line string that contains extra RGW configuration
   # settings. The string may contain template expressions, and is appended to
   # the end of the computed configuration.
@@ -123,6 +129,7 @@ cortxHare:
 
 # cortxMotr allows configuring CORTX MOTR settings
 cortxMotr:
+  enabled: true
   clientInstanceCount: 0
   clientEndpoints: []
   confdEndpoints: []

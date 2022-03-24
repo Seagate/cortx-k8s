@@ -1,6 +1,10 @@
 {{- define "storageset.node" -}}
 - name: {{ .name }}
+  {{- if eq .type "server_node" }}
+  id: {{ default uuidv4 .id | quote }}
+  {{- else }}
   id: {{ default uuidv4 .id | replace "-" "" | quote }}
+  {{- end }}
   hostname: {{ .name }}
   type: {{ .type }}
 {{- end -}}
@@ -71,12 +75,15 @@ cluster:
     {{- end }}
     {{- range $key, $val := $val.nodes }}
     {{- $shortHost := (split "." $key)._0 -}}
-    {{- if $.Values.cortxRgw.enabled }}
-    {{- $serverName := printf "cortx-server-headless-svc-%s" $shortHost -}}
+    {{- if and $.Values.cortxRgw.enabled $val.serverUuid }}
+    ##TODO CORTX-28968 Revisit formatting and scope of where it should live
+    {{- $serverName := printf "%s.%s.%s.svc.%s" $shortHost $.Values.cortxRgw.headlessServiceName $.Release.Namespace $.Values.clusterDomain -}}
     {{- include "storageset.node" (dict "name" $serverName "id" $val.serverUuid "type" "server_node") | nindent 4 }}
     {{- end }}
+    {{- if $val.dataUuid }}
     {{- $dataName := printf "cortx-data-headless-svc-%s" $shortHost -}}
     {{- include "storageset.node" (dict "name" $dataName "id" $val.dataUuid "type" "data_node") | nindent 4 }}
+    {{- end }}
     {{- if $val.clientUuid -}}
     {{- $clientName := printf "cortx-client-headless-svc-%s" $shortHost -}}
     {{- include "storageset.node" (dict "name" $clientName "id" $val.clientUuid "type" "client_node") | nindent 4 }}
