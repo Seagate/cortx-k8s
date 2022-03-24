@@ -21,6 +21,8 @@ solution:
       default_iam_users:
         auth_admin: required
         auth_user: required
+      instances_per_node: required
+      ##TODO CORTX-28968 Make optional
     motr:
       num_client_inst: required
       start_port_num: required

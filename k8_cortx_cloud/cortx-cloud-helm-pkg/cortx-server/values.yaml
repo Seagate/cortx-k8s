@@ -1,8 +1,9 @@
 namespace: default
 cortxserver:
   name: cortx-server
+  serviceType: cortx-server
   image: ghcr.io/seagate/centos:7
-  nodeselector: node-1
+  replicas: 3
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   hax:
@@ -11,7 +12,7 @@ cortxserver:
     clusterip:
       name: cortx-server-clusterip-svc
     headless:
-      name: cortx-server-headless-svc
+      name: cortx-server-headless
     loadbal:
       name: cortx-server-loadbal-svc
       type: NodePort
@@ -28,9 +29,6 @@ cortxserver:
     name: cortx-ssl-cert-cfgmap
   machineid:
     mountpath: /etc/cortx/solution/node
-    volmountname: machine-id-config
-    name:  cortx-server-machine-id-cfgmap
-    value: ""
   localpathpvc:
     name: cortx-fs-server-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
