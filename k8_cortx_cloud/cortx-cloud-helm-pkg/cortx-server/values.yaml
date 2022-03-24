@@ -6,7 +6,6 @@ cortxserver:
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
   s3:
-    numinst: 2
     startportnum: 28051
   hax:
     port: 22003
@@ -19,8 +18,8 @@ cortxserver:
       name: cortx-server-loadbal-svc
       type: NodePort
       ports:
-        http: 8000
-        https: 8443
+        http: 80
+        https: 443
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001

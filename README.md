@@ -32,7 +32,7 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 ![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s.jpg)
 
 CORTX on Kubernetes consists of five primary components:
-1.  Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul), [Apache Kafka](https://kafka.apache.org/), and [OpenLDAP](https://www.openldap.org/).
+1.  Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul) and [Apache Kafka](https://kafka.apache.org/).
 
 2.  CORTX Control Pods
     -  These pods maintain the CORTX control plane
@@ -52,6 +52,8 @@ CORTX on Kubernetes consists of five primary components:
 
 ## CORTX on Kubernetes Prerequisites
 
+For additional discussion on infrastructure prerequisites in support of other Kubernetes capabilities prior to installing CORTX, please reference the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md) guide.
+
 1.  **[Helm](https://helm.sh/)**
 
     CORTX on Kubernetes is provided via Helm Charts. As such, you will need Helm installed locally to deploy CORTX on Kubernetes. You can find the specific installation instructions for your local platform via the [Installing Helm](https://helm.sh/docs/intro/install/) section of the official Helm documentation.
@@ -60,15 +62,17 @@ CORTX on Kubernetes consists of five primary components:
 
     CORTX on Kubernetes currently expects all Kubernetes Nodes to have a uniform device/drive setup across the Kubernetes cluster. This is to say that CORTX on Kubernetes expects all Kubernetes Nodes to have the same `/dev/sdb`, `/dev/sdc`, `/dev/sdN`, etc device paths on every node.
 
-    :information_source: _This requirement will be going away in a future release (some time after v0.0.20)_.
+3. **Persistent disk naming and node reboot support**
 
-3.  **Required kernel parameters**
+    For configuration options in support of persistent device naming and stability across Kubernetes Node reboot support, reference the [Persistent disk naming and node reboot support](/doc/prereq-deploy-use-cases.md#persistent-disk-naming-and-node-reboot-support) section of the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md) guide.
+
+4.  **Required kernel parameters**
 
     CORTX on Kubernetes currently requires the `vm.max_map_count` set to a specific minimum level of `30000000` (thirty million) on the Kubernetes Nodes which `cortx-data` Pods will run.
     - The `prereq-deploy-cortx-cloud.sh` script will set this value prior to deployment if you choose to utilize it.
     - The `cortx-data` Pods include an initContainer that will check for this minimal value and halt deployment if not met.
 
-4.  **Local path provisioner**
+5.  **Local path provisioner**
 
     CORTX on Kubernetes currently uses the [Rancher Local Provisioner](https://github.com/rancher/local-path-provisioner) to manage some dynamic provisioning of local storage for prerequisite services.
     - The `prereq-deploy-cortx-cloud.sh` script will ensure this directory exists, if you choose to utilize it.
@@ -114,33 +118,41 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 ### Deploying CORTX on Kubernetes
 
-1.  Clone this repository to a machine with connectivity to your Kubernetes cluster:
+1. Clone this repository to a machine with connectivity to your Kubernetes cluster:
 
    ```bash
    git clone https://github.com/Seagate/cortx-k8s
    ```
 
->  :information_source: You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
+   >  :information_source: You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
 
-2.  Update or clone `./k8_cortx_cloud/solution.yaml` to reflect your environment. The most common and expected updates are reflected below:
-    - Update all passwords in solution.yaml. The `csm-secret` should include one special character in cortx-secret.
-    - Update the images section with cortx-all image tag desired to be used.
-        - Each specific release of the CORTX on Kubernetes code will point to a specific predefined container image.
-        - This can be overridden as desired.
-    - Update SNS and DIX durability values. The default value for both parameters is `1+0+0`.
-    - Update storage cvg devices for data and metadata with respect to the devices in your environment.
-    - Update nodes section with proper node hostnames from your Kubernetes cluster.
-        - If the Kubernetes control plane nodes are required to be used for deployment, make sure to remove the taint from it before deploying CORTX.
-        - For further details and reference, you can view the official Kubernetes documentation topic on [Taints & Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
-    - For further details on `solution.yaml` specifics, review the [Solution YAML Overview](#solution-yaml-overview) below.
+2. For initial deployments, copy the example solution configuration file [`./k8_cortx_cloud/solution.example.yaml`](k8_cortx_cloud/solution.example.yaml) to `./k8_cortx_cloud/solution.yaml` or to a filename of your choice.
 
-3.  Run the `deploy-cortx-cloud.sh` script, passing in the path to your updated `solution.yaml` file.
+3. Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
+
+   - Update all passwords. The `csm-secret` should include one special character in cortx-secret.
+
+   - Update the images section with cortx-all image tag desired to be used.
+     - Each specific release of the CORTX on Kubernetes code will point to a specific predefined container image.
+     - This can be overridden as desired.
+
+   - Update SNS and DIX durability values. The default value for both parameters is `1+0+0`.
+
+   - Update storage cvg devices for data and metadata with respect to the devices in your environment.
+
+   - Update nodes section with proper node hostnames from your Kubernetes cluster.
+     - If the Kubernetes control plane nodes are required to be used for deployment, make sure to remove the taint from it before deploying CORTX.
+     - For further details and reference, you can view the official Kubernetes documentation topic on [Taints & Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+
+   - For further details on the solution configuration file specifics, review the [Solution YAML Overview](#solution-yaml-overview) section below.
+
+4. Run the `deploy-cortx-cloud.sh` script, passing in the path to your updated `solution.yaml` file.
 
    ```bash
    ./deploy-cortx-cloud.sh solution.yaml
    ```
 
-4.  Validate CORTX on Kubernetes status
+5. Validate CORTX on Kubernetes status
 
    ```bash
    DATA_POD=$(kubectl get pods -l cortx.io/service-type=cortx-data --no-headers | awk '{print $1}' | head -n 1)
@@ -182,30 +194,48 @@ Run the `destroy-cortx-cloud.sh` script, passing in the path to the previously u
 
 ## Solution YAML Overview
 
-The CORTX solution consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution file and extract information they need to deploy and destroy CORTX.
+The CORTX solution configuration file consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution configuration file and extract information they need to deploy and destroy CORTX.
+
+An example solution configuration is provided by [`solution.example.yaml`](k8_cortx_cloud/solution.example.yaml).
 
 All paths below are prefixed with `solution.` for fully-qualified naming and are required to have a value unless explicitly marked as _(Optional)_ below.
 
 ### Global parameters
 
-| Name                     | Description                                                                             | Default Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | ----------------------- |
-| `namespace`              | The Kubernetes namespace for CORTX Pods to be deployed in.                              | `default`               |
+| Name              | Description                                                                                                                  | Default Value |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `namespace`       | The Kubernetes namespace for CORTX Pods to be deployed in.                                                                   | `default`     |
+| `deployment_type` | The type of deployment. This determines which Kubernetes resources are created. Valid values are `standard` and `data-only`. | `standard`    |
 
 ### Secret parameters
 
 This section contains the CORTX and third-party authentication information used to deploy CORTX on Kubernetes.
 
+A Kubernetes Secret is used to hold the various passwords and secret keys needed by the various components.
+- If the `secrets.name` field is specified, then CORTX will create and populate this Secret object, using this specified name.  For any `secrets.content` fields that are not specified or do not have a value specified, CORTX will generate a random password.
+- If the `secrets.external_secret` field is specified, then CORTX will expect a Kubernetes Secret object to already exist with the specified name, which contains the passwords for these fields.  This allows an admin to specify passwords outside of solution.yaml.  Note: If a `secrets.external_secret` is used, then the specified Secret must define _all_ CORTX-required passwords.
+
+:bulb: To create a new Kubernetes Secret object with admin-specified values for required CORTX passwords:
+```bash
+kubectl create secret generic my-cortx-secret \
+  --from-literal=common_admin_secret=Password1@123 \
+  --from-literal=consul_admin_secret=Password2@123 \
+  --from-literal=kafka_admin_secret=Password3@123 \
+  --from-literal=s3_auth_admin_secret=Password4@123 \
+  --from-literal=csm_auth_admin_secret=Password5@123 \
+  --from-literal=csm_mgmt_admin_secret=Password6@123
+```
+
 | Name                                      | Description                                                                             | Default Value           |
 | ----------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------- |
 | `secrets.name`                            | Name for the Kubernetes Secret CORTX uses to store solution-specific secrets            | `cortx-secret`          |
-| `secrets.content.openldap_admin_secret`   | Administrator password for the OpenLDAP required service (deprecated)                   | `seagate1`              |
-| `secrets.content.kafka_admin_secret`      | Administrator password for the Kafka required service                                   | `Seagate@123`           |
-| `secrets.content.consul_admin_secret`     | Administrator password for the Consul required service                                  | `Seagate@123`           |
-| `secrets.content.common_admin_secret`     | Administrator password for the CORTX common services                                    | `Seagate@123`           |
-| `secrets.content.s3_auth_admin_secret`    | Administrator password for the S3 Auth CORTX component                                  | `ldapadmin`             |
-| `secrets.content.csm_auth_admin_secret`   | Administrator password for the CSM Auth CORTX component                                 | `seagate2`              |
-| `secrets.content.csm_mgmt_admin_secret`   | Administrator password for the CSM Management CORTX component                           | `Cortxadmin@123`        |
+| `secrets.content.kafka_admin_secret`      | Administrator password for the Kafka required service                                   | `null`                  |
+| `secrets.content.consul_admin_secret`     | Administrator password for the Consul required service                                  | `null`                  |
+| `secrets.content.common_admin_secret`     | Administrator password for the CORTX common services                                    | `null`                  |
+| `secrets.content.s3_auth_admin_secret`    | Administrator password for the S3 Auth CORTX component                                  | `null`                  |
+| `secrets.content.csm_auth_admin_secret`   | Administrator password for the CSM Auth CORTX component                                 | `null`                  |
+| `secrets.content.csm_mgmt_admin_secret`   | Administrator password for the CSM Management CORTX component                           | `null`                  |
+| `secrets.external_secret`                 | Name of previously existing Secret that contains CORTX-required secrets.  Note: This field is mutually exclusive with `secrets.name`. | |
 
 ### Image parameters
 
@@ -218,7 +248,6 @@ This section contains the CORTX and third-party images used to deploy CORTX on K
 | `images.cortxserver`     | Image registry, repository, & tag for the CORTX Server components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
 | `images.cortxha`         | Image registry, repository, & tag for the CORTX HA components                          | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
 | `images.cortxclient`     | Image registry, repository, & tag for the CORTX Client components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
-| `images.openldap`        | Image registry, repository, & tag for the OpenLDAP required service                    | `ghcr.io/seagate/symas-openldap:2.4.58`     |
 | `images.consul`          | Image registry, repository, & tag for the Consul required service                      | `ghcr.io/seagate/consul:1.10.0`             |
 | `images.kafka`           | Image registry, repository, & tag for the Kafka required service                       | `ghcr.io/seagate/kafka:3.0.0-debian-10-r7`  |
 | `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service                   | `ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182` |
@@ -242,9 +271,11 @@ This section contains common parameters that affect all CORTX components running
 | `common.s3.num_inst`                                  | TODO       | `2` |
 | `common.s3.start_port_num`                            | TODO       | `28051` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
+| `common.s3.extra_configuration`                       | _(Optional)_ Extra configuration settings to append to the RGW configuration. The value is a multi-line string included verbatim.  | `""` |
 | `common.motr.num_client_inst`                         | TODO       | `0` |
 | `common.motr.start_port_num`                          | TODO       | `29000` |
-| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` | 
+| `common.motr.extra_configuration`                     | _(Optional)_ Extra configuration settings to append to the Motr configuration. The value is a multi-line string included verbatim. | `""` |
+| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` |
 | `common.hax.service_name`                             | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
 | `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
 | `common.external_services.s3.type`                    | Kubernetes Service type for external access to S3 IO                                              | `NodePort` |

@@ -8,31 +8,105 @@ storage_class='local-path'
 ##TODO Extract from solution.yaml ?
 serviceAccountName=cortx-sa
 
-STANDARD_DEPLOYMENT=1
-DATA_ONLY_DEPLOYMENT=2
-# Deployment Mode 
-# 1 - STANDARD_DEPLOYMENT
-# 2 - DATA_ONLY_DEPLOYMENT
+cortx_secret_fields=("kafka_admin_secret"
+                     "consul_admin_secret"
+                     "common_admin_secret"
+                     "s3_auth_admin_secret"
+                     "csm_auth_admin_secret"
+                     "csm_mgmt_admin_secret")
+readonly cortx_secret_fields
 
-DEPLOYMENT_MODE=1   # Set the deployment mode as per above number
+function parseSolution()
+{
+    ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
+}
 
-# Check if the file exists
-if [[ ! -f ${solution_yaml} ]]
-then
-    echo "ERROR: ${solution_yaml} does not exist"
-    exit 1
-fi
+function extractBlock()
+{
+    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
+}
 
-# Validate the "solution.yaml" file against the "solution_check.yaml" file
-while IFS= read -r line; do
-    echo "${line}"
-    if [[ "${line}" != *"Validate solution file result"* ]]; then
-        continue
+#######################################
+# Get a scalar value given a YAML path in a solution.yaml file.
+# Arguments:
+#   A YAML path to lookup, e.g. "solution.common.external_services.s3.type".
+#   Wildcard paths are not accepted, e.g. "solution.nodes.node*.name".
+# Outputs:
+#   Writes the value to stdout. An empty string "" is printed if
+#   the value does not exist, or the value is YAML `null` or `~`.
+# Returns:
+#   1 if the yaml path contains a wildcard, 0 otherwise.
+#######################################
+function getSolutionValue()
+{
+    local yaml_path=$1
+    # Don't allow wildcard paths
+    if [[ ${yaml_path}  == *"*"* ]]; then
+        return 1
     fi
-    if [[ "${line}" == *"failed"* ]]; then
+
+    local value
+    value=$(parseSolution "${yaml_path}")
+    # discard everything before and including the first '>'
+    value="${value#*>}"
+    [[ ${value} == "null" || ${value} == "~" ]] && value=""
+    echo "${value}"
+}
+
+function configurationCheck()
+{
+    # Check if the file exists
+    if [[ ! -f ${solution_yaml} ]]
+    then
+        echo "ERROR: ${solution_yaml} does not exist"
         exit 1
     fi
-done <<< "$(./solution_validation_scripts/solution-validation.sh "${solution_yaml}")"
+
+    # Validate secrets configuration
+    secret_name=$(getSolutionValue "solution.secrets.name")
+    secret_ext=$(getSolutionValue "solution.secrets.external_secret")
+    if [[ -z "${secret_name}" && -z "${secret_ext}" ]] ; then
+        printf "Error: %s: solution.secrets.name or solution.secrets.external_secret must be specified\n" "${solution_yaml}"
+        exit 1
+    elif [[ -n "${secret_name}" && -n "${secret_ext}" ]] ; then
+        printf "Error: %s: Cannot specify both solution.secrets.name or solution.secrets.external_secret\n" "${solution_yaml}"
+        exit 1
+    elif [[ -n "${secret_ext}" ]] ; then
+        # If an external_secret is specified, verify that the named secret exists
+        output=$(kubectl get secrets "${secret_ext}" --no-headers)
+        if [[ -z "${output}" ]] ; then
+            printf "Error: %s: External Secret %s does not exist (solution.secrets.external_secret)\n" "${solution_yaml}" "${secret_ext}"
+            exit 1
+        fi
+
+        # Verify that all required cortx fields are present in the external secret
+        secret_output=$(kubectl describe secrets "${secret_ext}")
+        fail="false"
+        for field in "${cortx_secret_fields[@]}" ; do
+            if [[ "${secret_output}:" != *"${field}:"* ]] ; then
+                printf "Error: External Secret %s does not contain the required field '%s'\n" "${secret_ext}" "${field}"
+                fail="true"
+            fi
+        done
+        if [[ "${fail}" == "true" ]] ; then
+            exit 1
+        fi
+    fi
+
+    # Validate the "solution.yaml" file against the "solution_check.yaml" file
+    while IFS= read -r line; do
+        echo "${line}"
+        if [[ "${line}" != *"Validate solution file result"* ]]; then
+            continue
+        fi
+        if [[ "${line}" == *"failed"* ]]; then
+            exit 1
+        fi
+    done <<< "$(./solution_validation_scripts/solution-validation.sh "${solution_yaml}")"
+}
+
+# Initial solution.yaml / system state checks
+configurationCheck
 
 max_consul_inst=3
 max_kafka_inst=3
@@ -84,42 +158,13 @@ if [[ "${exit_early}" = true ]]; then
     exit 1
 fi
 
-function parseSolution()
-{
-    ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
-}
+deployment_type=$(getSolutionValue 'solution.deployment_type')
+case ${deployment_type} in
+    standard|data-only) printf "Deployment type: %s\n" "${deployment_type}" ;;
+    *)                  printf "Invalid deployment type '%s'\n" "${deployment_type}" ; exit 1 ;;
+esac
 
-function extractBlock()
-{
-    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
-}
-
-#######################################
-# Get a scalar value given a YAML path in a solution.yaml file.
-# Arguments:
-#   A YAML path to lookup, e.g. "solution.common.external_services.s3.type".
-#   Wildcard paths are not accepted, e.g. "solution.nodes.node*.name".
-# Outputs:
-#   Writes the value to stdout. An empty string "" is printed if
-#   the value does not exist, or the value is YAML `null` or `~`.
-# Returns:
-#   1 if the yaml path contains a wildcard, 0 otherwise.
-#######################################
-function getSolutionValue()
-{
-    local yaml_path=$1
-    # Don't allow wildcard paths
-    if [[ ${yaml_path}  == *"*"* ]]; then
-        return 1
-    fi
-
-    local value
-    value=$(parseSolution "${yaml_path}")
-    # discard everything before and including the first '>'
-    value="${value#*>}"
-    [[ ${value} == "null" || ${value} == "~" ]] && value=""
-    echo "${value}"
-}
+printf "\n"
 
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
@@ -282,6 +327,8 @@ function deployKubernetesPrereqs()
     s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
+
+    [[ ${deployment_type} == "data-only" ]] && s3_service_count=0
 
     local optional_values=()
     local s3_service_nodeports_http
@@ -563,13 +610,17 @@ function deployCortxLocalBlockStorage()
 function deleteStaleAutoGenFolders()
 {
     # Delete all stale auto gen folders
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-cfgmap-${namespace}"
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-control-${namespace}"
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-secret-${namespace}"
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/node-info-${namespace}"
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/storage-info-${namespace}"
-    for i in "${!node_name_list[@]}"; do
-        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name_list[i]}-${namespace}"
+    for gen in \
+        auto-gen-cfgmap \
+        auto-gen-control \
+        auto-gen-ha \
+        auto-gen-secret \
+        node-info \
+        storage-info; do
+        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/${gen}-${namespace}"
+    done
+    for node_name in "${node_name_list[@]}"; do
+        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name}-${namespace}"
     done
 }
 
@@ -580,28 +631,40 @@ function generateMachineId()
     echo "${uuid//-}"
 }
 
+function generateMachineIds()
+{
+    printf "########################################################\n"
+    printf "# Generating CORTX Pod Machine IDs                      \n"
+    printf "########################################################\n"
+
+    local id_paths=()
+
+    if [[ ${deployment_type} != "data-only" ]]; then
+        id_paths+=(
+            "${cfgmap_path}/auto-gen-control-${namespace}"
+            "${cfgmap_path}/auto-gen-ha-${namespace}"
+        )
+    fi
+
+    for node in "${node_name_list[@]}"; do
+        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
+
+        id_paths+=("${auto_gen_path}/data")
+        [[ ${deployment_type} != "data-only" ]] && id_paths+=("${auto_gen_path}/server")
+        ((num_motr_client > 0)) && id_paths+=("${auto_gen_path}/client")
+    done
+
+    for path in "${id_paths[@]}"; do
+        mkdir -p "${path}"
+        generateMachineId > "${path}/id"
+    done
+}
+
 function deployCortxConfigMap()
 {
     printf "########################################################\n"
     printf "# Deploy CORTX Configmap                                \n"
     printf "########################################################\n"
-
-    readonly auto_gen_control_path="${cfgmap_path}/auto-gen-control-${namespace}"
-    readonly auto_gen_ha_path="${cfgmap_path}/auto-gen-ha-${namespace}"
-
-    # Create Pod machine IDs
-    for path in ${auto_gen_control_path} ${auto_gen_ha_path}; do
-        mkdir -p "${path}"
-        generateMachineId > "${path}/id"
-    done
-    for node in "${node_name_list[@]}"; do
-        auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-        mkdir -p "${auto_gen_path}"/{data,server,client}
-
-        generateMachineId > "${auto_gen_path}/data/id"
-        generateMachineId > "${auto_gen_path}/server/id"
-        ((num_motr_client > 0)) && generateMachineId > "${auto_gen_path}/client/id"
-    done
 
     # This assigns to a global $tag variable
     splitDockerImage "$(parseSolution 'solution.images.cortxdata' | cut -f2 -d'>' || true)"
@@ -625,7 +688,33 @@ function deployCortxConfigMap()
         --set cortxSetupSize="$(extractBlock 'solution.common.setup_size' || true)"
         --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
         --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
+        --set cortxIoService.ports.http="$(getSolutionValue 'solution.common.external_services.s3.ports.http')"
+        --set cortxIoService.ports.https="$(getSolutionValue 'solution.common.external_services.s3.ports.https')"
     )
+
+    if [[ ${deployment_type} == "data-only" ]]; then
+        helm_install_args+=(
+            --set cortxRgw.enabled=false
+            --set cortxHa.enabled=false
+            --set cortxControl.enabled=false
+        )
+    fi
+
+    local rgw_extra_config
+    rgw_extra_config="$(extractBlock 'solution.common.s3.extra_configuration')"
+    if [[ -n ${rgw_extra_config} \
+          && ${rgw_extra_config} != "null" \
+          && ${rgw_extra_config} != "~" ]]; then
+        helm_install_args+=(--set cortxRgw.extraConfiguration="${rgw_extra_config}")
+    fi
+
+    local motr_extra_config
+    motr_extra_config="$(extractBlock 'solution.common.motr.extra_configuration')"
+    if [[ -n ${motr_extra_config} \
+          && ${motr_extra_config} != "null" \
+          && ${motr_extra_config} != "~" ]]; then
+        helm_install_args+=(--set cortxMotr.extraConfiguration="${motr_extra_config}")
+    fi
 
     for idx in "${!node_name_list[@]}"; do
         helm_install_args+=(
@@ -640,6 +729,9 @@ function deployCortxConfigMap()
     done
 
     if ((num_motr_client > 0)); then
+        helm_install_args+=(
+            --set cortxMotr.clientInstanceCount="${num_motr_client}"
+        )
         for idx in "${!node_name_list[@]}"; do
             helm_install_args+=(
                 --set "cortxMotr.clientEndpoints[${idx}]=tcp://cortx-client-headless-svc-${node_name_list[idx]}:21201"
@@ -656,19 +748,28 @@ function deployCortxConfigMap()
     helm_install_args+=(
         --set "clusterStorageSets.${storage_set_name}.durability.sns=${storage_set_dur_sns}"
         --set "clusterStorageSets.${storage_set_name}.durability.dix=${storage_set_dur_dix}"
-        --set "clusterStorageSets.${storage_set_name}.controlUuid=$(< "${auto_gen_control_path}/id")"
-        --set "clusterStorageSets.${storage_set_name}.haUuid=$(< "${auto_gen_ha_path}/id")"
     )
-    for node in "${node_name_list[@]}"; do
-        helm_install_args+=(
-            --set "clusterStorageSets.${storage_set_name}.nodes.${node}.dataUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/data/id")"
-            --set "clusterStorageSets.${storage_set_name}.nodes.${node}.serverUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/server/id")"
-        )
-        if ((num_motr_client > 0)); then
+
+    # UUIDs are selectively enabled based on deployment type
+    for type in control ha; do
+        local id_path="${cfgmap_path}/auto-gen-${type}-${namespace}/id"
+        if [[ -f ${id_path} ]]; then
             helm_install_args+=(
-                --set "clusterStorageSets.${storage_set_name}.nodes.${node}.clientUuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/client/id")"
+                --set "clusterStorageSets.${storage_set_name}.${type}Uuid=$(< "${id_path}")"
             )
         fi
+    done
+
+    for node in "${node_name_list[@]}"; do
+        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
+        for type in data server client; do
+            local id_path="${auto_gen_path}/${type}/id"
+            if [[ -f ${id_path} ]]; then
+                helm_install_args+=(
+                    --set "clusterStorageSets.${storage_set_name}.nodes.${node}.${type}Uuid=$(< "${id_path}")"
+                )
+            fi
+        done
     done
 
     # Populate the cluster storage volumes
@@ -700,33 +801,60 @@ function deployCortxConfigMap()
 
     # Create node machine ID config maps
     for node in "${node_name_list[@]}"; do
-        auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-
-        kubectl create configmap "cortx-data-machine-id-cfgmap-${node}-${namespace}" \
-            --namespace="${namespace}" \
-            --from-file="${auto_gen_path}/data"
-
-        kubectl create configmap "cortx-server-machine-id-cfgmap-${node}-${namespace}" \
-            --namespace="${namespace}" \
-            --from-file="${auto_gen_path}/server"
-
-        if ((num_motr_client > 0)); then
-            # Create client machine ID config maps
-            kubectl create configmap "cortx-client-machine-id-cfgmap-${node}-${namespace}" \
-                --namespace="${namespace}" \
-                --from-file="${auto_gen_path}/client"
-        fi
+        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
+        for type in data server client; do
+            local id_path="${auto_gen_path}/${type}/id"
+            if [[ -f ${id_path} ]]; then
+                kubectl create configmap "cortx-${type}-machine-id-cfgmap-${node}-${namespace}" \
+                    --namespace="${namespace}" \
+                    --from-file="${id_path}"
+                fi
+        done
     done
 
-    # Create control machine ID config map
-    kubectl create configmap "cortx-control-machine-id-cfgmap-${namespace}" \
-        --namespace="${namespace}" \
-        --from-file="${auto_gen_control_path}"
+    # Create control and HA machine ID config maps
+    for type in control ha; do
+        local id_path="${cfgmap_path}/auto-gen-{type}-${namespace}/id"
+        if [[ -f ${id_path} ]]; then
+            kubectl create configmap "cortx-${type}-machine-id-cfgmap-${namespace}" \
+                --namespace="${namespace}" \
+                --from-file="${id_path}"
+        fi
+    done
+}
 
-    # Create HA machine ID config map
-    kubectl create configmap "cortx-ha-machine-id-cfgmap-${namespace}" \
-        --namespace="${namespace}" \
-        --from-file="${auto_gen_ha_path}"
+function pwgen()
+{
+    # This function generates a random password that is
+    # 16 characters long, starts with an alphanumeric
+    # character, and contains at least one character each
+    # of upper case, lower case, digit, and a special character.
+
+    function choose()
+    {
+        seqlen=$1
+        charset=$2
+        # https://unix.stackexchange.com/a/230676
+        tr -dc "${charset}" < /dev/urandom | head -c "${seqlen}"
+    }
+
+    # Choose an alphanumeric char for the first char of the password
+    local first
+    first=$(choose 1 '[:alnum:]')
+
+    # Choose one of each of the required fields, plus 11 more
+    # characters, and shuffle them
+    local rest
+    rest=$({
+        choose 1 '!@#$%^'
+        choose 1 '[:digit:]'
+        choose 1 '[:lower:]'
+        choose 1 '[:upper:]'
+        choose 11 '[:alnum:]!@#$%^'
+    } | fold -w1 | shuf | tr -d '\n')
+
+    # Cat the first char plus remaining 15 chars
+    printf "%s%s" "${first}" "${rest}"
 }
 
 function deployCortxSecrets()
@@ -738,38 +866,51 @@ function deployCortxSecrets()
     # in the "auto-gen-secret" folder
     secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
     mkdir -p "${secret_auto_gen_path}"
-    secret_name=$(parseSolution "solution.secrets.name")
-    secret_fname=$(echo "${secret_name}" | cut -f2 -d'>')
-    yaml_content_path=$(echo "${secret_name}" | cut -f1 -d'>')
-    yaml_content_path=${yaml_content_path/.name/".content"}
-    secrets="$(./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "${yaml_content_path}" 2)"
+    cortx_secret_name=$(getSolutionValue "solution.secrets.name")
+    cortx_secret_ext=$(getSolutionValue "solution.secrets.external_secret")
+    if [[ -n "${cortx_secret_name}" ]]; then
+        # Process secrets from solution.yaml
+        secrets=()
+        for field in "${cortx_secret_fields[@]}"; do
+            fcontent=$(getSolutionValue "solution.secrets.content.${field}")
+            if [[ -z ${fcontent} ]]; then
+                # No data for this field.  Generate a password.
+                pw=$(pwgen)
+                fcontent=${pw}
+                printf "Generated secret for %s\n" "${field}"
+            fi
+            secrets+=( "  ${field}: ${fcontent}" )
+        done
+        secrets_block=$( printf "%s\n" "${secrets[@]}" )
 
-    new_secret_gen_file="${secret_auto_gen_path}/${secret_fname}.yaml"
-    cp "${cfgmap_path}/other/secret-template.yaml" "${new_secret_gen_file}"
-    ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${secret_fname}"
-    ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets}"
+        new_secret_gen_file="${secret_auto_gen_path}/${cortx_secret_name}.yaml"
+        cp "${cfgmap_path}/other/secret-template.yaml" "${new_secret_gen_file}"
+        ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${cortx_secret_name}"
+        ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets_block}"
+        kubectl_create_secret_cmd="kubectl create -f ${new_secret_gen_file} --namespace=${namespace}"
+        if ! ${kubectl_create_secret_cmd}; then
+            printf "Exit early.  Failed to create Secret '%s'\n" "${cortx_secret_name}"
+            exit 1
+        fi
 
-    kubectl_cmd_output=$(kubectl create -f "${new_secret_gen_file}" --namespace="${namespace}" 2>&1)
-
-    if [[ "${kubectl_cmd_output}" == *"BadRequest"* ]]; then
-        printf "Exit early. Create secret failed with error:\n%s\n" "${kubectl_cmd_output}"
-        exit 1
+    elif [[ -n "${cortx_secret_ext}" ]]; then
+        cortx_secret_name="${cortx_secret_ext}"
+        printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
-    echo "${kubectl_cmd_output}"
 
     control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
     data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
     server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
     ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
 
-    printf "%s" "${secret_fname}" > ${control_secret_path}
-    printf "%s" "${secret_fname}" > ${data_secret_path}
-    printf "%s" "${secret_fname}" > ${server_secret_path}
-    printf "%s" "${secret_fname}" > ${ha_secret_path}
+    printf "%s" "${cortx_secret_name}" > ${control_secret_path}
+    printf "%s" "${cortx_secret_name}" > ${data_secret_path}
+    printf "%s" "${cortx_secret_name}" > ${server_secret_path}
+    printf "%s" "${cortx_secret_name}" > ${ha_secret_path}
 
     if [[ ${num_motr_client} -gt 0 ]]; then
         client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
-        printf "%s" "${secret_fname}" > ${client_secret_path}
+        printf "%s" "${cortx_secret_name}" > ${client_secret_path}
     fi
 }
 
@@ -819,6 +960,10 @@ function waitForAllDeploymentsAvailable()
 
 function deployCortxControl()
 {
+    if [[ ${deployment_type} == "data-only" ]]; then
+        return
+    fi
+
     printf "########################################################\n"
     printf "# Deploy CORTX Control                                  \n"
     printf "########################################################\n"
@@ -836,6 +981,8 @@ function deployCortxControl()
     local control_service_nodeports_https
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && optional_values+=(--set cortxcontrol.service.loadbal.nodePorts.https="${control_service_nodeports_https}")
+
+    [[ ${deployment_type} == "data-only" ]] && optional_values+=(--set cortxcontrol.service.loadbal.enabled=false)
 
     helm install "cortx-control-${namespace}" cortx-cloud-helm-pkg/cortx-control \
         --set cortxcontrol.name="cortx-control" \
@@ -931,12 +1078,15 @@ function deployCortxData()
 
 function deployCortxServer()
 {
+    if [[ ${deployment_type} == "data-only" ]]; then
+        return
+    fi
+
     printf "########################################################\n"
     printf "# Deploy CORTX Server                                   \n"
     printf "########################################################\n"
     local cortxserver_image
     local hax_port
-    local s3_num_inst
     local s3_start_port_num
     local s3_service_type
     local s3_service_ports_http
@@ -945,7 +1095,6 @@ function deployCortxServer()
     s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
-    s3_num_inst="$(getSolutionValue 'solution.common.s3.num_inst')"
     s3_start_port_num="$(getSolutionValue 'solution.common.s3.start_port_num')"
     hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
 
@@ -977,7 +1126,6 @@ function deployCortxServer()
             --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
             --set cortxserver.localpathpvc.mountpath="${local_storage}" \
             --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxserver.s3.numinst="${s3_num_inst}" \
             --set cortxserver.s3.startportnum="${s3_start_port_num}" \
             --set cortxserver.hax.port="${hax_port}" \
             --set cortxserver.secretinfo="secret-info.txt" \
@@ -1002,6 +1150,10 @@ function deployCortxServer()
 
 function deployCortxHa()
 {
+    if [[ ${deployment_type} == "data-only" ]]; then
+        return
+    fi
+
     printf "########################################################\n"
     printf "# Deploy CORTX HA                                       \n"
     printf "########################################################\n"
@@ -1203,22 +1355,43 @@ num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 
 deployCortxLocalBlockStorage
 deleteStaleAutoGenFolders
+generateMachineIds
 deployCortxConfigMap
 deployCortxSecrets
-
-case $DEPLOYMENT_MODE in
-    $STANDARD_DEPLOYMENT )
-        deployCortxControl
-        deployCortxData
-        deployCortxServer
-        deployCortxHa
-        ;;
-    $DATA_ONLY_DEPLOYMENT )
-        deployCortxData
-    ;;
-esac
-
+deployCortxControl
+deployCortxData
+deployCortxServer
+deployCortxHa
 if [[ $num_motr_client -gt 0 ]]; then
     deployCortxClient
 fi
 cleanup
+
+
+# Note: It is not ideal that some of these values are hard-coded here.
+#       The data comes from the helm charts and so there is no feasible
+#       way of getting the values otherwise.
+data_service_name="cortx-io-svc-0"  # present in cortx-platform/values.yaml... what to do?
+data_service_default_user="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
+control_service_name="cortx-control-loadbal-svc"  # hard coded in script above installing help or cortx-control
+control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templates/_config.tpl
+
+echo "
+-----------------------------------------------------------
+
+The CORTX cluster installation is complete."
+
+if [[ ${deployment_type} != "data-only" ]]; then
+    echo "
+The S3 data service is accessible through the ${data_service_name} service.
+   Default IAM access key: ${data_service_default_user}
+   Default IAM secret key is accessible via:
+       kubectl get secrets/${cortx_secret_name} --template={{.data.s3_auth_admin_secret}} | base64 -d
+
+The CORTX control service is accessible through the ${control_service_name} service.
+   Default control username: ${control_service_default_user}
+   Default control password is accessible via:
+       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+fi
+
+printf "\n-----------------------------------------------------------"

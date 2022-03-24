@@ -1,5 +1,4 @@
 {{- define "config.yaml" -}}
-{{- $ioSvcName := printf "%s-0" .Values.cortxIoServiceName -}}
 cortx:
   external:
     {{- if .Values.externalKafka.enabled }}
@@ -28,6 +27,14 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
+  {{- if .Values.cortxRgw.enabled }}
+  rgw:
+    {{- $ioSvcName := required "A valid cortxIoService.name is required!" .Values.cortxIoService.name }}
+    {{- $iosvcHttpPort := required "A valid cortxIoService.ports.http is required!" .Values.cortxIoService.ports.http }}
+    {{- $iosvcHttpsPort := required "A valid cortxIoService.ports.https is required!" .Values.cortxIoService.ports.https }}
+    auth_user: {{ .Values.cortxRgw.authUser }}
+    auth_admin: {{ .Values.cortxRgw.authAdmin }}
+    auth_secret: {{ .Values.cortxRgw.authSecret }}
   rgw:
     thread_pool_size: 10
     data_path: /var/cortx/radosgw/$clusterid
@@ -48,27 +55,27 @@ cortx:
       endpoints:
       - http://{{ $ioSvcName }}:80
       - https://{{ $ioSvcName }}:443
-    s3:
+    s3:                                                        # deprecated
       endpoints:
-      - http://{{ $ioSvcName }}:80
-      - https://{{ $ioSvcName }}:443
+      - http://{{ $ioSvcName }}:{{ $iosvcHttpPort }}
+      - https://{{ $ioSvcName }}:{{ $iosvcHttpsPort }}
     public:
       endpoints:
-      - http://{{ $ioSvcName }}:80
-      - https://{{ $ioSvcName }}:443
+      - http://{{ $ioSvcName }}:{{ $iosvcHttpPort }}
+      - https://{{ $ioSvcName }}:{{ $iosvcHttpsPort }}
     service:
       endpoints:
-      {{- toYaml .Values.cortxRgw.rgwServiceHttpEndpoints | nindent 8 }}
-      {{- toYaml .Values.cortxRgw.rgwServiceHttpsEndpoints | nindent 8 }}
-    io_max_units: 8                                                 #HARDCODED
-    {{- with .Values.cortxS3.maxStartTimeout }}
-    max_start_timeout: {{ . | int }}
+      - http://:22751
+      - https://:23001
+    {{- with .Values.cortxS3.instanceCount }}
     {{- end }}
+    io_max_units: 8                                                 #HARDCODED
     auth_user: {{ .Values.cortxRgw.authUser }}
     auth_admin: {{ .Values.cortxRgw.authAdmin }}
     auth_secret: {{ .Values.cortxRgw.authSecret }}
+    max_start_timeout: {{ .Values.cortxRgw.maxStartTimeout | int }}
+    service_instances: 1
     limits:
-      num_services: 1                                               #HARDCODED
       services:
       - name: rgw
         memory:
@@ -77,14 +84,20 @@ cortx:
         cpu:
           min: 250m
           max: 1000m
+    {{- if .Values.cortxRgw.extraConfiguration }}
+    {{- tpl .Values.cortxRgw.extraConfiguration . | nindent 4 }}
+    {{- end }}
+  {{- end }}
   hare:
     hax:
       endpoints:
-      {{- with .Values.cortxHa.haxService }}
+      {{- with .Values.cortxHare.haxService }}
         - {{ .protocol }}://{{ .name }}:{{ .port }}
       {{- end }}
       {{- toYaml .Values.cortxHare.haxDataEndpoints | nindent 8 }}
+      {{- if .Values.cortxRgw.enabled }}
       {{- toYaml .Values.cortxHare.haxServerEndpoints | nindent 8 }}
+      {{- end }}
       {{- if gt (len .Values.cortxHare.haxClientEndpoints) 0 -}}
         {{- toYaml .Values.cortxHare.haxClientEndpoints | nindent 8 }}
       {{- end }}
@@ -107,17 +120,17 @@ cortx:
     confd:
       endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
     clients:
-      - name: rgw
-        num_instances: 1  # number of instances *per-pod*
-        endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
-    {{- if gt (len .Values.cortxMotr.clientEndpoints) 0 }}
-      - name: motr_client
-        num_instances: {{ len .Values.cortxMotr.clientEndpoints }}
-        num_subscriptions: 1
-        subscriptions:
-        - fdmi
-        endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
+    {{- if .Values.cortxRgw.enabled }}
+    - name: rgw
+      num_instances: 1  # number of instances *per-pod*
+      endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
     {{- end }}
+    - name: motr_client
+      num_instances: {{ .Values.cortxMotr.clientInstanceCount | int }}
+      num_subscriptions: 1
+      subscriptions:
+      - fdmi
+      endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
     limits:
       services:
       - name: ios
@@ -134,7 +147,16 @@ cortx:
         cpu:
           min: 250m
           max: 500m
+    {{- if .Values.cortxMotr.extraConfiguration }}
+    {{- tpl .Values.cortxMotr.extraConfiguration . | nindent 4 }}
+    {{- end }}
+  {{- if .Values.cortxControl.enabled }}
   csm:
+    {{- $ioSvcName := required "A valid cortxIoService.name is required!" .Values.cortxIoService.name }}
+    {{- $iosvcHttpPort := required "A valid cortxIoService.ports.http is required!" .Values.cortxIoService.ports.http }}
+    {{- $iosvcHttpsPort := required "A valid cortxIoService.ports.https is required!" .Values.cortxIoService.ports.https }}
+    auth_admin: authadmin
+    auth_secret: csm_auth_admin_secret
     mgmt_admin: cortxadmin
     mgmt_secret: csm_mgmt_admin_secret
     email_address: cortx@seagate.com
@@ -150,6 +172,8 @@ cortx:
         cpu:
           min: 250m
           max: 500m
+  {{- end }}
+  {{- if .Values.cortxHa.enabled }}
   ha:
     limits:
       services:
@@ -174,4 +198,5 @@ cortx:
         cpu:
           min: 250m
           max: 500m
+  {{- end }}
 {{- end -}}

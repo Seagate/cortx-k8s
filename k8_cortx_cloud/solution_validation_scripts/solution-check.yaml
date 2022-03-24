@@ -1,14 +1,6 @@
 solution:
   namespace: required
-  secrets:
-    name: required
-    content:
-      kafka_admin_secret: required
-      consul_admin_secret: required
-      common_admin_secret: required
-      s3_auth_admin_secret: required
-      csm_auth_admin_secret: required
-      csm_mgmt_admin_secret: required
+  deployment_type: required
   images:
     cortxcontrol: required
     cortxdata: required
@@ -27,7 +19,6 @@ solution:
       default_iam_users:
         auth_admin: required
         auth_user: required
-      num_inst: required
       start_port_num: required
     motr:
       num_client_inst: required

@@ -1,4 +1,5 @@
 {{- $svc := .Values.services.io -}}
+{{- if gt $svc.count 0 -}}
 {{- $isLB := eq $svc.type "LoadBalancer" -}}
 {{- $nodePortAllowed := or (eq $svc.type "NodePort") $isLB -}}
 {{- $svcCount := ternary $svc.count 1 $isLB | int -}}
@@ -17,16 +18,17 @@ spec:
     - name: cortx-rgw-http
       protocol: TCP
       port: {{ $svc.ports.http }}
-      targetPort: 22751
+      targetPort: rgw-http
       {{- if and $nodePortAllowed (not (empty $svc.nodePorts.http)) }}
       nodePort: {{ add $svc.nodePorts.http $i }}
       {{- end }}
     - name: cortx-rgw-https
       protocol: TCP
       port: {{ $svc.ports.https }}
-      targetPort: 23001
+      targetPort: rgw-https
       {{- if and $nodePortAllowed (not (empty $svc.nodePorts.https)) }}
       nodePort: {{ add $svc.nodePorts.https $i }}
       {{- end }}
 ---
+{{- end }}
 {{- end }}
