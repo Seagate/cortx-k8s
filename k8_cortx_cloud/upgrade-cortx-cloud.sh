@@ -40,7 +40,7 @@ if [[ -s ${PIDFILE} ]]; then
    exit 1
 fi
 printf "%s" $$ > "${PIDFILE}"
-trap 'rm -f "${PIDFILE}"' EXIT
+rm -f "${PIDFILE}"
 
 function usage() {
     cat << EOF
@@ -103,38 +103,48 @@ function validate_cortx_pods_status() {
         exit 1
     fi
 }
-function wait_for_cortx_pods() {
-    num_nodes=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a deployments <<< "${line}"
-        num_nodes=$((num_nodes+1))
-    done <<< "$(kubectl get deployments --namespace="${NAMESPACE}" | grep "${cortx_deployment_filter}")"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "${line}"
-            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                sleep "${TIMEDELAY}"
-                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n %s pod failed to start. Exit early.\n" "${pod_status[0]}"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace="${NAMESPACE}" | grep "${cortx_pod_filter}")"
 
-        if [[ "${num_nodes}" -eq "${count}" ]]; then
-            break
-        else
-            printf "."
+function silentKill()
+{
+    kill "$1"
+    wait "$1" 2> /dev/null
+}
+
+function waitForAllDeploymentsAvailable()
+{
+    TIMEOUT=$1
+    shift
+    DEPL_STR=$1
+    shift
+    START=${SECONDS}
+    (while true; do sleep 1; echo -n "."; done)&
+    DOTPID=$!
+    # expand var now, not later
+    # shellcheck disable=SC2064
+    trap "silentKill ${DOTPID}" 0
+
+    # Initial wait
+    FAIL=0
+    sleep "${TIMEDELAY}";
+    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
+        # Secondary wait
+        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
+            # Still timed out.  This is a failure
+            FAIL=1
         fi
-        sleep 50;
-    done
-    printf "\n\n"
-    printf "All CORTX pods have been started"
-    printf "\n\n"
+    fi
+
+    silentKill ${DOTPID}
+    trap - 0
+    ELAPSED=$((SECONDS - START))
+    echo
+    if [[ ${FAIL} -eq 0 ]]; then
+        echo "Deployment ${DEPL_STR} available after ${ELAPSED} seconds"
+    else
+        echo "Deployment ${DEPL_STR} timed out after ${ELAPSED} seconds"
+    fi
+    echo
+    return ${FAIL}
 }
 
 function cold_upgrade() {
@@ -318,9 +328,29 @@ case "${UPGRADE_TYPE}" in
         ;;
 esac
 
+cortx_deployments=()
 # Wait for all CORTX Pods to be ready
+while IFS= read -r line; do
+    IFS=" " read -r -a deployments <<< "${line}"
+    cortx_deployments+=("deployment/${deployments[0]}")
+done < <(kubectl get deployments --namespace="${namespace}" | grep "${cortx_deployment_filter}")
+sleep "${TIMEDELAY}";
 printf "\nWait for CORTX Pods to be ready"
-wait_for_cortx_pods
+if ! waitForAllDeploymentsAvailable 300s "CORTX PODs" "${cortx_deployments[@]}"; then
+        echo "Failed.  Exiting script."
+        exit 1
+fi
+
+# TODO: We need to removw this workaround for briging cluster up after upgrade 
+# once [https://jts.seagate.com/browse/CORTX-28823] is resolved with proper fix.
+while IFS= read -r line; do
+    IFS=" " read -r -a pods <<< "${line}"
+    kubectl delete pod "${pods[0]}" --namespace="${namespace}" --force
+done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-data-\|cortx-server-')
+if ! waitForAllDeploymentsAvailable 300s "CORTX PODs" "${cortx_deployments[@]}"; then
+        echo "Failed.  Exiting script."
+        exit 1
+fi
 
 # Validate if All CORTX Pods are running After upgrade is successful
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
