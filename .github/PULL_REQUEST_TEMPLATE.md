@@ -57,6 +57,13 @@ This change requires the following images:
 - `cortx-all:<version>`
 - `cortx-rgw:<version>`
 
+## How was this tested?
+<!--
+In-lieu of requiring automated tests for changes (we're working on that!), we are asking you to
+provide a brief description of how this change was tested, especially any details specific to the
+change.
+-->
+
 ## Additional information
 <!--
 Feel free to mention any other information here about this PR that you feel is important and doesn't
