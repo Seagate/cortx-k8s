@@ -17,7 +17,6 @@ cortx:
     release:
       name: CORTX
       version: {{ .Values.cortxVersion }}
-    setup_size: {{ .Values.cortxSetupSize }}
     service:
       admin: admin
       secret: common_admin_secret
