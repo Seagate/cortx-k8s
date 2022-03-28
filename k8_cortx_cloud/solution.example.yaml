@@ -22,11 +22,9 @@ solution:
     rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
     busybox: ghcr.io/seagate/busybox:latest
   common:
-    setup_size: large
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
       local: /etc/cortx
-      shared: /share
       log: /etc/cortx/log
     s3:
       default_iam_users:
