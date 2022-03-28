@@ -104,13 +104,13 @@ function validate_cortx_pods_status() {
     fi
 }
 
-function silentKill()
+function silent_kill()
 {
     kill "$1"
     wait "$1" 2> /dev/null
 }
 
-function waitForAllDeploymentsAvailable()
+function wait_for_all_deployments_available()
 {
     TIMEOUT=$1
     shift
@@ -121,7 +121,7 @@ function waitForAllDeploymentsAvailable()
     DOTPID=$!
     # expand var now, not later
     # shellcheck disable=SC2064
-    trap "silentKill ${DOTPID}" 0
+    trap "silent_kill ${DOTPID}" 0
 
     # Initial wait
     FAIL=0
@@ -134,7 +134,7 @@ function waitForAllDeploymentsAvailable()
         fi
     fi
 
-    silentKill ${DOTPID}
+    silent_kill ${DOTPID}
     trap - 0
     ELAPSED=$((SECONDS - START))
     echo
@@ -336,7 +336,7 @@ while IFS= read -r line; do
 done < <(kubectl get deployments --namespace="${namespace}" | grep "${cortx_deployment_filter}")
 sleep "${TIMEDELAY}";
 printf "\nWait for CORTX Pods to be ready"
-if ! waitForAllDeploymentsAvailable 300s "CORTX PODs" "${cortx_deployments[@]}"; then
+if ! wait_for_all_deployments_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
 fi
@@ -347,7 +347,7 @@ while IFS= read -r line; do
     IFS=" " read -r -a pods <<< "${line}"
     kubectl delete pod "${pods[0]}" --namespace="${namespace}" --force
 done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-data-\|cortx-server-')
-if ! waitForAllDeploymentsAvailable 300s "CORTX PODs" "${cortx_deployments[@]}"; then
+if ! wait_for_all_deployments_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
 fi

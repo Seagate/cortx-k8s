@@ -1087,7 +1087,6 @@ function deployCortxServer()
     printf "########################################################\n"
     local cortxserver_image
     local hax_port
-    local s3_start_port_num
     local s3_service_type
     local s3_service_ports_http
     local s3_service_ports_https
@@ -1095,7 +1094,6 @@ function deployCortxServer()
     s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
-    s3_start_port_num="$(getSolutionValue 'solution.common.s3.start_port_num')"
     hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
 
     num_nodes=0
@@ -1126,7 +1124,6 @@ function deployCortxServer()
             --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
             --set cortxserver.localpathpvc.mountpath="${local_storage}" \
             --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
-            --set cortxserver.s3.startportnum="${s3_start_port_num}" \
             --set cortxserver.hax.port="${hax_port}" \
             --set cortxserver.secretinfo="secret-info.txt" \
             --set cortxserver.serviceaccountname="${serviceAccountName}" \

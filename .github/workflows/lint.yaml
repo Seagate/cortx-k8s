@@ -50,6 +50,10 @@ jobs:
         run: ./solution_validation_scripts/solution-validation.sh solution.yaml
         shell: bash
         working-directory: ./k8_cortx_cloud
+      - name: Validate solution.example.yaml
+        run: ./solution_validation_scripts/solution-validation.sh solution.example.yaml
+        shell: bash
+        working-directory: ./k8_cortx_cloud
       - name: Validate solution_stub.yaml
         run: ./solution_validation_scripts/solution-validation.sh solution_stub.yaml
         shell: bash

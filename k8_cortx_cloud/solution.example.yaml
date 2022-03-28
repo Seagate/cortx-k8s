@@ -33,7 +33,6 @@ solution:
         auth_admin: "sgiamadmin"
         auth_user: "user_name"
         #auth_secret defined above in solution.secrets.content.s3_auth_admin_secret
-      start_port_num: 28051
       max_start_timeout: 240
       extra_configuration: ""
     motr:

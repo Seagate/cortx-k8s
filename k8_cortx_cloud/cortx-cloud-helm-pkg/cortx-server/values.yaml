@@ -5,8 +5,6 @@ cortxserver:
   nodeselector: node-1
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
-  s3:
-    startportnum: 28051
   hax:
     port: 22003
   service:
