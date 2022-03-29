@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# TODO: add support for statefulset 
+# once deployments are replaced with statefulset in k8s .
+
 trap 'handle_error "$?" "${BASH_COMMAND:-?}" "${FUNCNAME[0]:-main}(${BASH_SOURCE[0]:-?}:${LINENO:-?})"' ERR
 handle_error() {
   printf "%s Unexpected error caught -- %s %s\n    at %s\n" "${RED-}✘${CLEAR-}" "$2" "${RED-}↩ $1${CLEAR-}" "$3" >&2
@@ -110,7 +113,7 @@ function silent_kill()
     wait "$1" 2> /dev/null
 }
 
-function wait_for_all_deployments_available()
+function wait_for_all_pods_available()
 {
     TIMEOUT=$1
     shift
@@ -336,7 +339,7 @@ while IFS= read -r line; do
 done < <(kubectl get deployments --namespace="${namespace}" | grep "${cortx_deployment_filter}")
 sleep "${TIMEDELAY}";
 printf "\nWait for CORTX Pods to be ready"
-if ! wait_for_all_deployments_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
+if ! wait_for_all_pods_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
 fi
@@ -347,7 +350,7 @@ while IFS= read -r line; do
     IFS=" " read -r -a pods <<< "${line}"
     kubectl delete pod "${pods[0]}" --namespace="${namespace}" --force
 done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-data-\|cortx-server-')
-if ! wait_for_all_deployments_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
+if ! wait_for_all_pods_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
 fi
