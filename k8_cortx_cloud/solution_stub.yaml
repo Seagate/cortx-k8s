@@ -16,7 +16,7 @@ solution:
     cortxserver: ghcr.io/seagate/centos:7
     cortxha: ghcr.io/seagate/centos:7
     cortxclient: ghcr.io/seagate/centos:7
-    consul: ghcr.io/seagate/consul:1.10.0
+    consul: ghcr.io/seagate/consul:1.11.4
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
     zookeeper: ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182
     rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
