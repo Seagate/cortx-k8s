@@ -4,12 +4,12 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      kafka_admin_secret: Seagate@123
-      consul_admin_secret: Seagate@123
-      common_admin_secret: Seagate@123
-      s3_auth_admin_secret: ldapadmin
-      csm_auth_admin_secret: seagate2
-      csm_mgmt_admin_secret: Cortxadmin@123
+      kafka_admin_secret: null
+      consul_admin_secret: null
+      common_admin_secret: null
+      s3_auth_admin_secret: null
+      csm_auth_admin_secret: null
+      csm_mgmt_admin_secret: null
   images:
     cortxcontrol: ghcr.io/seagate/centos:7
     cortxdata: ghcr.io/seagate/centos:7
@@ -32,6 +32,7 @@ solution:
       default_iam_users:
         auth_admin: "sgiamadmin"
         auth_user: "user_name"
+        #auth_secret defined above in solution.secrets.content.s3_auth_admin_secret
       max_start_timeout: 240
       extra_configuration: ""
     motr:
