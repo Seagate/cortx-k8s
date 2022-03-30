@@ -1,8 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Feature request
+    url: https://github.com/Seagate/cortx/issues/new
+    about: Want to suggest an idea? Create a feature request at the main CORTX project.
+  - name: CORTX on Kubernetes Questions and Support
     url: https://github.com/Seagate/cortx-k8s/discussions
-    about: Want to suggest an idea? Start a new discussion.
-  - name: Community Support
-    url: https://github.com/Seagate/cortx-k8s/discussions
-    about: Ask a question or request general support on the Discussion forum.
+    about: Have questions or need support for CORTX on Kubernetes for anything that isn't a bug report? Go ahead and start a new discussion.
+  - name: CORTX Community Support
+    url: https://cortx.link/slack_invite
+    about: Join us on Slack for general CORTX questions and support.
