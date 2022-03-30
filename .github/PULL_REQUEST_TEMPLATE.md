@@ -11,7 +11,11 @@ it solve?
 ## Breaking change
 <!--
 If this change introduces any breaking changes, describe what it breaks and what action is required
-to address it. If there are no breaking changes, leave this section blank or delete it.
+to address it. We prefer deprecating things first before breaking them entirely. If you are unable
+to support deprecation in this change, or are actually removing the deprecated the item, please
+state so.
+
+You can delete this section if there are no breaking changes.
 -->
 
 ## Type of change
