@@ -336,7 +336,7 @@ cortx_deployments=()
 while IFS= read -r line; do
     IFS=" " read -r -a deployments <<< "${line}"
     cortx_deployments+=("deployment/${deployments[0]}")
-done < <(kubectl get deployments --namespace="${namespace}" | grep "${cortx_deployment_filter}")
+done < <(kubectl get deployments --namespace="${NAMESPACE}" | grep "${cortx_deployment_filter}")
 sleep "${TIMEDELAY}";
 printf "\nWait for CORTX Pods to be ready"
 if ! wait_for_all_pods_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
@@ -348,8 +348,8 @@ fi
 # once [https://jts.seagate.com/browse/CORTX-28823] is resolved with proper fix.
 while IFS= read -r line; do
     IFS=" " read -r -a pods <<< "${line}"
-    kubectl delete pod "${pods[0]}" --namespace="${namespace}" --force
-done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-data-\|cortx-server-')
+    kubectl delete pod "${pods[0]}" --namespace="${NAMESPACE}" --force
+done < <(kubectl get pods --namespace="${NAMESPACE}" | grep 'cortx-data-\|cortx-server-')
 if ! wait_for_all_pods_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
