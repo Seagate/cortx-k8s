@@ -1,0 +1,123 @@
+name: Bug report
+description: Report problems and issues with CORTX on Kubernetes
+labels: [bug]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Welcome!
+
+        Thanks for taking the time to fill out this bug report!
+
+        Please only submit issues for problems you are experiencing. For general questions and support, start a new [Discussion](https://github.com/Seagate/cortx-k8s/discussions/new) instead.
+
+  - type: textarea
+    attributes:
+      label: Problem
+      description: Describe what the problem is.
+      placeholder: Explain what happened.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: Describe what you think should have happened instead.
+      placeholder: Explain what should have happened.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: How to reproduce
+      description: How can we reproduce the problem?
+      placeholder: Provide instructions to reproduce the problem.
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Environment
+
+  - type: input
+    attributes:
+      label: CORTX on Kubernetes version
+      description: |
+        The release version you are using, or a Git commit ID for development versions.
+
+        A branch name such as `integration` or `main` is not a valid version.
+      placeholder: v0.2.1
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Deployment information
+      description: |
+        Provide details about your deployment environment that may be relevant. This could include tool versions, client OS, cluster node OS, managed service (AWS, GCP), etc.
+
+        At a minimum, please provide the Kubernetes and kubectl versions.
+      value: |
+        Kubernetes version:
+        kubectl version:
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Solution configuration file YAML
+      description: |
+        If applicable, copy and paste your complete solution YAML file here, or the relevant portion. Remember to redact any passwords or other private information. At a minimum, please provide the container images that were used.
+
+        This field is automatically formatted as YAML, so there's no need to use code blocks.
+
+        If the file is very large (greater than 200 lines or so), please attach it to the "Additional information" field below.
+      render: yaml
+      placeholder: |
+        solution:
+          images:
+            cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-
+            cortxdata: ghcr.io/seagate/cortx-all:2.0.0-
+            cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-
+            cortxha: ghcr.io/seagate/cortx-all:2.0.0-
+            cortxclient: ghcr.io/seagate/cortx-all:2.0.0-
+            consul: ghcr.io/seagate/consul:1.11.4
+            kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
+            zookeeper: ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182
+            rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
+            busybox: ghcr.io/seagate/busybox:latest
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Details
+
+  - type: textarea
+    attributes:
+      label: Logs
+      description: |
+        Including some logs related to the deployed environment will help us analyze this issue. Here are some examples:
+
+        1. Run the command `(kubectl get all && kubectl get nodes) > deployment.log`, and attach `deployment.log` to this file.
+        2. Run the log collector script `./logs-cortx-cloud.sh -s <solution.yaml>` and attach the resulting tar file to this field.
+
+        Either one of these is acceptable, choose whichever seems relevant for the issue. If you have other logs which help illustrate the problem, such as a script failure, please include those as well.
+
+        Any amount of text more than a short snippet (up to 20 lines or so) is difficult to work with in GitHub, so file attachments are preferable.
+      placeholder: |
+        Drag and drop log files or the log bundle here. Copying shorter logs is okay, but please put them within code blocks:
+        ```
+        log text
+        ```
+
+  - type: textarea
+    attributes:
+      label: Additional information
+      description: >
+        Add anything else that you think we should know about here.
+
+  - type: markdown
+    attributes:
+      value: "Thanks again for completing our form! Doing so is a big help."
