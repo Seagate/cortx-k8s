@@ -37,30 +37,6 @@ cortx:
     auth_user: {{ .Values.cortxRgw.authUser }}
     auth_admin: {{ .Values.cortxRgw.authAdmin }}
     auth_secret: {{ .Values.cortxRgw.authSecret }}
-  rgw:
-    thread_pool_size: 10
-    data_path: /var/cortx/radosgw/$clusterid
-    init_timeout: 300
-    gc_max_objs: 32
-    gc_obj_min_wait: 1800
-    gc_processor_max_time: 3600
-    gc_processor_period: 3600
-    
-    motr_layout_id: 9                          
-    motr_unit_size: 1048576 
-    motr_max_units_per_request: 8
-    motr_max_idx_fetch_count: 30
-    motr_max_rpc_msg_size: 524288
-    motr_reconnect_interval: 5
-    motr_reconnect_retry_count: 25
-    iam:                                                            # DEPRECATED - IAM KEY
-      endpoints:
-      - https://{{ $ioSvcName }}:443
-      - http://{{ $ioSvcName }}:80
-    data:
-      endpoints:
-      - http://{{ $ioSvcName }}:80
-      - https://{{ $ioSvcName }}:443
     s3:                                                        # deprecated
       endpoints:
       - http://{{ $ioSvcName }}:{{ $iosvcHttpPort }}
@@ -73,12 +49,7 @@ cortx:
       endpoints:
       - http://:22751
       - https://:23001
-    {{- with .Values.cortxS3.instanceCount }}
-    {{- end }}
-    io_max_units: 8                                                 #HARDCODED
-    auth_user: {{ .Values.cortxRgw.authUser }}
-    auth_admin: {{ .Values.cortxRgw.authAdmin }}
-    auth_secret: {{ .Values.cortxRgw.authSecret }}
+    io_max_units: 8
     max_start_timeout: {{ .Values.cortxRgw.maxStartTimeout | int }}
     service_instances: 1
     limits:

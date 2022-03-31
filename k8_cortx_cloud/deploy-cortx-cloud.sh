@@ -350,8 +350,8 @@ function deployKubernetesPrereqs()
         --set services.hax.port="${hax_service_port}" \
         --set services.io.type="${s3_service_type}" \
         --set services.io.count="${s3_service_count}" \
-        --set services.io.ports.http="80" \
-        --set services.io.ports.https="443" \
+        --set services.io.ports.http="${s3_service_ports_http}" \
+        --set services.io.ports.https="${s3_service_ports_https}" \
         "${optional_values[@]}" \
         --namespace "${namespace}"
 }
