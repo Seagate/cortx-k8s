@@ -70,9 +70,9 @@ function parse_solution() {
 function validate_upgrade_images() {
     image="$1"
     if docker pull "${image}" > /dev/null; then
-        echo "Image ${image} pulled successfully"
+        echo "Image ${image} downloaded successfully"
     else
-        echo "Error Pulling Image ${image}, Please Provide Valid image"
+        echo "Error: Download Image ${image} failed, Please Provide Valid image"
         exit 1
     fi
 }
@@ -309,13 +309,13 @@ fi
 printf "Using solution config file '%s'\n" "${SOLUTION_FILE}"
 # Fetch Upgrade Images from solution.yaml and validate them
 cortxcontrol_image=$(parse_solution 'solution.images.cortxcontrol' | cut -f2 -d'>')
-validate_cortx_images "${cortxcontrol_image}"
+validate_upgrade_images "${cortxcontrol_image}"
 cortxha_image=$(parse_solution 'solution.images.cortxha' | cut -f2 -d'>')
-validate_cortx_images "${cortxha_image}"
+validate_upgrade_images "${cortxha_image}"
 cortxdata_image=$(parse_solution 'solution.images.cortxdata' | cut -f2 -d'>')
-validate_cortx_images "${cortxdata_image}"
+validate_upgrade_images "${cortxdata_image}"
 cortxserver_image=$(parse_solution 'solution.images.cortxserver' | cut -f2 -d'>')
-validate_cortx_images "${cortxserver_image}"
+validate_upgrade_images "${cortxserver_image}"
 
 readonly cortx_pod_filter="cortx-control-\|cortx-data-\|cortx-ha-\|cortx-server-\|cortx-client-"
 readonly cortx_deployment_filter="cortx-control\|cortx-data-\|cortx-ha\|cortx-server-\|cortx-client-"
