@@ -328,8 +328,11 @@ function symlinkBlockDevices()
     local filter
     local device_paths=()
     local job_template
-    local template_vars='${NODE_NAME}:${NODE_SHORT_NAME}:${DEVICE_PATHS}:${SYMLINK_PATH_SEPARATOR}:${CORTX_IMAGE}'
     local job_file
+
+    # We don't want these expanded right now
+    # shellcheck disable=SC2016
+    local template_vars='${NODE_NAME}:${NODE_SHORT_NAME}:${DEVICE_PATHS}:${SYMLINK_PATH_SEPARATOR}:${CORTX_IMAGE}'
 
     job_template="$(pwd)/cortx-cloud-3rd-party-pkg/templates/job-symlink-block-devices.yaml.template"
     job_file="jobs-symlink-block-devices-$(hostname -s).yaml"
