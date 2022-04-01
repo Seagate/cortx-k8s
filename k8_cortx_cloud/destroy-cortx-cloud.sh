@@ -15,7 +15,7 @@ if [[ "${solution_yaml}" == "--force" || "${solution_yaml}" == "-f" ]]; then
 fi
 
 # Check if the file exists
-if [ ! -f ${solution_yaml} ]
+if [[ ! -f ${solution_yaml} ]]
 then
     echo "ERROR: ${solution_yaml} does not exist"
     exit 1
@@ -35,7 +35,7 @@ while IFS= read -r line; do
 done <<< "$(kubectl get nodes --no-headers)"
 
 exit_early=false
-if [ ${not_ready_node_count} -gt 0 ]; then
+if [[ ${not_ready_node_count} -gt 0 ]]; then
     echo "Number of 'NotReady' worker nodes detected in the cluster: ${not_ready_node_count}"
     echo "List of 'NotReady' worker nodes:"
     for not_ready_node in "${not_ready_node_list[@]}"; do
