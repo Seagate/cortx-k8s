@@ -88,7 +88,7 @@ if [[ "${disk}" == *".yaml"* ]]; then
 fi
 
 # Check if the file exists
-if [ ! -f ${solution_yaml} ]
+if [[ ! -f ${solution_yaml} ]]
 then
     echo "ERROR: ${solution_yaml} does not exist"
     exit 1
@@ -144,7 +144,7 @@ function parseYaml
 function parseSolution()
 {
     # Check that all of the required parameters have been passed in
-    if [ "$1" == "" ]
+    if [[ $1 == "" ]]
     then
         echo "ERROR: Invalid input parameters"
         echo "Input YAML file is an empty string"
@@ -154,7 +154,7 @@ function parseSolution()
     fi
 
     # Check if the file exists
-    if [ ! -f $1 ]
+    if [[ ! -f $1 ]]
     then
         echo "ERROR: $1 does not exist"
         usage
@@ -170,7 +170,7 @@ function parseSolution()
     OUTPUT=""
 
     # Check if we need to do any filtering
-    if [ "$2" == "" ]
+    if [[ $2 == "" ]]
     then
         OUTPUT=${PARSED_OUTPUT}
     else
@@ -185,7 +185,7 @@ function parseSolution()
             if [[ ${VAR} == $2 ]]
             then
                 # If the OUTPUT is empty set it otherwise append
-                if [ "${OUTPUT}" == "" ]
+                if [[ ${OUTPUT} == "" ]]
                 then
                     OUTPUT=${VAR_VAL_ELEMENT}
                 else
