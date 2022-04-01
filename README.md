@@ -319,7 +319,7 @@ The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users
 
 ### Crash-looping InitContainers
 
-During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such failures. This command can be used to spin up a debugging container instance that has access to those same logs.
+During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such error conditions. This command can be used to spin up a debugging container instance that has access to those same logs.
 
 ```bash
 kubectl debug {crash-looping-pod-name} --copy-to=cortx-debug --container=cortx-setup -- sleep infinity;
