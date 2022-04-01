@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2312
+
 SCRIPT=$(readlink -f "$0")
 SCRIPT_NAME=$(basename "${SCRIPT}")
 
