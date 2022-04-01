@@ -78,29 +78,29 @@ while getopts hd:s:pbc: opt; do
     esac
 done
 
-if [[ "$disk" == *".yaml"* ]]; then
-    temp=$disk
-    disk=$solution_yaml
-    solution_yaml=$temp
-    if [[ "$disk" == "solution.yaml" ]]; then
+if [[ "${disk}" == *".yaml"* ]]; then
+    temp=${disk}
+    disk=${solution_yaml}
+    solution_yaml=${temp}
+    if [[ "${disk}" == "solution.yaml" ]]; then
         disk=""
     fi
 fi
 
 # Check if the file exists
-if [ ! -f $solution_yaml ]
+if [ ! -f ${solution_yaml} ]
 then
-    echo "ERROR: $solution_yaml does not exist"
+    echo "ERROR: ${solution_yaml} does not exist"
     exit 1
 fi
 
 get_nodes=$(kubectl get nodes 2>&1)
 is_master_node=true
-if [[ "$get_nodes" == *"was refused"* ]]; then
+if [[ "${get_nodes}" == *"was refused"* ]]; then
     is_master_node=false
 fi
 
-if [[ "$disk" == "" && "$is_master_node" = false ]]
+if [[ "${disk}" == "" && "${is_master_node}" = false ]]
 then
     echo "ERROR: Invalid input parameters"
     usage
@@ -120,11 +120,17 @@ fi
 
 function parseYaml
 {
-    s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-    sed -ne "s|^\($s\):|\1|" \
-        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
-        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-    awk -F$fs '{
+    local -r yaml_file=$1
+    local -r s='[[:space:]]*'
+    local -r w='[a-zA-Z0-9_]*'
+    local fs
+    fs=$(echo @|tr @ '\034')
+    readonly fs
+
+    sed -ne "s|^\(${s}\):|\1|" \
+        -e "s|^\(${s}\)\(${w}\)${s}:${s}[\"']\(.*\)[\"']${s}\$|\1${fs}\2${fs}\3|p" \
+        -e "s|^\(${s}\)\(${w}\)${s}:${s}\(.*\)${s}\$|\1${fs}\2${fs}\3|p"  ${yaml_file} |
+    awk -F${fs} '{
         indent = length($1)/2;
         vname[indent] = $2;
         for (i in vname) {if (i > indent) {delete vname[i]}}
@@ -138,25 +144,25 @@ function parseYaml
 function parseSolution()
 {
     # Check that all of the required parameters have been passed in
-    if [ "${1}" == "" ]
+    if [ "$1" == "" ]
     then
         echo "ERROR: Invalid input parameters"
         echo "Input YAML file is an empty string"
-        echo "[<yaml path filter> OPTIONAL] = ${2}"
+        echo "[<yaml path filter> OPTIONAL] = $2"
         usage
         exit 1
     fi
 
     # Check if the file exists
-    if [ ! -f ${1} ]
+    if [ ! -f $1 ]
     then
-        echo "ERROR: ${1} does not exist"
+        echo "ERROR: $1 does not exist"
         usage
         exit 1
     fi
 
     # Store the parsed output in a single string
-    PARSED_OUTPUT=$(parseYaml ${1})
+    PARSED_OUTPUT=$(parseYaml $1)
     # Remove any additional indent '.' characters
     PARSED_OUTPUT=$(echo ${PARSED_OUTPUT//../.})
 
@@ -164,7 +170,7 @@ function parseSolution()
     OUTPUT=""
 
     # Check if we need to do any filtering
-    if [ "${2}" == "" ]
+    if [ "$2" == "" ]
     then
         OUTPUT=${PARSED_OUTPUT}
     else
@@ -176,7 +182,7 @@ function parseSolution()
             # Get the var and val from the tuple
             VAR=$(echo ${VAR_VAL_ELEMENT} | cut -f1 -d'>')
             # Check is the filter matches the var
-            if [[ ${VAR} == ${2} ]]
+            if [[ ${VAR} == $2 ]]
             then
                 # If the OUTPUT is empty set it otherwise append
                 if [ "${OUTPUT}" == "" ]
@@ -190,7 +196,7 @@ function parseSolution()
     fi
 
     # Return the parsed output
-    echo $OUTPUT
+    echo ${OUTPUT}
 }
 
 function cleanupFolders()
@@ -199,7 +205,7 @@ function cleanupFolders()
     printf "# Clean up                                          \n"
     printf "####################################################\n"
     # cleanup
-    rm -rf $fs_mount_path/local-path-provisioner/*
+    rm -rf ${fs_mount_path}/local-path-provisioner/*
 }
 
 function increaseResources()
@@ -214,12 +220,12 @@ function prepCortxDeployment()
     printf "# Prep for CORTX deployment                         \n"
     printf "####################################################\n"
 
-    if [[ $(findmnt -m $fs_mount_path) ]];then
-        echo "$fs_mount_path already mounted..."
+    if [[ $(findmnt -m ${fs_mount_path}) ]];then
+        echo "${fs_mount_path} already mounted..."
     else
-        mkdir -p $fs_mount_path
-        echo y | mkfs.${default_fs_type} $disk
-        mount -t ${default_fs_type} $disk $fs_mount_path
+        mkdir -p ${fs_mount_path}
+        echo y | mkfs.${default_fs_type} ${disk}
+        mount -t ${default_fs_type} ${disk} ${fs_mount_path}
     fi
 
     ###################################################################
@@ -263,15 +269,15 @@ function prepCortxDeployment()
     ###################################################################
 
     # Prep for Rancher Local Path Provisioner deployment
-    echo "Create folder '$fs_mount_path/local-path-provisioner'"
-    mkdir -p $fs_mount_path/local-path-provisioner
+    echo "Create folder '${fs_mount_path}/local-path-provisioner'"
+    mkdir -p ${fs_mount_path}/local-path-provisioner
     count=0
     while true; do
-        if [[ -d $fs_mount_path/local-path-provisioner || $count -gt 5 ]]; then
+        if [[ -d ${fs_mount_path}/local-path-provisioner || ${count} -gt 5 ]]; then
             break
         else
-            echo "Create folder '$fs_mount_path/local-path-provisioner' failed. Retry..."
-            mkdir -p $fs_mount_path/local-path-provisioner
+            echo "Create folder '${fs_mount_path}/local-path-provisioner' failed. Retry..."
+            mkdir -p ${fs_mount_path}/local-path-provisioner
         fi
         count=$((count+1))
         sleep 1s
@@ -398,15 +404,15 @@ function installHelm()
 
 # Extract storage provisioner path from the "solution.yaml" file
 filter='solution.common.storage_provisioner_path'
-parse_storage_prov_output=$(parseSolution $solution_yaml $filter)
+parse_storage_prov_output=$(parseSolution ${solution_yaml} ${filter})
 # Get the storage provisioner var from the tuple
-fs_mount_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
+fs_mount_path=$(echo ${parse_storage_prov_output} | cut -f2 -d'>')
 
-namespace=$(parseSolution $solution_yaml 'solution.namespace')
-namespace=$(echo $namespace | cut -f2 -d'>')
+namespace=$(parseSolution ${solution_yaml} 'solution.namespace')
+namespace=$(echo ${namespace} | cut -f2 -d'>')
 
 # Install helm this is a master node
-if [[ "$is_master_node" = true ]]; then
+if [[ "${is_master_node}" = true ]]; then
     installHelm
 
     ###################################################################
@@ -421,7 +427,7 @@ if [[ "$is_master_node" = true ]]; then
 fi
 
 # Perform the following functions if the 'disk' is provided
-if [[ "$disk" != "" ]]; then
+if [[ "${disk}" != "" ]]; then
     cleanupFolders
     increaseResources
     prepCortxDeployment
