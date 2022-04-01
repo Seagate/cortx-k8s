@@ -32,12 +32,10 @@ jobs:
         with:
           # Temporarily ignore these until they are fixed
           ignore_paths: >-
-            openldap-replication
             parse_scripts
             solution_validation_scripts
           ignore_names: >-
             prereq-deploy-cortx-cloud.sh
-            upgrade-cortx-cloud.sh
 
   solution_yaml:
     name: Solution YAML validation
