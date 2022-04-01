@@ -81,7 +81,7 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "${parsed_node_output}"
 
-find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
+find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
 count=0
@@ -312,11 +312,11 @@ function deleteSecrets()
         secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
         kubectl delete secret "${secret_name}" --namespace="${namespace}"
 
-        find $(pwd)/cortx-cloud-helm-pkg/cortx-control -name "secret-*" -delete
-        find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "secret-*" -delete
-        find $(pwd)/cortx-cloud-helm-pkg/cortx-server -name "secret-*" -delete
-        find $(pwd)/cortx-cloud-helm-pkg/cortx-ha -name "secret-*" -delete
-        find $(pwd)/cortx-cloud-helm-pkg/cortx-client -name "secret-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-control" -name "secret-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "secret-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-server" -name "secret-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-ha" -name "secret-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-client" -name "secret-*" -delete
     fi
 }
 
@@ -482,10 +482,10 @@ function cleanup()
         rm "$(pwd)/cortx-cloud-helm-pkg/cortx-data/${file_name}"
     done
 
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "node-list-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "mnt-blk-*" -delete
-    find $(pwd)/cortx-cloud-helm-pkg/cortx-data -name "node-list-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
+    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
 }
 
 #############################################################
