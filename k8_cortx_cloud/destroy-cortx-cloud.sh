@@ -67,16 +67,16 @@ openldap_pvc="openldap-data"
 
 function parseSolution()
 {
-    ./parse_scripts/parse_yaml.sh ${solution_yaml} $1
+    ./parse_scripts/parse_yaml.sh ${solution_yaml} "$1"
 }
 
 function extractBlock()
 {
-    ./parse_scripts/yaml_extract_block.sh ${solution_yaml} $1
+    ./parse_scripts/yaml_extract_block.sh ${solution_yaml} "$1"
 }
 
 namespace=$(parseSolution 'solution.namespace')
-namespace=$(echo ${namespace} | cut -f2 -d'>')
+namespace=$(echo "${namespace}" | cut -f2 -d'>')
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
 # Split parsed output into an array of vars and vals
@@ -89,26 +89,26 @@ count=0
 # Loop the var val tuple array
 for var_val_element in "${parsed_var_val_array[@]}"
 do
-    node_name=$(echo ${var_val_element} | cut -f2 -d'>')
-    shorter_node_name=$(echo ${node_name} | cut -f1 -d'.')
+    node_name=$(echo "${var_val_element}" | cut -f2 -d'>')
+    shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
     node_name_list[count]=${shorter_node_name}
     count=$((count+1))
     file_name="mnt-blk-info-${shorter_node_name}.txt"
     data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/${file_name}
 
     # Get the node var from the tuple
-    node=$(echo ${var_val_element} | cut -f3 -d'.')
+    node=$(echo "${var_val_element}" | cut -f3 -d'.')
 
     filter="solution.storage.cvg*.devices*.device"
-    parsed_dev_output=$(parseSolution ${filter})
+    parsed_dev_output=$(parseSolution "${filter}")
     IFS=';' read -r -a parsed_dev_array <<< "${parsed_dev_output}"
     for dev in "${parsed_dev_array[@]}"
     do
-        device=$(echo ${dev} | cut -f2 -d'>')
+        device=$(echo "${dev}" | cut -f2 -d'>')
         if [[ -s ${data_file_path} ]]; then
-            printf "\n" >> ${data_file_path}
+            printf "\n" >> "${data_file_path}"
         fi
-        printf ${device} >> ${data_file_path}
+        printf "${device}" >> "${data_file_path}"
     done
 done
 
@@ -227,9 +227,9 @@ function deleteCortxPVs()
                     || ${pvc_line[5]} =~ ^${namespace}/cortx-control-fs-local-pvc* ]]; then
                 printf "Removing ${pvc_line[0]}\n"
                 if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-                    kubectl patch pv ${pvc_line[0]} -p '{"metadata":{"finalizers":null}}'
+                    kubectl patch pv "${pvc_line[0]}" -p '{"metadata":{"finalizers":null}}'
                 fi
-                kubectl delete pv ${pvc_line[0]}
+                kubectl delete pv "${pvc_line[0]}"
             fi
         fi
     done < <(kubectl get pv --all-namespaces)
@@ -356,9 +356,9 @@ function delete3rdPartyPVCs()
     do
         printf "Removing ${volume_claim}\n"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-            kubectl patch pvc ${volume_claim} -p '{"metadata":{"finalizers":null}}'
+            kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pvc ${volume_claim}
+        kubectl delete pvc "${volume_claim}"
     done
 
     volume_claims=$(kubectl get pvc --namespace="${namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|${openldap_pvc}|cortx|3rd-party" | cut -f1 -d " ")
@@ -367,9 +367,9 @@ function delete3rdPartyPVCs()
     do
         printf "Removing ${volume_claim}\n"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-            kubectl patch pvc ${volume_claim} -p '{"metadata":{"finalizers":null}}'
+            kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pvc ${volume_claim}
+        kubectl delete pvc "${volume_claim}"
     done
 
     if [[ ${namespace} != 'default' ]]; then
@@ -379,9 +379,9 @@ function delete3rdPartyPVCs()
         do
             printf "Removing ${volume_claim}\n"
             if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-                kubectl patch pvc ${volume_claim} -p '{"metadata":{"finalizers":null}}'
+                kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
             fi
-            kubectl delete pvc ${volume_claim}
+            kubectl delete pvc "${volume_claim}"
         done
     fi
 }
@@ -397,21 +397,21 @@ function delete3rdPartyPVs()
     do
         printf "Removing ${persistent_volume}\n"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-            kubectl patch pv ${persistent_volume} -p '{"metadata":{"finalizers":null}}'
+            kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pv ${persistent_volume}
+        kubectl delete pv "${persistent_volume}"
     done
 
     if [[ ${namespace} != 'default' ]]; then
-        persistent_volumes=$(kubectl get pv --namespace=${namespace} | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|cortx|3rd-party" | cut -f1 -d " ")
+        persistent_volumes=$(kubectl get pv --namespace="${namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|cortx|3rd-party" | cut -f1 -d " ")
         [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
         for persistent_volume in ${persistent_volumes}
         do
             printf "Removing ${persistent_volume}\n"
             if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-                kubectl patch pv ${persistent_volume} -p '{"metadata":{"finalizers":null}}'
+                kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
             fi
-            kubectl delete pv ${persistent_volume}
+            kubectl delete pv "${persistent_volume}"
         done
     fi
 }
@@ -477,10 +477,10 @@ function cleanup()
     # Loop the var val tuple array
     for var_val_element in "${parsed_var_val_array[@]}"
     do
-        node_name=$(echo ${var_val_element} | cut -f2 -d'>')
-        shorter_node_name=$(echo ${node_name} | cut -f1 -d'.')
+        node_name=$(echo "${var_val_element}" | cut -f2 -d'>')
+        shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
         file_name="mnt-blk-info-${shorter_node_name}.txt"
-        rm $(pwd)/cortx-cloud-helm-pkg/cortx-data/${file_name}
+        rm "$(pwd)/cortx-cloud-helm-pkg/cortx-data/${file_name}"
     done
 
     find $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data -name "mnt-blk-*" -delete
