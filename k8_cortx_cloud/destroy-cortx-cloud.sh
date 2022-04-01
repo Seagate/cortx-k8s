@@ -62,7 +62,6 @@ fi
 pvc_consul_filter="data-default-consul"
 pvc_kafka_filter="kafka"
 pvc_zookeeper_filter="zookeeper"
-pv_filter="pvc"
 openldap_pvc="openldap-data"
 
 function parseSolution()
