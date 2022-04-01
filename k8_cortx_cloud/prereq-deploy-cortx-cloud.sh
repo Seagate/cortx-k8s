@@ -1,7 +1,6 @@
 #!/bin/bash
 
 SCRIPT=$(readlink -f "$0")
-DIR=$(dirname "${SCRIPT}")
 SCRIPT_NAME=$(basename "${SCRIPT}")
 
 # Script defaults
@@ -313,7 +312,6 @@ function symlinkBlockDevices()
 
     # Local variables
     local filter
-    local node_list=()
     local device_paths=()
     local job_template="$(pwd)/cortx-cloud-3rd-party-pkg/templates/job-symlink-block-devices.yaml.template"
     local template_vars='${NODE_NAME}:${NODE_SHORT_NAME}:${DEVICE_PATHS}:${SYMLINK_PATH_SEPARATOR}:${CORTX_IMAGE}'
