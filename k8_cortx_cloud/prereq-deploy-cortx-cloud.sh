@@ -369,15 +369,11 @@ function symlinkBlockDevices()
     # Wait for all Jobs to complete successfully
     printf "Waiting for 'symlink-block-devices' Jobs to complete successfully...\n"
     sleep 10
-    kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s
-
     ##  If timeout, wait again
-    if (( $? != 0 )); then
+    if ! kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s; then
         printf "Timed out waiting for Jobs to complete successfully. Will attempt to wait again...\n"
-        kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s
-
         ##  If timeout again, fail and exit out of installer with user directives.
-        if (( $? != 0 )); then
+        if ! kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s; then
             printf "Timed out waiting for Jobs to complete successfully again. Corrective user action should be taken.\n"
             exit 1
         fi
