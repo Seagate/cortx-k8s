@@ -348,7 +348,7 @@ function symlinkBlockDevices()
     IFS=';' read -r -a device_array <<< "${device_output}"
     for device_path in "${device_array[@]}"
     do
-        device_paths+=(${device_path#*>})
+        device_paths+=("${device_path#*>}")
     done
     # Template replacement variable
     DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
