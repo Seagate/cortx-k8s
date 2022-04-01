@@ -34,8 +34,6 @@ jobs:
           ignore_paths: >-
             parse_scripts
             solution_validation_scripts
-          ignore_names: >-
-            prereq-deploy-cortx-cloud.sh
 
   solution_yaml:
     name: Solution YAML validation
