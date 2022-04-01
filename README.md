@@ -317,6 +317,19 @@ This section contains information about all the worker nodes used to deploy CORT
 
 The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
 
+### Crash-looping InitContainers
+
+During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such error conditions. This command can be used to spin up a debugging container instance that has access to those same logs.
+
+```bash
+kubectl debug {crash-looping-pod-name} --copy-to=cortx-debug --container=cortx-setup -- sleep infinity;
+kubectl exec -it cortx-debug -c cortx-setup -- sh
+```
+
+Once you are done with your debugging session, you can exit the shell session and delete the `cortx-debug` pod.
+
+**_Note:_** This requires a `kubectl` [minimum version of 1.20](https://kubernetes.io/docs/tasks/tools/#kubectl).
+
 ## License
 
 CORTX is 100% Open Source. Most of the project is licensed under the [Apache 2.0 License](LICENSE) and the rest is under AGPLv3; check the specific License file of each CORTX submodule to determine which is which.
