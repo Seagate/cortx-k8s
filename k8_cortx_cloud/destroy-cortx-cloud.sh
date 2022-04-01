@@ -67,12 +67,12 @@ openldap_pvc="openldap-data"
 
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh ${solution_yaml} $1)"
+    ./parse_scripts/parse_yaml.sh ${solution_yaml} $1
 }
 
 function extractBlock()
 {
-    echo "$(./parse_scripts/yaml_extract_block.sh ${solution_yaml} $1)"
+    ./parse_scripts/yaml_extract_block.sh ${solution_yaml} $1
 }
 
 namespace=$(parseSolution 'solution.namespace')
