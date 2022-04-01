@@ -164,7 +164,7 @@ function parseSolution()
     # Store the parsed output in a single string
     PARSED_OUTPUT=$(parseYaml $1)
     # Remove any additional indent '.' characters
-    PARSED_OUTPUT=$(echo ${PARSED_OUTPUT//../.})
+    PARSED_OUTPUT=${PARSED_OUTPUT//../.}
 
     # Star with empty output
     OUTPUT=""
