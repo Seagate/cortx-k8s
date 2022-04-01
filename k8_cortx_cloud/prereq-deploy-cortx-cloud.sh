@@ -182,6 +182,12 @@ function parseSolution()
             # Get the var and val from the tuple
             VAR=$(echo ${VAR_VAL_ELEMENT} | cut -f1 -d'>')
             # Check is the filter matches the var
+            #
+            # Ignore SC2053: $2 is a filter which can take wildcard (*)
+            # characters, so this comparison is intentionally relying on glob
+            # pattern matching.
+            #
+            # shellcheck disable=SC2053
             if [[ ${VAR} == $2 ]]
             then
                 # If the OUTPUT is empty set it otherwise append
