@@ -107,7 +107,7 @@ do
         if [[ -s ${data_file_path} ]]; then
             printf "\n" >> "${data_file_path}"
         fi
-        printf "${device}" >> "${data_file_path}"
+        printf "%s" "${device}" >> "${data_file_path}"
     done
 done
 
@@ -224,7 +224,7 @@ function deleteCortxPVs()
             IFS=" " read -r -a pvc_line <<< "${line}"
             if [[ ${pvc_line[5]} =~ ^${namespace}/cortx-data-fs-local-pvc* \
                     || ${pvc_line[5]} =~ ^${namespace}/cortx-control-fs-local-pvc* ]]; then
-                printf "Removing ${pvc_line[0]}\n"
+                printf "Removing %s\n" "${pvc_line[0]}"
                 if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
                     kubectl patch pv "${pvc_line[0]}" -p '{"metadata":{"finalizers":null}}'
                 fi
@@ -353,7 +353,7 @@ function delete3rdPartyPVCs()
     [[ -n ${volume_claims} ]] && echo "${volume_claims}"
     for volume_claim in ${volume_claims}
     do
-        printf "Removing ${volume_claim}\n"
+        printf "Removing %s\n" "${volume_claim}"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
             kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
         fi
@@ -364,7 +364,7 @@ function delete3rdPartyPVCs()
     [[ -n ${volume_claims} ]] && echo "${volume_claims}"
     for volume_claim in ${volume_claims}
     do
-        printf "Removing ${volume_claim}\n"
+        printf "Removing %s\n" "${volume_claim}"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
             kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
         fi
@@ -376,7 +376,7 @@ function delete3rdPartyPVCs()
         [[ -n ${volume_claims} ]] && echo "${volume_claims}"
         for volume_claim in ${volume_claims}
         do
-            printf "Removing ${volume_claim}\n"
+            printf "Removing %s\n" "${volume_claim}"
             if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
                 kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
             fi
@@ -394,7 +394,7 @@ function delete3rdPartyPVs()
     [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
     for persistent_volume in ${persistent_volumes}
     do
-        printf "Removing ${persistent_volume}\n"
+        printf "Removing %s\n" "${persistent_volume}"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
             kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
         fi
@@ -406,7 +406,7 @@ function delete3rdPartyPVs()
         [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
         for persistent_volume in ${persistent_volumes}
         do
-            printf "Removing ${persistent_volume}\n"
+            printf "Removing %s\n" "${persistent_volume}"
             if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
                 kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
             fi
