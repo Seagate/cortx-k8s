@@ -327,9 +327,12 @@ function symlinkBlockDevices()
     # Local variables
     local filter
     local device_paths=()
-    local job_template="$(pwd)/cortx-cloud-3rd-party-pkg/templates/job-symlink-block-devices.yaml.template"
+    local job_template
     local template_vars='${NODE_NAME}:${NODE_SHORT_NAME}:${DEVICE_PATHS}:${SYMLINK_PATH_SEPARATOR}:${CORTX_IMAGE}'
-    local job_file="jobs-symlink-block-devices-$(hostname -s).yaml"
+    local job_file
+
+    job_template="$(pwd)/cortx-cloud-3rd-party-pkg/templates/job-symlink-block-devices.yaml.template"
+    job_file="jobs-symlink-block-devices-$(hostname -s).yaml"
 
     # Template replacement variable
     export SYMLINK_PATH_SEPARATOR=${symlink_block_devices_separator}
@@ -348,7 +351,8 @@ function symlinkBlockDevices()
         device_paths+=(${device_path#*>})
     done
     # Template replacement variable
-    export DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
+    DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
+    export DEVICE_PATHS
 
     # Prepare local templated Job definition
     rm -f ${job_file}
