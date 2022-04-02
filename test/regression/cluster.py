@@ -57,7 +57,7 @@ class Cluster:
 
         solution = safe_load(open(self.solution_file))
         nodes = solution['solution']['nodes']
-        self.nodes = [nodes[n]['name'] for n in nodes]
+        self.nodes = [n['name'] for n in nodes.values()]
 
     def _verify_cluster_yaml(self):
         if not self.cluster_data['nodes']:
