@@ -245,12 +245,12 @@ This section contains the CORTX and third-party images used to deploy CORTX on K
 | ------------------------ | -------------------------------------------------------------------------------------- | ----------------------- |
 | `images.cortxcontrol`    | Image registry, repository, & tag for the CORTX Control components                     | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
 | `images.cortxdata`       | Image registry, repository, & tag for the CORTX Data components                        | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
-| `images.cortxserver`     | Image registry, repository, & tag for the CORTX Server components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
+| `images.cortxserver`     | Image registry, repository, & tag for the CORTX Server components                      | `ghcr.io/seagate/cortx-rgw:2.0.0-{VERSION}` |
 | `images.cortxha`         | Image registry, repository, & tag for the CORTX HA components                          | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
 | `images.cortxclient`     | Image registry, repository, & tag for the CORTX Client components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
-| `images.consul`          | Image registry, repository, & tag for the Consul required service                      | `ghcr.io/seagate/consul:1.10.0`             |
+| `images.consul`          | Image registry, repository, & tag for the Consul required service                      | `ghcr.io/seagate/consul:1.11.4`             |
 | `images.kafka`           | Image registry, repository, & tag for the Kafka required service                       | `ghcr.io/seagate/kafka:3.0.0-debian-10-r7`  |
-| `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service                   | `ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182` |
+| `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service                   | `ghcr.io/seagate/zookeeper:3.8.0-debian-10-r9` |
 | `images.rancher`         | Image registry, repository, & tag for the Rancher Local Path Provisioner container     | `ghcr.io/seagate/local-path-provisioner:v0.0.20` |
 | `images.busybox`         | Image registry, repository, & tag for the utility busybox container                    | `ghcr.io/seagate/busybox:latest`            |
 
@@ -316,6 +316,19 @@ This section contains information about all the worker nodes used to deploy CORT
 ### Using stub containers
 
 The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
+
+### Crash-looping InitContainers
+
+During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such error conditions. This command can be used to spin up a debugging container instance that has access to those same logs.
+
+```bash
+kubectl debug {crash-looping-pod-name} --copy-to=cortx-debug --container=cortx-setup -- sleep infinity;
+kubectl exec -it cortx-debug -c cortx-setup -- sh
+```
+
+Once you are done with your debugging session, you can exit the shell session and delete the `cortx-debug` pod.
+
+**_Note:_** This requires a `kubectl` [minimum version of 1.20](https://kubernetes.io/docs/tasks/tools/#kubectl).
 
 ## License
 
