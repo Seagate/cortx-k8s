@@ -1376,4 +1376,4 @@ The CORTX control service is accessible through the ${control_service_name} serv
        kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
 fi
 
-printf "\n-----------------------------------------------------------"
+printf "\n-----------------------------------------------------------\n"

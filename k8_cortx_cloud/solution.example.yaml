@@ -11,14 +11,14 @@ solution:
       csm_auth_admin_secret: seagate2
       csm_mgmt_admin_secret: Cortxadmin@123
   images:
-    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-689
-    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-689
-    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-689
-    cortxha: ghcr.io/seagate/cortx-all:2.0.0-689
-    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-689
-    consul: ghcr.io/seagate/consul:1.10.0
+    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-707
+    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-707
+    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-707
+    cortxha: ghcr.io/seagate/cortx-all:2.0.0-707
+    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-707
+    consul: ghcr.io/seagate/consul:1.11.4
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
-    zookeeper: ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182
+    zookeeper: ghcr.io/seagate/zookeeper:3.8.0-debian-10-r9
     rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
     busybox: ghcr.io/seagate/busybox:latest
   common:
