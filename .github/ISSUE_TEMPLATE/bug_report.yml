@@ -1,5 +1,5 @@
 name: Bug report
-description: Report problems and issues with CORTX on Kubernetes
+description: Report problems and issues with CORTX on Kubernetes.
 labels: [bug]
 
 body:
