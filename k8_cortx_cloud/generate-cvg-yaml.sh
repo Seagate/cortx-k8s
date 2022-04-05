@@ -190,7 +190,7 @@ if [[ ! -f "${NODE_LIST_FILE}" ]]; then
 fi
 
 ## Check for proper existence of required DEVICE_PATHS_FILE parameter
-debug "|    DEVICE_PATHS_FILE=\"${NODE_LIST_FILE}\""
+debug "|    DEVICE_PATHS_FILE=\"${DEVICE_PATHS_FILE}\""
 if [[ "${DEVICE_PATHS_FILE}" == "UNSET" ]]; then
   error "DEVICE_PATHS_FILE is a required parameter and is unset." 1
 fi
