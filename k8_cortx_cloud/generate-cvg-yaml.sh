@@ -234,46 +234,48 @@ if [[ "${#DEVICE_PATHS[@]}" == "0" ]]; then
   error "Parsed DEVICE_PATHS_FILE contents is empty" 1
 fi
 
-printf "solution:\n" > ${_YAML_BODY}
+{
+  printf "solution:\n"
 
-## GENERATE STORAGE->CVG STANZA
-_DEVICE_OFFSET=0
-printf "  storage:\n" >> ${_YAML_BODY}
-for cvg_instance in $(seq ${NUM_CVGS}); do
-  printf "    cvg%s:\n" ${cvg_instance} >> ${_YAML_BODY}
+  ## GENERATE STORAGE->CVG STANZA
+  _DEVICE_OFFSET=0
+  printf "  storage:\n"
+  for cvg_instance in $(seq ${NUM_CVGS}); do
+    printf "    cvg%s:\n" ${cvg_instance}
 
-  ## Front-pad cvg-name with leading zeroes
-  _CVG_NAME=${cvg_instance}
-  if [[ "${_CVG_NAME}" -lt "10" ]]; then
-    _CVG_NAME="0${cvg_instance}"
-  fi
+    ## Front-pad cvg-name with leading zeroes
+    _CVG_NAME=${cvg_instance}
+    if [[ "${_CVG_NAME}" -lt "10" ]]; then
+      _CVG_NAME="0${cvg_instance}"
+    fi
 
-  printf "      name: cvg-%s\n" ${_CVG_NAME} >> ${_YAML_BODY}
-  printf "      type: ios\n" >> ${_YAML_BODY}
-  printf "      devices:\n" >> ${_YAML_BODY}
+    printf "      name: cvg-%s\n" ${_CVG_NAME}
+    printf "      type: ios\n"
+    printf "      devices:\n"
 
-  ##TODO (1.2) Determine if we currently can use multiple metadata drives
-  printf "        metadata:\n" >> ${_YAML_BODY}
-  printf "          device: %s\n" ${DEVICE_PATHS[${_DEVICE_OFFSET}]} >> ${_YAML_BODY}
-  ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
-
-  printf "          size: %s\n" ${SIZE_METADATA_DRIVE} >> ${_YAML_BODY}
-
-  printf "        data:\n" >> ${_YAML_BODY}
-  for data_instance in $(seq 1 ${NUM_DATA_DRIVES}); do
-    printf "          d%s:\n" ${data_instance} >> ${_YAML_BODY}
-    printf "            device: %s\n" ${DEVICE_PATHS[${_DEVICE_OFFSET}]} >> ${_YAML_BODY}
+    ##TODO (1.2) Determine if we currently can use multiple metadata drives
+    printf "        metadata:\n"
+    printf "          device: %s\n" ${DEVICE_PATHS[${_DEVICE_OFFSET}]}
     ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
 
-    printf "            size: %s\n" ${SIZE_DATA_DRIVE} >> ${_YAML_BODY}
-  done
-done
+    printf "          size: %s\n" ${SIZE_METADATA_DRIVE}
 
-## Generate Node stanza
-printf "  nodes:\n" >> ${_YAML_BODY}
-for node_instance in $(seq ${#NODE_LIST[@]}); do
-  printf "    node%s:\n" ${node_instance} >> ${_YAML_BODY}
-  printf "      name: %s\n" ${NODE_LIST[${node_instance}-1]} >> ${_YAML_BODY}
-done
+    printf "        data:\n"
+    for data_instance in $(seq 1 ${NUM_DATA_DRIVES}); do
+      printf "          d%s:\n" ${data_instance}
+      printf "            device: %s\n" ${DEVICE_PATHS[${_DEVICE_OFFSET}]}
+      ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
+
+      printf "            size: %s\n" ${SIZE_DATA_DRIVE}
+    done
+  done
+
+  ## Generate Node stanza
+  printf "  nodes:\n"
+  for node_instance in $(seq ${#NODE_LIST[@]}); do
+    printf "    node%s:\n" ${node_instance}
+    printf "      name: %s\n" ${NODE_LIST[${node_instance}-1]}
+  done
+} > ${_YAML_BODY}
 
 yq ea 'del(select(fi==0) | .solution.storage) | del(select(fi==0) | .solution.nodes) | select(fi==0) * select(fi==1)' ${SOLUTION_YAML} ${_YAML_BODY}
