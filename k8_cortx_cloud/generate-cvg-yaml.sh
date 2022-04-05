@@ -213,7 +213,7 @@ NODE_LIST=()
 while IFS= read -r line; do
     NODE_LIST+=($line)
     debug "|      $line"
-done <<< "$(cat $NODE_LIST_FILE)"
+done < "$NODE_LIST_FILE"
 
 ## Check for empty node list
 if [[ "${#NODE_LIST[@]}" == "0" ]]; then
@@ -227,7 +227,7 @@ debug "|    DEVICE_PATHS_FILE:"
 while IFS= read -r line; do
     DEVICE_PATHS+=($line)
     debug "|      $line"
-done <<< "$(cat $DEVICE_PATHS_FILE)"
+done < "$DEVICE_PATHS_FILE"
 
 ## Check for empty device path list
 if [[ "${#DEVICE_PATHS[@]}" == "0" ]]; then
