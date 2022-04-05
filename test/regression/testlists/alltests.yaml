@@ -1,6 +1,6 @@
 test_deploy_basic:
   id: TEST-DEPLOY-0001
-  cmd: ./test_deploy.py -c {{ cluster }} -s {{ k8_cloud_dir }}/solution.yaml --shutdown
+  cmd: ./test_deploy.py -c {{ cluster }} -s {{ k8_cloud_dir }}/solution.example.yaml --shutdown
 
 test_deploy_stub:
   id: TEST-DEPLOY-0002
