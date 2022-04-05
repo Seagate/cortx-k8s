@@ -13,11 +13,23 @@ generated_solution: /tmp/mysolution.yaml
 
 # Version of cortx-all to use
 # If omitted then the version specified in the
-# default solution.yaml file is used
+# default solution.example.yaml file is used
 #cortx_ver:  2.0.0-latest-custom-ci
+#
+
+#secrets:
+#  name: cortx-secret
+#  content:
+#    s3_auth_admin_secret: Test@123
+#    csm_mgmt_admin_secret: Test@123
 
 
-setup_size: small
+#nodePorts:
+#  control:
+#    https: 32081
+#  s3:
+#    http: 32080
+#    https: 32443
 
 
 # Nodes in k8s cluster
