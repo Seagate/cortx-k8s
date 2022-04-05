@@ -205,13 +205,13 @@ if [[ "${YQ_AVAILABLE}" == "" ]]; then
   error "'yq' is required for this script to run successfully. Visit github.com/mikefarah/yq for details." 1
 fi
 
-## Parse nodes
+## Parse nodes - line delimited
 debug " -- PARSED PARAMETERS"
 debug "|"
 debug "|    NODE_LIST_FILE:"
 NODE_LIST=()
 while IFS= read -r line; do
-    NODE_LIST+=(${line})
+    NODE_LIST+=("${line}")
     debug "|      ${line}"
 done < "${NODE_LIST_FILE}"
 
@@ -220,12 +220,12 @@ if [[ "${#NODE_LIST[@]}" == "0" ]]; then
   error "Parsed NODE_LIST_FILE contents is empty" 1
 fi
 
-## Parse devices
+## Parse devices - line delimited
 DEVICE_PATHS=()
 debug "|"
 debug "|    DEVICE_PATHS_FILE:"
 while IFS= read -r line; do
-    DEVICE_PATHS+=(${line})
+    DEVICE_PATHS+=("${line}")
     debug "|      ${line}"
 done < "${DEVICE_PATHS_FILE}"
 
