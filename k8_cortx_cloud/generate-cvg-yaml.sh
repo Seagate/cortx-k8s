@@ -123,7 +123,7 @@ get_options() {
       DEVICE_PATHS_FILE="${2-}"
       shift
       ;;
-    -?*) 
+    -?*)
       error "Unknown option: $1"
       exit
       ;;
@@ -248,7 +248,7 @@ for cvg_instance in $(seq $NUM_CVGS); do
     _CVG_NAME="0$cvg_instance"
   fi
 
-  printf "      name: cvg-%s\n" $_CVG_NAME >> $_YAML_BODY 
+  printf "      name: cvg-%s\n" $_CVG_NAME >> $_YAML_BODY
   printf "      type: ios\n" >> $_YAML_BODY
   printf "      devices:\n" >> $_YAML_BODY
 
@@ -266,7 +266,7 @@ for cvg_instance in $(seq $NUM_CVGS); do
     ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
 
     printf "            size: %s\n" $SIZE_DATA_DRIVE >> $_YAML_BODY
-  done 
+  done
 done
 
 ## Generate Node stanza
