@@ -240,7 +240,7 @@ fi
   ## GENERATE STORAGE->CVG STANZA
   _DEVICE_OFFSET=0
   printf "  storage:\n"
-  for ((cvg_instance = 1 ; cvg_instance <= ${NUM_CVGS} ; cvg_instance++)); do
+  for ((cvg_instance = 1 ; cvg_instance <= NUM_CVGS ; cvg_instance++)); do
     printf "    cvg%s:\n" "${cvg_instance}"
 
     ## Front-pad cvg-name with leading zeroes
@@ -257,7 +257,7 @@ fi
     ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
     printf "          size: %s\n" "${SIZE_METADATA_DRIVE}"
     printf "        data:\n"
-    for ((data_instance = 1 ; data_instance <= ${NUM_DATA_DRIVES} ; data_instance++)); do
+    for ((data_instance = 1 ; data_instance <= NUM_DATA_DRIVES ; data_instance++)); do
       printf "          d%s:\n" "${data_instance}"
       printf "            device: %s\n" "${DEVICE_PATHS[${_DEVICE_OFFSET}]}"
       ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
@@ -274,4 +274,4 @@ fi
   done
 } > ${_YAML_BODY}
 
-yq ea 'del(select(fi==0) | .solution.storage) | del(select(fi==0) | .solution.nodes) | select(fi==0) * select(fi==1)' ${SOLUTION_YAML} ${_YAML_BODY}
+yq ea 'del(select(fi==0) | .solution.storage) | del(select(fi==0) | .solution.nodes) | select(fi==0) * select(fi==1)' "${SOLUTION_YAML}" ${_YAML_BODY}
