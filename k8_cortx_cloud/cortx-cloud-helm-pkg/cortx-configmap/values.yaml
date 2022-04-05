@@ -64,14 +64,8 @@ externalConsul:
 # cortxVersion: 2.0.0-624-custom-ci
 cortxVersion: "unknown"
 
-# cortxSetupSize configures the default resource usage of CORTX components
-# e.g.:
-# cortxSetupSize: small | medium | large
-cortxSetupSize: small
-
 # cortxStoragePaths allows configuring the location of CORTX filesystem paths
 cortxStoragePaths:
-  shared: "/share"                                              # DEPRECATED
   local: "/etc/cortx"
   log: "/etc/cortx/log"
   config: "/etc/cortx"
