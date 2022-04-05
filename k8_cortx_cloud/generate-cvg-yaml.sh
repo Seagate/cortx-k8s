@@ -28,7 +28,7 @@ _YAML_BODY="./tmp-yaml-body.yaml"
 
 # print error message [ execute command ] and exit [ with defined status ]
 error() {
-    echo "${_SCRIPT_NAME}: $1" > /dev/stderr
+    echo "${_SCRIPT_NAME}: $1" >&2
     (( $# > 2)) && eval "$2" && exit "$3"
     (( $# > 1 )) && exit "$2"
     exit 1
@@ -36,12 +36,12 @@ error() {
 
 # print log message
 log() {
-    echo "${_SCRIPT_NAME}: $1" > /dev/stderr
+    echo "${_SCRIPT_NAME}: $1" >&2
 }
 
 # print debug message if script called with verbose mode
 debug() {
-    [[ ${_VERBOSE} == 1 ]] && echo "${_SCRIPT_NAME}: $1" > /dev/stderr
+    [[ ${_VERBOSE} == 1 ]] && echo "${_SCRIPT_NAME}: $1" >&2
 }
 
 usage() {
