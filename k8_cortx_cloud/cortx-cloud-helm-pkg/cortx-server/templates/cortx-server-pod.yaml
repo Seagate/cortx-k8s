@@ -2,7 +2,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.cortxserver.service.headless.name }}
-  namespace: {{ .Values.namespace }}
   labels:
     cortx.io/service-type: {{ .Values.cortxserver.serviceType }}
 spec:
@@ -11,6 +10,8 @@ spec:
   selector:
     app: {{ .Values.cortxserver.name }}
     cortx.io/service-type:  {{ .Values.cortxserver.serviceType }}
+    cortx.io/hax-enabled: "true"
+    cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
 ---    
 apiVersion: apps/v1
 kind: StatefulSet
@@ -19,7 +20,6 @@ metadata:
     app: {{ .Values.cortxserver.name }}
     cortx.io/service-type:  {{ .Values.cortxserver.serviceType }}
   name: {{ .Values.cortxserver.name }}
-  namespace: {{ .Values.namespace }}
 spec:
   podManagementPolicy: Parallel
   serviceName: {{ .Values.cortxserver.service.headless.name }}
@@ -27,15 +27,23 @@ spec:
   selector:
     matchLabels:
       app: {{ .Values.cortxserver.name }}
+      cortx.io/service-type: cortx-server
+      cortx.io/hax-enabled: "true"
+      cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
   template:
     metadata:
       labels:
         app: {{ .Values.cortxserver.name }}
+        ### TODO CORTX-28968 k8s Label 'name: cortx-server' is deprecated in favor of 'cortx.io/service-type: cortx-server'
         name: cortx-server
         cortx.io/service-type: cortx-server
         cortx.io/hax-enabled: "true"
+        cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
     spec:
-      #hostname: {{ .Values.cortxserver.service.headless.name }}
+      subdomain: {{ .Values.cortxserver.service.headless.name }}
+      ### Avoid using below if possible due to limitations around Linux kernel field length limitations
+      ### See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-sethostnameasfqdn-field
+      setHostnameAsFQDN: true
       serviceAccountName: {{ .Values.cortxserver.serviceaccountname }}
       volumes:
         - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -45,41 +53,30 @@ spec:
           configMap:
             name: {{ .Values.cortxserver.sslcfgmap.name }}
         - name: machine-id
-          downwardAPI:
-            items:
-              - path: "id"
-                fieldRef:
-                  fieldPath: metadata.name
-        - name: local-path-pv
           emptyDir: {}
-          # TODO CORTX-28968 Evaluate as volumeClaimTemplate as well
-          #persistentVolumeClaim:
-          #  claimName: {{ .Values.cortxserver.localpathpvc.name }}
-        {{- range .Files.Lines .Values.cortxserver.secretinfo }}
-        ## TODO CORTX-28968 Revisit to remove this loop
-        - name: {{ printf "%s" . }}
+        - name: {{ .Values.cortxserver.secretname }}
           secret:
-            secretName: {{ printf "%s" . }}
-        {{- end }}
+            secretName: {{ .Values.cortxserver.secretname }}
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxserver.image }}
         imagePullPolicy: IfNotPresent
         command:
           - /bin/sh
-        {{- if eq .Values.cortxserver.image "ghcr.io/seagate/centos:7" }}
-        args:
           - -c
+        args:
+          {{- if eq .Values.cortxserver.image "ghcr.io/seagate/centos:7" }}
           - sleep $(shuf -i 5-10 -n 1)s
-        {{- else }}
-        args:
-          - -c
-          {{- if .Values.cortxserver.machineid.value }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+          - export MACHINE_ID=$(hostname --fqdn);
+            export HOSTNAME=$(hostname);
+            export MACHINE_ID=$(echo -n ${HOSTNAME} | md5sum | awk '{print $1}');
+            echo "Storing MACHINE_ID of '${MACHINE_ID}' in '${MACHINE_ID_PATH}'.";
+            echo "${MACHINE_ID}" > ${MACHINE_ID_PATH};
+            /opt/seagate/cortx/provisioner/bin/cortx_deploy -n ${MACHINE_ID} -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+            sleep 10s;
           {{- end }}
-        {{- end }}
+          ### TODO CORTX-28968 Remove sleep from initContainer
         volumeMounts:
           - name: {{ .Values.cortxserver.cfgmap.volmountname }}
             mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
@@ -87,20 +84,14 @@ spec:
             mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
           - name: machine-id
             mountPath: {{ .Values.cortxserver.machineid.mountpath }}
-          - name: local-path-pv
+          - name: local-path
             mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-          {{- range .Files.Lines .Values.cortxserver.secretinfo }}
-          ## TODO CORTX-28968 Revisit to remove this loop
-          - name: {{ printf "%s" . }}
+          - name: {{ .Values.cortxserver.secretname }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
-          {{- end }}
         env:
-          ## TODO CORTX-28968 ARE BOTH MOUNT AND ENV VAR NEEDED FOR MACHINE_ID IN INIT CONTAINER?
-          - name: MACHINE_ID
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
+          - name: MACHINE_ID_PATH
+            value: "{{ .Values.cortxserver.machineid.mountpath }}/id"
         ports:
         - containerPort: 5050
       containers:
@@ -123,7 +114,7 @@ spec:
               mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
             - name: machine-id
               mountPath: {{ .Values.cortxserver.machineid.mountpath }}
-            - name: local-path-pv
+            - name: local-path
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           ports:
           - name: rgw-http
@@ -153,7 +144,7 @@ spec:
               mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
             - name: machine-id
               mountPath: {{ .Values.cortxserver.machineid.mountpath }}
-            - name: local-path-pv
+            - name: local-path
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           ports:
           - name: hax
@@ -161,3 +152,13 @@ spec:
             protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
+  volumeClaimTemplates:
+  - metadata:
+      ### TODO CORTX-28968 Evaluate volumeClaimTemplate versus emptyDir
+      name: local-path
+    spec:
+      accessModes: {{- toYaml .Values.cortxserver.localpathpvc.accessmodes | nindent 6 }}
+      storageClassName: {{ .Values.cortxserver.localpathpvc.storageclass }}
+      resources:
+        requests:
+          storage: {{ .Values.cortxserver.localpathpvc.requeststoragesize }}

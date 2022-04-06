@@ -115,7 +115,7 @@ printf "Using solution config file '%s'\n" "${SOLUTION_FILE}"
 pods_ready=true
 
 readonly cortx_pod_filter="cortx-control-\|cortx-data-\|cortx-ha-\|cortx-server-\|cortx-client-"
-readonly cortx_deployment_filter="cortx-control\|cortx-data-\|cortx-ha\|cortx-server-\|cortx-client-"
+readonly cortx_deployment_filter="cortx-control\|cortx-data-\|cortx-ha\|cortx-server\|cortx-client-"
 
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 
@@ -153,7 +153,7 @@ fi
 # Shutdown all CORTX Pods
 "${DIR}/shutdown-cortx-cloud.sh" "${SOLUTION_FILE}"
 
-cortx_deployments="$(kubectl get deployments --namespace="${NAMESPACE}" --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | { grep "${cortx_deployment_filter}" || true; })"
+cortx_deployments="$(kubectl get deployments,statefulset --namespace="${NAMESPACE}" --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | { grep "${cortx_deployment_filter}" || true; })"
 if [[ -z ${cortx_deployments} ]]; then
     printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
 else
@@ -161,13 +161,16 @@ else
     printf "Updating CORTX Deployments to use:\n"
     printf "   %s\n" "${UPGRADE_IMAGE}"
     printf "   %s\n" "${RGW_IMAGE}"
+    k8s_controller="deployment"
     while IFS= read -r deployment; do
-        if [[ "${deployment}" == "cortx-server-"* ]]; then
+        if [[ "${deployment}" == "cortx-server"* ]]; then
             IMAGE="${RGW_IMAGE}"
+            k8s_controller="statefulset"
         else
             IMAGE="${UPGRADE_IMAGE}"
+            k8s_controller="deployment"
         fi
-        kubectl set image deployment "${deployment}" "*=${IMAGE}"
+        kubectl set image ${k8s_controller} "${deployment}" "*=${IMAGE}"
     done <<< "${cortx_deployments}"
     printf "\n"
 fi

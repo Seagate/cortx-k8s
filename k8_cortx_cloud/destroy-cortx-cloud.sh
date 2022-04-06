@@ -166,9 +166,7 @@ function deleteCortxServer()
     printf "########################################################\n"
     printf "# Delete CORTX Server                                  #\n"
     printf "########################################################\n"
-    for node in "${node_name_list[@]}"; do
-        uninstallHelmChart "cortx-server-${node}-${namespace}" "${namespace}"
-    done
+    uninstallHelmChart "cortx-server-${namespace}" "${namespace}"
 }
 
 function deleteCortxData()
@@ -504,12 +502,6 @@ deleteCortxLocalBlockStorage
 deleteCortxPVs
 deleteCortxConfigmap
 
-
-### CORTX-28968 TODO
-#exit 
-### CORTX-28968 END TODO
-
-
 #############################################################
 # Destroy CORTX 3rd party
 #############################################################
@@ -535,7 +527,8 @@ fi
 #############################################################
 deleteKubernetesPrereqs
 if [[ (${#namespace_list[@]} -le 1 && "${found_match_np}" = true) || "${namespace}" == "default" ]]; then
-    deleteStorageProvisioner
+    ### TODO CORTX-28968 Revisit the desire to always delete Rancher?
+    #deleteStorageProvisioner
     helmChartCleanup
 fi
 deleteCortxNamespace

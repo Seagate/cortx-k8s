@@ -106,7 +106,10 @@ function configurationCheck()
     done <<< "$(./solution_validation_scripts/solution-validation.sh "${solution_yaml}")"
 }
 
-# Initial solution.yaml / system state checks
+##########################################################
+# Begin initial solution.yaml & system state checks
+##########################################################
+
 configurationCheck
 
 max_consul_inst=3
@@ -275,6 +278,41 @@ done
 # Copy device info file from CORTX local block helm to CORTX data
 cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
+##########################################################
+# Extract & establish required cluster-wide constants
+### TODO Define these elements as reasonable defaults in eventual values.yaml
+##########################################################
+
+global_cortx_secret_name=""
+
+cortxserver_service_headless_name="cortx-server"
+readonly cortxserver_service_headless_name
+
+cortxserver_server_pod_prefix="cortx-server"
+readonly cortxserver_server_pod_prefix
+
+cluster_domain="cluster.local"
+readonly cluster_domain
+
+server_instances_per_node="$(getSolutionValue 'solution.common.s3.instances_per_node')"
+data_node_count=${#node_name_list[@]}
+total_server_pods=$(( data_node_count * server_instances_per_node ))
+
+readonly server_instances_per_node
+readonly data_node_count
+readonly total_server_pods
+
+### TODO CORTX-28968 remove below debug statement
+echo ""
+echo "###########################################################################"
+echo "Total Server Pods: ${total_server_pods}"
+echo "###########################################################################"
+echo ""
+
+##########################################################
+# Begin CORTX on k8s deployment
+##########################################################
+
 # Create CORTX namespace
 if [[ "${namespace}" != "default" ]]; then
 
@@ -387,7 +425,7 @@ function deployRancherProvisioner()
         image=$(echo "${image}" | cut -f2 -d'>')
         ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.helperPod.image" "${image}"
 
-        kubectl create -f "${rancher_prov_file}"
+        kubectl apply -f "${rancher_prov_file}"
     fi
 }
 
@@ -425,11 +463,10 @@ function deployConsul()
     kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}'
 
 
-    ### CORTX-28968 TODO
+    ### TODO CORTX-28968 Remove this dev-phase shortcut
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
     #kubectl rollout restart statefulset/consul-server
     #kubectl rollout restart daemonset/consul-client
-    ### CORTX-28968 END TODO
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -654,7 +691,6 @@ function generateMachineIds()
         local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
 
         id_paths+=("${auto_gen_path}/data")
-        # [[ ${deployment_type} != "data-only" ]] && id_paths+=("${auto_gen_path}/server")
         ((num_motr_client > 0)) && id_paths+=("${auto_gen_path}/client")
     done
 
@@ -664,6 +700,7 @@ function generateMachineIds()
     done
 }
 
+### TODO Much of this overall function should evolve to live inside Helm charts
 function deployCortxConfigMap()
 {
     printf "########################################################\n"
@@ -728,27 +765,27 @@ function deployCortxConfigMap()
     storage_set_dur_sns=$(parseSolution 'solution.common.storage_sets.durability.sns' | cut -f2 -d'>' || true)
     storage_set_dur_dix=$(parseSolution 'solution.common.storage_sets.durability.dix' | cut -f2 -d'>' || true)
 
-    ### TODO CORTX-28968
-    local server_instances_per_node="$(getSolutionValue 'solution.common.s3.instances_per_node')"
     local count=0
-    # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
-    local server_pod_prefix="cortx-server"
-    local data_node_count=${#node_name_list[@]}
-    local total_server_pods=$(( data_node_count * server_instances_per_node ))
-
     for (( count=0; count<${total_server_pods}; count++ )); do
-        local pod_name="${server_pod_prefix}-${count}"
-        ##TODO CORTX-28968 build out FQDN of server pods 
-        ## Evaluate if this should live inside Helm charts
-        ## ie {{- $serverName := printf "%s.%s.%s.svc.%s" $shortHost {{ $.Values.cortxRgw.headlessServiceName }} {{ $.Release.Namespace }} {{ $.clusterDomain }} -}}
+        # Build out FQDN of server pods 
+        # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
+        local pod_name="${cortxserver_server_pod_prefix}-${count}"
+        local pod_fqdn="${pod_name}.${cortxserver_service_headless_name}.${namespace}.svc.${cluster_domain}"
+        ### TODO CORTX-28968 Observe switch below based on setting of Pod hostname
+        ###                  Must match with setting in config-map/_cluster.tpl:82 as well
+        # Use below when hostname of pod is only short name
+        # local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
+        # Use below when hostname of pod is fqdn
+        local md5hash=$(echo -n "${pod_fqdn}" | md5sum | awk '{print $1}')
         helm_install_args+=(
-            --set "clusterStorageSets.${storage_set_name}.nodes.${pod_name}.serverUuid=${pod_name}"
-            --set "cortxMotr.rgwEndpoints[${count}]=tcp://${pod_name}.cortx-server-headless.${namespace}.svc:21001"
-            ## TODO CORTX-28968 - Revist if this endpoint is needed for each Pod or if we can have just one for the Service
-            --set "cortxHare.haxServerEndpoints[${count}]=tcp://${pod_name}.cortx-server-headless.${namespace}.svc:22001"
+            ### TODO CORTX-28968 Does ${pod_name} below need to be ${pod_fqdn} for the Helm chart instead?
+            ### Reviewing internals of cortx-configmap Helm Chart would say "no".
+            ##--set "clusterStorageSets.${storage_set_name}.nodes.${pod_name}.serverUuid=${pod_fqdn}"
+            --set "clusterStorageSets.${storage_set_name}.nodes.${pod_name}.serverUuid=${md5hash}"
+            --set "cortxMotr.rgwEndpoints[${count}]=tcp://${pod_fqdn}:21001"
+            --set "cortxHare.haxServerEndpoints[${count}]=tcp://${pod_fqdn}:22001"
         )
     done
-    ### END CORTX-28968
 
     if ((num_motr_client > 0)); then
         helm_install_args+=(
@@ -810,15 +847,6 @@ function deployCortxConfigMap()
             )
         done
     done
-
-    echo "${helm_install_args[@]}"
-
-    helm install \
-        "cortx-cfgmap-${namespace}" \
-        cortx-cloud-helm-pkg/cortx-configmap \
-        --set fullnameOverride="cortx-cfgmap-${namespace}" \
-        --dry-run -o yaml \
-        "${helm_install_args[@]}"
 
     helm install \
         "cortx-cfgmap-${namespace}" \
@@ -925,14 +953,14 @@ function deployCortxSecrets()
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
 
+    global_cortx_secret_name="${cortx_secret_name}"
+
     control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
     data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
-    server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
     ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
 
     printf "%s" "${cortx_secret_name}" > ${control_secret_path}
     printf "%s" "${cortx_secret_name}" > ${data_secret_path}
-    printf "%s" "${cortx_secret_name}" > ${server_secret_path}
     printf "%s" "${cortx_secret_name}" > ${ha_secret_path}
 
     if [[ ${num_motr_client} -gt 0 ]]; then
@@ -963,9 +991,10 @@ function waitForAllDeploymentsAvailable()
 
     # Initial wait
     FAIL=0
-    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
+    ### CORTX-28968 - moved from `kubectl wait` to `kubectl rollout status` in support of StatefulSets
+    if ! kubectl rollout status --watch --timeout="${TIMEOUT}" "$@"; then
         # Secondary wait
-        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
+        if ! kubectl rollout status --watch --timeout="${TIMEOUT}" "$@"; then
             # Still timed out.  This is a failure
             FAIL=1
         fi
@@ -1033,7 +1062,7 @@ function deployCortxControl()
         "${optional_values[@]}" \
         --namespace "${namespace}"
 
-    printf "\nWait for CORTX Control to be ready"
+    printf "\nWait for CORTX Control to be ready\n"
     if ! waitForAllDeploymentsAvailable 300s "CORTX Control" deployment/cortx-control; then
         echo "Failed.  Exiting script."
         exit 1
@@ -1085,15 +1114,16 @@ function deployCortxData()
     done
 
     # Wait for all cortx-data deployments to be ready
-    printf "\nWait for CORTX Data to be ready"
-    local deployments=()
-    for i in "${!node_selector_list[@]}"; do
-        deployments+=("deployment/cortx-data-${node_name_list[i]}")
-    done
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
+    ### TODO CORTX-28968 Remove this dev-phase shortcut
+    #printf "\nWait for CORTX Data to be ready\n"
+    #local deployments=()
+    #for i in "${!node_selector_list[@]}"; do
+    #    deployments+=("deployment/cortx-data-${node_name_list[i]}")
+    #done
+    #if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${deployments[@]}"; then
+    #    echo "Failed.  Exiting script."
+    #    exit 1
+    #fi
 
     printf "\n\n"
 }
@@ -1121,7 +1151,8 @@ function deployCortxServer()
 
     helm install "cortx-server-${namespace}" cortx-cloud-helm-pkg/cortx-server \
         --set cortxserver.image="${cortxserver_image}" \
-        --set cortxserver.service.headless.name="cortx-server" \
+        --set cortxserver.replicas="${total_server_pods}" \
+        --set cortxserver.service.headless.name="${cortxserver_service_headless_name}" \
         --set cortxserver.service.loadbal.type="${s3_service_type}" \
         --set cortxserver.service.loadbal.ports.http="${s3_service_ports_http}" \
         --set cortxserver.service.loadbal.ports.https="${s3_service_ports_https}" \
@@ -1135,16 +1166,14 @@ function deployCortxServer()
         --set cortxserver.localpathpvc.mountpath="${local_storage}" \
         --set cortxserver.localpathpvc.requeststoragesize="1Gi" \
         --set cortxserver.hax.port="${hax_port}" \
-        --set cortxserver.secretinfo="secret-info.txt" \
+        --set cortxserver.secretname="${global_cortx_secret_name}" \
         --set cortxserver.serviceaccountname="${serviceAccountName}" \
-        --set namespace="${namespace}" \
         --namespace "${namespace}"
 
-    printf "\nWait for CORTX Server to be ready"
+    printf "\nWait for CORTX Server to be ready\n"
     # Wait for all cortx-data deployments to be ready
-    local deployments=("statefulset/cortx-server")
 
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${deployments[@]}"; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "statefulset/cortx-server"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1190,7 +1219,7 @@ function deployCortxHa()
         --set namespace="${namespace}" \
         -n "${namespace}"
 
-    printf "\nWait for CORTX HA to be ready"
+    printf "\nWait for CORTX HA to be ready\n"
     if ! waitForAllDeploymentsAvailable 120s "CORTX HA" deployment/cortx-ha; then
         echo "Failed.  Exiting script."
         exit 1
@@ -1236,7 +1265,7 @@ function deployCortxClient()
             -n "${namespace}"
     done
 
-    printf "\nWait for CORTX Client to be ready"
+    printf "\nWait for CORTX Client to be ready\n"
     while true; do
         count=0
         while IFS= read -r line; do
@@ -1270,7 +1299,9 @@ function cleanup()
     #################################################################
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-control" -name "secret-*" -delete
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "secret-*" -delete
+    ### DEPRECATED - Will be removed in a future release
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-server" -name "secret-*" -delete
+    ### END DEPRECATED
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-ha" -name "secret-*" -delete
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-client" -name "secret-*" -delete
 
