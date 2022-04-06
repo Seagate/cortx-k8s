@@ -59,11 +59,6 @@ if [[ "${exit_early}" = true ]]; then
     exit 1
 fi
 
-pvc_consul_filter="data-default-consul"
-pvc_kafka_filter="kafka"
-pvc_zookeeper_filter="zookeeper"
-openldap_pvc="openldap-data"
-
 function parseSolution()
 {
     ./parse_scripts/parse_yaml.sh ${solution_yaml} "$1"
@@ -76,6 +71,12 @@ function extractBlock()
 
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
+
+pvc_consul_filter="data-${namespace}-consul"
+pvc_kafka_filter="kafka"
+pvc_zookeeper_filter="zookeeper"
+openldap_pvc="openldap-data"
+
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
 # Split parsed output into an array of vars and vals
@@ -278,12 +279,12 @@ function deleteKafkaZookeper()
     printf "########################################################\n"
     printf "# Delete Kafka                                         #\n"
     printf "########################################################\n"
-    uninstallHelmChart kafka default
+    uninstallHelmChart kafka "${namespace}"
 
     printf "########################################################\n"
     printf "# Delete Zookeeper                                     #\n"
     printf "########################################################\n"
-    uninstallHelmChart zookeeper default
+    uninstallHelmChart zookeeper "${namespace}"
 }
 
 function deleteOpenLdap()
@@ -299,6 +300,7 @@ function deleteOpenLdap()
             bash -c 'rm -rf /etc/3rd-party/* /var/data/3rd-party/* /var/log/3rd-party/*'
     done
 
+    # Note: openldap was always deployed in default namespace
     uninstallHelmChart openldap default
 }
 
@@ -325,7 +327,7 @@ function deleteConsul()
     printf "########################################################\n"
     printf "# Delete Consul                                        #\n"
     printf "########################################################\n"
-    uninstallHelmChart consul default
+    uninstallHelmChart consul "${namespace}"
 }
 
 function waitFor3rdPartyToTerminate()
@@ -336,7 +338,7 @@ function waitFor3rdPartyToTerminate()
         count=0
         while IFS= read -r line; do
             count=$(( count + 1 ))
-        done < <(kubectl get pods | grep -e kafka -e zookeeper -e openldap -e consul 2>&1)
+        done < <(kubectl get pods -n "${namespace}" | grep -e kafka -e zookeeper -e openldap -e consul 2>&1)
 
         (( count == 0 )) && break || printf "."
         sleep 1s
@@ -349,40 +351,16 @@ function delete3rdPartyPVCs()
     printf "########################################################\n"
     printf "# Delete Persistent Volume Claims                      #\n"
     printf "########################################################\n"
-    volume_claims=$(kubectl get pvc --namespace=default | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|${openldap_pvc}|cortx|3rd-party" | cut -f1 -d " ")
-    [[ -n ${volume_claims} ]] && echo "${volume_claims}"
-    for volume_claim in ${volume_claims}
-    do
-        printf "Removing %s\n" "${volume_claim}"
-        if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-            kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
-        fi
-        kubectl delete pvc "${volume_claim}"
-    done
-
     volume_claims=$(kubectl get pvc --namespace="${namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|${openldap_pvc}|cortx|3rd-party" | cut -f1 -d " ")
     [[ -n ${volume_claims} ]] && echo "${volume_claims}"
     for volume_claim in ${volume_claims}
     do
         printf "Removing %s\n" "${volume_claim}"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-            kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
+            kubectl patch pvc -n "${namespace}" "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pvc "${volume_claim}"
+        kubectl delete pvc -n "${namespace}" "${volume_claim}"
     done
-
-    if [[ ${namespace} != 'default' ]]; then
-        volume_claims=$(kubectl get pvc --namespace="${namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|${openldap_pvc}|cortx|3rd-party" | cut -f1 -d " ")
-        [[ -n ${volume_claims} ]] && echo "${volume_claims}"
-        for volume_claim in ${volume_claims}
-        do
-            printf "Removing %s\n" "${volume_claim}"
-            if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-                kubectl patch pvc "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
-            fi
-            kubectl delete pvc "${volume_claim}"
-        done
-    fi
 }
 
 function delete3rdPartyPVs()
@@ -390,7 +368,7 @@ function delete3rdPartyPVs()
     printf "########################################################\n"
     printf "# Delete Persistent Volumes                            #\n"
     printf "########################################################\n"
-    persistent_volumes=$(kubectl get pv --namespace=default | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|cortx|3rd-party" | cut -f1 -d " ")
+    persistent_volumes=$(kubectl get pv --namespace="${namespace}"  | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|cortx|3rd-party" | cut -f1 -d " ")
     [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
     for persistent_volume in ${persistent_volumes}
     do
@@ -400,55 +378,49 @@ function delete3rdPartyPVs()
         fi
         kubectl delete pv "${persistent_volume}"
     done
-
-    if [[ ${namespace} != 'default' ]]; then
-        persistent_volumes=$(kubectl get pv --namespace="${namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|cortx|3rd-party" | cut -f1 -d " ")
-        [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
-        for persistent_volume in ${persistent_volumes}
-        do
-            printf "Removing %s\n" "${persistent_volume}"
-            if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-                kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
-            fi
-            kubectl delete pv "${persistent_volume}"
-        done
-    fi
 }
 
 function deleteStorageProvisioner()
 {
+    # WWW:  TODO: This is installed the first time cortx is installed.  If there are multiple
+    # cortx deployments, I don't want this to be removed when the first cortx installation
+    # is removed!
     rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
     rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
     [[ -f ${rancher_prov_file} ]] && kubectl delete -f "${rancher_prov_file}"
     rm -rf "${rancher_prov_path}"
 }
 
-function helmChartCleanup()
-{
-    printf "########################################################\n"
-    printf "# Uninstalling leftover Helm Charts                    #\n"
-    printf "########################################################\n"
-    print_header=true
-    local charts
-    charts="$(helm list | { grep '^consul\|^cortx\|^kafka\|^openldap\|^zookeeper' || true; })"
-    if [[ -n ${charts} ]]; then
-        while IFS= read -r line; do
-            IFS=" " read -r -a my_array <<< "${line}"
-            if [[ ${print_header} = true ]]; then
-                printf "Helm chart cleanup:\n"
-                print_header=false
-            fi
-            uninstallHelmChart "${my_array[0]}" default
-        done <<< "${charts}"
-    fi
-}
+#function helmChartCleanup()
+#{
+    #printf "########################################################\n"
+    #printf "# Uninstalling leftover Helm Charts                    #\n"
+    #printf "########################################################\n"
+    #print_header=true
+    #local charts
+    #charts="$(helm list | { grep '^consul\|^cortx\|^kafka\|^openldap\|^zookeeper' || true; })"
+    #if [[ -n ${charts} ]]; then
+    #    for n in $charts; do
+    #        printf "Helm chart cleanup: %s\n" "${n}"
+    #        uninstallHelmChart jjjjj
+    #    done
+    #    while IFS= read -r line; do
+    #        IFS=" " read -r -a my_array <<< "${line}"
+    #        if [[ ${print_header} = true ]]; then
+    #            printf "Helm chart cleanup:\n"
+    #            print_header=false
+    #        fi
+    #        uninstallHelmChart "${my_array[0]}" "${namespace}"
+    #    done <<< "${charts}"
+    #fi
+#}
 
 function deleteKubernetesPrereqs()
 {
     printf "########################################################\n"
     printf "# Delete Cortx Kubernetes Prereqs                      #\n"
     printf "########################################################\n"
-    uninstallHelmChart cortx-platform
+    uninstallHelmChart cortx-platform "${namespace}"
 
     ## Backwards compatibility check
     ## If CORTX is undeployed with a newer undeploy script, it can get into
@@ -460,9 +432,9 @@ function deleteKubernetesPrereqs()
 function deleteCortxNamespace()
 {
     # Delete CORTX namespace
-    if [[ "${namespace}" != "default" ]]; then
-        uninstallHelmChart "cortx-ns-${namespace}"
-    fi
+    #if [[ "${namespace}" != "default" ]]; then
+        uninstallHelmChart "cortx-ns-${namespace}" default
+    #fi
 
 }
 
@@ -515,22 +487,22 @@ for np in "${namespace_list[@]}"; do
     fi
 done
 
-if [[ (${#namespace_list[@]} -le 1 && "${found_match_np}" = true) || "${namespace}" == "default" ]]; then
+#if [[ (${#namespace_list[@]} -le 1 && "${found_match_np}" = true) || "${namespace}" == "default" ]]; then
     deleteKafkaZookeper
     deleteOpenLdap
     deleteConsul
     waitFor3rdPartyToTerminate
     delete3rdPartyPVCs
     delete3rdPartyPVs
-fi
+#fi
 
 #############################################################
 # Clean up
 #############################################################
 deleteKubernetesPrereqs
-if [[ (${#namespace_list[@]} -le 1 && "${found_match_np}" = true) || "${namespace}" == "default" ]]; then
+#if [[ (${#namespace_list[@]} -le 1 && "${found_match_np}" = true) || "${namespace}" == "default" ]]; then
     deleteStorageProvisioner
-    helmChartCleanup
-fi
+    #helmChartCleanup   # TODO: Is this really needed?  
+#fi
 deleteCortxNamespace
 cleanup

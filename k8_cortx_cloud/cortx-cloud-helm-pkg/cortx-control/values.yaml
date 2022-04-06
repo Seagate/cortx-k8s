@@ -1,4 +1,4 @@
-namespace: default
+namespace: cortx
 cortxcontrol:
   name: cortx-control
   image: ghcr.io/seagate/centos:7

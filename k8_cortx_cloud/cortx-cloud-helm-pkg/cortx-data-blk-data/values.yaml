@@ -1,4 +1,4 @@
-namespace: default
+namespace: cortx
 cortxblkdata:
   storageclass: local-blk-storage
   nodelistinfo: node-list-info.txt

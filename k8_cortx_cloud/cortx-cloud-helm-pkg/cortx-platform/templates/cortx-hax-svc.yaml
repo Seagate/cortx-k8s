@@ -1,3 +1,4 @@
+{{- if .Values.services.create -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -12,3 +13,5 @@ spec:
       protocol: TCP
       port: {{ .Values.services.hax.port | int }}
       targetPort: hax
+
+{{- end }}

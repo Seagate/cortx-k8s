@@ -45,7 +45,7 @@ clusterStorageSets: {}
 externalKafka:
   enabled: false
   endpoints:
-    - tcp://kafka.default.svc.cluster.local:9092
+    - tcp://kafka.cortx.svc.cluster.local:9092
   adminUser: admin
   adminSecretName: kafka_admin_secret
 
@@ -53,8 +53,8 @@ externalKafka:
 externalConsul:
   enabled: false
   endpoints:
-    - tcp://consul-server.default.svc.cluster.local:8301
-    - http://consul-server.default.svc.cluster.local:8500
+    - tcp://consul-server.cortx.svc.cluster.local:8301
+    - http://consul-server.cortx.svc.cluster.local:8500
   adminUser: admin
   adminSecretName: consul_admin_secret
 

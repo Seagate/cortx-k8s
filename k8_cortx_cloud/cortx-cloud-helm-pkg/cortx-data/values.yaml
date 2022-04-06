@@ -1,4 +1,4 @@
-namespace: default
+namespace: cortx
 cortxdata:
   name: cortx-data
   image: ghcr.io/seagate/centos:7

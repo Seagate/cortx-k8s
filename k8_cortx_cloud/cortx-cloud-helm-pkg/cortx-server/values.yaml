@@ -1,4 +1,4 @@
-namespace: default
+namespace: cortx
 cortxserver:
   name: cortx-server
   image: ghcr.io/seagate/centos:7

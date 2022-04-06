@@ -9,7 +9,7 @@ fullnameOverride: ""
 
 namespace:
   create: false
-  name: default
+  name: cortx
   annotations: {}
   labels:
     ##REFERENCE: https://kubernetes.io/docs/concepts/security/pod-security-standards/
@@ -47,6 +47,7 @@ networkPolicy:
     podNameLabel: cortx-data
 
 services:
+  create: false
   hax:
     name: cortx-hax-svc
     type: ClusterIP

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#set -x
+
 # shellcheck disable=SC2312
 
 solution_yaml=${1:-'solution.yaml'}
@@ -276,12 +278,13 @@ done
 cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
 # Create CORTX namespace
+# WWW: What if the namespace already exists?  Will this work?
+#      (I'm not even sure what "cortx-platform" is or does.)
 if [[ "${namespace}" != "default" ]]; then
 
     helm install "cortx-ns-${namespace}" cortx-cloud-helm-pkg/cortx-platform \
         --set namespace.create="true" \
         --set namespace.name="${namespace}"
-
 fi
 
 count=0
@@ -352,6 +355,7 @@ function deployKubernetesPrereqs()
         --set serviceAccount.name="${serviceAccountName}" \
         --set networkPolicy.create="false" \
         --set namespace.name="${namespace}" \
+        --set services.create="true" \
         --set services.hax.name="${hax_service_name}" \
         --set services.hax.port="${hax_service_port}" \
         --set services.io.type="${s3_service_type}" \
@@ -420,15 +424,18 @@ function deployConsul()
         --set client.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory')" \
         --set client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
         --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
+        --namespace "${namespace}" \
         --wait
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
-    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
-    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}'
+    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}' \
+                                               -n "${namespace}"
+    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}' \
+                                               -n "${namespace}"
 
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    kubectl rollout restart statefulset/consul-server
-    kubectl rollout restart daemonset/consul-client
+    kubectl rollout restart statefulset/consul-server -n "${namespace}"
+    kubectl rollout restart daemonset/consul-client -n "${namespace}"
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -477,6 +484,7 @@ function deployZookeeper()
         --set serviceAccount.name="cortx-zookeeper" \
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
+        --namespace "${namespace}" \
         --wait
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
@@ -536,7 +544,7 @@ EOF
         --set image.registry="${registry}" \
         --set image.repository="${repository}" \
         --set replicaCount="${num_kafka_replicas}" \
-        --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
+        --set externalZookeeper.servers="zookeeper.${namespace}.svc.cluster.local" \
         --set global.storageClass=${storage_class} \
         --set defaultReplicationFactor="${num_kafka_replicas}" \
         --set offsetsTopicReplicationFactor="${num_kafka_replicas}" \
@@ -558,6 +566,7 @@ EOF
         --set containerSecurityContext.enabled=true \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
         --values ${tmp_kafka_envvars_yaml}  \
+        --namespace "${namespace}" \
         --wait
 
     rm ${tmp_kafka_envvars_yaml}
@@ -670,8 +679,11 @@ function deployCortxConfigMap()
 
     helm_install_args=(
         --set externalKafka.enabled=true
+        --set "externalKafka.endpoints[0]=tcp://kafka.${namespace}.svc.cluster.local:9092"
         --set externalLdap.enabled=true
         --set externalConsul.enabled=true
+        --set "externalConsul.endpoints[0]=tcp://consul-server.${namespace}.svc.cluster.local:8301"
+        --set "externalConsul.endpoints[1]=http://consul-server.${namespace}.svc.cluster.local:8500"
         --set cortxHare.haxService.protocol="$(extractBlock 'solution.common.hax.protocol' || true)"
         --set cortxHare.haxService.name="$(extractBlock 'solution.common.hax.service_name' || true)"
         --set cortxHare.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
@@ -788,6 +800,7 @@ function deployCortxConfigMap()
     helm install \
         "cortx-cfgmap-${namespace}" \
         cortx-cloud-helm-pkg/cortx-configmap \
+        --namespace="${namespace}" \
         --set fullnameOverride="cortx-cfgmap-${namespace}" \
         "${helm_install_args[@]}"
 
@@ -918,6 +931,8 @@ function waitForAllDeploymentsAvailable()
     shift
     DEPL_STR=$1
     shift
+    NAMESPACE=$1
+    shift
 
     START=${SECONDS}
     (while true; do sleep 1; echo -n "."; done)&
@@ -928,9 +943,9 @@ function waitForAllDeploymentsAvailable()
 
     # Initial wait
     FAIL=0
-    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
+    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
         # Secondary wait
-        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
+        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
             # Still timed out.  This is a failure
             FAIL=1
         fi
@@ -999,7 +1014,7 @@ function deployCortxControl()
         --namespace "${namespace}"
 
     printf "\nWait for CORTX Control to be ready"
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Control" deployment/cortx-control; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Control" "${namespace}" deployment/cortx-control; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1055,7 +1070,7 @@ function deployCortxData()
     for i in "${!node_selector_list[@]}"; do
         deployments+=("deployment/cortx-data-${node_name_list[i]}")
     done
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${deployments[@]}"; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${namespace}" "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1125,7 +1140,7 @@ function deployCortxServer()
     for i in "${!node_selector_list[@]}"; do
         deployments+=("deployment/cortx-server-${node_name_list[i]}")
     done
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${deployments[@]}"; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${namespace}" "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1172,7 +1187,7 @@ function deployCortxHa()
         -n "${namespace}"
 
     printf "\nWait for CORTX HA to be ready"
-    if ! waitForAllDeploymentsAvailable 120s "CORTX HA" deployment/cortx-ha; then
+    if ! waitForAllDeploymentsAvailable 120s "CORTX HA" "${namespace}" deployment/cortx-ha; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1297,13 +1312,14 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
 
-if [[ (${#namespace_list[@]} -le 1 && "${found_match_nsp}" = true) || "${namespace}" == "default" ]]; then
+# WWW: Once this proves to be a good change I will delete the "if" statement.
+#if [[ (${#namespace_list[@]} -le 1 && "${found_match_nsp}" = true) || "${namespace}" == "default" ]]; then
     deployRancherProvisioner
     deployConsul
     deployZookeeper
     deployKafka
     waitForThirdParty
-fi
+#fi
 
 ##########################################################
 # Deploy CORTX cloud
@@ -1366,12 +1382,12 @@ if [[ ${deployment_type} != "data-only" ]]; then
 The S3 data service is accessible through the ${data_service_name} service.
    Default IAM access key: ${data_service_default_user}
    Default IAM secret key is accessible via:
-       kubectl get secrets/${cortx_secret_name} --template={{.data.s3_auth_admin_secret}} | base64 -d
+       kubectl get secrets/${cortx_secret_name} -n ${namespace} --template={{.data.s3_auth_admin_secret}} | base64 -d
 
 The CORTX control service is accessible through the ${control_service_name} service.
    Default control username: ${control_service_default_user}
    Default control password is accessible via:
-       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+       kubectl get secrets/${cortx_secret_name} -n ${namespace} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
 fi
 
 printf "\n-----------------------------------------------------------\n"
