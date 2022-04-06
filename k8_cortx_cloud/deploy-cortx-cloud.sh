@@ -679,11 +679,9 @@ function deployCortxConfigMap()
         --set cortxHare.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
         --set cortxRgw.maxStartTimeout="$(extractBlock 'solution.common.s3.max_start_timeout' || true)"
         --set cortxStoragePaths.local="${local_storage}"
-        --set cortxStoragePaths.shared="${shared_storage}"
         --set cortxStoragePaths.log="${log_storage}"
         --set cortxStoragePaths.config="${local_storage}"
         --set cortxVersion="${tag}"
-        --set cortxSetupSize="$(extractBlock 'solution.common.setup_size' || true)"
         --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
         --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
         --set cortxIoService.ports.http="$(getSolutionValue 'solution.common.external_services.s3.ports.http')"
@@ -1315,8 +1313,6 @@ fi
 # Get the storage paths to use
 local_storage=$(parseSolution 'solution.common.container_path.local')
 local_storage=$(echo "${local_storage}" | cut -f2 -d'>')
-shared_storage=$(parseSolution 'solution.common.container_path.shared')
-shared_storage=$(echo "${shared_storage}" | cut -f2 -d'>')
 log_storage=$(parseSolution 'solution.common.container_path.log')
 log_storage=$(echo "${log_storage}" | cut -f2 -d'>')
 

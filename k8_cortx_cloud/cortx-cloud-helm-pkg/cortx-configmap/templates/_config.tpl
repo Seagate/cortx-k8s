@@ -17,8 +17,6 @@ cortx:
     release:
       name: CORTX
       version: {{ .Values.cortxVersion }}
-    environment_type: K8                                            # DEPRECATED
-    setup_size: {{ .Values.cortxSetupSize }}
     service:
       admin: admin
       secret: common_admin_secret
@@ -37,10 +35,6 @@ cortx:
     auth_user: {{ .Values.cortxRgw.authUser }}
     auth_admin: {{ .Values.cortxRgw.authAdmin }}
     auth_secret: {{ .Values.cortxRgw.authSecret }}
-    s3:                                                        # deprecated
-      endpoints:
-      - http://{{ $ioSvcName }}:{{ $iosvcHttpPort }}
-      - https://{{ $ioSvcName }}:{{ $iosvcHttpsPort }}
     public:
       endpoints:
       - http://{{ $ioSvcName }}:{{ $iosvcHttpPort }}
@@ -88,8 +82,6 @@ cortx:
           min: 250m
           max: 500m
   motr:
-    client_instances: {{ len .Values.cortxMotr.clientEndpoints }}   #DEPRECATED
-    interface_type: tcp                                             #DEPRECATED
     interface_family: inet
     transport_type: libfab
     ios:

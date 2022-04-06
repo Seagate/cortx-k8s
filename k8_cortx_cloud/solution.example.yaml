@@ -11,22 +11,20 @@ solution:
       csm_auth_admin_secret: null
       csm_mgmt_admin_secret: null
   images:
-    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-689
-    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-689
-    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-689
-    cortxha: ghcr.io/seagate/cortx-all:2.0.0-689
-    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-689
+    cortxcontrol: ghcr.io/seagate/cortx-all:2.0.0-713
+    cortxdata: ghcr.io/seagate/cortx-all:2.0.0-713
+    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-713
+    cortxha: ghcr.io/seagate/cortx-all:2.0.0-713
+    cortxclient: ghcr.io/seagate/cortx-all:2.0.0-713
     consul: ghcr.io/seagate/consul:1.11.4
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
     zookeeper: ghcr.io/seagate/zookeeper:3.8.0-debian-10-r9
     rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
     busybox: ghcr.io/seagate/busybox:latest
   common:
-    setup_size: large
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
       local: /etc/cortx
-      shared: /share
       log: /etc/cortx/log
     s3:
       default_iam_users:
