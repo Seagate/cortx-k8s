@@ -43,7 +43,6 @@ if [[ -s ${PIDFILE} ]]; then
    exit 1
 fi
 printf "%s" $$ > "${PIDFILE}"
-rm -f "${PIDFILE}"
 
 function usage() {
     cat << EOF
@@ -373,3 +372,6 @@ fi
 # Validate if All CORTX Pods are running After upgrade is successful
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 validate_cortx_pods_status
+
+# Delete PID file once upgrade is successful
+rm -f "${PIDFILE}"
