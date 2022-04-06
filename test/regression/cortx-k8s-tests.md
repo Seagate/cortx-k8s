@@ -11,7 +11,7 @@ comprehensive CORTX system tests.
 
 ## Test Configuration
 There is a file in this directory called `example_config.yaml`.  This defines customizations
-over the standard `k8s_cortx_cloud/solution.yaml`.  Copy this file and customize it to
+over the standard `k8s_cortx_cloud/solution.example.yaml`.  Copy this file and customize it to
 describe your desired CORTX cluster:
 
 * **nodes:** The list of hostnames CORTX should be deployed on
@@ -29,8 +29,8 @@ describe your desired CORTX cluster:
 
 * See `example_config.yaml` for other configuration options
 
-The test framework uses this file as input and generates a solution.yaml file based on the
-default `k8_cortx_cloud/solution.yaml` file.
+The test framework uses this file as input and generates a solution.example.yaml file based on the
+default `k8_cortx_cloud/solution.example.yaml` file.
 
 ## Run the Tests
 To run all deploy tests:
