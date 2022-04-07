@@ -20,15 +20,16 @@ function usage() {
 }
 
 date=$(date +%F_%H-%M)
-solution_yaml="${DIR}/solution.yaml"
+solution_yaml=${1:-"solution.yaml"}
+nodename=""
 pods_found=0
 while [[ $# -gt 0 ]]; do
   case $1 in
     -s|--solution-config )
-      declare solution_yaml="$2"
+      solution_yaml="$2"
       ;;
     -n|--nodename )
-      declare nodename="$2"
+      nodename="$2"
       ;;
     * )
       echo "ERROR: Unsupported Option \"$1\"."
@@ -37,6 +38,12 @@ while [[ $# -gt 0 ]]; do
   esac
   shift 2
 done
+
+if [[ ! -f ${solution_yaml} ]]; then
+    echo "ERROR: ${solution_yaml} does not exist"
+    exit 1
+fi
+
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
 logs_folder="logs-cortx-cloud-${date}"
