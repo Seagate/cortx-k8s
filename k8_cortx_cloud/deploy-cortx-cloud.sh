@@ -307,6 +307,11 @@ done <<< "$(kubectl get namespaces)"
 ##########################################################
 function deployKubernetesPrereqs()
 {
+    # Add and update Helm repository dependencies
+    helm repo add hashicorp https://helm.releases.hashicorp.com
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update hashicorp bitnami
+
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
     ## in the same chart as Namespace-scoped objects.
     local podSecurityPolicyName="cortx-baseline"
@@ -365,9 +370,6 @@ function deployRancherProvisioner()
 {
     local image
 
-    # Add the HashiCorp Helm Repository:
-    helm repo add hashicorp https://helm.releases.hashicorp.com
-    helm repo update hashicorp
     if [[ ${storage_class} == "local-path" ]]
     then
         printf "Install Rancher Local Path Provisioner"
@@ -452,10 +454,6 @@ function deployZookeeper()
     printf "######################################################\n"
     printf "# Deploy Zookeeper                                    \n"
     printf "######################################################\n"
-    # Add Zookeeper and Kafka Repository
-    helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm repo update bitnami
-
     image=$(parseSolution 'solution.images.zookeeper')
     image=$(echo "${image}" | cut -f2 -d'>')
     splitDockerImage "${image}"
