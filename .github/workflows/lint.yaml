@@ -42,10 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3.0.0
-      - name: Validate solution.yaml
-        run: ./solution_validation_scripts/solution-validation.sh solution.yaml
-        shell: bash
-        working-directory: ./k8_cortx_cloud
       - name: Validate solution.example.yaml
         run: ./solution_validation_scripts/solution-validation.sh solution.example.yaml
         shell: bash
