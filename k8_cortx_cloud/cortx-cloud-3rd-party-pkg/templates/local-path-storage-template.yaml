@@ -153,3 +153,4 @@ data:
       containers:
       - name: helper-pod
         image: <<.Values.rancher.helperPod.image>>
+        imagePullPolicy: IfNotPresent

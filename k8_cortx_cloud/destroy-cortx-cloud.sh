@@ -112,24 +112,6 @@ do
     done
 done
 
-count=0
-namespace_list=[]
-namespace_index=0
-while IFS= read -r line; do
-    if [[ ${count} -eq 0 ]]; then
-        count=$((count+1))
-        continue
-    fi
-    IFS=" " read -r -a my_array <<< "${line}"
-    if [[ "${my_array[0]}" != *"kube-"* \
-            && "${my_array[0]}" != "default" \
-            && "${my_array[0]}" != "local-path-storage" ]]; then
-        namespace_list[${namespace_index}]=${my_array[0]}
-        namespace_index=$((namespace_index+1))
-    fi
-    count=$((count+1))
-done <<< "$(kubectl get namespaces)"
-
 num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 
 function uninstallHelmChart()
@@ -382,38 +364,14 @@ function delete3rdPartyPVs()
 
 function deleteStorageProvisioner()
 {
-    # WWW:  TODO: This is installed the first time cortx is installed.  If there are multiple
-    # cortx deployments, I don't want this to be removed when the first cortx installation
-    # is removed!
+    # Note: The installation and deletion of Rancher by these scripts is
+    # one reason why multiple CORTX deployment on a single Kubernetes
+    # cluster is not supported.
     rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
     rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
     [[ -f ${rancher_prov_file} ]] && kubectl delete -f "${rancher_prov_file}"
     rm -rf "${rancher_prov_path}"
 }
-
-#function helmChartCleanup()
-#{
-    #printf "########################################################\n"
-    #printf "# Uninstalling leftover Helm Charts                    #\n"
-    #printf "########################################################\n"
-    #print_header=true
-    #local charts
-    #charts="$(helm list | { grep '^consul\|^cortx\|^kafka\|^openldap\|^zookeeper' || true; })"
-    #if [[ -n ${charts} ]]; then
-    #    for n in $charts; do
-    #        printf "Helm chart cleanup: %s\n" "${n}"
-    #        uninstallHelmChart jjjjj
-    #    done
-    #    while IFS= read -r line; do
-    #        IFS=" " read -r -a my_array <<< "${line}"
-    #        if [[ ${print_header} = true ]]; then
-    #            printf "Helm chart cleanup:\n"
-    #            print_header=false
-    #        fi
-    #        uninstallHelmChart "${my_array[0]}" "${namespace}"
-    #    done <<< "${charts}"
-    #fi
-#}
 
 function deleteKubernetesPrereqs()
 {
@@ -427,15 +385,6 @@ function deleteKubernetesPrereqs()
     ## a broken state that is difficult to observe since the `svc/cortx-io-svc`
     ## will never be deleted. This explicit delete prevents that from happening.
     kubectl delete svc/cortx-io-svc --ignore-not-found=true
-}
-
-function deleteCortxNamespace()
-{
-    # Delete CORTX namespace
-    #if [[ "${namespace}" != "default" ]]; then
-        uninstallHelmChart "cortx-ns-${namespace}" default
-    #fi
-
 }
 
 function cleanup()
@@ -479,30 +428,17 @@ deleteCortxConfigmap
 #############################################################
 # Destroy CORTX 3rd party
 #############################################################
-found_match_np=false
-for np in "${namespace_list[@]}"; do
-    if [[ "${np}" == "${namespace}" ]]; then
-        found_match_np=true
-        break
-    fi
-done
 
-#if [[ (${#namespace_list[@]} -le 1 && "${found_match_np}" = true) || "${namespace}" == "default" ]]; then
-    deleteKafkaZookeper
-    deleteOpenLdap
-    deleteConsul
-    waitFor3rdPartyToTerminate
-    delete3rdPartyPVCs
-    delete3rdPartyPVs
-#fi
+deleteKafkaZookeper
+deleteOpenLdap
+deleteConsul
+waitFor3rdPartyToTerminate
+delete3rdPartyPVCs
+delete3rdPartyPVs
 
 #############################################################
 # Clean up
 #############################################################
 deleteKubernetesPrereqs
-#if [[ (${#namespace_list[@]} -le 1 && "${found_match_np}" = true) || "${namespace}" == "default" ]]; then
-    deleteStorageProvisioner
-    #helmChartCleanup   # TODO: Is this really needed?  
-#fi
-deleteCortxNamespace
+deleteStorageProvisioner
 cleanup

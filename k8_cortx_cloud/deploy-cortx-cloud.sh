@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#set -x
-
 # shellcheck disable=SC2312
 
 solution_yaml=${1:-'solution.yaml'}
@@ -277,33 +275,6 @@ done
 # Copy device info file from CORTX local block helm to CORTX data
 cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
-# Create CORTX namespace
-# WWW: What if the namespace already exists?  Will this work?
-#      (I'm not even sure what "cortx-platform" is or does.)
-if [[ "${namespace}" != "default" ]]; then
-
-    helm install "cortx-ns-${namespace}" cortx-cloud-helm-pkg/cortx-platform \
-        --set namespace.create="true" \
-        --set namespace.name="${namespace}"
-fi
-
-count=0
-namespace_list=[]
-namespace_index=0
-while IFS= read -r line; do
-    if [[ ${count} -eq 0 ]]; then
-        count=$((count+1))
-        continue
-    fi
-    IFS=" " read -r -a my_array <<< "${line}"
-    if [[ "${my_array[0]}" != *"kube-"* \
-            && "${my_array[0]}" != "default" \
-            && "${my_array[0]}" != "local-path-storage" ]]; then
-        namespace_list[${namespace_index}]=${my_array[0]}
-        namespace_index=$((namespace_index+1))
-    fi
-    count=$((count+1))
-done <<< "$(kubectl get namespaces)"
 
 ##########################################################
 # Deploy CORTX k8s pre-reqs
@@ -363,7 +334,8 @@ function deployKubernetesPrereqs()
         --set services.io.ports.http="${s3_service_ports_http}" \
         --set services.io.ports.https="${s3_service_ports_https}" \
         "${optional_values[@]}" \
-        --namespace "${namespace}"
+        --namespace "${namespace}" \
+        --create-namespace
 }
 
 
@@ -1286,13 +1258,6 @@ deployKubernetesPrereqs
 ##########################################################
 # Deploy CORTX 3rd party
 ##########################################################
-found_match_nsp=false
-for np in "${namespace_list[@]}"; do
-    if [[ "${np}" == "${namespace}" ]]; then
-        found_match_nsp=true
-        break
-    fi
-done
 
 # Extract storage provisioner path from the "solution.yaml" file
 filter='solution.common.storage_provisioner_path'
@@ -1312,14 +1277,11 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
 
-# WWW: Once this proves to be a good change I will delete the "if" statement.
-#if [[ (${#namespace_list[@]} -le 1 && "${found_match_nsp}" = true) || "${namespace}" == "default" ]]; then
-    deployRancherProvisioner
-    deployConsul
-    deployZookeeper
-    deployKafka
-    waitForThirdParty
-#fi
+deployRancherProvisioner
+deployConsul
+deployZookeeper
+deployKafka
+waitForThirdParty
 
 ##########################################################
 # Deploy CORTX cloud

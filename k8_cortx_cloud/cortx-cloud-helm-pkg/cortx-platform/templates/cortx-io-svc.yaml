@@ -1,6 +1,6 @@
 {{- if .Values.services.create -}}
 {{- $svc := .Values.services.io -}}
-{{- if gt $svc.count 0 -}}
+{{- if gt (int $svc.count) 0 -}}
 {{- $isLB := eq $svc.type "LoadBalancer" -}}
 {{- $nodePortAllowed := or (eq $svc.type "NodePort") $isLB -}}
 {{- $svcCount := ternary $svc.count 1 $isLB | int -}}
