@@ -516,7 +516,7 @@ EOF
         --set image.registry="${registry}" \
         --set image.repository="${repository}" \
         --set replicaCount="${num_kafka_replicas}" \
-        --set externalZookeeper.servers="zookeeper.${namespace}.svc.cluster.local" \
+        --set externalZookeeper.servers="zookeeper" \
         --set global.storageClass=${storage_class} \
         --set defaultReplicationFactor="${num_kafka_replicas}" \
         --set offsetsTopicReplicationFactor="${num_kafka_replicas}" \
@@ -651,11 +651,8 @@ function deployCortxConfigMap()
 
     helm_install_args=(
         --set externalKafka.enabled=true
-        --set "externalKafka.endpoints[0]=tcp://kafka.${namespace}.svc.cluster.local:9092"
         --set externalLdap.enabled=true
         --set externalConsul.enabled=true
-        --set "externalConsul.endpoints[0]=tcp://consul-server.${namespace}.svc.cluster.local:8301"
-        --set "externalConsul.endpoints[1]=http://consul-server.${namespace}.svc.cluster.local:8500"
         --set cortxHare.haxService.protocol="$(extractBlock 'solution.common.hax.protocol' || true)"
         --set cortxHare.haxService.name="$(extractBlock 'solution.common.hax.service_name' || true)"
         --set cortxHare.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
