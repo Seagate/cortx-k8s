@@ -365,7 +365,7 @@ function deployRancherProvisioner()
         image=$(echo "${image}" | cut -f2 -d'>')
         ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.helperPod.image" "${image}"
 
-        kubectl create -f "${rancher_prov_file}"
+        kubectl apply -f "${rancher_prov_file}"
     fi
 }
 

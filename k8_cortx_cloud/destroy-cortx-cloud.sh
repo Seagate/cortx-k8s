@@ -362,17 +362,6 @@ function delete3rdPartyPVs()
     done
 }
 
-function deleteStorageProvisioner()
-{
-    # Note: The installation and deletion of Rancher by these scripts is
-    # one reason why multiple CORTX deployment on a single Kubernetes
-    # cluster is not supported.
-    rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
-    rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
-    [[ -f ${rancher_prov_file} ]] && kubectl delete -f "${rancher_prov_file}"
-    rm -rf "${rancher_prov_path}"
-}
-
 function deleteKubernetesPrereqs()
 {
     printf "########################################################\n"
@@ -440,5 +429,4 @@ delete3rdPartyPVs
 # Clean up
 #############################################################
 deleteKubernetesPrereqs
-deleteStorageProvisioner
 cleanup

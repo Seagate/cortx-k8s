@@ -194,6 +194,15 @@ Run the `destroy-cortx-cloud.sh` script, passing in the path to the previously u
 ./destroy-cortx-cloud.sh solution.yaml
 ```
 
+
+Note: This script does not uninstall the local provisioner.  If you need to uninstall the local provisioner
+
+```bash
+kubectl delete -f ./cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner/local-path-storage.yaml
+```
+
+
+
 ## Solution YAML Overview
 
 The CORTX solution configuration file consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution configuration file and extract information they need to deploy and destroy CORTX.
