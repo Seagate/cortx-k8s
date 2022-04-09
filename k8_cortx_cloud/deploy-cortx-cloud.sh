@@ -325,7 +325,6 @@ function deployKubernetesPrereqs()
         --set serviceAccount.create="true" \
         --set serviceAccount.name="${serviceAccountName}" \
         --set networkPolicy.create="false" \
-        --set namespace.name="${namespace}" \
         --set services.create="true" \
         --set services.hax.name="${hax_service_name}" \
         --set services.hax.port="${hax_service_port}" \
@@ -583,7 +582,6 @@ function deployCortxLocalBlockStorage()
         --set cortxblkdata.nodelistinfo="node-list-info.txt" \
         --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
         --set cortxblkdata.storage.volumemode="Block" \
-        --set namespace="${namespace}" \
         -n "${namespace}"
 }
 
@@ -978,7 +976,6 @@ function deployCortxControl()
         --set cortxcontrol.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
         --set cortxcontrol.serviceaccountname="${serviceAccountName}" \
-        --set namespace="${namespace}" \
         "${optional_values[@]}" \
         --namespace "${namespace}"
 
@@ -1029,7 +1026,6 @@ function deployCortxData()
             --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="${serviceAccountName}" \
-            --set namespace="${namespace}" \
             -n "${namespace}"
     done
 
@@ -1099,7 +1095,6 @@ function deployCortxServer()
             --set cortxserver.hax.port="${hax_port}" \
             --set cortxserver.secretinfo="secret-info.txt" \
             --set cortxserver.serviceaccountname="${serviceAccountName}" \
-            --set namespace="${namespace}" \
             --namespace "${namespace}"
     done
 
@@ -1152,7 +1147,6 @@ function deployCortxHa()
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-${namespace}" \
         --set cortxha.localpathpvc.mountpath="${local_storage}" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
-        --set namespace="${namespace}" \
         -n "${namespace}"
 
     printf "\nWait for CORTX HA to be ready"
@@ -1197,7 +1191,6 @@ function deployCortxClient()
             --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-${node_name}" \
             --set cortxclient.localpathpvc.mountpath="${local_storage}" \
             --set cortxclient.localpathpvc.requeststoragesize="1Gi" \
-            --set namespace="${namespace}" \
             -n "${namespace}"
     done
 

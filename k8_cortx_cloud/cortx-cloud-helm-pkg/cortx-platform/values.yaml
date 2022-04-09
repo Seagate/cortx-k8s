@@ -9,7 +9,6 @@ fullnameOverride: ""
 
 namespace:
   create: false
-  name: cortx
   annotations: {}
   labels:
     ##REFERENCE: https://kubernetes.io/docs/concepts/security/pod-security-standards/
