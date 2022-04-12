@@ -194,7 +194,6 @@ Run the `destroy-cortx-cloud.sh` script, passing in the path to the previously u
 ./destroy-cortx-cloud.sh solution.yaml
 ```
 
-
 Note: This script does not uninstall the local provisioner.  If you need to uninstall the local provisioner
 
 ```bash
