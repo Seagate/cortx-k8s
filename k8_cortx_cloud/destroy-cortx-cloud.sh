@@ -320,7 +320,8 @@ function waitFor3rdPartyToTerminate()
         count=0
         while IFS= read -r line; do
             count=$(( count + 1 ))
-        done < <(kubectl get pods -n "${namespace}" | grep -e kafka -e zookeeper -e openldap -e consul 2>&1)
+        done < <(kubectl get pods --namespace "${namespace}" | \
+                  grep -e kafka -e zookeeper -e openldap -e consul 2>&1)
 
         (( count == 0 )) && break || printf "."
         sleep 1s
@@ -339,9 +340,10 @@ function delete3rdPartyPVCs()
     do
         printf "Removing %s\n" "${volume_claim}"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-            kubectl patch pvc -n "${namespace}" "${volume_claim}" -p '{"metadata":{"finalizers":null}}'
+            kubectl patch pvc --namespace "${namespace}" "${volume_claim}" \
+                      -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pvc -n "${namespace}" "${volume_claim}"
+        kubectl delete pvc --namespace "${namespace}" "${volume_claim}"
     done
 }
 

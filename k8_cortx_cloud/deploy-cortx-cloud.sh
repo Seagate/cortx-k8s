@@ -400,13 +400,13 @@ function deployConsul()
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
     kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}' \
-                                               -n "${namespace}"
+                                               --namespace "${namespace}"
     kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}' \
-                                               -n "${namespace}"
+                                               --namespace "${namespace}"
 
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    kubectl rollout restart statefulset/consul-server -n "${namespace}"
-    kubectl rollout restart daemonset/consul-client -n "${namespace}"
+    kubectl rollout restart statefulset/consul-server --namespace "${namespace}"
+    kubectl rollout restart daemonset/consul-client --namespace "${namespace}"
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -1334,12 +1334,14 @@ if [[ ${deployment_type} != "data-only" ]]; then
 The S3 data service is accessible through the ${data_service_name} service.
    Default IAM access key: ${data_service_default_user}
    Default IAM secret key is accessible via:
-       kubectl get secrets/${cortx_secret_name} -n ${namespace} --template={{.data.s3_auth_admin_secret}} | base64 -d
+       kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
+                  --template={{.data.s3_auth_admin_secret}} | base64 -d
 
 The CORTX control service is accessible through the ${control_service_name} service.
    Default control username: ${control_service_default_user}
    Default control password is accessible via:
-       kubectl get secrets/${cortx_secret_name} -n ${namespace} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+       kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
+                  --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
 fi
 
 printf "\n-----------------------------------------------------------\n"
