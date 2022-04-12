@@ -37,7 +37,7 @@ class Cluster:
             else:
                 solution_file = os.path.relpath(os.path.join(
                                            os.path.dirname(__file__),
-                                           '../../k8_cortx_cloud/solution.yaml'))
+                                           '../../k8_cortx_cloud/solution.example.yaml'))
                 print(f"No solution file specified: using {solution_file}")
 
         self.solution_file = solution_file
