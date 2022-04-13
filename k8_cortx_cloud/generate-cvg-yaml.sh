@@ -28,20 +28,20 @@ _YAML_BODY="./tmp-yaml-body.yaml"
 
 # print error message [ execute command ] and exit [ with defined status ]
 error() {
-    echo "${_SCRIPT_NAME}: $1" > /dev/stderr
-    [ $# -gt 2 ] && eval "$2" && exit "$3"
-    [ $# -gt 1 ] && exit "$2"
+    echo "${_SCRIPT_NAME}: $1" >&2
+    (( $# > 2)) && eval "$2" && exit "$3"
+    (( $# > 1 )) && exit "$2"
     exit 1
 }
 
 # print log message
 log() {
-    echo "${_SCRIPT_NAME}: $1" > /dev/stderr
+    echo "${_SCRIPT_NAME}: $1" >&2
 }
 
 # print debug message if script called with verbose mode
 debug() {
-    [ "$_VERBOSE" ] && echo "${_SCRIPT_NAME}: $1" > /dev/stderr
+    [[ ${_VERBOSE} == 1 ]] && echo "${_SCRIPT_NAME}: $1" >&2
 }
 
 usage() {
@@ -123,7 +123,7 @@ get_options() {
       DEVICE_PATHS_FILE="${2-}"
       shift
       ;;
-    -?*) 
+    -?*)
       error "Unknown option: $1"
       exit
       ;;
@@ -146,29 +146,29 @@ init() {
    # OPTIONS:
    debug " -- OPTIONS"
    debug "|"
-   # $NUM_CVGS : Number of desired CVGs in the generated cluster
-   debug "|   NUM_CVGS=$NUM_CVGS"
-   # $NUM_DATA_DRIVES : Number of desired data drives per CVG
-   debug "|   NUM_DATA_DRIVES=$NUM_DATA_DRIVES"
-   # $SIZE_DATA_DRIVE : Desired size of each data drive
-   debug "|   SIZE_DATA_DRIVE=$SIZE_DATA_DRIVE"
-   # $NUM_METADATA_DRIVES : Number of desired metadata drives per CVG
-   debug "|   NUM_METADATA_DRIVES=$NUM_METADATA_DRIVES"
-   # $SIZE_METADATA_DRIVE : Desired size of each metadata drive
-   debug "|   SIZE_METADATA_DRIVE=$SIZE_METADATA_DRIVE"
-   # $SOLUTION_YAML : The path to the solution.yaml file to be used as a template
-   debug "|   SOLUTION_YAML=$SOLUTION_YAML"
-   # $NODE_LIST_FILE : The path to the file to use for a list of nodes
-   debug "|   NODE_LIST_FILE=$NODE_LIST_FILE"
-   # $DEVICE_PATHS_FILE : The path to the file to use for a list of device paths
-   debug "|   DEVICE_PATHS_FILE=$DEVICE_PATHS_FILE"
+   # NUM_CVGS : Number of desired CVGs in the generated cluster
+   debug "|   NUM_CVGS=${NUM_CVGS}"
+   # NUM_DATA_DRIVES : Number of desired data drives per CVG
+   debug "|   NUM_DATA_DRIVES=${NUM_DATA_DRIVES}"
+   # SIZE_DATA_DRIVE : Desired size of each data drive
+   debug "|   SIZE_DATA_DRIVE=${SIZE_DATA_DRIVE}"
+   # NUM_METADATA_DRIVES : Number of desired metadata drives per CVG
+   debug "|   NUM_METADATA_DRIVES=${NUM_METADATA_DRIVES}"
+   # SIZE_METADATA_DRIVE : Desired size of each metadata drive
+   debug "|   SIZE_METADATA_DRIVE=${SIZE_METADATA_DRIVE}"
+   # SOLUTION_YAML : The path to the solution.yaml file to be used as a template
+   debug "|   SOLUTION_YAML=${SOLUTION_YAML}"
+   # NODE_LIST_FILE : The path to the file to use for a list of nodes
+   debug "|   NODE_LIST_FILE=${NODE_LIST_FILE}"
+   # DEVICE_PATHS_FILE : The path to the file to use for a list of device paths
+   debug "|   DEVICE_PATHS_FILE=${DEVICE_PATHS_FILE}"
    debug "|"
 
    # FLAGS:
    debug " -- FLAGS"
    debug "|"
-   # $_VERBOSE : Enable verbose mode
-   debug "|   _VERBOSE=$_VERBOSE"
+   # _VERBOSE : Enable verbose mode
+   debug "|   _VERBOSE=${_VERBOSE}"
    debug "|"
 }
 
@@ -190,7 +190,7 @@ if [[ ! -f "${NODE_LIST_FILE}" ]]; then
 fi
 
 ## Check for proper existence of required DEVICE_PATHS_FILE parameter
-debug "|    DEVICE_PATHS_FILE=\"${NODE_LIST_FILE}\""
+debug "|    DEVICE_PATHS_FILE=\"${DEVICE_PATHS_FILE}\""
 if [[ "${DEVICE_PATHS_FILE}" == "UNSET" ]]; then
   error "DEVICE_PATHS_FILE is a required parameter and is unset." 1
 fi
@@ -205,75 +205,73 @@ if [[ "${YQ_AVAILABLE}" == "" ]]; then
   error "'yq' is required for this script to run successfully. Visit github.com/mikefarah/yq for details." 1
 fi
 
-## Parse nodes
+## Parse nodes - line delimited
 debug " -- PARSED PARAMETERS"
 debug "|"
 debug "|    NODE_LIST_FILE:"
 NODE_LIST=()
 while IFS= read -r line; do
-    NODE_LIST+=($line)
-    debug "|      $line"
-done <<< "$(cat $NODE_LIST_FILE)"
+    NODE_LIST+=("${line}")
+    debug "|      ${line}"
+done < "${NODE_LIST_FILE}"
 
 ## Check for empty node list
 if [[ "${#NODE_LIST[@]}" == "0" ]]; then
   error "Parsed NODE_LIST_FILE contents is empty" 1
 fi
 
-## Parse devices
+## Parse devices - line delimited
 DEVICE_PATHS=()
 debug "|"
 debug "|    DEVICE_PATHS_FILE:"
 while IFS= read -r line; do
-    DEVICE_PATHS+=($line)
-    debug "|      $line"
-done <<< "$(cat $DEVICE_PATHS_FILE)"
+    DEVICE_PATHS+=("${line}")
+    debug "|      ${line}"
+done < "${DEVICE_PATHS_FILE}"
 
 ## Check for empty device path list
 if [[ "${#DEVICE_PATHS[@]}" == "0" ]]; then
   error "Parsed DEVICE_PATHS_FILE contents is empty" 1
 fi
 
-printf "solution:\n" > $_YAML_BODY
+{
+  printf "solution:\n"
 
-## GENERATE STORAGE->CVG STANZA
-_DEVICE_OFFSET=0
-printf "  storage:\n" >> $_YAML_BODY
-for cvg_instance in $(seq $NUM_CVGS); do
-  printf "    cvg%s:\n" $cvg_instance >> $_YAML_BODY
+  ## GENERATE STORAGE->CVG STANZA
+  _DEVICE_OFFSET=0
+  printf "  storage:\n"
+  for ((cvg_instance = 1 ; cvg_instance <= NUM_CVGS ; cvg_instance++)); do
+    printf "    cvg%s:\n" "${cvg_instance}"
 
-  ## Front-pad cvg-name with leading zeroes
-  _CVG_NAME=$cvg_instance
-  if [[ "$_CVG_NAME" -lt "10" ]]; then
-    _CVG_NAME="0$cvg_instance"
-  fi
+    ## Front-pad cvg-name with leading zeroes
+    padding="00"
+    _CVG_NAME="${padding:${#cvg_instance}:${#padding}}${cvg_instance}"
 
-  printf "      name: cvg-%s\n" $_CVG_NAME >> $_YAML_BODY 
-  printf "      type: ios\n" >> $_YAML_BODY
-  printf "      devices:\n" >> $_YAML_BODY
+    printf "      name: cvg-%s\n" ${_CVG_NAME}
+    printf "      type: ios\n"
+    printf "      devices:\n"
 
-  ##TODO (1.2) Determine if we currently can use multiple metadata drives
-  printf "        metadata:\n" >> $_YAML_BODY
-  printf "          device: %s\n" ${DEVICE_PATHS[$_DEVICE_OFFSET]} >> $_YAML_BODY
-  ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
-
-  printf "          size: %s\n" $SIZE_METADATA_DRIVE >> $_YAML_BODY
-
-  printf "        data:\n" >> $_YAML_BODY
-  for data_instance in $(seq 1 $NUM_DATA_DRIVES); do
-    printf "          d%s:\n" $data_instance >> $_YAML_BODY
-    printf "            device: %s\n" ${DEVICE_PATHS[$_DEVICE_OFFSET]} >> $_YAML_BODY
+    ##TODO (1.2) Determine if we currently can use multiple metadata drives
+    printf "        metadata:\n"
+    printf "          device: %s\n" "${DEVICE_PATHS[${_DEVICE_OFFSET}]}"
     ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
+    printf "          size: %s\n" "${SIZE_METADATA_DRIVE}"
+    printf "        data:\n"
+    for ((data_instance = 1 ; data_instance <= NUM_DATA_DRIVES ; data_instance++)); do
+      printf "          d%s:\n" "${data_instance}"
+      printf "            device: %s\n" "${DEVICE_PATHS[${_DEVICE_OFFSET}]}"
+      ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
 
-    printf "            size: %s\n" $SIZE_DATA_DRIVE >> $_YAML_BODY
-  done 
-done
+      printf "            size: %s\n" "${SIZE_DATA_DRIVE}"
+    done
+  done
 
-## Generate Node stanza
-printf "  nodes:\n" >> $_YAML_BODY
-for node_instance in $(seq ${#NODE_LIST[@]}); do
-  printf "    node%s:\n" $node_instance >> $_YAML_BODY
-  printf "      name: %s\n" ${NODE_LIST[$node_instance-1]} >> $_YAML_BODY
-done
+  ## Generate Node stanza
+  printf "  nodes:\n"
+  for ((node_instance = 1 ; node_instance <= ${#NODE_LIST[@]} ; node_instance++)); do
+    printf "    node%d:\n" "${node_instance}"
+    printf "      name: %s\n" "${NODE_LIST[${node_instance}-1]}"
+  done
+} > ${_YAML_BODY}
 
-yq ea 'del(select(fi==0) | .solution.storage) | del(select(fi==0) | .solution.nodes) | select(fi==0) * select(fi==1)' ${SOLUTION_YAML} ${_YAML_BODY}
+yq ea 'del(select(fi==0) | .solution.storage) | del(select(fi==0) | .solution.nodes) | select(fi==0) * select(fi==1)' "${SOLUTION_YAML}" ${_YAML_BODY}
