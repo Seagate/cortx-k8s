@@ -21,6 +21,9 @@ then
     OUTPUT=$BLOCK_TO_INSERT
 else
     # Yes. Create the whitespace indent pattern
+    # (Shellcheck rightly complains, but I don't want to uninentionally break
+    # whatever this is attempting to do.)
+    # shellcheck disable=SC2183
     INDENT_PATTERN=$(printf '%*s' "$INDENT" | tr ' ' " ")
     # Set the output of emtpy
     OUTPUT=""
