@@ -214,7 +214,7 @@ done
 
 # The SNS=(N+K+S) should not exceed the total number of CVGs in the cluster (the number
 # of CVGs in the solution file multiplies by the number of worker nodes in the cluster)
-total_num_cvgs_in_cluster=$(($num_cvgs*$total_num_nodes))
+total_num_cvgs_in_cluster=$(( num_cvgs * total_num_nodes ))
 if [[ "$sns_total" -gt "$total_num_cvgs_in_cluster" ]]; then
     result_str="The sum of SNS ($sns_total) is greater than the total number of CVGs ($total_num_cvgs_in_cluster) in the cluster"
     result="failed"
