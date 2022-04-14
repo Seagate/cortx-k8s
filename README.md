@@ -15,8 +15,9 @@
     2.  [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
     3.  [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
     4.  [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
-    5.  [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
-    6.  [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
+    5.  [Granular Deployment - Data Pod Only](#granular-deployment-data-only)
+    6.  [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
+    7.  [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
 6.  [Solution YAML Overview](#solution-yaml-overview)
 7.  [Troubleshooting](#troubleshooting)
 8.  [License](#license)
@@ -177,6 +178,20 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 ### Using CORTX on Kubernetes
 
 **_TODO_** Port https://seagate-systems.atlassian.net/wiki/spaces/PUB/pages/754155622/CORTX+Kubernetes+N-Pod+Deployment+and+Upgrade+Document+using+Services+Framework#5.-Understanding-Management-and-S3-Endpoints-and-configuring-External-Load-balancer-service(Optional) here or into a linked `doc/readme` file.
+
+### Granular Deployment - Data Pod Only
+Apart from the steps given in [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes) steps above, add following steps for granular data Pod only deployment.
+    
+1. Update the Deployment Mode in solution configuration file like solution.yaml file: 
+    By default, Deployment Mode is set to standard 
+    For data pod only deployment set the deployment_type to data-only
+
+    deployment_type: data-only
+
+    Currently framework support the following 2 modes:
+        1. standard - Deploy all redefine pods
+        2. data-only - Deploy only Data pod
+2. Validate deployment, please note here you will have only Data Pod.
 
 ### Log collection for CORTX on Kubernetes
 
