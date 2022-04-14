@@ -17,6 +17,17 @@ function buildRegexFromSolutionVar()
     echo "$1" | sed -e 's/\([0-9]\+\)/[0-9]+/g'
 }
 
+function checkResult()
+{
+    local result=$1
+    local result_str=$2
+
+    if [[ ${result} == "failed" ]]; then
+        printf "%s\nValidate solution file result: %s\n" "${result_str}" "${result}"
+        exit 1
+    fi
+}
+
 solution_content=$(parseSolution)
 solution_chk_content=$(./parse_scripts/parse_yaml.sh $solution_chk_yaml)
 
@@ -92,10 +103,7 @@ for element in "${my_array[@]}"; do
     fi
 done
 
-if [[ "$result" == "failed" ]]; then
-    printf "$result_str\nValidate solution file result: $result\n"
-    exit 1
-fi
+checkResult ${result} "${result_str}"
 
 cvg_name_list=$(parseSolution 'solution.storage.cvg*.name')
 # Get number of '>' show up in 'cvg_name_list' string
@@ -135,10 +143,7 @@ for sol_chk_e in "${solution_chk_cvg_var_list[@]}"; do
     fi
 done
 
-if [[ "$result" == "failed" ]]; then
-    printf "$result_str\nValidate solution file result: $result\n"
-    exit 1
-fi
+checkResult ${result} "${result_str}"
 
 # Build a list that only contains data device info in cvg
 solution_cvg_blk_data_dev=[]
@@ -163,10 +168,7 @@ for sol_chk_e in "${solution_cvg_blk_data_dev[@]}"; do
     fi
 done
 
-if [[ "$result" == "failed" ]]; then
-    printf "$result_str\nValidate solution file result: $result\n"
-    exit 1
-fi
+checkResult ${result} "${result_str}"
 
 total_num_nodes="${#solution_node_list[@]}"
 # Validate node names in the solution file
@@ -190,10 +192,7 @@ for sol_chk_e in "${solution_chk_node[@]}"; do
     fi
 done
 
-if [[ "$result" == "failed" ]]; then
-    printf "$result_str\nValidate solution file result: $result\n"
-    exit 1
-fi
+checkResult ${result} "${result_str}"
 
 sns_var_val=$(parseSolution 'solution.common.storage_sets.durability.sns')
 dix_var_val=$(parseSolution 'solution.common.storage_sets.durability.dix')
@@ -215,10 +214,7 @@ if [[ "$sns_total" -gt "$total_num_cvgs_in_cluster" ]]; then
     result="failed"
 fi
 
-if [[ "$result" == "failed" ]]; then
-    printf "$result_str\nValidate solution file result: $result\n"
-    exit 1
-fi
+checkResult ${result} "${result_str}"
 
 # Validate DIX
 dix_total=0
@@ -232,4 +228,4 @@ if [[ "$dix_total" -gt "$total_num_nodes" ]]; then
     result="failed"
 fi
 
-printf "$result_str\nValidate solution file result: $result\n"
+checkResult ${result} "${result_str}"
