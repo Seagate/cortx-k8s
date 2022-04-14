@@ -6,32 +6,28 @@ YAML_PATH_FILTER=$3
 TEMPLATE_UPDATE=$4
 
 # Check that all of the required parameters have been passed in
-if [ "$INPUT_FILE" == "" ] || [ "$OUTPUT_FILE" == "" ]
+if [[ -z $INPUT_FILE ]] || [[ -z $OUTPUT_FILE ]]
 then
-    echo "Invalid input paramters"
+    echo "Invalid input parameters: <input file> and <output file> are required"
     echo "./yaml_update_block.sh <input file> <output file> [<yaml path filter> OPTIONAL] [<template update> OPTIONAL]"
-    echo "<input file>                  = $INPUT_FILE"
-    echo "<output file>                 = $OUTPUT_FILE"
-    echo "[<yaml path filter> OPTIONAL] = $YAML_PATH_FILTER"
-    ehco "[<template update> OPTIONAL]  = $TEMPLATE_UPDATE"
     exit 1
 fi
 
 # Check if the file exists
-if [ ! -f $INPUT_FILE ]
+if [[ ! -f $INPUT_FILE ]]
 then
     echo "ERROR: input file $INPUT_FILE does not exist"
     exit 1
 fi
 
-# Udpate he template
-if [ "$TEMPLATE_UPDATE" != "" ]
+# Update the template
+if [[ -n $TEMPLATE_UPDATE ]]
 then
     sed -i "s/<<#>>/$TEMPLATE_UPDATE/g" $OUTPUT_FILE
 fi
 
 # Check if the file exists
-if [ ! -f $OUTPUT_FILE ]
+if [[ ! -f $OUTPUT_FILE ]]
 then
     echo "ERROR: output file $OUTPUT_FILE does not exist"
     exit 1

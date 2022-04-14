@@ -25,7 +25,7 @@ function parseYaml
 }
 
 # Check that all of the required parameters have been passed in
-if [ "$INPUT_YAML_FILE" == "" ]
+if [[ -z $INPUT_YAML_FILE ]]
 then
     echo "Invalid input paramters"
     echo "./parse_yaml.sh <input yaml file> [<yaml path filter> OPTIONAL]"
@@ -35,7 +35,7 @@ then
 fi
 
 # Check if the file exists
-if [ ! -f $INPUT_YAML_FILE ]
+if [[ ! -f $INPUT_YAML_FILE ]]
 then
     echo "ERROR: $INPUT_YAML_FILE does not exist"
     exit 1
@@ -50,7 +50,7 @@ PARSED_OUTPUT=$(echo ${PARSED_OUTPUT//../.})
 OUTPUT=""
 
 # Check if we need to do any filtering
-if [ "$YAML_PATH_FILTER" == "" ]
+if [[ -z $YAML_PATH_FILTER ]]
 then
     OUTPUT=$PARSED_OUTPUT
 else
@@ -65,7 +65,7 @@ else
         if [[ $VAR == $YAML_PATH_FILTER ]]
         then
             # If the OUTPUT is empty set it otherwise append
-            if [ "$OUTPUT" == "" ]
+            if [[ -z $OUTPUT ]]
             then
                 OUTPUT=$VAR_VAL_ELEMENT
             else

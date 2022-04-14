@@ -6,7 +6,7 @@ YAML_PATH=$2
 REPLACE_WITH=$3
 
 # Check that all of the required parameters have been passed in
-if [ "$YAML_FILE_TO_MOD" == "" ] || [ "$YAML_PATH" == "" ] || [ "$REPLACE_WITH" == "" ]
+if [[ -z $YAML_FILE_TO_MOD ]] || [[ -z $YAML_PATH ]] || [[ -z $REPLACE_WITH ]]
 then
     echo "Invalid input paramters"
     echo "./subst.sh <file to modify> <yaml variable path> <replace yaml variable with>"
@@ -20,7 +20,7 @@ fi
 TO_SUBST="<<.Values.$YAML_PATH>>"
 
 # Check if the file exists
-if [ ! -f $YAML_FILE_TO_MOD ]
+if [[ ! -f $YAML_FILE_TO_MOD ]]
 then
     echo "ERROR: $YAML_FILE_TO_MOD does not exist"
     exit 1
