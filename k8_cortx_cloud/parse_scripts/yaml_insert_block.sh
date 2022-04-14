@@ -46,7 +46,7 @@ fi
 
 if [[ -z ${YAML_PATH} ]]
 then
-    echo "${OUTPUT}" >> ${OUTPUT_YAML_FILE}
+    echo "${OUTPUT}" >> "${OUTPUT_YAML_FILE}"
 else
-    ./parse_scripts/subst.sh ${OUTPUT_YAML_FILE} ${YAML_PATH} "${OUTPUT}"
+    ./parse_scripts/subst.sh "${OUTPUT_YAML_FILE}" "${YAML_PATH}" "${OUTPUT}"
 fi

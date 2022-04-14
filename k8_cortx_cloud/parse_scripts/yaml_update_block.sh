@@ -23,7 +23,7 @@ fi
 # Update the template
 if [[ -n ${TEMPLATE_UPDATE} ]]
 then
-    sed -i "s/<<#>>/${TEMPLATE_UPDATE}/g" ${OUTPUT_FILE}
+    sed -i "s/<<#>>/${TEMPLATE_UPDATE}/g" "${OUTPUT_FILE}"
 fi
 
 # Check if the file exists
@@ -33,7 +33,7 @@ then
     exit 1
 fi
 
-PARSED_OUTPUT=$(./parse_yaml.sh ${INPUT_FILE} ${YAML_PATH_FILTER})
+PARSED_OUTPUT=$(./parse_yaml.sh "${INPUT_FILE}" "${YAML_PATH_FILTER}")
 
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a PARSED_VAR_VAL_ARRAY <<< "${PARSED_OUTPUT}"
@@ -42,8 +42,8 @@ IFS=';' read -r -a PARSED_VAR_VAL_ARRAY <<< "${PARSED_OUTPUT}"
 for VAR_VAL_ELEMENT in "${PARSED_VAR_VAL_ARRAY[@]}"
 do
     # Get the var and val from the tuple
-    VAR=$(echo ${VAR_VAL_ELEMENT} | cut -f1 -d'>')
-	VAL=$(echo ${VAR_VAL_ELEMENT} | cut -f2 -d'>')
+    VAR=$(echo "${VAR_VAL_ELEMENT}" | cut -f1 -d'>')
+	VAL=$(echo "${VAR_VAL_ELEMENT}" | cut -f2 -d'>')
     # Call the substitution script the update the output file
-    ./subst.sh ${OUTPUT_FILE} ${VAR} ${VAL}
+    ./subst.sh "${OUTPUT_FILE}" "${VAR}" "${VAL}"
 done

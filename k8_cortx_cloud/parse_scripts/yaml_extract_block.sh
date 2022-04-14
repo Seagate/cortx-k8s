@@ -17,7 +17,7 @@ fi
 YQ_YAML_PATH_FILTER=".${YAML_PATH_FILTER}"
 
 # Call the yq command
-EXTRACTED_BLOCK=$(./parse_scripts/yq_linux_amd64 e ${YQ_YAML_PATH_FILTER} ${INPUT_YAML_FILE})
+EXTRACTED_BLOCK=$(./parse_scripts/yq_linux_amd64 e "${YQ_YAML_PATH_FILTER}" "${INPUT_YAML_FILE}")
 
 # Check if we should indent
 if [[ -z ${INDENT} ]]

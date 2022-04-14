@@ -24,11 +24,11 @@ then
 fi
 
 # Check if the variable to substitute is present in the file
-if ! grep "${TO_SUBST}" ${YAML_FILE_TO_MOD} > /dev/null; then
+if ! grep "${TO_SUBST}" "${YAML_FILE_TO_MOD}" > /dev/null; then
     echo "ERROR: Failed to find ${YAML_PATH} in ${YAML_FILE_TO_MOD} for substitution"
     exit 1
 fi
 
 # Use awk to substitute the variable in the file and check the command was executed successfully
-OUTPUT=$(awk -v var1=${TO_SUBST} -v var2="${REPLACE_WITH}" '{sub(var1,var2)}1' ${YAML_FILE_TO_MOD})
-echo "${OUTPUT}" > ${YAML_FILE_TO_MOD}
+OUTPUT=$(awk -v var1="${TO_SUBST}" -v var2="${REPLACE_WITH}" '{sub(var1,var2)}1' "${YAML_FILE_TO_MOD}")
+echo "${OUTPUT}" > "${YAML_FILE_TO_MOD}"
