@@ -12,7 +12,7 @@ function buildRegexFromSolutionVar()
 {
     string=$1
     # Find all the number in the string and replace it with "[0-9]+".
-    # Example: 
+    # Example:
     # string="solution.storage.cvg1.devices.data.d2.device"
     # regex="solution.storage.cvg[0-9]+.devices.data.d[0-9]+.device"
     local regex=$(echo "$string" | sed -e 's/\([0-9]\+\)/[0-9]+/g')
@@ -57,7 +57,7 @@ IFS=";" read -r -a my_array <<< "$solution_chk_content"
 for element in "${my_array[@]}"; do
     IFS=">" read -r -a element_array <<< "$element"
     found=false
-    
+
     if [[ "$element" == *".node"* ]]; then
         solution_chk_node[$sol_chk_node_count]="$element"
         sol_chk_node_count=$((sol_chk_node_count+1))
@@ -80,7 +80,7 @@ for element in "${my_array[@]}"; do
             && "${element_array[1]}" == "required" ]]; then
         validate_data_size=true
     fi
-    
+
     if [[ "${element_array[0]}" =~ solution.storage.cvg[0-9]+.devices.data.d[0-9]+.device \
             && "${element_array[1]}" == "required" ]]; then
         validate_data_device=true
@@ -215,7 +215,7 @@ done
 # The SNS=(N+K+S) should not exceed the total number of CVGs in the cluster (the number
 # of CVGs in the solution file multiplies by the number of worker nodes in the cluster)
 total_num_cvgs_in_cluster=$(($num_cvgs*$total_num_nodes))
-if [[ "$sns_total" -gt "$total_num_cvgs_in_cluster" ]]; then    
+if [[ "$sns_total" -gt "$total_num_cvgs_in_cluster" ]]; then
     result_str="The sum of SNS ($sns_total) is greater than the total number of CVGs ($total_num_cvgs_in_cluster) in the cluster"
     result="failed"
 fi
@@ -232,7 +232,7 @@ for val in "${dix_val_array[@]}"; do
     dix_total=$((dix_total+val))
 done
 
-if [[ "$dix_total" -gt "$total_num_nodes" ]]; then    
+if [[ "$dix_total" -gt "$total_num_nodes" ]]; then
     result_str="The sum of DIX ($dix_total) is greater than the total number of worker nodes ($total_num_nodes) in the cluster"
     result="failed"
 fi
