@@ -5,7 +5,7 @@ solution_chk_yaml='./solution_validation_scripts/solution-check.yaml'
 
 function parseSolution()
 {
-    ./parse_scripts/parse_yaml.sh ${solution_yaml} $1
+    ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
 }
 
 function buildRegexFromSolutionVar()
@@ -97,7 +97,7 @@ for element in "${my_array[@]}"; do
     if [[ "${found}" = false && "${element_array[1]}" == "required" ]]; then
         # Find all the number in the string and replace it with "*".
         temp_regex=$(echo "${element}" | sed -e 's/\([0-9]\+\)/*/g')
-        temp_regex_val=$(echo ${temp_regex} | cut -f1 -d'>')
+        temp_regex_val=$(echo "${temp_regex}" | cut -f1 -d'>')
         result_str="Failed to find '${temp_regex_val}' in the solution file"
         result="failed"
     fi
@@ -111,7 +111,7 @@ num_cvg=$(echo "${cvg_name_list}" | awk -F">" '{print NF-1}')
 # Build a list that contains cvg info
 solution_cvg_blk_list=[]
 cvg_blk_list=0
-for index in $(seq 1 ${num_cvg}); do
+for index in $(seq 1 "${num_cvg}"); do
     solution_cvg_blk_list[${cvg_blk_list}]=$(parseSolution "solution.storage.cvg${index}.*")
     cvg_blk_list=$((cvg_blk_list+1))
 done
@@ -136,7 +136,7 @@ for sol_chk_e in "${solution_chk_cvg_var_list[@]}"; do
     if [[ "${found}" = false ]]; then
         # Find all the number in the string and replace it with "*".
         temp_regex=$(echo "${sol_chk_e}" | sed -e 's/\([0-9]\+\)/*/g')
-        temp_regex_val=$(echo ${temp_regex} | cut -f1 -d'>')
+        temp_regex_val=$(echo "${temp_regex}" | cut -f1 -d'>')
         result_str="Failed to find '${temp_regex_val}' in the solution file"
         result="failed"
         break
@@ -148,7 +148,7 @@ checkResult ${result} "${result_str}"
 # Build a list that only contains data device info in cvg
 solution_cvg_blk_data_dev=[]
 cvg_blk_list=0
-for index in $(seq 1 ${num_cvg}); do
+for index in $(seq 1 "${num_cvg}"); do
     solution_cvg_blk_data_dev[${cvg_blk_list}]=$(parseSolution "solution.storage.cvg${index}.devices.data.*")
     cvg_blk_list=$((cvg_blk_list+1))
 done
@@ -185,7 +185,7 @@ for sol_chk_e in "${solution_chk_node[@]}"; do
     if [[ "${found}" = false ]]; then
         # Find all the number in the string and replace it with "*".
         temp_regex=$(echo "${sol_chk_e}" | sed -e 's/\([0-9]\+\)/*/g')
-        temp_regex_val=$(echo ${temp_regex} | cut -f1 -d'>')
+        temp_regex_val=$(echo "${temp_regex}" | cut -f1 -d'>')
         result_str="Failed to find '${temp_regex_val}' in the solution file"
         result="failed"
         break
