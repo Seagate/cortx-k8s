@@ -5,7 +5,7 @@ solution_chk_yaml='./solution_validation_scripts/solution-check.yaml'
 
 function parseSolution()
 {
-    echo "$(./parse_scripts/parse_yaml.sh $solution_yaml $1)"
+    ./parse_scripts/parse_yaml.sh $solution_yaml $1
 }
 
 function buildRegexFromSolutionVar()
