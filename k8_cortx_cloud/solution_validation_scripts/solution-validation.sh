@@ -14,6 +14,7 @@ function buildRegexFromSolutionVar()
     # Example:
     # string="solution.storage.cvg1.devices.data.d2.device"
     # regex="solution.storage.cvg[0-9]+.devices.data.d[0-9]+.device"
+    # shellcheck disable=SC2001
     echo "$1" | sed -e 's/\([0-9]\+\)/[0-9]+/g'
 }
 
@@ -96,6 +97,7 @@ for element in "${my_array[@]}"; do
 
     if [[ "${found}" = false && "${element_array[1]}" == "required" ]]; then
         # Find all the number in the string and replace it with "*".
+        # shellcheck disable=SC2001
         temp_regex=$(echo "${element}" | sed -e 's/\([0-9]\+\)/*/g')
         temp_regex_val=$(echo "${temp_regex}" | cut -f1 -d'>')
         result_str="Failed to find '${temp_regex_val}' in the solution file"
@@ -135,6 +137,7 @@ for sol_chk_e in "${solution_chk_cvg_var_list[@]}"; do
 
     if [[ "${found}" = false ]]; then
         # Find all the number in the string and replace it with "*".
+        # shellcheck disable=SC2001
         temp_regex=$(echo "${sol_chk_e}" | sed -e 's/\([0-9]\+\)/*/g')
         temp_regex_val=$(echo "${temp_regex}" | cut -f1 -d'>')
         result_str="Failed to find '${temp_regex_val}' in the solution file"
@@ -184,6 +187,7 @@ for sol_chk_e in "${solution_chk_node[@]}"; do
 
     if [[ "${found}" = false ]]; then
         # Find all the number in the string and replace it with "*".
+        # shellcheck disable=SC2001
         temp_regex=$(echo "${sol_chk_e}" | sed -e 's/\([0-9]\+\)/*/g')
         temp_regex_val=$(echo "${temp_regex}" | cut -f1 -d'>')
         result_str="Failed to find '${temp_regex_val}' in the solution file"
