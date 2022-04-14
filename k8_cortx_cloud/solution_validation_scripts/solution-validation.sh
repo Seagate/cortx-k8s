@@ -29,6 +29,11 @@ function checkResult()
     fi
 }
 
+if [[ ! -f ${solution_yaml} ]]; then
+    echo "ERROR: ${solution_yaml} does not exist"
+    exit 1
+fi
+
 solution_content=$(parseSolution)
 solution_chk_content=$(./parse_scripts/parse_yaml.sh ${solution_chk_yaml})
 
