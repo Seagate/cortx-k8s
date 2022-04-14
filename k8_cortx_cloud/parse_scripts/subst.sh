@@ -27,9 +27,7 @@ then
 fi
 
 # Check if the variable to substitute is present in the file
-grep "$TO_SUBST" $YAML_FILE_TO_MOD > /dev/null
-if [ $? -ne 0 ]
-then
+if ! grep "$TO_SUBST" $YAML_FILE_TO_MOD > /dev/null; then
     echo "ERROR: Failed to find $YAML_PATH in $YAML_FILE_TO_MOD for substitution"
     exit 1
 fi
