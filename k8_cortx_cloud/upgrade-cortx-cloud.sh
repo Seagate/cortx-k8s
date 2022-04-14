@@ -167,7 +167,7 @@ else
         else
             IMAGE="${UPGRADE_IMAGE}"
         fi
-        kubectl set image deployment "${deployment}" "*=${IMAGE}"
+        kubectl set image --namespace="${NAMESPACE}" deployment "${deployment}" "*=${IMAGE}"
     done <<< "${cortx_deployments}"
     printf "\n"
 fi

@@ -58,7 +58,7 @@ function saveLogs()
 {
   local pod="$1"
   local container="$2"  # optional
-  local log_cmd=(kubectl logs "${pod}")
+  local log_cmd=(kubectl logs --namespace="${namespace}" "${pod}")
   local log_name="${pod}"
 
   printf "\n🔍 Logging pod: %s" "${pod}"
@@ -83,7 +83,7 @@ function savePodDetail()
   local log_file="${logs_folder}/${pod}.detail.txt"
 
   printf "================= Detail of %s =================\n\n" "${pod}" > "${log_file}"
-  kubectl describe pod "${pod}" >> "${log_file}"
+  kubectl describe pod --namespace="${namespace}" "${pod}" >> "${log_file}"
 
   tar --append --file "${logs_folder}.tar" "${log_file}"
   rm "${log_file}"
@@ -119,7 +119,7 @@ while IFS= read -r line; do
 
   if [[ ${pod_name} != "NAME" && ${pod_status} != "Evicted" ]]; then
     if [[ ${nodename} ]] && \
-       [[ ${nodename} != $(kubectl get pod "${pod_name}" -o jsonpath='{.spec.nodeName}' || true) ]]; then
+       [[ ${nodename} != $(kubectl get pod --namespace="${namespace}" "${pod_name}" -o jsonpath='{.spec.nodeName}' || true) ]]; then
       continue
     fi
     pods_found=$((pods_found+1))
@@ -142,7 +142,7 @@ while IFS= read -r line; do
     esac
   fi
 
-done <<< "$(kubectl get pods || true)"
+done <<< "$(kubectl get pods --namespace="${namespace}" || true)"
 
 if [[ ${nodename} ]] && [[ ${pods_found} == "0" ]]; then
   printf "\n❌ No pods are running on the node: \"%s\".\n" "${nodename}"
