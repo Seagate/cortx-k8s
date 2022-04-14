@@ -10,13 +10,11 @@ function parseSolution()
 
 function buildRegexFromSolutionVar()
 {
-    string=$1
     # Find all the number in the string and replace it with "[0-9]+".
     # Example:
     # string="solution.storage.cvg1.devices.data.d2.device"
     # regex="solution.storage.cvg[0-9]+.devices.data.d[0-9]+.device"
-    local regex=$(echo "$string" | sed -e 's/\([0-9]\+\)/[0-9]+/g')
-    echo "$regex"
+    echo "$1" | sed -e 's/\([0-9]\+\)/[0-9]+/g'
 }
 
 solution_content=$(parseSolution)
