@@ -27,7 +27,6 @@ solution_var_list=[]
 count=0
 solution_node_list=[]
 sol_node_count=0
-cur_cvg_name=''
 IFS=";" read -r -a my_array <<< "$solution_content"
 for element in "${my_array[@]}"; do
     if [[ "$element" == *".node"* ]]; then
@@ -198,8 +197,6 @@ if [[ "$result" == "failed" ]]; then
     exit 1
 fi
 
-sum_sns_durability=0
-sum_dix_durability=0
 sns_var_val=$(parseSolution 'solution.common.storage_sets.durability.sns')
 dix_var_val=$(parseSolution 'solution.common.storage_sets.durability.dix')
 sns_val=$(echo "$sns_var_val" | cut -f2 -d'>')
