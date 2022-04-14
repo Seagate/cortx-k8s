@@ -44,7 +44,8 @@ solution_node_list=[]
 sol_node_count=0
 IFS=";" read -r -a my_array <<< "${solution_content}"
 for element in "${my_array[@]}"; do
-    if [[ "${element}" == *".node"* ]]; then
+    if [[ "${element}" == "solution.nodes.node"* ]]; then
+        # NOTE: this will fail if extra keys are added to nodes
         solution_node_list[${sol_node_count}]=${element}
         sol_node_count=$((sol_node_count+1))
     fi
