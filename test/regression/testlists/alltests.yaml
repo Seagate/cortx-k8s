@@ -5,3 +5,9 @@ test_deploy_basic:
 test_deploy_stub:
   id: TEST-DEPLOY-0002
   cmd: ./test_deploy.py -c {{ cluster }} -s {{ k8_cloud_dir }}/solution_stub.yaml --shutdown
+
+#Deploy into default namespace
+test_deploy_basic_default:
+  id: TEST-DEPLOY-0001
+  cmd: ./test_deploy.py -c {{ cluster }} -s {{ k8_cloud_dir }}/solution.example.yaml --shutdown --namespace=default
+
