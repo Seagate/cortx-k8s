@@ -32,7 +32,6 @@ jobs:
         with:
           # Temporarily ignore these until they are fixed
           ignore_paths: >-
-            parse_scripts
             solution_validation_scripts
 
   solution_yaml:
