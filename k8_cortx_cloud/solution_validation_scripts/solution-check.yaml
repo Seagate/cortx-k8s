@@ -11,17 +11,14 @@ solution:
     zookeeper: required
     rancher: required
   common:
-    setup_size: required
     storage_provisioner_path: required
     container_path:
       local: required
-      shared: required
       log: required
     s3:
       default_iam_users:
         auth_admin: required
         auth_user: required
-      start_port_num: required
     motr:
       num_client_inst: required
       start_port_num: required

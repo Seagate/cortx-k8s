@@ -4,12 +4,12 @@ solution:
   secrets:
     name: cortx-secret
     content:
-      kafka_admin_secret: Seagate@123
-      consul_admin_secret: Seagate@123
-      common_admin_secret: Seagate@123
-      s3_auth_admin_secret: ldapadmin
-      csm_auth_admin_secret: seagate2
-      csm_mgmt_admin_secret: Cortxadmin@123
+      kafka_admin_secret: null
+      consul_admin_secret: null
+      common_admin_secret: null
+      s3_auth_admin_secret: null
+      csm_auth_admin_secret: null
+      csm_mgmt_admin_secret: null
   images:
     cortxcontrol: ghcr.io/seagate/centos:7
     cortxdata: ghcr.io/seagate/centos:7
@@ -18,21 +18,19 @@ solution:
     cortxclient: ghcr.io/seagate/centos:7
     consul: ghcr.io/seagate/consul:1.11.4
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r7
-    zookeeper: ghcr.io/seagate/zookeeper:3.7.0-debian-10-r182
+    zookeeper: ghcr.io/seagate/zookeeper:3.8.0-debian-10-r9
     rancher: ghcr.io/seagate/local-path-provisioner:v0.0.20
     busybox: ghcr.io/seagate/busybox:latest
   common:
-    setup_size: large
     storage_provisioner_path: /mnt/fs-local-volume
     container_path:
       local: /etc/cortx
-      shared: /share
       log: /etc/cortx/log
     s3:
       default_iam_users:
         auth_admin: "sgiamadmin"
         auth_user: "user_name"
-      start_port_num: 28051
+        #auth_secret defined above in solution.secrets.content.s3_auth_admin_secret
       max_start_timeout: 240
       extra_configuration: ""
     motr:

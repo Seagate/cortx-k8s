@@ -7,7 +7,7 @@ metadata:
     source-pod: cortx-data
     target-pod: cortx-data
     target-container: cortx-s3-haproxy
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -34,38 +34,12 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.networkPolicy.namePrefix }}cortx-s3
-  labels:
-    source-pod: cortx-data
-    target-pod: cortx-data
-    target-container: cortx-s3
-  namespace: {{ .Values.namespace.name }}
-spec:
-  podSelector:
-    matchLabels:
-      name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
-    ports:
-      - protocol: TCP
-        port: 28051
-      - protocol: TCP
-        port: 28052
-
----
-
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: {{ .Values.networkPolicy.namePrefix }}cortx-motr-ios
   labels:
     source-pod: cortx-data
     target-pod: cortx-data
     target-container: cortx-motr-ios
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -91,7 +65,7 @@ metadata:
     source-pod: cortx-control
     target-pod: cortx-data
     target-container: cortx-s3-bg-consumer
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -103,7 +77,7 @@ spec:
           app: {{ .Values.networkPolicy.cortxControl.podAppLabel }}
     ports:
       - protocol: TCP
-        port: 28049 
+        port: 28049
 
 ---
 
@@ -115,7 +89,7 @@ metadata:
     source-pod: cortx-data
     target-pod: cortx-data
     target-container: misc
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -133,9 +107,9 @@ spec:
       - protocol: TCP
         port: 3002
       - protocol: TCP
-        port: 3003      
+        port: 3003
       - protocol: TCP
-        port: 4001      
+        port: 4001
       - protocol: TCP
         port: 4002
 
@@ -149,7 +123,7 @@ metadata:
     source-pod: any
     target-pod: consul-server
     target-container: consul
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -166,13 +140,13 @@ spec:
       - protocol: UDP
         port: 8301
       - protocol: TCP
-        port: 8302      
+        port: 8302
       - protocol: UDP
-        port: 8302    
+        port: 8302
       - protocol: TCP
         port: 8500
       - protocol: TCP
-        port: 8600  
+        port: 8600
       - protocol: UDP
         port: 8600
 
@@ -186,7 +160,7 @@ metadata:
     source-pod: any
     target-pod: consul-all
     target-container: any
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -212,7 +186,7 @@ metadata:
     source-pod: any
     target-pod: kafka
     target-container: any
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
