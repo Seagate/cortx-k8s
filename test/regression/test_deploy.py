@@ -153,6 +153,10 @@ if __name__ == "__main__":
             cluster_data = yaml.safe_load(f)
         cluster_data['namespace'] = args.namespace
         cluster_file = f'{args.namespace}.' + args.cluster
+        # Note: This creates a new config file that is
+        # note deleted by this test.  I am ok with that.
+        # I prefer this than deleting a file that I might
+        # want to inspect after the test runs.
         with open(cluster_file, 'w') as f:
             yaml.dump(cluster_data, f)
 
