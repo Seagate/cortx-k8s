@@ -3,7 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ .Values.rbacRole.name}}
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 rules:
 - apiGroups: ['policy']
   resources: ['podsecuritypolicies']

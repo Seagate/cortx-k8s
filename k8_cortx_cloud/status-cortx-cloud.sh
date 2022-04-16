@@ -826,7 +826,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get statefulsets | grep 'kafka')
+done < <(kubectl get statefulsets --namespace="${namespace}" | grep 'kafka')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -852,7 +852,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pods | grep 'kafka-')
+done < <(kubectl get pods --namespace="${namespace}" | grep 'kafka-')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -877,7 +877,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get services | grep 'kafka' | grep -v 'kafka-headless')
+done < <(kubectl get services --namespace="${namespace}" | grep 'kafka' | grep -v 'kafka-headless')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -902,7 +902,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get services | grep 'kafka-headless')
+done < <(kubectl get services --namespace="${namespace}" | grep 'kafka-headless')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -927,7 +927,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pvc | grep 'kafka-')
+done < <(kubectl get pvc --namespace="${namespace}" | grep 'kafka-')
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -941,7 +941,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pv | grep 'kafka-')
+done < <(kubectl get pv --namespace="${namespace}" | grep 'kafka-')
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed
@@ -968,7 +968,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get statefulsets | grep 'zookeeper')
+done < <(kubectl get statefulsets --namespace="${namespace}" | grep 'zookeeper')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -994,7 +994,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pods | grep 'zookeeper-')
+done < <(kubectl get pods --namespace="${namespace}" | grep 'zookeeper-')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1019,7 +1019,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get services | grep 'zookeeper' | grep -v 'zookeeper-headless')
+done < <(kubectl get services --namespace="${namespace}" | grep 'zookeeper' | grep -v 'zookeeper-headless')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1044,7 +1044,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get services | grep 'zookeeper-headless')
+done < <(kubectl get services --namespace="${namespace}" | grep 'zookeeper-headless')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1069,7 +1069,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pvc | grep 'zookeeper-')
+done < <(kubectl get pvc --namespace="${namespace}" | grep 'zookeeper-')
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -1110,7 +1110,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get statefulsets | grep 'consul')
+done < <(kubectl get statefulsets --namespace="${namespace}" | grep 'consul')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1135,7 +1135,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get daemonsets | grep 'consul')
+done < <(kubectl get daemonsets --namespace="${namespace}" | grep 'consul')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1161,7 +1161,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pods | grep 'consul-')
+done < <(kubectl get pods --namespace="${namespace}" | grep 'consul-')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1186,7 +1186,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get services | grep 'consul' | grep -v 'consul-server')
+done < <(kubectl get services --namespace="${namespace}" | grep 'consul' | grep -v 'consul-server')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1211,7 +1211,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get services | grep 'consul-server')
+done < <(kubectl get services --namespace="${namespace}" | grep 'consul-server')
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1236,7 +1236,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pvc | grep 'consul-server-')
+done < <(kubectl get pvc --namespace="${namespace}" | grep 'consul-server-')
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"

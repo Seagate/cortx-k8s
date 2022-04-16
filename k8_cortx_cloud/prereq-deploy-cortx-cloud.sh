@@ -1,7 +1,8 @@
 #!/bin/bash
 
+# shellcheck disable=SC2312
+
 SCRIPT=$(readlink -f "$0")
-DIR=$(dirname "${SCRIPT}")
 SCRIPT_NAME=$(basename "${SCRIPT}")
 
 # Script defaults
@@ -79,29 +80,29 @@ while getopts hd:s:pbc: opt; do
     esac
 done
 
-if [[ "$disk" == *".yaml"* ]]; then
-    temp=$disk
-    disk=$solution_yaml
-    solution_yaml=$temp
-    if [[ "$disk" == "solution.yaml" ]]; then
+if [[ "${disk}" == *".yaml"* ]]; then
+    temp=${disk}
+    disk=${solution_yaml}
+    solution_yaml=${temp}
+    if [[ "${disk}" == "solution.yaml" ]]; then
         disk=""
     fi
 fi
 
 # Check if the file exists
-if [ ! -f $solution_yaml ]
+if [[ ! -f ${solution_yaml} ]]
 then
-    echo "ERROR: $solution_yaml does not exist"
+    echo "ERROR: ${solution_yaml} does not exist"
     exit 1
 fi
 
 get_nodes=$(kubectl get nodes 2>&1)
 is_master_node=true
-if [[ "$get_nodes" == *"was refused"* ]]; then
+if [[ "${get_nodes}" == *"was refused"* ]]; then
     is_master_node=false
 fi
 
-if [[ "$disk" == "" && "$is_master_node" = false ]]
+if [[ "${disk}" == "" && "${is_master_node}" = false ]]
 then
     echo "ERROR: Invalid input parameters"
     usage
@@ -121,11 +122,17 @@ fi
 
 function parseYaml
 {
-    s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-    sed -ne "s|^\($s\):|\1|" \
-        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
-        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-    awk -F$fs '{
+    local -r yaml_file=$1
+    local -r s='[[:space:]]*'
+    local -r w='[a-zA-Z0-9_]*'
+    local fs
+    fs=$(echo @|tr @ '\034')
+    readonly fs
+
+    sed -ne "s|^\(${s}\):|\1|" \
+        -e "s|^\(${s}\)\(${w}\)${s}:${s}[\"']\(.*\)[\"']${s}\$|\1${fs}\2${fs}\3|p" \
+        -e "s|^\(${s}\)\(${w}\)${s}:${s}\(.*\)${s}\$|\1${fs}\2${fs}\3|p" "${yaml_file}" |
+    awk -F"${fs}" '{
         indent = length($1)/2;
         vname[indent] = $2;
         for (i in vname) {if (i > indent) {delete vname[i]}}
@@ -139,33 +146,33 @@ function parseYaml
 function parseSolution()
 {
     # Check that all of the required parameters have been passed in
-    if [ "${1}" == "" ]
+    if [[ $1 == "" ]]
     then
         echo "ERROR: Invalid input parameters"
         echo "Input YAML file is an empty string"
-        echo "[<yaml path filter> OPTIONAL] = ${2}"
+        echo "[<yaml path filter> OPTIONAL] = $2"
         usage
         exit 1
     fi
 
     # Check if the file exists
-    if [ ! -f ${1} ]
+    if [[ ! -f $1 ]]
     then
-        echo "ERROR: ${1} does not exist"
+        echo "ERROR: $1 does not exist"
         usage
         exit 1
     fi
 
     # Store the parsed output in a single string
-    PARSED_OUTPUT=$(parseYaml ${1})
+    PARSED_OUTPUT=$(parseYaml "$1")
     # Remove any additional indent '.' characters
-    PARSED_OUTPUT=$(echo ${PARSED_OUTPUT//../.})
+    PARSED_OUTPUT=${PARSED_OUTPUT//../.}
 
     # Star with empty output
     OUTPUT=""
 
     # Check if we need to do any filtering
-    if [ "${2}" == "" ]
+    if [[ $2 == "" ]]
     then
         OUTPUT=${PARSED_OUTPUT}
     else
@@ -175,12 +182,18 @@ function parseSolution()
         for VAR_VAL_ELEMENT in "${PARSED_VAR_VAL_ARRAY[@]}"
         do
             # Get the var and val from the tuple
-            VAR=$(echo ${VAR_VAL_ELEMENT} | cut -f1 -d'>')
+            VAR=$(echo "${VAR_VAL_ELEMENT}" | cut -f1 -d'>')
             # Check is the filter matches the var
-            if [[ ${VAR} == ${2} ]]
+            #
+            # Ignore SC2053: $2 is a filter which can take wildcard (*)
+            # characters, so this comparison is intentionally relying on glob
+            # pattern matching.
+            #
+            # shellcheck disable=SC2053
+            if [[ ${VAR} == $2 ]]
             then
                 # If the OUTPUT is empty set it otherwise append
-                if [ "${OUTPUT}" == "" ]
+                if [[ ${OUTPUT} == "" ]]
                 then
                     OUTPUT=${VAR_VAL_ELEMENT}
                 else
@@ -191,7 +204,7 @@ function parseSolution()
     fi
 
     # Return the parsed output
-    echo $OUTPUT
+    echo "${OUTPUT}"
 }
 
 function cleanupFolders()
@@ -200,7 +213,7 @@ function cleanupFolders()
     printf "# Clean up                                          \n"
     printf "####################################################\n"
     # cleanup
-    rm -rf $fs_mount_path/local-path-provisioner/*
+    rm -rf "${fs_mount_path}/local-path-provisioner/*"
 }
 
 function increaseResources()
@@ -215,12 +228,12 @@ function prepCortxDeployment()
     printf "# Prep for CORTX deployment                         \n"
     printf "####################################################\n"
 
-    if [[ $(findmnt -m $fs_mount_path) ]];then
-        echo "$fs_mount_path already mounted..."
+    if [[ $(findmnt -m "${fs_mount_path}") ]];then
+        echo "${fs_mount_path} already mounted..."
     else
-        mkdir -p $fs_mount_path
-        echo y | mkfs.${default_fs_type} $disk
-        mount -t ${default_fs_type} $disk $fs_mount_path
+        mkdir -p "${fs_mount_path}"
+        echo y | mkfs.${default_fs_type} "${disk}"
+        mount -t ${default_fs_type} "${disk}" "${fs_mount_path}"
     fi
 
     ###################################################################
@@ -230,7 +243,7 @@ function prepCortxDeployment()
     ###################################################################
     # If -p (persistence flag) was passed in from command line
     if [[ "${persist_fs_mount_path}" == "true" ]]; then
-        printf "Persistence of %s at %s enabled:\n" ${disk} ${fs_mount_path}
+        printf "Persistence of %s at %s enabled:\n" "${disk}" "${fs_mount_path}"
 
         local backup_chars
         local blk_uuid
@@ -248,11 +261,11 @@ function prepCortxDeployment()
                     backup_chars=$(date +%s)
                     printf "\tBacking up existing '/etc/fstab' to '/etc/fstab.%s.backup'\n" "${backup_chars}"
                     cp /etc/fstab "/etc/fstab.${backup_chars}.backup"
-                    printf "UUID=%s  %s      %s   defaults 0 0\n" ${blk_uuid} ${fs_mount_path} ${default_fs_type} >> /etc/fstab
-                    printf "\t'/etc/fstab' has been updated to persist %s at %s.\n\tIt should be manually verified for correctness prior to system reboot.\n\n" ${disk} ${fs_mount_path}
+                    printf "UUID=%s  %s      %s   defaults 0 0\n" "${blk_uuid}" "${fs_mount_path}" ${default_fs_type} >> /etc/fstab
+                    printf "\t'/etc/fstab' has been updated to persist %s at %s.\n\tIt should be manually verified for correctness prior to system reboot.\n\n" "${disk}" "${fs_mount_path}"
                 else
                     # /etc/fstab contains a mountpoint for the desired disk and path
-                    printf "\t'/etc/fstab' already contains a mountpoint entry for %s at path %s.\n\tIf this is not expected, it should be manually edited.\n\n" ${disk} ${fs_mount_path}
+                    printf "\t'/etc/fstab' already contains a mountpoint entry for %s at path %s.\n\tIf this is not expected, it should be manually edited.\n\n" "${disk}" "${fs_mount_path}"
                 fi
             fi
         else
@@ -264,15 +277,15 @@ function prepCortxDeployment()
     ###################################################################
 
     # Prep for Rancher Local Path Provisioner deployment
-    echo "Create folder '$fs_mount_path/local-path-provisioner'"
-    mkdir -p $fs_mount_path/local-path-provisioner
+    echo "Create folder '${fs_mount_path}/local-path-provisioner'"
+    mkdir -p "${fs_mount_path}/local-path-provisioner"
     count=0
     while true; do
-        if [[ -d $fs_mount_path/local-path-provisioner || $count -gt 5 ]]; then
+        if [[ -d ${fs_mount_path}/local-path-provisioner || ${count} -gt 5 ]]; then
             break
         else
-            echo "Create folder '$fs_mount_path/local-path-provisioner' failed. Retry..."
-            mkdir -p $fs_mount_path/local-path-provisioner
+            echo "Create folder '${fs_mount_path}/local-path-provisioner' failed. Retry..."
+            mkdir -p "${fs_mount_path}/local-path-provisioner"
         fi
         count=$((count+1))
         sleep 1s
@@ -313,37 +326,43 @@ function symlinkBlockDevices()
 
     # Local variables
     local filter
-    local node_list=()
     local device_paths=()
-    local job_template="$(pwd)/cortx-cloud-3rd-party-pkg/templates/job-symlink-block-devices.yaml.template"
+    local job_template
+    local job_file
+
+    # We don't want these expanded right now
+    # shellcheck disable=SC2016
     local template_vars='${NODE_NAME}:${NODE_SHORT_NAME}:${DEVICE_PATHS}:${SYMLINK_PATH_SEPARATOR}:${CORTX_IMAGE}'
-    local job_file="jobs-symlink-block-devices-$(hostname -s).yaml"
+
+    job_template="$(pwd)/cortx-cloud-3rd-party-pkg/templates/job-symlink-block-devices.yaml.template"
+    job_file="jobs-symlink-block-devices-$(hostname -s).yaml"
 
     # Template replacement variable
     export SYMLINK_PATH_SEPARATOR=${symlink_block_devices_separator}
 
     # Retrieve CORTX container image specified in solution.yaml
     filter="solution.images.cortxcontrol"
-    cortx_image_yaml=$(parseSolution ${solution_yaml} ${filter})
+    cortx_image_yaml=$(parseSolution "${solution_yaml}" ${filter})
     export CORTX_IMAGE="${cortx_image_yaml#*>}"
 
     # Create comma-separated string from the device paths in solution.yaml
     filter="solution.storage.cvg*.devices*.device"
-    device_output=$(parseSolution ${solution_yaml} ${filter})
+    device_output=$(parseSolution "${solution_yaml}" "${filter}")
     IFS=';' read -r -a device_array <<< "${device_output}"
     for device_path in "${device_array[@]}"
     do
-        device_paths+=(${device_path#*>})
+        device_paths+=("${device_path#*>}")
     done
     # Template replacement variable
-    export DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
+    DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
+    export DEVICE_PATHS
 
     # Prepare local templated Job definition
-    rm -f ${job_file}
+    rm -f "${job_file}"
 
     # Iterate over the defined nodes in solution.yaml
     filter="solution.nodes.node*.name"
-    node_output=$(parseSolution ${solution_yaml} ${filter})
+    node_output=$(parseSolution "${solution_yaml}" "${filter}")
     IFS=';' read -r -a node_array <<< "${node_output}"
     for node_element in "${node_array[@]}"
     do
@@ -352,28 +371,24 @@ function symlinkBlockDevices()
         export NODE_SHORT_NAME="${NODE_NAME%%.*}"
 
         # Generate templated Job definition
-        envsubst "${template_vars}" < "${job_template}" >> ${job_file}
-        printf "\n---\n" >> ${job_file}
+        envsubst "${template_vars}" < "${job_template}" >> "${job_file}"
+        printf "\n---\n" >> "${job_file}"
 
         # Delete previous jobs that may exist for this specific node
         kubectl delete jobs -l "cortx.io/task=symlink-block-devices" -l "kubernetes.io/hostname=${NODE_NAME}" --ignore-not-found
     done
 
     # Apply templated Job definitions to Kubernetes
-    kubectl apply -f ${job_file}
+    kubectl apply -f "${job_file}"
 
     # Wait for all Jobs to complete successfully
     printf "Waiting for 'symlink-block-devices' Jobs to complete successfully...\n"
     sleep 10
-    kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s
-
     ##  If timeout, wait again
-    if (( $? != 0 )); then
+    if ! kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s; then
         printf "Timed out waiting for Jobs to complete successfully. Will attempt to wait again...\n"
-        kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s
-
         ##  If timeout again, fail and exit out of installer with user directives.
-        if (( $? != 0 )); then
+        if ! kubectl wait jobs -l "cortx.io/task=symlink-block-devices" --for="condition=Complete" --timeout=30s; then
             printf "Timed out waiting for Jobs to complete successfully again. Corrective user action should be taken.\n"
             exit 1
         fi
@@ -383,9 +398,9 @@ function symlinkBlockDevices()
     # and output to {solution}-symlink.yaml and notify user to use new
     # {solution}-symlink.yaml for input to `deploy-cortx-cloud.sh`
     SYMLINK_SOLUTION_YAML="${solution_yaml%.yaml}-symlink.yaml"
-    printf "Saving an updated solution.yaml file at %s\n" ${SYMLINK_SOLUTION_YAML}
+    printf "Saving an updated solution.yaml file at %s\n" "${SYMLINK_SOLUTION_YAML}"
     printf "Use this new file when running 'deploy-cortx-cloud.sh' in the future to use your symlinked block devices.\n"
-    sed "s#/dev#/dev/${SYMLINK_PATH_SEPARATOR}#g" ${solution_yaml} > ${SYMLINK_SOLUTION_YAML}
+    sed "s#/dev#/dev/${SYMLINK_PATH_SEPARATOR}#g" "${solution_yaml}" > "${SYMLINK_SOLUTION_YAML}"
 }
 
 function installHelm()
@@ -400,15 +415,15 @@ function installHelm()
 
 # Extract storage provisioner path from the "solution.yaml" file
 filter='solution.common.storage_provisioner_path'
-parse_storage_prov_output=$(parseSolution $solution_yaml $filter)
+parse_storage_prov_output=$(parseSolution "${solution_yaml}" ${filter})
 # Get the storage provisioner var from the tuple
-fs_mount_path=$(echo $parse_storage_prov_output | cut -f2 -d'>')
+fs_mount_path=$(echo "${parse_storage_prov_output}" | cut -f2 -d'>')
 
-namespace=$(parseSolution $solution_yaml 'solution.namespace')
-namespace=$(echo $namespace | cut -f2 -d'>')
+namespace=$(parseSolution "${solution_yaml}" 'solution.namespace')
+namespace=$(echo "${namespace}" | cut -f2 -d'>')
 
 # Install helm this is a master node
-if [[ "$is_master_node" = true ]]; then
+if [[ "${is_master_node}" = true ]]; then
     installHelm
 
     ###################################################################
@@ -423,7 +438,7 @@ if [[ "$is_master_node" = true ]]; then
 fi
 
 # Perform the following functions if the 'disk' is provided
-if [[ "$disk" != "" ]]; then
+if [[ "${disk}" != "" ]]; then
     cleanupFolders
     increaseResources
     prepCortxDeployment

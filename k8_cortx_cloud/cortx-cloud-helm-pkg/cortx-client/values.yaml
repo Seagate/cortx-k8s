@@ -1,4 +1,4 @@
-namespace: default
+namespace: cortx
 cortxclient:
   name: cortx-client
   image: ghcr.io/seagate/centos:7

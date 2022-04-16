@@ -130,6 +130,8 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 3. Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
 
+   - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created.
+
    - Update all passwords. The `csm-secret` should include one special character in cortx-secret.
 
    - Update the images section with cortx-all image tag desired to be used.
@@ -192,6 +194,14 @@ Run the `destroy-cortx-cloud.sh` script, passing in the path to the previously u
 ./destroy-cortx-cloud.sh solution.yaml
 ```
 
+Note: This script does not uninstall the local provisioner.  If you need to uninstall the local provisioner
+
+```bash
+kubectl delete -f ./cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner/local-path-storage.yaml
+```
+
+
+
 ## Solution YAML Overview
 
 The CORTX solution configuration file consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution configuration file and extract information they need to deploy and destroy CORTX.
@@ -204,7 +214,7 @@ All paths below are prefixed with `solution.` for fully-qualified naming and are
 
 | Name              | Description                                                                                                                  | Default Value |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `namespace`       | The Kubernetes namespace for CORTX Pods to be deployed in.                                                                   | `default`     |
+| `namespace`       | The Kubernetes namespace that all CORTX-related resources will be deployed into.
 | `deployment_type` | The type of deployment. This determines which Kubernetes resources are created. Valid values are `standard` and `data-only`. | `standard`    |
 
 ### Secret parameters
