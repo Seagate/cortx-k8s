@@ -37,7 +37,7 @@ class Cluster:
             else:
                 solution_file = os.path.relpath(os.path.join(
                                            os.path.dirname(__file__),
-                                           '../../k8_cortx_cloud/solution.yaml'))
+                                           '../../k8_cortx_cloud/solution.example.yaml'))
                 print(f"No solution file specified: using {solution_file}")
 
         self.solution_file = solution_file
@@ -57,8 +57,7 @@ class Cluster:
 
         solution = safe_load(open(self.solution_file))
         nodes = solution['solution']['nodes']
-        self.nodes = [ nodes[n]['name'] for n in nodes ]
-
+        self.nodes = [n['name'] for n in nodes.values()]
 
     def _verify_cluster_yaml(self):
         if not self.cluster_data['nodes']:
@@ -86,8 +85,6 @@ class Cluster:
 
     def generate_solution_file(self):
 
-        cortx_ver = self.cluster_data.get('cortx_ver')
-        setup_size = self.cluster_data.get('setup_size')
         generated_solution = self.cluster_data.get('generated_solution')
 
         if not generated_solution:
@@ -98,14 +95,9 @@ class Cluster:
         solution = safe_load(open(self.solution_file))
 
         #
-        # Set setup_size
-        #
-        if setup_size:
-            solution['solution']['common']['setup_size'] = setup_size
-
-        #
         # Set cortx version
         #
+        cortx_ver = self.cluster_data.get('cortx_ver')
         if cortx_ver:
             images = solution['solution']['images']
             for image in images:
@@ -114,6 +106,34 @@ class Cluster:
                         images[image] = cortx_ver['cortx_rgw']
                 elif image.startswith('cortx'):
                     images[image] = cortx_ver['cortx_all']
+
+        #
+        # Set secrets
+        #
+        secrets = self.cluster_data.get('secrets')
+        if secrets:
+            solution['solution']['secrets'] = secrets
+
+        #
+        # Set nodeports
+        #
+        nodeports = self.cluster_data.get('nodePorts')
+        if nodeports:
+            # Allow for unspecified entries in input file
+            new_nodeports = {'control': {'https': None}, 's3': {'http': None, 'https': None}}
+            if 'control' in nodeports:
+                if 'https' in nodeports['control']:
+                    new_nodeports['control']['https'] = nodeports['control']['https']
+            if 's3' in nodeports:
+                if 'https' in nodeports['s3']:
+                    new_nodeports['s3']['https'] = nodeports['s3']['https']
+                if 'http' in nodeports['s3']:
+                    new_nodeports['s3']['http'] = nodeports['s3']['http']
+
+            extsvc = solution['solution']['common']['external_services']
+            extsvc['control']['nodePorts']['https'] = new_nodeports['control']['https']
+            extsvc['s3']['nodePorts']['https'] = new_nodeports['s3']['https']
+            extsvc['s3']['nodePorts']['http'] = new_nodeports['s3']['http']
 
         #
         # Set nodes
@@ -179,8 +199,8 @@ class Cluster:
 
     def run_prereq(self):
         """Run prereq script on all nodes."""
-        #First copy the prereq script and solution file to the
-        #node.  Then run the script.
+        # First copy the prereq script and solution file to the
+        # node.  Then run the script.
         if not self.cluster_data:
             print("Cannot run prereq-deploy-cortx-cloud.sh.  No cluster config file specified.")
             return

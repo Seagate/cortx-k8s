@@ -20,15 +20,16 @@ function usage() {
 }
 
 date=$(date +%F_%H-%M)
-solution_yaml="${DIR}/solution.yaml"
+solution_yaml=${1:-"solution.yaml"}
+nodename=""
 pods_found=0
 while [[ $# -gt 0 ]]; do
   case $1 in
     -s|--solution-config )
-      declare solution_yaml="$2"
+      solution_yaml="$2"
       ;;
     -n|--nodename )
-      declare nodename="$2"
+      nodename="$2"
       ;;
     * )
       echo "ERROR: Unsupported Option \"$1\"."
@@ -37,6 +38,12 @@ while [[ $# -gt 0 ]]; do
   esac
   shift 2
 done
+
+if [[ ! -f ${solution_yaml} ]]; then
+    echo "ERROR: ${solution_yaml} does not exist"
+    exit 1
+fi
+
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
 logs_folder="logs-cortx-cloud-${date}"
@@ -51,7 +58,7 @@ function saveLogs()
 {
   local pod="$1"
   local container="$2"  # optional
-  local log_cmd=(kubectl logs "${pod}")
+  local log_cmd=(kubectl logs --namespace="${namespace}" "${pod}")
   local log_name="${pod}"
 
   printf "\n🔍 Logging pod: %s" "${pod}"
@@ -76,7 +83,7 @@ function savePodDetail()
   local log_file="${logs_folder}/${pod}.detail.txt"
 
   printf "================= Detail of %s =================\n\n" "${pod}" > "${log_file}"
-  kubectl describe pod "${pod}" >> "${log_file}"
+  kubectl describe pod --namespace="${namespace}" "${pod}" >> "${log_file}"
 
   tar --append --file "${logs_folder}.tar" "${log_file}"
   rm "${log_file}"
@@ -112,14 +119,14 @@ while IFS= read -r line; do
 
   if [[ ${pod_name} != "NAME" && ${pod_status} != "Evicted" ]]; then
     if [[ ${nodename} ]] && \
-       [[ ${nodename} != $(kubectl get pod "${pod_name}" -o jsonpath='{.spec.nodeName}' || true) ]]; then
+       [[ ${nodename} != $(kubectl get pod --namespace="${namespace}" "${pod_name}" -o jsonpath='{.spec.nodeName}' || true) ]]; then
       continue
     fi
     pods_found=$((pods_found+1))
 
     case ${pod_name} in
       cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
-        containers=$(kubectl get pods "${pod_name}" -n "${namespace}" -o jsonpath='{.spec.containers[*].name}')
+        containers=$(kubectl get pods "${pod_name}" -n "${namespace}" -o jsonpath="{.spec['containers', 'initContainers'][*].name}")
         IFS=" " read -r -a containers <<< "${containers}"
         for item in "${containers[@]}";
         do
@@ -135,7 +142,7 @@ while IFS= read -r line; do
     esac
   fi
 
-done <<< "$(kubectl get pods || true)"
+done <<< "$(kubectl get pods --namespace="${namespace}" || true)"
 
 if [[ ${nodename} ]] && [[ ${pods_found} == "0" ]]; then
   printf "\n❌ No pods are running on the node: \"%s\".\n" "${nodename}"

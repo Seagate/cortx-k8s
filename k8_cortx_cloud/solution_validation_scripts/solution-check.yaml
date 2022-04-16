@@ -11,11 +11,9 @@ solution:
     zookeeper: required
     rancher: required
   common:
-    setup_size: required
     storage_provisioner_path: required
     container_path:
       local: required
-      shared: required
       log: required
     s3:
       default_iam_users:

@@ -32,24 +32,14 @@ jobs:
         with:
           # Temporarily ignore these until they are fixed
           ignore_paths: >-
-            openldap-replication
             parse_scripts
             solution_validation_scripts
-          ignore_names: >-
-            destroy-cortx-cloud.sh
-            generate-cvg-yaml.sh
-            prereq-deploy-cortx-cloud.sh
-            upgrade-cortx-cloud.sh
 
   solution_yaml:
     name: Solution YAML validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3.0.0
-      - name: Validate solution.yaml
-        run: ./solution_validation_scripts/solution-validation.sh solution.yaml
-        shell: bash
-        working-directory: ./k8_cortx_cloud
       - name: Validate solution.example.yaml
         run: ./solution_validation_scripts/solution-validation.sh solution.example.yaml
         shell: bash

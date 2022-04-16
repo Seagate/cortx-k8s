@@ -275,38 +275,17 @@ done
 # Copy device info file from CORTX local block helm to CORTX data
 cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
-# Create CORTX namespace
-if [[ "${namespace}" != "default" ]]; then
-
-    helm install "cortx-ns-${namespace}" cortx-cloud-helm-pkg/cortx-platform \
-        --set namespace.create="true" \
-        --set namespace.name="${namespace}"
-
-fi
-
-count=0
-namespace_list=[]
-namespace_index=0
-while IFS= read -r line; do
-    if [[ ${count} -eq 0 ]]; then
-        count=$((count+1))
-        continue
-    fi
-    IFS=" " read -r -a my_array <<< "${line}"
-    if [[ "${my_array[0]}" != *"kube-"* \
-            && "${my_array[0]}" != "default" \
-            && "${my_array[0]}" != "local-path-storage" ]]; then
-        namespace_list[${namespace_index}]=${my_array[0]}
-        namespace_index=$((namespace_index+1))
-    fi
-    count=$((count+1))
-done <<< "$(kubectl get namespaces)"
 
 ##########################################################
 # Deploy CORTX k8s pre-reqs
 ##########################################################
 function deployKubernetesPrereqs()
 {
+    # Add and update Helm repository dependencies
+    helm repo add hashicorp https://helm.releases.hashicorp.com
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update hashicorp bitnami
+
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
     ## in the same chart as Namespace-scoped objects.
     local podSecurityPolicyName="cortx-baseline"
@@ -346,7 +325,7 @@ function deployKubernetesPrereqs()
         --set serviceAccount.create="true" \
         --set serviceAccount.name="${serviceAccountName}" \
         --set networkPolicy.create="false" \
-        --set namespace.name="${namespace}" \
+        --set services.create="true" \
         --set services.hax.name="${hax_service_name}" \
         --set services.hax.port="${hax_service_port}" \
         --set services.io.type="${s3_service_type}" \
@@ -354,7 +333,8 @@ function deployKubernetesPrereqs()
         --set services.io.ports.http="${s3_service_ports_http}" \
         --set services.io.ports.https="${s3_service_ports_https}" \
         "${optional_values[@]}" \
-        --namespace "${namespace}"
+        --namespace "${namespace}" \
+        --create-namespace
 }
 
 
@@ -365,9 +345,6 @@ function deployRancherProvisioner()
 {
     local image
 
-    # Add the HashiCorp Helm Repository:
-    helm repo add hashicorp https://helm.releases.hashicorp.com
-    helm repo update hashicorp
     if [[ ${storage_class} == "local-path" ]]
     then
         printf "Install Rancher Local Path Provisioner"
@@ -387,7 +364,7 @@ function deployRancherProvisioner()
         image=$(echo "${image}" | cut -f2 -d'>')
         ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.helperPod.image" "${image}"
 
-        kubectl create -f "${rancher_prov_file}"
+        kubectl apply -f "${rancher_prov_file}"
     fi
 }
 
@@ -418,15 +395,18 @@ function deployConsul()
         --set client.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory')" \
         --set client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
         --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
+        --namespace "${namespace}" \
         --wait
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
-    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
-    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}'
+    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}' \
+                                               --namespace "${namespace}"
+    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}' \
+                                               --namespace "${namespace}"
 
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    kubectl rollout restart statefulset/consul-server
-    kubectl rollout restart daemonset/consul-client
+    kubectl rollout restart statefulset/consul-server --namespace "${namespace}"
+    kubectl rollout restart daemonset/consul-client --namespace "${namespace}"
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -452,10 +432,6 @@ function deployZookeeper()
     printf "######################################################\n"
     printf "# Deploy Zookeeper                                    \n"
     printf "######################################################\n"
-    # Add Zookeeper and Kafka Repository
-    helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm repo update bitnami
-
     image=$(parseSolution 'solution.images.zookeeper')
     image=$(echo "${image}" | cut -f2 -d'>')
     splitDockerImage "${image}"
@@ -479,6 +455,7 @@ function deployZookeeper()
         --set serviceAccount.name="cortx-zookeeper" \
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
+        --namespace "${namespace}" \
         --wait
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
@@ -538,7 +515,7 @@ EOF
         --set image.registry="${registry}" \
         --set image.repository="${repository}" \
         --set replicaCount="${num_kafka_replicas}" \
-        --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
+        --set externalZookeeper.servers="zookeeper" \
         --set global.storageClass=${storage_class} \
         --set defaultReplicationFactor="${num_kafka_replicas}" \
         --set offsetsTopicReplicationFactor="${num_kafka_replicas}" \
@@ -560,6 +537,7 @@ EOF
         --set containerSecurityContext.enabled=true \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
         --values ${tmp_kafka_envvars_yaml}  \
+        --namespace "${namespace}" \
         --wait
 
     rm ${tmp_kafka_envvars_yaml}
@@ -604,7 +582,6 @@ function deployCortxLocalBlockStorage()
         --set cortxblkdata.nodelistinfo="node-list-info.txt" \
         --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
         --set cortxblkdata.storage.volumemode="Block" \
-        --set namespace="${namespace}" \
         -n "${namespace}"
 }
 
@@ -679,11 +656,9 @@ function deployCortxConfigMap()
         --set cortxHare.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
         --set cortxRgw.maxStartTimeout="$(extractBlock 'solution.common.s3.max_start_timeout' || true)"
         --set cortxStoragePaths.local="${local_storage}"
-        --set cortxStoragePaths.shared="${shared_storage}"
         --set cortxStoragePaths.log="${log_storage}"
         --set cortxStoragePaths.config="${local_storage}"
         --set cortxVersion="${tag}"
-        --set cortxSetupSize="$(extractBlock 'solution.common.setup_size' || true)"
         --set cortxRgw.authAdmin="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
         --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
         --set cortxIoService.ports.http="$(getSolutionValue 'solution.common.external_services.s3.ports.http')"
@@ -792,6 +767,7 @@ function deployCortxConfigMap()
     helm install \
         "cortx-cfgmap-${namespace}" \
         cortx-cloud-helm-pkg/cortx-configmap \
+        --namespace="${namespace}" \
         --set fullnameOverride="cortx-cfgmap-${namespace}" \
         "${helm_install_args[@]}"
 
@@ -922,6 +898,8 @@ function waitForAllDeploymentsAvailable()
     shift
     DEPL_STR=$1
     shift
+    NAMESPACE=$1
+    shift
 
     START=${SECONDS}
     (while true; do sleep 1; echo -n "."; done)&
@@ -932,9 +910,9 @@ function waitForAllDeploymentsAvailable()
 
     # Initial wait
     FAIL=0
-    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
+    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
         # Secondary wait
-        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
+        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
             # Still timed out.  This is a failure
             FAIL=1
         fi
@@ -998,12 +976,11 @@ function deployCortxControl()
         --set cortxcontrol.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
         --set cortxcontrol.serviceaccountname="${serviceAccountName}" \
-        --set namespace="${namespace}" \
         "${optional_values[@]}" \
         --namespace "${namespace}"
 
     printf "\nWait for CORTX Control to be ready"
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Control" deployment/cortx-control; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Control" "${namespace}" deployment/cortx-control; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1049,7 +1026,6 @@ function deployCortxData()
             --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="${serviceAccountName}" \
-            --set namespace="${namespace}" \
             -n "${namespace}"
     done
 
@@ -1059,7 +1035,7 @@ function deployCortxData()
     for i in "${!node_selector_list[@]}"; do
         deployments+=("deployment/cortx-data-${node_name_list[i]}")
     done
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${deployments[@]}"; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${namespace}" "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1119,7 +1095,6 @@ function deployCortxServer()
             --set cortxserver.hax.port="${hax_port}" \
             --set cortxserver.secretinfo="secret-info.txt" \
             --set cortxserver.serviceaccountname="${serviceAccountName}" \
-            --set namespace="${namespace}" \
             --namespace "${namespace}"
     done
 
@@ -1129,7 +1104,7 @@ function deployCortxServer()
     for i in "${!node_selector_list[@]}"; do
         deployments+=("deployment/cortx-server-${node_name_list[i]}")
     done
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${deployments[@]}"; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${namespace}" "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1172,11 +1147,10 @@ function deployCortxHa()
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-${namespace}" \
         --set cortxha.localpathpvc.mountpath="${local_storage}" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
-        --set namespace="${namespace}" \
         -n "${namespace}"
 
     printf "\nWait for CORTX HA to be ready"
-    if ! waitForAllDeploymentsAvailable 120s "CORTX HA" deployment/cortx-ha; then
+    if ! waitForAllDeploymentsAvailable 120s "CORTX HA" "${namespace}" deployment/cortx-ha; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1217,7 +1191,6 @@ function deployCortxClient()
             --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-${node_name}" \
             --set cortxclient.localpathpvc.mountpath="${local_storage}" \
             --set cortxclient.localpathpvc.requeststoragesize="1Gi" \
-            --set namespace="${namespace}" \
             -n "${namespace}"
     done
 
@@ -1275,13 +1248,6 @@ deployKubernetesPrereqs
 ##########################################################
 # Deploy CORTX 3rd party
 ##########################################################
-found_match_nsp=false
-for np in "${namespace_list[@]}"; do
-    if [[ "${np}" == "${namespace}" ]]; then
-        found_match_nsp=true
-        break
-    fi
-done
 
 # Extract storage provisioner path from the "solution.yaml" file
 filter='solution.common.storage_provisioner_path'
@@ -1301,13 +1267,11 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
 
-if [[ (${#namespace_list[@]} -le 1 && "${found_match_nsp}" = true) || "${namespace}" == "default" ]]; then
-    deployRancherProvisioner
-    deployConsul
-    deployZookeeper
-    deployKafka
-    waitForThirdParty
-fi
+deployRancherProvisioner
+deployConsul
+deployZookeeper
+deployKafka
+waitForThirdParty
 
 ##########################################################
 # Deploy CORTX cloud
@@ -1315,8 +1279,6 @@ fi
 # Get the storage paths to use
 local_storage=$(parseSolution 'solution.common.container_path.local')
 local_storage=$(echo "${local_storage}" | cut -f2 -d'>')
-shared_storage=$(parseSolution 'solution.common.container_path.shared')
-shared_storage=$(echo "${shared_storage}" | cut -f2 -d'>')
 log_storage=$(parseSolution 'solution.common.container_path.log')
 log_storage=$(echo "${log_storage}" | cut -f2 -d'>')
 
@@ -1372,12 +1334,14 @@ if [[ ${deployment_type} != "data-only" ]]; then
 The S3 data service is accessible through the ${data_service_name} service.
    Default IAM access key: ${data_service_default_user}
    Default IAM secret key is accessible via:
-       kubectl get secrets/${cortx_secret_name} --template={{.data.s3_auth_admin_secret}} | base64 -d
+       kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
+                  --template={{.data.s3_auth_admin_secret}} | base64 -d
 
 The CORTX control service is accessible through the ${control_service_name} service.
    Default control username: ${control_service_default_user}
    Default control password is accessible via:
-       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+       kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
+                  --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
 fi
 
-printf "\n-----------------------------------------------------------"
+printf "\n-----------------------------------------------------------\n"

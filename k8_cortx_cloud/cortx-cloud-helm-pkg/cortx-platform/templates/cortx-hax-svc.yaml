@@ -1,8 +1,9 @@
+{{- if .Values.services.create -}}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.services.hax.name }}
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   type: {{ .Values.services.hax.type }}
   selector:
@@ -12,3 +13,5 @@ spec:
       protocol: TCP
       port: {{ .Values.services.hax.port | int }}
       targetPort: hax
+
+{{- end }}
