@@ -2,7 +2,7 @@
 
 import argparse
 import re
-import subprocess # nosec
+import subprocess  # nosec
 import sys
 
 import yaml
@@ -13,9 +13,9 @@ from utils import Logger, StopWatch
 
 
 def verify_pods_in_namespace(checker, namespace):
-    stdout = subprocess.Popen(['kubectl', 'get', 'pods', '-A'], # nosec
-                              stdout=subprocess.PIPE) \
-                       .communicate()[0].decode('utf-8')
+    cmd = ['kubectl', 'get', 'pods', '-n', namespace, '--no-headers']
+    stdout = subprocess.Popen(cmd, stdout=subprocess.PIPE) \
+                       .communicate()[0].decode('utf-8')  # nosec
     expected_pods = {
         'cortx-control': 0,
         'cortx-data': 0,
@@ -24,9 +24,7 @@ def verify_pods_in_namespace(checker, namespace):
         }
 
     for line in stdout.splitlines():
-        ns, podname, _ = line.split(None, 2)
-        if ns != namespace:
-            continue
+        podname, _ = line.split(None, 1)
         m = re.match(r'(cortx-[\w]+)', podname)
         if m:
             if m.group(1) in expected_pods:
@@ -77,7 +75,7 @@ def run_deploy_test(cluster, logger, checker, shutdown=False):
 
     # Verify cortx pods running in expected namespace
     namespace = cluster.solution['namespace']
-    logger.log(subprocess.Popen(['kubectl', 'get', 'all', '-n', namespace], # nosec
+    logger.log(subprocess.Popen(['kubectl', 'get', 'all', '-n', namespace],  # nosec
                                 stdout=subprocess.PIPE)
                          .communicate()[0].decode('utf-8'))
     verify_pods_in_namespace(checker, namespace)
