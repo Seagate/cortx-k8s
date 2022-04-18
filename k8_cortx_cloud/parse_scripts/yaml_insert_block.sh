@@ -7,47 +7,46 @@ INDENT=$3
 YAML_PATH=$4
 
 # Check that all of the required parameters have been passed in
-if [ "$OUTPUT_YAML_FILE" == "" ] || [ "$BLOCK_TO_INSERT" == "" ]
+if [[ -z ${OUTPUT_YAML_FILE} ]] || [[ -z ${BLOCK_TO_INSERT} ]]
 then
-    echo "Invalid input paramters"
+    echo "Missing required input parameters:"
     echo "./yaml_insert_block.sh <output yaml file> <block to insert> [<indent> OPTIONAL] [<yaml variable path> OPTIONAL]"
-    echo "<output yaml file>              = $OUTPUT_YAML_FILE"
-    echo "<block to insert>               = $BLOCK_TO_INSERT"
-    echo "[<indent> OPTIONAL]             = $INDENT"
-    echo "[<yaml variable path> OPTIONAL] = $YAML_PATH"
     exit 1
 fi
 
 # Check if we should indent
-if [ "$INDENT" == "" ]
+if [[ -z ${INDENT} ]]
 then
-    # No. Set the outpuit to the extracted block  
-    OUTPUT=$BLOCK_TO_INSERT
+    # No. Set the outpuit to the extracted block
+    OUTPUT=${BLOCK_TO_INSERT}
 else
     # Yes. Create the whitespace indent pattern
-    INDENT_PATTERN=$(printf '%*s' "$INDENT" | tr ' ' " ")
+    # (Shellcheck rightly complains, but I don't want to uninentionally break
+    # whatever this is attempting to do.)
+    # shellcheck disable=SC2183
+    INDENT_PATTERN=$(printf '%*s' "${INDENT}" | tr ' ' " ")
     # Set the output of emtpy
     OUTPUT=""
     # Loop the extracted block
     while IFS= read -r LINE; do
         # If the OUTPUT is empty set it otherwise append
-        if [ "$OUTPUT" == "" ]
+        if [[ -z ${OUTPUT} ]]
         then
-            if [ "$YAML_PATH" == "" ]
+            if [[ -z ${YAML_PATH} ]]
             then
-                OUTPUT="$INDENT_PATTERN""$LINE"
+                OUTPUT="${INDENT_PATTERN}""${LINE}"
             else
-                 OUTPUT="$LINE"
+                 OUTPUT="${LINE}"
             fi
         else
-            OUTPUT="$OUTPUT"$'\n'"$INDENT_PATTERN""$LINE"
+            OUTPUT="${OUTPUT}"$'\n'"${INDENT_PATTERN}""${LINE}"
         fi
-    done <<< "$BLOCK_TO_INSERT"
+    done <<< "${BLOCK_TO_INSERT}"
 fi
 
-if [ "$YAML_PATH" == "" ]
+if [[ -z ${YAML_PATH} ]]
 then
-    echo "${OUTPUT}" >> $OUTPUT_YAML_FILE
+    echo "${OUTPUT}" >> "${OUTPUT_YAML_FILE}"
 else
-    ./parse_scripts/subst.sh $OUTPUT_YAML_FILE $YAML_PATH "${OUTPUT}"
+    ./parse_scripts/subst.sh "${OUTPUT_YAML_FILE}" "${YAML_PATH}" "${OUTPUT}"
 fi
