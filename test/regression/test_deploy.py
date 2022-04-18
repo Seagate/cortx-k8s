@@ -13,8 +13,8 @@ from utils import Logger, StopWatch
 
 
 def verify_pods_in_namespace(checker, namespace):
-    cmd = 'kubectl get pods -A'
-    stdout = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
+    cmd = 'kubectl get pods -A'.split()
+    stdout = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
     expected_pods = {
         'cortx-control': 0,
         'cortx-data': 0,
@@ -76,8 +76,9 @@ def run_deploy_test(cluster, logger, checker, shutdown=False):
 
     # Verify cortx pods running in expected namespace
     namespace = cluster.solution['namespace']
-    logger.log(subprocess.Popen(f'kubectl get all -n {namespace}', shell=True,
-                     stdout=subprocess.PIPE).communicate()[0].decode('utf-8'))
+    cmd = f'kubectl get all -n {namespace}'.split()
+    logger.log(subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                         .communicate()[0].decode('utf-8'))
     verify_pods_in_namespace(checker, namespace)
 
     logger.log('\n\n')
