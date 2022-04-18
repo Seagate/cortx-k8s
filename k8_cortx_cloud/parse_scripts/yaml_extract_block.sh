@@ -6,42 +6,42 @@ YAML_PATH_FILTER=$2
 INDENT=$3
 
 # Check that all of the required parameters have been passed in
-if [ "$INPUT_YAML_FILE" == "" ]
+if [[ -z ${INPUT_YAML_FILE} ]]
 then
-    echo "Invalid input paramters"
+    echo "Missing required input parameters:"
     echo "./yaml_extract_block.sh <input yaml file> [<yaml path filter> OPTIONAL] [<indent> OPTIONAL]"
-    echo "<input yaml file>             = $INPUT_YAML_FILE"
-    echo "[<yaml path filter> OPTIONAL] = $YAML_PATH_FILTER"
-    echo "[<indent> OPTIONAL]           = $INDENT"
     exit 1
 fi
 
 # Convert the filter
-YQ_YAML_PATH_FILTER=".$YAML_PATH_FILTER"
+YQ_YAML_PATH_FILTER=".${YAML_PATH_FILTER}"
 
 # Call the yq command
-EXTRACTED_BLOCK=$(./parse_scripts/yq_linux_amd64 e $YQ_YAML_PATH_FILTER $INPUT_YAML_FILE)
+EXTRACTED_BLOCK=$(./parse_scripts/yq_linux_amd64 e "${YQ_YAML_PATH_FILTER}" "${INPUT_YAML_FILE}")
 
 # Check if we should indent
-if [ "$INDENT" == "" ]
+if [[ -z ${INDENT} ]]
 then
-    # No. Set the outpuit to the extracted block  
-    OUTPUT=$EXTRACTED_BLOCK
+    # No. Set the outpuit to the extracted block
+    OUTPUT=${EXTRACTED_BLOCK}
 else
     # Yes. Create the whitespace indent pattern
-    INDENT_PATTERN=$(printf '%*s' "$INDENT" | tr ' ' " ")
+    # (Shellcheck rightly complains, but I don't want to uninentionally break
+    # whatever this is attempting to do.)
+    # shellcheck disable=SC2183
+    INDENT_PATTERN=$(printf '%*s' "${INDENT}" | tr ' ' " ")
     # Set the output of emtpy
     OUTPUT=""
     # Loop the extracted block
     while IFS= read -r LINE; do
         # If the OUTPUT is empty set it otherwise append
-        if [ "$OUTPUT" == "" ]
+        if [[ -z ${OUTPUT} ]]
         then
-            OUTPUT="$INDENT_PATTERN""$LINE"
+            OUTPUT="${INDENT_PATTERN}""${LINE}"
         else
-            OUTPUT="$OUTPUT"$'\n'"$INDENT_PATTERN""$LINE"
+            OUTPUT="${OUTPUT}"$'\n'"${INDENT_PATTERN}""${LINE}"
         fi
-    done <<< "$EXTRACTED_BLOCK"
+    done <<< "${EXTRACTED_BLOCK}"
 fi
-    
+
 echo "${OUTPUT}"
