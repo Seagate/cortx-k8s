@@ -13,7 +13,7 @@ from utils import Logger, StopWatch
 
 
 def verify_pods_in_namespace(checker, namespace):
-    stdout = subprocess.Popen(['kubectl', 'get', 'pods', '-A'],
+    stdout = subprocess.Popen(['kubectl', 'get', 'pods', '-A'], # nosec
                               stdout=subprocess.PIPE) \
                        .communicate()[0].decode('utf-8')
     expected_pods = {
