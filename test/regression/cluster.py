@@ -56,6 +56,7 @@ class Cluster:
             self.generate_solution_file()
 
         solution = safe_load(open(self.solution_file))
+        self.solution = solution['solution']
         nodes = solution['solution']['nodes']
         self.nodes = [n['name'] for n in nodes.values()]
 
@@ -113,6 +114,13 @@ class Cluster:
         secrets = self.cluster_data.get('secrets')
         if secrets:
             solution['solution']['secrets'] = secrets
+
+        #
+        # Set namespace
+        #
+        namespace = self.cluster_data.get('namespace')
+        if namespace:
+            solution['solution']['namespace'] = namespace
 
         #
         # Set nodeports
