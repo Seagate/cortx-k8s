@@ -15,8 +15,8 @@ from utils import Logger, StopWatch
 def verify_pods_in_namespace(checker, namespace):
     cmd = ['kubectl', 'get', 'pods', '-n', namespace, '--no-headers']
     # nosec
-    stdout = subprocess.Popen(cmd, stdout=subprocess.PIPE) \
-                       .communicate()[0].decode('utf-8')
+    child = subprocess.Popen(cmd, stdout=subprocess.PIPE)  # nosec
+    stdout = child.communicate()[0].decode('utf-8')
     expected_pods = {
         'cortx-control': 0,
         'cortx-data': 0,
