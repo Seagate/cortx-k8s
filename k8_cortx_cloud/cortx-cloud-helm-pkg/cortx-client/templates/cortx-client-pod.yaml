@@ -58,12 +58,7 @@ spec:
         args:
           - -c
           {{- if .Values.cortxclient.machineid.value }}
-          - set -x;
-            echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/hare/bin/hare_setup;
-            echo -e "#!/bin/bash\necho $*" > /opt/seagate/cortx/motr/bin/motr_setup;
-            chmod +x /opt/seagate/cortx/hare/bin/hare_setup;
-            chmod +x /opt/seagate/cortx/motr/bin/motr_setup;
-            /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- else }}
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
           {{- end }}
