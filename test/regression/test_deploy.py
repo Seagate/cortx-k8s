@@ -76,8 +76,9 @@ def run_deploy_test(cluster, logger, checker, shutdown=False):
 
     # Verify cortx pods running in expected namespace
     namespace = cluster.solution['namespace']
-    cmd = ['kubectl', 'get', 'all', '-n', namespace]
-    logger.log(subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    # cmd = ['kubectl', 'get', 'all', '-n', namespace]
+    logger.log(subprocess.Popen(['kubectl', 'get', 'all', '-n', namespace],
+                                stdout=subprocess.PIPE)
                          .communicate()[0].decode('utf-8'))
     verify_pods_in_namespace(checker, namespace)
 
