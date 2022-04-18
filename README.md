@@ -131,6 +131,8 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 3. Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
 
    - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created.
+   
+   - Update the `deployment_type` with the desired deployment mode. See under [Global Parameters](#global-parameters) for more details.
 
    - Update all passwords. The `csm-secret` should include one special character in cortx-secret.
 
