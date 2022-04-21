@@ -90,7 +90,7 @@ cortx:
       endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
     clients:
     {{- if .Values.cortxRgw.enabled }}
-    - name: rgw
+    - name: rgw_s3
       num_instances: 1  # number of instances *per-pod*
       endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
     {{- end }}
