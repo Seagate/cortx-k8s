@@ -30,7 +30,7 @@ sol_node_count=0
 cur_cvg_name=''
 IFS=";" read -r -a my_array <<< "$solution_content"
 for element in "${my_array[@]}"; do
-    if [[ "$element" == *".node"* ]]; then
+    if [[ "$element" == *".nodes."* ]]; then
         solution_node_list[$sol_node_count]=$element
         sol_node_count=$((sol_node_count+1))
     fi
