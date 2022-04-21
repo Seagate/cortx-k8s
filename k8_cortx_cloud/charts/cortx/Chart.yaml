@@ -1,0 +1,17 @@
+apiVersion: v2
+appVersion: 2.0.0-725
+description: CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
+home: https://github.com/Seagate/cortx
+icon: https://raw.githubusercontent.com/Seagate/cortx/main/doc/assets/CORTX-Logo-GRN_400x400.jpg
+keywords:
+  - cortx
+  - storage
+  - s3
+  - object-storage
+kubeVersion: ">=1.22.0-0"
+name: cortx
+sources:
+  - https://github.com/Seagate/cortx
+  - https://github.com/Seagate/cortx-k8s
+type: application
+version: 0.1.0

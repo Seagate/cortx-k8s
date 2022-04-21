@@ -1,0 +1,10 @@
+# See https://github.com/helm/chart-testing#configuration
+remote: origin
+target-branch: integration
+helm-extra-args: "--timeout 600s"
+chart-dirs:
+  - k8_cortx_cloud/charts
+excluded-charts:
+chart-repos:
+validate-chart-schema: false
+validate-maintainers: false
