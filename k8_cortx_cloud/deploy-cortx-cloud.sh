@@ -379,6 +379,7 @@ function deployConsul()
     image=$(echo "${image}" | cut -f2 -d'>')
 
     helm install "consul" hashicorp/consul \
+        --version 0.42.0 \
         --set global.name="consul" \
         --set global.image="${image}" \
         --set ui.enabled=false \
@@ -438,6 +439,7 @@ function deployZookeeper()
     printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
 
     helm install zookeeper bitnami/zookeeper \
+        --version 9.1.0 \
         --set image.tag="${tag}" \
         --set image.registry="${registry}" \
         --set image.repository="${repository}" \
@@ -510,6 +512,7 @@ extraEnvVars:
 EOF
 
     helm install kafka bitnami/kafka \
+        --version 16.2.7 \
         --set zookeeper.enabled=false \
         --set image.tag="${tag}" \
         --set image.registry="${registry}" \
