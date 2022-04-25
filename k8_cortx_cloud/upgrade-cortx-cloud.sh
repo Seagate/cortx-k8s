@@ -358,17 +358,6 @@ if ! wait_for_all_pods_available 300s "CORTX PODs" "${cortx_deployments[@]}"; th
         exit 1
 fi
 
-# TODO: We need to removw this workaround for briging cluster up after upgrade 
-# once [https://jts.seagate.com/browse/CORTX-28823] is resolved with proper fix.
-while IFS= read -r line; do
-    IFS=" " read -r -a pods <<< "${line}"
-    kubectl delete pod "${pods[0]}" --namespace="${NAMESPACE}" --force
-done < <(kubectl get pods --namespace="${NAMESPACE}" | grep 'cortx-data-\|cortx-server-')
-if ! wait_for_all_pods_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-fi
-
 # Validate if All CORTX Pods are running After upgrade is successful
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 validate_cortx_pods_status
