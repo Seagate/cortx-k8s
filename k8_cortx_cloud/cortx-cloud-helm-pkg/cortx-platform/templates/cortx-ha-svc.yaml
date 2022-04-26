@@ -1,0 +1,17 @@
+{{- if .Values.services.create -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.services.ha.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.services.ha.type }}
+  selector:
+    cortx.io/service-type: "cortx-ha"
+  ports:
+    - name: cortx-ha-tcp
+      protocol: TCP
+      port: {{ .Values.services.ha.port | int }}
+      targetPort: {{ .Values.services.ha.port | int }}
+
+{{- end }}

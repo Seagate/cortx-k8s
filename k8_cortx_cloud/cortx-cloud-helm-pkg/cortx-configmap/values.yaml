@@ -110,6 +110,10 @@ cortxRgw:
 # cortxHA allows configuring CORTX HA settings
 cortxHa:
   enabled: true
+  haService:
+    protocol: http
+    name: cortx-ha-svc
+    port: 23501
 
 #cortxHare allows configuring CORTX HARE settings
 cortxHare:

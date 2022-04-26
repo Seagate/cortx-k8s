@@ -301,12 +301,16 @@ function deployKubernetesPrereqs()
     local s3_service_type
     local s3_service_ports_http
     local s3_service_ports_https
+    local ha_service_name
+    local ha_service_port
     hax_service_name=$(getSolutionValue 'solution.common.hax.service_name')
     hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
     s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
     s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
+    ha_service_name=$(getSolutionValue 'solution.common.ha.service_name')
+    ha_service_port=$(getSolutionValue 'solution.common.ha.port_num')
 
     [[ ${deployment_type} == "data-only" ]] && s3_service_count=0
 
@@ -328,6 +332,8 @@ function deployKubernetesPrereqs()
         --set services.create="true" \
         --set services.hax.name="${hax_service_name}" \
         --set services.hax.port="${hax_service_port}" \
+        --set services.ha.name="${ha_service_name}" \
+        --set services.ha.port="${ha_service_port}" \
         --set services.io.type="${s3_service_type}" \
         --set services.io.count="${s3_service_count}" \
         --set services.io.ports.http="${s3_service_ports_http}" \
@@ -666,6 +672,9 @@ function deployCortxConfigMap()
         --set cortxRgw.authUser="$(extractBlock 'solution.common.s3.default_iam_users.auth_user' || true)"
         --set cortxIoService.ports.http="$(getSolutionValue 'solution.common.external_services.s3.ports.http')"
         --set cortxIoService.ports.https="$(getSolutionValue 'solution.common.external_services.s3.ports.https')"
+        --set cortxHa.haService.protocol="$(extractBlock 'solution.common.ha.protocol' || true)"
+        --set cortxHa.haService.name="$(extractBlock 'solution.common.ha.service_name' || true)"
+        --set cortxHa.haService.port="$(extractBlock 'solution.common.ha.port_num' || true)"
     )
 
     if [[ ${deployment_type} == "data-only" ]]; then
@@ -1124,10 +1133,12 @@ function deployCortxHa()
     printf "########################################################\n"
     printf "# Deploy CORTX HA                                       \n"
     printf "########################################################\n"
+    local ha_port
     cortxha_image=$(parseSolution 'solution.images.cortxha')
     cortxha_image=$(echo "${cortxha_image}" | cut -f2 -d'>')
 
     cortxha_machineid=$(cat "${cfgmap_path}/auto-gen-ha-${namespace}/id")
+    ha_port="$(getSolutionValue 'solution.common.ha.port_num')"
 
     ##TOOD: cortxha.serviceaccountname should extract from solution.yaml ?
 
@@ -1135,6 +1146,7 @@ function deployCortxHa()
     helm install "cortx-ha-${namespace}" cortx-cloud-helm-pkg/cortx-ha \
         --set cortxha.name="cortx-ha" \
         --set cortxha.image="${cortxha_image}" \
+        --set cortxha.ha.port="${ha_port}" \
         --set cortxha.secretinfo="secret-info.txt" \
         --set cortxha.serviceaccountname="ha-monitor" \
         --set cortxha.service.clusterip.name="cortx-ha-clusterip-svc" \

@@ -51,6 +51,10 @@ services:
     name: cortx-hax-svc
     type: ClusterIP
     port: 22003
+  ha:
+    name: cortx-ha-svc
+    type: ClusterIP
+    port: 23501
   io:
     name: cortx-io-svc
     type: ClusterIP

@@ -144,6 +144,11 @@ cortx:
   {{- end }}
   {{- if .Values.cortxHa.enabled }}
   ha:
+    service:
+      endpoints:
+      {{- with .Values.cortxHa.haService }}
+        - {{ .protocol }}://{{ .name }}:{{ .port }}
+      {{- end }}
     limits:
       services:
       - name: fault_tolerance

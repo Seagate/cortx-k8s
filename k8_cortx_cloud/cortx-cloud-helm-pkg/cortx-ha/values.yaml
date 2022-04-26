@@ -3,6 +3,8 @@ cortxha:
   image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
   serviceaccountname: cortx-sa
+  ha:
+    port: 23501
   service:
     clusterip:
       name: cortx-ha-clusterip-svc

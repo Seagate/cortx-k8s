@@ -116,6 +116,10 @@ spec:
           env:
             - name: UDS_CLOUD_CONTAINER_NAME
               value: {{ .Values.cortxha.name }}
+          ports:
+          - name: ha
+            containerPort: {{ .Values.cortxdata.ha.port }}
+            protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-health-monitor
