@@ -118,7 +118,7 @@ spec:
               value: {{ .Values.cortxha.name }}
           ports:
           - name: ha
-            containerPort: {{ .Values.cortxdata.ha.port }}
+            containerPort: {{ .Values.cortxha.ha.port }}
             protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
