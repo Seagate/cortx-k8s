@@ -290,6 +290,9 @@ This section contains common parameters that affect all CORTX components running
 | `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` |
 | `common.hax.service_name`                             | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
 | `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
+| `common.ha.protocol`                                  | Protocol that is used to communicate with Ha components running across Ha Pod.  | `http` |
+| `common.ha.service_name`                                  | Service name that is used to communicate with Ha components running across Ha Pod.  | `cortx-ha-svc` |
+| `common.ha.port_num`                                  | Port number that is used to communicate with Ha components running across Ha Pod.  | `23051` |
 | `common.external_services.s3.type`                    | Kubernetes Service type for external access to S3 IO                                              | `NodePort` |
 | `common.external_services.s3.count`                   | The number of service instances to create when service type is `LoadBalancer`                     | `1` |
 | `common.external_services.s3.ports.http`              | Non-secure (http) port number used for S3 IO                                                      | `8000` |
