@@ -86,3 +86,16 @@ jobs:
 
       - name: Run chart-testing (lint)
         run: ct lint --config .github/linters/ct.yaml
+
+      - name: Install helm-docs
+        run: |
+          wget -O /tmp/helm-docs.deb https://github.com/norwoodj/helm-docs/releases/download/v1.9.1/helm-docs_1.9.1_Linux_x86_64.deb
+          sudo dpkg -i /tmp/helm-docs.deb
+
+      - name: Check Docs
+        run: |
+          helm-docs --chart-search-root=k8_cortx_cloud/charts
+          if ! git diff --exit-code; then
+            echo -e "\n\nChart documentation is not up to date. Please run helm-docs to update the chart README.md files and commit the updates."
+            exit 1
+          fi
