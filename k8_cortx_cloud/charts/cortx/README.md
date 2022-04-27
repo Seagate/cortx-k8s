@@ -22,7 +22,7 @@ Kubernetes: `>=1.22.0-0`
 Locally download the Chart files:
 
 ```bash
-$ git clone https://github.com/Seagate/cortx-k8s.git
+git clone https://github.com/Seagate/cortx-k8s.git
 ```
 
 ### Installing the Chart
@@ -30,7 +30,7 @@ $ git clone https://github.com/Seagate/cortx-k8s.git
 To install the chart with the release name `cortx` and a configuration specified by the `myvalues.yaml` file:
 
 ```bash
-$ helm install cortx cortx-k8s/k8_cortx_cloud/charts/cortx -f myvalues.yaml
+helm install cortx cortx-k8s/k8_cortx_cloud/charts/cortx -f myvalues.yaml
 ```
 
 See the [Parameters](#parameters) section for details about all of the options available for configuration.
@@ -40,7 +40,7 @@ See the [Parameters](#parameters) section for details about all of the options a
 To uninstall the `cortx` release:
 
 ```bash
-$ helm uninstall cortx
+helm uninstall cortx
 ```
 
 ## Parameters
