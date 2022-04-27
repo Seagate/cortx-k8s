@@ -334,7 +334,8 @@ function deployKubernetesPrereqs()
         --set services.io.ports.https="${s3_service_ports_https}" \
         "${optional_values[@]}" \
         --namespace "${namespace}" \
-        --create-namespace
+        --create-namespace \
+        || exit $?
 }
 
 
@@ -397,7 +398,8 @@ function deployConsul()
         --set client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
         --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
         --namespace "${namespace}" \
-        --wait
+        --wait \
+        || exit $?
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
     kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}' \
@@ -458,7 +460,8 @@ function deployZookeeper()
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
         --namespace "${namespace}" \
-        --wait
+        --wait \
+        || exit $?
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
     while true; do
@@ -541,7 +544,8 @@ EOF
         --set containerSecurityContext.allowPrivilegeEscalation=false \
         --values ${tmp_kafka_envvars_yaml}  \
         --namespace "${namespace}" \
-        --wait
+        --wait \
+        || exit $?
 
     rm ${tmp_kafka_envvars_yaml}
 
@@ -585,7 +589,8 @@ function deployCortxLocalBlockStorage()
         --set cortxblkdata.nodelistinfo="node-list-info.txt" \
         --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
         --set cortxblkdata.storage.volumemode="Block" \
-        -n "${namespace}"
+        -n "${namespace}" \
+        || exit $?
 }
 
 function deleteStaleAutoGenFolders()
@@ -772,7 +777,8 @@ function deployCortxConfigMap()
         cortx-cloud-helm-pkg/cortx-configmap \
         --namespace="${namespace}" \
         --set fullnameOverride="cortx-cfgmap-${namespace}" \
-        "${helm_install_args[@]}"
+        "${helm_install_args[@]}" \
+        || exit $?
 
     # Create node machine ID config maps
     for node in "${node_name_list[@]}"; do
@@ -980,7 +986,8 @@ function deployCortxControl()
         --set cortxcontrol.secretinfo="secret-info.txt" \
         --set cortxcontrol.serviceaccountname="${serviceAccountName}" \
         "${optional_values[@]}" \
-        --namespace "${namespace}"
+        --namespace "${namespace}" \
+        || exit $?
 
     printf "\nWait for CORTX Control to be ready"
     if ! waitForAllDeploymentsAvailable 300s "CORTX Control" "${namespace}" deployment/cortx-control; then
@@ -1029,7 +1036,8 @@ function deployCortxData()
             --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="${serviceAccountName}" \
-            -n "${namespace}"
+            -n "${namespace}" \
+            || exit $?
     done
 
     # Wait for all cortx-data deployments to be ready
@@ -1098,7 +1106,8 @@ function deployCortxServer()
             --set cortxserver.hax.port="${hax_port}" \
             --set cortxserver.secretinfo="secret-info.txt" \
             --set cortxserver.serviceaccountname="${serviceAccountName}" \
-            --namespace "${namespace}"
+            --namespace "${namespace}" \
+            || exit $?
     done
 
     printf "\nWait for CORTX Server to be ready"
@@ -1150,7 +1159,8 @@ function deployCortxHa()
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-${namespace}" \
         --set cortxha.localpathpvc.mountpath="${local_storage}" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
-        -n "${namespace}"
+        -n "${namespace}" \
+        || exit $?
 
     printf "\nWait for CORTX HA to be ready"
     if ! waitForAllDeploymentsAvailable 120s "CORTX HA" "${namespace}" deployment/cortx-ha; then
@@ -1194,7 +1204,8 @@ function deployCortxClient()
             --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-${node_name}" \
             --set cortxclient.localpathpvc.mountpath="${local_storage}" \
             --set cortxclient.localpathpvc.requeststoragesize="1Gi" \
-            -n "${namespace}"
+            -n "${namespace}" \
+            || exit $?
     done
 
     printf "\nWait for CORTX Client to be ready"
