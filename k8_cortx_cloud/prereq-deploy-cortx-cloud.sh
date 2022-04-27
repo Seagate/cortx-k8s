@@ -220,6 +220,8 @@ function increaseResources()
 {
     # Increase Resources
     sysctl -w vm.max_map_count=30000000;
+    # Add timestamp in core file name
+    sysctl -w kernel.core_pattern = core.%t
 }
 
 function prepCortxDeployment()
