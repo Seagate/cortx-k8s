@@ -11,3 +11,26 @@ serviceAccount:
   annotations: {}
   # -- Enable/disable auto mounting of the service account token
   automountServiceAccountToken: false
+
+# Consul chart configuration
+# ref: https://github.com/hashicorp/consul-k8s/blob/main/charts/consul/values.yaml
+consul:
+  # -- Enable installation of the Consul chart
+  enabled: true
+  ui:
+    # -- Enable the Consul UI
+    enabled: false
+  server:
+    # -- The name of the Docker image (including any tag) for the containers running Consul server agents
+    image: ghcr.io/seagate/consul:1.11.4
+    containerSecurityContext:
+      server:
+        # -- Enable extra privileges in Consul server agent containers
+        allowPrivilegeEscalation: false
+  client:
+    # -- The name of the Docker image (including any tag) for the containers running Consul client agents
+    image: ghcr.io/seagate/consul:1.11.4
+    containerSecurityContext:
+      client:
+        # -- Enable extra privileges in Consul client agent containers
+        allowPrivilegeEscalation: false

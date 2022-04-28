@@ -281,10 +281,12 @@ cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 ##########################################################
 function deployKubernetesPrereqs()
 {
-    # Add and update Helm repository dependencies
+    # Add Helm repository dependencies
     helm repo add hashicorp https://helm.releases.hashicorp.com
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm repo update hashicorp bitnami
+
+    # Installing a chart from the filesystem requires fetching the dependencies
+    helm dependency build ../charts/cortx
 
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
     ## in the same chart as Namespace-scoped objects.
@@ -369,47 +371,44 @@ function deployRancherProvisioner()
     fi
 }
 
-function deployConsul()
+function deployCortx()
 {
-    local image
-
     printf "######################################################\n"
-    printf "# Deploy Consul                                       \n"
+    printf "# Deploy CORTX                                        \n"
     printf "######################################################\n"
-    image=$(parseSolution 'solution.images.consul')
-    image=$(echo "${image}" | cut -f2 -d'>')
 
-    helm install "consul" hashicorp/consul \
-        --version 0.42.0 \
-        --set global.name="consul" \
-        --set global.image="${image}" \
-        --set ui.enabled=false \
-        --set server.storageClass=${storage_class} \
-        --set server.replicas="${num_consul_replicas}" \
-        --set server.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.memory')" \
-        --set server.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu')" \
-        --set server.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory')" \
-        --set server.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu')" \
-        --set server.containerSecurityContext.server.allowPrivilegeEscalation=false \
-        --set server.storage="$(extractBlock 'solution.common.resource_allocation.consul.server.storage')" \
-        --set client.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory')" \
-        --set client.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu')" \
-        --set client.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory')" \
-        --set client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
-        --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
+    local consul_image
+    consul_image=$(parseSolution 'solution.images.consul' | cut -f2 -d'>')
+
+    helm install cortx ../charts/cortx \
+        --set consul.server.image="${consul_image}" \
+        --set consul.client.image="${consul_image}" \
+        --set consul.server.storageClass=${storage_class} \
+        --set consul.server.replicas="${num_consul_replicas}" \
+        --set consul.server.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.memory')" \
+        --set consul.server.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.requests.cpu')" \
+        --set consul.server.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.memory')" \
+        --set consul.server.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.server.resources.limits.cpu')" \
+        --set consul.server.storage="$(extractBlock 'solution.common.resource_allocation.consul.server.storage')" \
+        --set consul.client.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.memory')" \
+        --set consul.client.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu')" \
+        --set consul.client.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory')" \
+        --set consul.client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
         --namespace "${namespace}" \
         --wait \
         || exit $?
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
-    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}' \
-                                               --namespace "${namespace}"
-    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}' \
-                                               --namespace "${namespace}"
+    kubectl patch serviceaccount/cortx-consul-client \
+        -p '{"automountServiceAccountToken": false}' \
+        --namespace "${namespace}"
+    kubectl patch serviceaccount/cortx-consul-server \
+        -p '{"automountServiceAccountToken": false}' \
+        --namespace "${namespace}"
 
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    kubectl rollout restart statefulset/consul-server --namespace "${namespace}"
-    kubectl rollout restart daemonset/consul-client --namespace "${namespace}"
+    kubectl rollout restart statefulset/cortx-consul-server --namespace "${namespace}"
+    kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -559,12 +558,12 @@ function waitForThirdParty()
         count=0
         while IFS= read -r line; do
             IFS=" " read -r -a pod_status <<< "${line}"
-            IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
-            if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+            IFS="/" read -r ready total <<< "${pod_status[1]}"
+            if [[ "${pod_status[2]}" != "Running" || "${ready}" != "${total}" ]]; then
                 count=$((count+1))
                 break
             fi
-        done <<< "$(kubectl get pods -A | grep 'consul\|kafka\|zookeeper')"
+        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|kafka\|zookeeper')"
 
         if [[ ${count} -eq 0 ]]; then
             break
@@ -1282,7 +1281,7 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
 fi
 
 deployRancherProvisioner
-deployConsul
+deployCortx
 deployZookeeper
 deployKafka
 waitForThirdParty
