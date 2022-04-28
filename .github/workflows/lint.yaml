@@ -94,7 +94,7 @@ jobs:
 
       - name: Check Docs
         run: |
-          helm-docs --chart-search-root=k8_cortx_cloud/charts
+          helm-docs --chart-search-root=charts
           if ! git diff --exit-code; then
             echo -e "\n\nChart documentation is not up to date. Please run helm-docs to update the chart README.md files and commit the updates."
             exit 1

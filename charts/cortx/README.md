@@ -4,7 +4,7 @@
 
 CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 
-**Homepage:** <https://github.com/Seagate/cortx-k8s/tree/integration/k8_cortx_cloud/charts/cortx>
+**Homepage:** <https://github.com/Seagate/cortx-k8s/tree/integration/charts/cortx>
 
 ## Source Code
 
@@ -30,7 +30,7 @@ git clone https://github.com/Seagate/cortx-k8s.git
 To install the chart with the release name `cortx` and a configuration specified by the `myvalues.yaml` file:
 
 ```bash
-helm install cortx cortx-k8s/k8_cortx_cloud/charts/cortx -f myvalues.yaml
+helm install cortx cortx-k8s/charts/cortx -f myvalues.yaml
 ```
 
 See the [Parameters](#parameters) section for details about all of the options available for configuration.
