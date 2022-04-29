@@ -144,8 +144,8 @@ class Cluster:
             # TODO: parameterize user
             user = 'root'
             node = self.cluster_data['nodes'][0]
-            stdout = subprocess.Popen(['ssh', f'{user}@{node}',
-                                       f'lsblk {blkdev}'],  # nosec B602
+            stdout = subprocess.Popen(['ssh', f'{user}@{node}',  # nosec B602
+                                       f'lsblk {blkdev}'],
                                       stdout=subprocess.PIPE).communicate()[0]
             for line in stdout.splitlines():
                 line = line.decode('utf-8')
