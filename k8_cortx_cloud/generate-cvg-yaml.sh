@@ -11,8 +11,6 @@
 ## 1.2: Determine if we currently can use multiple metadata drives
 
 _SCRIPT_NAME=$0
-_VERSION=0.1.0
-_ARGSHIFT=1
 
 NUM_CVGS=1
 NUM_DATA_DRIVES=1
