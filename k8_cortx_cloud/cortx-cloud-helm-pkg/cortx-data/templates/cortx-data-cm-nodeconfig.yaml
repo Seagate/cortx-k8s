@@ -16,5 +16,6 @@ data:
         printf "[WARNING] Detected kernel parameter 'vm.max_map_count' setting (%s) is lower than the desired setting for optimal system performance (%s).\n" "${OBSERVED_MAX_MAP_COUNT}" "${DESIRED_MAX_MAP_COUNT}"
         printf "Setting 'vm.max_map_count' via 'sysctl' command.\n"
         sysctl -w vm.max_map_count=$DESIRED_MAX_MAP_COUNT >> /etc/sysctl.d/k8s.conf
+        sysctl -w kernel.core_pattern=core.%t >> /etc/sysctl.d/k8s.conf
         sleep 60
     fi
