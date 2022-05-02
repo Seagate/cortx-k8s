@@ -1,0 +1,13 @@
+# Default values for cortx.
+# This is a YAML-formatted file.
+
+serviceAccount:
+  # -- Enable the creation of a ServiceAccount for CORTX pods
+  create: true
+  # -- The name of the service account to use.
+  # If not set and `create` is true, a name is generated using the fullname template
+  name: ""
+  # -- Custom annotations for the CORTX ServiceAccount
+  annotations: {}
+  # -- Enable/disable auto mounting of the service account token
+  automountServiceAccountToken: false
