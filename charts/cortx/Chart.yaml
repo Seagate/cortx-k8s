@@ -9,6 +9,9 @@ keywords:
   - s3
   - object-storage
 kubeVersion: ">=1.22.0-0"
+maintainers:
+  - email: cortx-questions@seagate.com
+    name: Seagate
 name: cortx
 sources:
   - https://github.com/Seagate/cortx
