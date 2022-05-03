@@ -60,10 +60,8 @@ helm uninstall cortx
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Enable extra privileges in Consul client agent containers |
-| consul.client.image | string | `"ghcr.io/seagate/consul:1.11.4"` | The name of the Docker image (including any tag) for the containers running Consul client agents |
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Enable extra privileges in Consul server agent containers |
-| consul.server.image | string | `"ghcr.io/seagate/consul:1.11.4"` | The name of the Docker image (including any tag) for the containers running Consul server agents |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Enable/disable auto mounting of the service account token |
