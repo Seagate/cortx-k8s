@@ -499,21 +499,6 @@ function deployKafka()
     splitDockerImage "${image}"
     printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
 
-    local kafka_cfg_log_segment_delete_delay_ms=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:-1000}
-    local kafka_cfg_log_flush_offset_checkpoint_interval_ms=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:-1000}
-    local kafka_cfg_log_retention_check_interval_ms=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:-1000}
-    local tmp_kafka_envvars_yaml="tmp-kafka.yaml"
-
-    cat > ${tmp_kafka_envvars_yaml} << EOF
-extraEnvVars:
-- name: KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS
-  value: "${kafka_cfg_log_segment_delete_delay_ms}"
-- name: KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTEL_MS
-  value: "${kafka_cfg_log_flush_offset_checkpoint_interval_ms}"
-- name: KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS
-  value: "${kafka_cfg_log_retention_check_interval_ms}"
-EOF
-
     helm install kafka bitnami/kafka \
         --version 16.2.7 \
         --set zookeeper.enabled=false \
@@ -542,12 +527,9 @@ EOF
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.enabled=true \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --values ${tmp_kafka_envvars_yaml}  \
         --namespace "${namespace}" \
         --wait \
         || exit $?
-
-    rm ${tmp_kafka_envvars_yaml}
 
     printf "\n\n"
 }
