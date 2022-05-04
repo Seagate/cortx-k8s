@@ -7,3 +7,4 @@ chart-dirs:
 excluded-charts:
 chart-repos:
 validate-chart-schema: false
+check-version-increment: false
