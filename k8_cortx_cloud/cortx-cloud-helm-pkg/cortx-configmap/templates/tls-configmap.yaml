@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cortx-ssl-cert-cfgmap-{{ .Release.Namespace }}
-  labels: {{- include "cortx-configmap.labels" . | nindent 4 }}
-data:
-{{ (.Files.Glob "ssl-cert/*").AsConfig | indent 2 }}

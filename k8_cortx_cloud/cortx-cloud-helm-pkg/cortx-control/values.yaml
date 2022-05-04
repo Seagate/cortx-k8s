@@ -2,7 +2,7 @@ cortxcontrol:
   name: cortx-control
   image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
-  serviceaccountname: cortx-sa
+  serviceaccountname: cortx
   service:
     loadbal:
       enabled: true
@@ -14,12 +14,12 @@ cortxcontrol:
         https: ""
   cfgmap:
     mountpath: /etc/cortx/solution
-    name: cortx-control-cfgmap001
+    name: cortx
     volmountname: config001
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
-    name: cortx-ssl-cert-cfgmap
+    name: cortx-ssl-cert
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config

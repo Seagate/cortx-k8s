@@ -1,5 +1,0 @@
-apiVersion: v2
-description: A Helm chart for creating a CORTX cluster ConfigMap
-home: https://github.com/Seagate/cortx-k8s/tree/main/k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-configmap
-name: cortx-configmap
-version: 0.1.0

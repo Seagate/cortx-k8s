@@ -5,7 +5,7 @@ cortxdata:
   mountblkinfo: mnt-blk-info.txt
   nodelistinfo: node-list-info.txt
   secretinfo: secret-info.txt
-  serviceaccountname: cortx-sa
+  serviceaccountname: cortx
   motr:
     startportnum: 29000
     numiosinst: 1
@@ -20,11 +20,11 @@ cortxdata:
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-data-cfgmap
+    name: cortx
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
-    name: cortx-ssl-cert-cfgmap
+    name: cortx-ssl-cert
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config

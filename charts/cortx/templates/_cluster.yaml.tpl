@@ -7,8 +7,8 @@
 
 {{- define "cluster.yaml" -}}
 cluster:
-  name: {{ .Values.clusterName }}
-  id: {{ default uuidv4 .Values.clusterId | replace "-" "" | quote }}
+  name: {{ .Values.configmap.clusterName }}
+  id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
   node_types:
   - name: data_node
     components:
@@ -17,7 +17,7 @@ cluster:
         services:
           - io
       - name: hare
-    {{- with .Values.clusterStorageVolumes }}
+    {{- with .Values.configmap.clusterStorageVolumes }}
     storage:
     {{- range $key, $val := . }}
     - name: {{ $key }}
@@ -27,7 +27,7 @@ cluster:
         data: {{- toYaml $val.dataDevices | nindent 10 }}
     {{- end }}
     {{- end }}
-  {{- if .Values.cortxRgw.enabled }}
+  {{- if .Values.configmap.cortxRgw.enabled }}
   - name: server_node
     components:
     - name: utils
@@ -36,7 +36,7 @@ cluster:
       services:
         - rgw_s3
   {{- end }}
-  {{- if .Values.cortxControl.enabled }}
+  {{- if .Values.configmap.cortxControl.enabled }}
   - name: control_node
     components:
     - name: utils
@@ -44,7 +44,7 @@ cluster:
       services:
       - agent
   {{- end }}
-  {{- if .Values.cortxHa.enabled }}
+  {{- if .Values.configmap.cortxHa.enabled }}
   - name: ha_node
     components:
     - name: utils
@@ -57,7 +57,7 @@ cluster:
       services:
         - motr_client
     - name: hare
-  {{- with .Values.clusterStorageSets }}
+  {{- with .Values.configmap.clusterStorageSets }}
   storage_sets:
   {{- range $key, $val := . }}
   - name: {{ $key }}
@@ -65,15 +65,15 @@ cluster:
       sns: {{ $val.durability.sns | quote }}
       dix: {{ $val.durability.dix | quote }}
     nodes:
-    {{- if $.Values.cortxControl.enabled }}
+    {{- if $.Values.configmap.cortxControl.enabled }}
     {{- include "storageset.node" (dict "name" "cortx-control" "id" $val.controlUuid "type" "control_node") | nindent 4 }}
     {{- end }}
-    {{- if $.Values.cortxHa.enabled }}
+    {{- if $.Values.configmap.cortxHa.enabled }}
     {{- include "storageset.node" (dict "name" "cortx-ha-headless-svc" "id" $val.haUuid "type" "ha_node") | nindent 4 }}
     {{- end }}
     {{- range $key, $val := $val.nodes }}
     {{- $shortHost := (split "." $key)._0 -}}
-    {{- if $.Values.cortxRgw.enabled }}
+    {{- if $.Values.configmap.cortxRgw.enabled }}
     {{- $serverName := printf "cortx-server-headless-svc-%s" $shortHost -}}
     {{- include "storageset.node" (dict "name" $serverName "id" $val.serverUuid "type" "server_node") | nindent 4 }}
     {{- end }}

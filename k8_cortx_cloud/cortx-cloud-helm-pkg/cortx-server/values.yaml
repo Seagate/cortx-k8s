@@ -3,7 +3,7 @@ cortxserver:
   image: ghcr.io/seagate/centos:7
   nodeselector: node-1
   secretinfo: secret-info.txt
-  serviceaccountname: cortx-sa
+  serviceaccountname: cortx
   hax:
     port: 22003
   service:
@@ -20,11 +20,11 @@ cortxserver:
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-server-cfgmap
+    name: cortx
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
-    name: cortx-ssl-cert-cfgmap
+    name: cortx-ssl-cert
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config

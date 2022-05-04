@@ -60,10 +60,50 @@ helm uninstall cortx
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| configmap.clusterId | string | `""` |  |
+| configmap.clusterName | string | `"cortx-cluster"` |  |
+| configmap.clusterStorageSets | object | `{}` |  |
+| configmap.clusterStorageVolumes | object | `{}` |  |
+| configmap.cortxControl.enabled | bool | `true` |  |
+| configmap.cortxHa.enabled | bool | `true` |  |
+| configmap.cortxHare.haxClientEndpoints | list | `[]` |  |
+| configmap.cortxHare.haxDataEndpoints | list | `[]` |  |
+| configmap.cortxHare.haxServerEndpoints | list | `[]` |  |
+| configmap.cortxHare.haxService.name | string | `"cortx-hax-svc"` |  |
+| configmap.cortxHare.haxService.port | int | `22003` |  |
+| configmap.cortxHare.haxService.protocol | string | `"https"` |  |
+| configmap.cortxIoService.name | string | `"cortx-io-svc-0"` |  |
+| configmap.cortxIoService.ports.http | string | `""` |  |
+| configmap.cortxIoService.ports.https | string | `""` |  |
+| configmap.cortxMotr.clientEndpoints | list | `[]` |  |
+| configmap.cortxMotr.clientInstanceCount | int | `0` |  |
+| configmap.cortxMotr.confdEndpoints | list | `[]` |  |
+| configmap.cortxMotr.extraConfiguration | string | `""` |  |
+| configmap.cortxMotr.iosEndpoints | list | `[]` |  |
+| configmap.cortxMotr.rgwEndpoints | list | `[]` |  |
+| configmap.cortxRgw.authAdmin | string | `"cortx-admin"` |  |
+| configmap.cortxRgw.authSecret | string | `"s3_auth_admin_secret"` |  |
+| configmap.cortxRgw.authUser | string | `"cortx-user"` |  |
+| configmap.cortxRgw.enabled | bool | `true` |  |
+| configmap.cortxRgw.extraConfiguration | string | `""` |  |
+| configmap.cortxRgw.maxStartTimeout | int | `240` |  |
+| configmap.cortxSecretName | string | `"cortx-secret"` |  |
+| configmap.cortxSecretValues | object | `{}` |  |
+| configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
+| configmap.cortxStoragePaths.local | string | `"/etc/cortx"` |  |
+| configmap.cortxStoragePaths.log | string | `"/etc/cortx/log"` |  |
+| configmap.cortxVersion | string | `"unknown"` |  |
 | consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul client agent containers |
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
+| externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
+| externalConsul.adminUser | string | `"admin"` |  |
+| externalConsul.endpoints | list | `[]` |  |
+| externalKafka.adminSecretName | string | `"kafka_admin_secret"` |  |
+| externalKafka.adminUser | string | `"admin"` |  |
+| externalKafka.endpoints | list | `[]` |  |
+| fullnameOverride | string | `""` |  |
 | kafka.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Kafka containers |
 | kafka.deleteTopicEnable | bool | `true` | Enable topic deletion |
 | kafka.enabled | bool | `true` | Enable installation of the Kafka chart |
@@ -74,6 +114,7 @@ helm uninstall cortx
 | kafka.zookeeper.enabled | bool | `true` | Enable installation of the Zookeeper chart |
 | kafka.zookeeper.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | kafka.zookeeper.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Zookeeper pods |
+| nameOverride | string | `""` |  |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |

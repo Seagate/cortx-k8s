@@ -2,7 +2,7 @@ cortxha:
   name: cortx-ha
   image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
-  serviceaccountname: cortx-sa
+  serviceaccountname: ha-monitor
   service:
     clusterip:
       name: cortx-ha-clusterip-svc
@@ -13,11 +13,11 @@ cortxha:
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-ha-cfgmap
+    name: cortx
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
-    name: cortx-ssl-cert-cfgmap
+    name: cortx-ssl-cert
   machineid:
     mountpath: /etc/cortx/solution/node
     volmountname: machine-id-config
