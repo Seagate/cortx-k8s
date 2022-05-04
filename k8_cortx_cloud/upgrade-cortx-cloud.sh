@@ -170,7 +170,7 @@ else
             IMAGE="${UPGRADE_IMAGE}"
             k8s_controller="deployment"
         fi
-        kubectl set image ${k8s_controller} "${deployment}" "*=${IMAGE}"
+        kubectl set image --namespace="${NAMESPACE}" ${k8s_controller} "${deployment}" "*=${IMAGE}"
     done <<< "${cortx_deployments}"
     printf "\n"
 fi

@@ -7,7 +7,7 @@ metadata:
     source-pod: cortx-data
     target-pod: cortx-data
     target-container: cortx-s3-haproxy
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -39,7 +39,7 @@ metadata:
     source-pod: cortx-data
     target-pod: cortx-data
     target-container: cortx-motr-ios
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -65,7 +65,7 @@ metadata:
     source-pod: cortx-control
     target-pod: cortx-data
     target-container: cortx-s3-bg-consumer
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -89,7 +89,7 @@ metadata:
     source-pod: cortx-data
     target-pod: cortx-data
     target-container: misc
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -123,7 +123,7 @@ metadata:
     source-pod: any
     target-pod: consul-server
     target-container: consul
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -160,7 +160,7 @@ metadata:
     source-pod: any
     target-pod: consul-all
     target-container: any
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
@@ -186,7 +186,7 @@ metadata:
     source-pod: any
     target-pod: kafka
     target-container: any
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:

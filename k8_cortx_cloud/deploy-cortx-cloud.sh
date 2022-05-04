@@ -313,38 +313,16 @@ echo ""
 # Begin CORTX on k8s deployment
 ##########################################################
 
-# Create CORTX namespace
-if [[ "${namespace}" != "default" ]]; then
-
-    helm install "cortx-ns-${namespace}" cortx-cloud-helm-pkg/cortx-platform \
-        --set namespace.create="true" \
-        --set namespace.name="${namespace}"
-
-fi
-
-count=0
-namespace_list=[]
-namespace_index=0
-while IFS= read -r line; do
-    if [[ ${count} -eq 0 ]]; then
-        count=$((count+1))
-        continue
-    fi
-    IFS=" " read -r -a my_array <<< "${line}"
-    if [[ "${my_array[0]}" != *"kube-"* \
-            && "${my_array[0]}" != "default" \
-            && "${my_array[0]}" != "local-path-storage" ]]; then
-        namespace_list[${namespace_index}]=${my_array[0]}
-        namespace_index=$((namespace_index+1))
-    fi
-    count=$((count+1))
-done <<< "$(kubectl get namespaces)"
-
 ##########################################################
 # Deploy CORTX k8s pre-reqs
 ##########################################################
 function deployKubernetesPrereqs()
 {
+    # Add and update Helm repository dependencies
+    helm repo add hashicorp https://helm.releases.hashicorp.com
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update hashicorp bitnami
+
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
     ## in the same chart as Namespace-scoped objects.
     local podSecurityPolicyName="cortx-baseline"
@@ -384,7 +362,7 @@ function deployKubernetesPrereqs()
         --set serviceAccount.create="true" \
         --set serviceAccount.name="${serviceAccountName}" \
         --set networkPolicy.create="false" \
-        --set namespace.name="${namespace}" \
+        --set services.create="true" \
         --set services.hax.name="${hax_service_name}" \
         --set services.hax.port="${hax_service_port}" \
         --set services.io.type="${s3_service_type}" \
@@ -392,7 +370,9 @@ function deployKubernetesPrereqs()
         --set services.io.ports.http="${s3_service_ports_http}" \
         --set services.io.ports.https="${s3_service_ports_https}" \
         "${optional_values[@]}" \
-        --namespace "${namespace}"
+        --namespace "${namespace}" \
+        --create-namespace \
+        || exit $?
 }
 
 
@@ -403,9 +383,6 @@ function deployRancherProvisioner()
 {
     local image
 
-    # Add the HashiCorp Helm Repository:
-    helm repo add hashicorp https://helm.releases.hashicorp.com
-    helm repo update hashicorp
     if [[ ${storage_class} == "local-path" ]]
     then
         printf "Install Rancher Local Path Provisioner"
@@ -440,6 +417,7 @@ function deployConsul()
     image=$(echo "${image}" | cut -f2 -d'>')
 
     helm install "consul" hashicorp/consul \
+        --version 0.42.0 \
         --set global.name="consul" \
         --set global.image="${image}" \
         --set ui.enabled=false \
@@ -456,17 +434,19 @@ function deployConsul()
         --set client.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory')" \
         --set client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
         --set client.containerSecurityContext.client.allowPrivilegeEscalation=false \
-        --wait
+        --namespace "${namespace}" \
+        --wait \
+        || exit $?
 
     # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
-    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}'
-    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}'
+    kubectl patch serviceaccount/consul-client -p '{"automountServiceAccountToken":false}' \
+                                               --namespace "${namespace}"
+    kubectl patch serviceaccount/consul-server -p '{"automountServiceAccountToken":false}' \
+                                               --namespace "${namespace}"
 
-
-    ### TODO CORTX-28968 Remove this dev-phase shortcut
     # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    #kubectl rollout restart statefulset/consul-server
-    #kubectl rollout restart daemonset/consul-client
+    kubectl rollout restart statefulset/consul-server --namespace "${namespace}"
+    kubectl rollout restart daemonset/consul-client --namespace "${namespace}"
 
     ##TODO This needs to be maintained during upgrades etc...
 
@@ -492,16 +472,13 @@ function deployZookeeper()
     printf "######################################################\n"
     printf "# Deploy Zookeeper                                    \n"
     printf "######################################################\n"
-    # Add Zookeeper and Kafka Repository
-    helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm repo update bitnami
-
     image=$(parseSolution 'solution.images.zookeeper')
     image=$(echo "${image}" | cut -f2 -d'>')
     splitDockerImage "${image}"
     printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
 
     helm install zookeeper bitnami/zookeeper \
+        --version 9.1.0 \
         --set image.tag="${tag}" \
         --set image.registry="${registry}" \
         --set image.repository="${repository}" \
@@ -519,7 +496,9 @@ function deployZookeeper()
         --set serviceAccount.name="cortx-zookeeper" \
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --wait
+        --namespace "${namespace}" \
+        --wait \
+        || exit $?
 
     printf "\nWait for Zookeeper to be ready before starting kafka"
     while true; do
@@ -557,28 +536,14 @@ function deployKafka()
     splitDockerImage "${image}"
     printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
 
-    local kafka_cfg_log_segment_delete_delay_ms=${KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS:-1000}
-    local kafka_cfg_log_flush_offset_checkpoint_interval_ms=${KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTERVAL_MS:-1000}
-    local kafka_cfg_log_retention_check_interval_ms=${KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS:-1000}
-    local tmp_kafka_envvars_yaml="tmp-kafka.yaml"
-
-    cat > ${tmp_kafka_envvars_yaml} << EOF
-extraEnvVars:
-- name: KAFKA_CFG_LOG_SEGMENT_DELETE_DELAY_MS
-  value: "${kafka_cfg_log_segment_delete_delay_ms}"
-- name: KAFKA_CFG_LOG_FLUSH_OFFSET_CHECKPOINT_INTEL_MS
-  value: "${kafka_cfg_log_flush_offset_checkpoint_interval_ms}"
-- name: KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS
-  value: "${kafka_cfg_log_retention_check_interval_ms}"
-EOF
-
     helm install kafka bitnami/kafka \
+        --version 16.2.7 \
         --set zookeeper.enabled=false \
         --set image.tag="${tag}" \
         --set image.registry="${registry}" \
         --set image.repository="${repository}" \
         --set replicaCount="${num_kafka_replicas}" \
-        --set externalZookeeper.servers=zookeeper.default.svc.cluster.local \
+        --set externalZookeeper.servers="zookeeper" \
         --set global.storageClass=${storage_class} \
         --set defaultReplicationFactor="${num_kafka_replicas}" \
         --set offsetsTopicReplicationFactor="${num_kafka_replicas}" \
@@ -599,10 +564,9 @@ EOF
         --set serviceAccount.automountServiceAccountToken=false \
         --set containerSecurityContext.enabled=true \
         --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --values ${tmp_kafka_envvars_yaml}  \
-        --wait
-
-    rm ${tmp_kafka_envvars_yaml}
+        --namespace "${namespace}" \
+        --wait \
+        || exit $?
 
     printf "\n\n"
 }
@@ -644,8 +608,8 @@ function deployCortxLocalBlockStorage()
         --set cortxblkdata.nodelistinfo="node-list-info.txt" \
         --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
         --set cortxblkdata.storage.volumemode="Block" \
-        --set namespace="${namespace}" \
-        -n "${namespace}"
+        -n "${namespace}" \
+        || exit $?
 }
 
 function deleteStaleAutoGenFolders()
@@ -851,8 +815,10 @@ function deployCortxConfigMap()
     helm install \
         "cortx-cfgmap-${namespace}" \
         cortx-cloud-helm-pkg/cortx-configmap \
+        --namespace="${namespace}" \
         --set fullnameOverride="cortx-cfgmap-${namespace}" \
-        "${helm_install_args[@]}"
+        "${helm_install_args[@]}" \
+        || exit $?
 
     # Create node machine ID config maps
     for node in "${node_name_list[@]}"; do
@@ -981,6 +947,8 @@ function waitForAllDeploymentsAvailable()
     shift
     DEPL_STR=$1
     shift
+    NAMESPACE=$1
+    shift
 
     START=${SECONDS}
     (while true; do sleep 1; echo -n "."; done)&
@@ -991,10 +959,11 @@ function waitForAllDeploymentsAvailable()
 
     # Initial wait
     FAIL=0
+
     ### CORTX-28968 - moved from `kubectl wait` to `kubectl rollout status` in support of StatefulSets
-    if ! kubectl rollout status --watch --timeout="${TIMEOUT}" "$@"; then
+    if ! kubectl rollout status --watch --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
         # Secondary wait
-        if ! kubectl rollout status --watch --timeout="${TIMEOUT}" "$@"; then
+        if ! kubectl rollout status --watch --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
             # Still timed out.  This is a failure
             FAIL=1
         fi
@@ -1058,12 +1027,12 @@ function deployCortxControl()
         --set cortxcontrol.localpathpvc.requeststoragesize="1Gi" \
         --set cortxcontrol.secretinfo="secret-info.txt" \
         --set cortxcontrol.serviceaccountname="${serviceAccountName}" \
-        --set namespace="${namespace}" \
         "${optional_values[@]}" \
-        --namespace "${namespace}"
+        --namespace "${namespace}" \
+        || exit $?
 
-    printf "\nWait for CORTX Control to be ready\n"
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Control" deployment/cortx-control; then
+    printf "\nWait for CORTX Control to be ready"
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Control" "${namespace}" deployment/cortx-control; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1109,21 +1078,20 @@ function deployCortxData()
             --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="${serviceAccountName}" \
-            --set namespace="${namespace}" \
-            -n "${namespace}"
+            -n "${namespace}" \
+            || exit $?
     done
 
     # Wait for all cortx-data deployments to be ready
-    ### TODO CORTX-28968 Remove this dev-phase shortcut
-    #printf "\nWait for CORTX Data to be ready\n"
-    #local deployments=()
-    #for i in "${!node_selector_list[@]}"; do
-    #    deployments+=("deployment/cortx-data-${node_name_list[i]}")
-    #done
-    #if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${deployments[@]}"; then
-    #    echo "Failed.  Exiting script."
-    #    exit 1
-    #fi
+    printf "\nWait for CORTX Data to be ready"
+    local deployments=()
+    for i in "${!node_selector_list[@]}"; do
+        deployments+=("deployment/cortx-data-${node_name_list[i]}")
+    done
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${namespace}" "${deployments[@]}"; then
+        echo "Failed.  Exiting script."
+        exit 1
+    fi
 
     printf "\n\n"
 }
@@ -1168,12 +1136,12 @@ function deployCortxServer()
         --set cortxserver.hax.port="${hax_port}" \
         --set cortxserver.secretname="${global_cortx_secret_name}" \
         --set cortxserver.serviceaccountname="${serviceAccountName}" \
-        --namespace "${namespace}"
+        --namespace "${namespace}" \
+        || exit $?
 
     printf "\nWait for CORTX Server to be ready\n"
     # Wait for all cortx-data deployments to be ready
-
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "statefulset/cortx-server"; then
+    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${namespace}" "statefulset/cortx-server"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1216,11 +1184,11 @@ function deployCortxHa()
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-${namespace}" \
         --set cortxha.localpathpvc.mountpath="${local_storage}" \
         --set cortxha.localpathpvc.requeststoragesize="1Gi" \
-        --set namespace="${namespace}" \
-        -n "${namespace}"
+        -n "${namespace}" \
+        || exit $?
 
-    printf "\nWait for CORTX HA to be ready\n"
-    if ! waitForAllDeploymentsAvailable 120s "CORTX HA" deployment/cortx-ha; then
+    printf "\nWait for CORTX HA to be ready"
+    if ! waitForAllDeploymentsAvailable 120s "CORTX HA" "${namespace}" deployment/cortx-ha; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1261,8 +1229,8 @@ function deployCortxClient()
             --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-${node_name}" \
             --set cortxclient.localpathpvc.mountpath="${local_storage}" \
             --set cortxclient.localpathpvc.requeststoragesize="1Gi" \
-            --set namespace="${namespace}" \
-            -n "${namespace}"
+            -n "${namespace}" \
+            || exit $?
     done
 
     printf "\nWait for CORTX Client to be ready\n"
@@ -1321,13 +1289,6 @@ deployKubernetesPrereqs
 ##########################################################
 # Deploy CORTX 3rd party
 ##########################################################
-found_match_nsp=false
-for np in "${namespace_list[@]}"; do
-    if [[ "${np}" == "${namespace}" ]]; then
-        found_match_nsp=true
-        break
-    fi
-done
 
 # Extract storage provisioner path from the "solution.yaml" file
 filter='solution.common.storage_provisioner_path'
@@ -1347,13 +1308,11 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
 
-if [[ (${#namespace_list[@]} -le 1 && "${found_match_nsp}" = true) || "${namespace}" == "default" ]]; then
-    deployRancherProvisioner
-    deployConsul
-    deployZookeeper
-    deployKafka
-    waitForThirdParty
-fi
+deployRancherProvisioner
+deployConsul
+deployZookeeper
+deployKafka
+waitForThirdParty
 
 ##########################################################
 # Deploy CORTX cloud
@@ -1416,12 +1375,14 @@ if [[ ${deployment_type} != "data-only" ]]; then
 The S3 data service is accessible through the ${data_service_name} service.
    Default IAM access key: ${data_service_default_user}
    Default IAM secret key is accessible via:
-       kubectl get secrets/${cortx_secret_name} --template={{.data.s3_auth_admin_secret}} | base64 -d
+       kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
+                  --template={{.data.s3_auth_admin_secret}} | base64 -d
 
 The CORTX control service is accessible through the ${control_service_name} service.
    Default control username: ${control_service_default_user}
    Default control password is accessible via:
-       kubectl get secrets/${cortx_secret_name} --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+       kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
+                  --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
 fi
 
 printf "\n-----------------------------------------------------------\n"

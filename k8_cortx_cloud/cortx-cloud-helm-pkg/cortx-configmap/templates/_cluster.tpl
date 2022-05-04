@@ -40,6 +40,8 @@ cluster:
     - name: utils
     - name: hare
     - name: rgw
+      services:
+        - rgw_s3
   {{- end }}
   {{- if .Values.cortxControl.enabled }}
   - name: control_node
