@@ -6,5 +6,7 @@ chart-dirs:
   - charts
 excluded-charts:
 chart-repos:
+  - hashicorp=https://helm.releases.hashicorp.com
+  - bitnami=https://charts.bitnami.com/bitnami
 validate-chart-schema: false
 check-version-increment: false

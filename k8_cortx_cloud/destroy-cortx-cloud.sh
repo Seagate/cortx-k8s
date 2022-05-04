@@ -72,10 +72,9 @@ function extractBlock()
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
 
-pvc_consul_filter="data-${namespace}-consul"
-pvc_kafka_filter="kafka"
-pvc_zookeeper_filter="zookeeper"
-openldap_pvc="openldap-data"
+readonly pvc_consul_filter="data-${namespace}-cortx-consul"
+readonly pvc_consul_filter_old="data-${namespace}-consul"  # backwards compatibility for older deployments
+readonly pvc_filter="${pvc_consul_filter}|${pvc_consul_filter_old}|kafka|zookeeper|openldap-data|cortx|3rd-party"
 
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
@@ -180,7 +179,7 @@ function waitForCortxPodsToTerminate()
         count=0
         while IFS= read -r line; do
             count=$(( count + 1 ))
-        done < <(kubectl get pods --namespace="${namespace}" | grep cortx 2>&1)
+        done < <(kubectl get pods --namespace="${namespace}" --selector=release!=cortx --no-headers | grep cortx)
 
         (( count == 0 )) && break || printf "."
         sleep 1s
@@ -294,7 +293,7 @@ function deleteSecrets()
     secret_name=$(./parse_scripts/parse_yaml.sh "${solution_yaml}" "solution.secrets.name")
     if [[ -n "${secret_name}" ]]; then
         secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
-        kubectl delete secret "${secret_name}" --namespace="${namespace}"
+        kubectl delete secret "${secret_name}" --namespace="${namespace}" --ignore-not-found=true
 
         find "$(pwd)/cortx-cloud-helm-pkg/cortx-control" -name "secret-*" -delete
         find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "secret-*" -delete
@@ -302,6 +301,12 @@ function deleteSecrets()
         find "$(pwd)/cortx-cloud-helm-pkg/cortx-ha" -name "secret-*" -delete
         find "$(pwd)/cortx-cloud-helm-pkg/cortx-client" -name "secret-*" -delete
     fi
+}
+
+function deleteDeprecated()
+{
+    deleteOpenLdap
+    deleteConsul
 }
 
 function deleteConsul()
@@ -312,6 +317,14 @@ function deleteConsul()
     uninstallHelmChart consul "${namespace}"
 }
 
+function deleteCortx()
+{
+    printf "########################################################\n"
+    printf "# Delete CORTX                                         #\n"
+    printf "########################################################\n"
+    uninstallHelmChart cortx "${namespace}"
+}
+
 function waitFor3rdPartyToTerminate()
 {
     local count
@@ -320,8 +333,8 @@ function waitFor3rdPartyToTerminate()
         count=0
         while IFS= read -r line; do
             count=$(( count + 1 ))
-        done < <(kubectl get pods --namespace "${namespace}" | \
-                  grep -e kafka -e zookeeper -e openldap -e consul 2>&1)
+        done < <(kubectl get pods --namespace "${namespace}" --no-headers | \
+                  grep -e kafka -e zookeeper -e openldap -e '^consul' -e '^cortx-consul' 2>&1)
 
         (( count == 0 )) && break || printf "."
         sleep 1s
@@ -334,7 +347,7 @@ function delete3rdPartyPVCs()
     printf "########################################################\n"
     printf "# Delete Persistent Volume Claims                      #\n"
     printf "########################################################\n"
-    volume_claims=$(kubectl get pvc --namespace="${namespace}" | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|${openldap_pvc}|cortx|3rd-party" | cut -f1 -d " ")
+    volume_claims=$(kubectl get pvc --namespace="${namespace}" | grep -E "${pvc_filter}" | cut -f1 -d " ")
     [[ -n ${volume_claims} ]] && echo "${volume_claims}"
     for volume_claim in ${volume_claims}
     do
@@ -352,7 +365,7 @@ function delete3rdPartyPVs()
     printf "########################################################\n"
     printf "# Delete Persistent Volumes                            #\n"
     printf "########################################################\n"
-    persistent_volumes=$(kubectl get pv --namespace="${namespace}"  | grep -E "${pvc_consul_filter}|${pvc_kafka_filter}|${pvc_zookeeper_filter}|cortx|3rd-party" | cut -f1 -d " ")
+    persistent_volumes=$(kubectl get pv | grep -E "${pvc_filter}" | cut -f1 -d " ")
     [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
     for persistent_volume in ${persistent_volumes}
     do
@@ -421,8 +434,8 @@ deleteCortxConfigmap
 #############################################################
 
 deleteKafkaZookeper
-deleteOpenLdap
-deleteConsul
+deleteDeprecated
+deleteCortx
 waitFor3rdPartyToTerminate
 delete3rdPartyPVCs
 delete3rdPartyPVs
