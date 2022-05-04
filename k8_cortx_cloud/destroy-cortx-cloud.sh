@@ -246,14 +246,6 @@ function deleteCortxConfigmap()
 #############################################################
 # Destroy CORTX 3rd party functions
 #############################################################
-function deleteZookeeper()
-{
-    printf "########################################################\n"
-    printf "# Delete Zookeeper                                     #\n"
-    printf "########################################################\n"
-    uninstallHelmChart zookeeper "${namespace}"
-}
-
 function deleteOpenLdap()
 {
     ## Backwards compatibility check
@@ -295,6 +287,9 @@ function deleteDeprecated()
     deleteOpenLdap
     uninstallHelmChart consul "${namespace}"
     uninstallHelmChart kafka "${namespace}"
+    uninstallHelmChart zookeeper "${namespace}"
+
+    waitFor3rdPartyToTerminate
 }
 
 function waitFor3rdPartyToTerminate()
@@ -306,7 +301,7 @@ function waitFor3rdPartyToTerminate()
         while IFS= read -r line; do
             count=$(( count + 1 ))
         done < <(kubectl get pods --namespace "${namespace}" --no-headers | \
-                  grep -e zookeeper -e openldap -e '^consul' -e '^kafka')
+                  grep -e '^zookeeper' -e openldap -e '^consul' -e '^kafka')
 
         (( count == 0 )) && break || printf "."
         sleep 1s
@@ -395,9 +390,7 @@ deleteCortxConfigmap
 #############################################################
 # Delete CORTX 3rd party resources
 #############################################################
-deleteZookeeper
 deleteDeprecated
-waitFor3rdPartyToTerminate
 
 # Delete remaining CORTX Cloud resources
 uninstallHelmChart cortx "${namespace}"

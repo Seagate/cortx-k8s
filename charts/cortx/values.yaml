@@ -53,4 +53,12 @@ kafka:
   # ref: https://github.com/bitnami/charts/blob/master/bitnami/zookeeper/values.yaml
   zookeeper:
     # -- Enable installation of the Zookeeper chart
-    enabled: false
+    enabled: true
+    serviceAccount:
+      # -- Enable the creation of a ServiceAccount for Zookeeper pods
+      create: true
+      # -- Allow auto mounting of the service account token
+      automountServiceAccountToken: false
+    containerSecurityContext:
+      # -- Allow extra privileges in Zookeeper containers
+      allowPrivilegeEscalation: false
