@@ -736,7 +736,7 @@ function deployCortxConfigMap()
         local pod_name="${cortxserver_server_pod_prefix}-${count}"
         local pod_fqdn="${pod_name}.${cortxserver_service_headless_name}.${namespace}.svc.${cluster_domain}"
         ### TODO CORTX-28968 Observe switch below based on setting of Pod hostname
-        ###                  Must match with setting in config-map/_cluster.tpl:82 as well
+        ### Must match with setting in config-map/_cluster.tpl:84 as well ($serverName)
         # Use below when hostname of pod is only short name
         # local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
         # Use below when hostname of pod is fqdn
@@ -1084,14 +1084,18 @@ function deployCortxData()
 
     # Wait for all cortx-data deployments to be ready
     printf "\nWait for CORTX Data to be ready"
-    local deployments=()
-    for i in "${!node_selector_list[@]}"; do
-        deployments+=("deployment/cortx-data-${node_name_list[i]}")
-    done
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${namespace}" "${deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
+    ### TODO CORTX-28968 revisit for clarity once implemented
+    ### Cannot pass list of items to `rollout status`; it only works on a single item
+    ### However, these independent waits can most likely be removed.
+    ### Investigate further.
+    #local deployments=()
+    #for i in "${!node_selector_list[@]}"; do
+    #    deployments+=("deployment/cortx-data-${node_name_list[i]}")
+    #done
+    #if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${namespace}" "${deployments[@]}"; then
+    #    echo "Failed.  Exiting script."
+    #    exit 1
+    #fi
 
     printf "\n\n"
 }
