@@ -825,39 +825,31 @@ function deployCortxSecrets()
     printf "########################################################\n"
     printf "# Deploy CORTX Secrets                                  \n"
     printf "########################################################\n"
-    # Parse secret from the solution file and create all secret yaml files
+    # Parse secret from the solution file and create all secret files
     # in the "auto-gen-secret" folder
-    secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
+    local secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
     mkdir -p "${secret_auto_gen_path}"
-    cortx_secret_name=$(getSolutionValue "solution.secrets.name")
-    cortx_secret_ext=$(getSolutionValue "solution.secrets.external_secret")
+    cortx_secret_name=$(getSolutionValue "solution.secrets.name")  # This is a global variable
     if [[ -n "${cortx_secret_name}" ]]; then
         # Process secrets from solution.yaml
-        secrets=()
         for field in "${cortx_secret_fields[@]}"; do
             fcontent=$(getSolutionValue "solution.secrets.content.${field}")
             if [[ -z ${fcontent} ]]; then
                 # No data for this field.  Generate a password.
-                pw=$(pwgen)
-                fcontent=${pw}
+                fcontent=$(pwgen)
                 printf "Generated secret for %s\n" "${field}"
             fi
-            secrets+=( "  ${field}: ${fcontent}" )
+            printf "%s" "${fcontent}" > "${secret_auto_gen_path}/${field}"
         done
-        secrets_block=$( printf "%s\n" "${secrets[@]}" )
 
-        new_secret_gen_file="${secret_auto_gen_path}/${cortx_secret_name}.yaml"
-        cp "${cfgmap_path}/other/secret-template.yaml" "${new_secret_gen_file}"
-        ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${cortx_secret_name}"
-        ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets_block}"
-        kubectl_create_secret_cmd="kubectl create -f ${new_secret_gen_file} --namespace=${namespace}"
-        if ! ${kubectl_create_secret_cmd}; then
+        if ! kubectl create secret generic "${cortx_secret_name}" \
+            --from-file="${secret_auto_gen_path}" \
+            --namespace="${namespace}"; then
             printf "Exit early.  Failed to create Secret '%s'\n" "${cortx_secret_name}"
             exit 1
         fi
-
-    elif [[ -n "${cortx_secret_ext}" ]]; then
-        cortx_secret_name="${cortx_secret_ext}"
+    else
+        cortx_secret_name="$(getSolutionValue "solution.secrets.external_secret")"
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
 
