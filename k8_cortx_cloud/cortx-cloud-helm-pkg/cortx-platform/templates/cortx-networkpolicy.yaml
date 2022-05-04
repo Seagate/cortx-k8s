@@ -121,7 +121,7 @@ metadata:
   name: {{ .Values.networkPolicy.namePrefix }}cortx-consul-server
   labels:
     source-pod: any
-    target-pod: consul-server
+    target-pod: cortx-consul-server
     target-container: consul
   namespace: {{ .Release.Namespace }}
 spec:
