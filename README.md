@@ -333,11 +333,12 @@ The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users
 
 There is a "wait" after each of the cortx helm charts are deployed.  This wait is guarded by a timeout.  If needed, these timeout values can be overridden by environment variables.
 
-| Environment Variable | Default Value |
-| CORTX_DEPLOY_CONTROL_TIMEOUT | 300s |
-| CORTX_DEPLOY_DATA_TIMEOUT    | 300s |
-| CORTX_DEPLOY_SERVER_TIMEOUT  | 300s |
-| CORTX_DEPLOY_HA_TIMEOUT      | 300s |
+| Environment Variable           | Default Value |
+| ------------------------------ | ------------- |
+| `CORTX_DEPLOY_CONTROL_TIMEOUT` | `300s`        |
+| `CORTX_DEPLOY_DATA_TIMEOUT`    | `300s`        |
+| `CORTX_DEPLOY_SERVER_TIMEOUT`  | `300s`        |
+| `CORTX_DEPLOY_HA_TIMEOUT`      | `120s`        |
 
 This value is passed directly to `kubectl wait --timeout=${TIMEOUT}`
 
