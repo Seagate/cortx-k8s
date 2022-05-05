@@ -340,8 +340,6 @@ There is a "wait" after each of the cortx helm charts are deployed.  This wait i
 | `CORTX_DEPLOY_SERVER_TIMEOUT`  | `300s`        |
 | `CORTX_DEPLOY_HA_TIMEOUT`      | `120s`        |
 
-This value is passed directly to `kubectl wait --timeout=${TIMEOUT}`
-
 ### Crash-looping InitContainers
 
 During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such error conditions. This command can be used to spin up a debugging container instance that has access to those same logs.
