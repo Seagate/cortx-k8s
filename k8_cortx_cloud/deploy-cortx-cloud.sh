@@ -963,7 +963,9 @@ function deployCortxControl()
         || exit $?
 
     printf "\nWait for CORTX Control to be ready"
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Control" "${namespace}" deployment/cortx-control; then
+    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CONTROL_TIMEOUT:-300s}" \
+                                        "CORTX Control" "${namespace}" \
+                                        deployment/cortx-control; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1019,7 +1021,9 @@ function deployCortxData()
     for i in "${!node_selector_list[@]}"; do
         deployments+=("deployment/cortx-data-${node_name_list[i]}")
     done
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Data" "${namespace}" "${deployments[@]}"; then
+    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
+                                        "CORTX Data" "${namespace}" \
+                                        "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1089,7 +1093,9 @@ function deployCortxServer()
     for i in "${!node_selector_list[@]}"; do
         deployments+=("deployment/cortx-server-${node_name_list[i]}")
     done
-    if ! waitForAllDeploymentsAvailable 300s "CORTX Server" "${namespace}" "${deployments[@]}"; then
+    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-300s}" \
+                                        "CORTX Server" "${namespace}" \
+                                        "${deployments[@]}"; then
         echo "Failed.  Exiting script."
         exit 1
     fi
@@ -1136,7 +1142,9 @@ function deployCortxHa()
         || exit $?
 
     printf "\nWait for CORTX HA to be ready"
-    if ! waitForAllDeploymentsAvailable 120s "CORTX HA" "${namespace}" deployment/cortx-ha; then
+    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_HA_TIMEOUT:-120s}" \
+                                        "CORTX HA" "${namespace}" \
+                                        deployment/cortx-ha; then
         echo "Failed.  Exiting script."
         exit 1
     fi
