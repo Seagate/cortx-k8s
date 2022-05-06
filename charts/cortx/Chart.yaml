@@ -5,6 +5,10 @@ dependencies:
     name: consul
     repository: https://helm.releases.hashicorp.com
     version: 0.42.0
+  - condition: kafka.enabled
+    name: kafka
+    repository: https://charts.bitnami.com/bitnami
+    version: 16.2.7
 description: CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 home: https://github.com/Seagate/cortx-k8s/tree/integration/charts/cortx
 icon: https://raw.githubusercontent.com/Seagate/cortx/main/doc/assets/CORTX-Logo-GRN_400x400.jpg

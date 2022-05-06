@@ -93,7 +93,6 @@ solution:
             cpu: 500m
       kafka:
         storage_request_size: 8Gi
-        log_persistence_request_size: 8Gi
         resources:
           requests:
             memory: 1Gi
