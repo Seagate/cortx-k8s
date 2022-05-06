@@ -380,7 +380,15 @@ function deployCortx()
     local consul_image
     consul_image=$(parseSolution 'solution.images.consul' | cut -f2 -d'>')
 
+    local kafka_image
+    kafka_image=$(parseSolution 'solution.images.kafka' | cut -f2 -d'>')
+    splitDockerImage "${kafka_image}"
+    local kafka_tag="${tag}"
+    local kafka_registry="${registry}"
+    local kafka_repository="${repository}"
+
     helm install cortx ../charts/cortx \
+        --set global.storageClass=${storage_class} \
         --set consul.server.image="${consul_image}" \
         --set consul.client.image="${consul_image}" \
         --set consul.server.storageClass=${storage_class} \
@@ -394,6 +402,19 @@ function deployCortx()
         --set consul.client.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu')" \
         --set consul.client.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory')" \
         --set consul.client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
+        --set kafka.image.tag="${kafka_tag}" \
+        --set kafka.image.registry="${kafka_registry}" \
+        --set kafka.image.repository="${kafka_repository}" \
+        --set kafka.replicaCount="${num_kafka_replicas}" \
+        --set kafka.externalZookeeper.servers="zookeeper" \
+        --set kafka.defaultReplicationFactor="${num_kafka_replicas}" \
+        --set kafka.offsetsTopicReplicationFactor="${num_kafka_replicas}" \
+        --set kafka.transactionStateLogReplicationFactor="${num_kafka_replicas}" \
+        --set kafka.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory')" \
+        --set kafka.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu')" \
+        --set kafka.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory')" \
+        --set kafka.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu')" \
+        --set kafka.persistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size')" \
         --namespace "${namespace}" \
         --wait \
         || exit $?
@@ -445,8 +466,6 @@ function deployZookeeper()
         --set image.registry="${registry}" \
         --set image.repository="${repository}" \
         --set replicaCount="${num_kafka_replicas}" \
-        --set auth.enabled=false \
-        --set allowAnonymousLogin=true \
         --set global.storageClass=${storage_class} \
         --set resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory')" \
         --set resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu')" \
@@ -485,54 +504,6 @@ function deployZookeeper()
     sleep 2s
 }
 
-function deployKafka()
-{
-    local image
-
-    printf "######################################################\n"
-    printf "# Deploy Kafka                                        \n"
-    printf "######################################################\n"
-
-    image=$(parseSolution 'solution.images.kafka')
-    image=$(echo "${image}" | cut -f2 -d'>')
-    splitDockerImage "${image}"
-    printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
-
-    helm install kafka bitnami/kafka \
-        --version 16.2.7 \
-        --set zookeeper.enabled=false \
-        --set image.tag="${tag}" \
-        --set image.registry="${registry}" \
-        --set image.repository="${repository}" \
-        --set replicaCount="${num_kafka_replicas}" \
-        --set externalZookeeper.servers="zookeeper" \
-        --set global.storageClass=${storage_class} \
-        --set defaultReplicationFactor="${num_kafka_replicas}" \
-        --set offsetsTopicReplicationFactor="${num_kafka_replicas}" \
-        --set transactionStateLogReplicationFactor="${num_kafka_replicas}" \
-        --set auth.enabled=false \
-        --set allowAnonymousLogin=true \
-        --set deleteTopicEnable=true \
-        --set transactionStateLogMinIsr=2 \
-        --set resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory')" \
-        --set resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu')" \
-        --set resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory')" \
-        --set resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu')" \
-        --set persistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size')" \
-        --set logPersistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size')" \
-        --set serviceAccount.create=true \
-        --set serviceAccount.name="cortx-kafka" \
-        --set serviceAccount.automountServiceAccountToken=false \
-        --set serviceAccount.automountServiceAccountToken=false \
-        --set containerSecurityContext.enabled=true \
-        --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --namespace "${namespace}" \
-        --wait \
-        || exit $?
-
-    printf "\n\n"
-}
-
 function waitForThirdParty()
 {
     printf "\nWait for CORTX 3rd party to be ready"
@@ -545,7 +516,7 @@ function waitForThirdParty()
                 count=$((count+1))
                 break
             fi
-        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|kafka\|zookeeper')"
+        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|^cortx-kafka\|zookeeper')"
 
         if [[ ${count} -eq 0 ]]; then
             break
@@ -637,9 +608,6 @@ function deployCortxConfigMap()
     splitDockerImage "$(parseSolution 'solution.images.cortxdata' | cut -f2 -d'>' || true)"
 
     helm_install_args=(
-        --set externalKafka.enabled=true
-        --set externalLdap.enabled=true
-        --set externalConsul.enabled=true
         --set cortxHare.haxService.protocol="$(extractBlock 'solution.common.hax.protocol' || true)"
         --set cortxHare.haxService.name="$(extractBlock 'solution.common.hax.service_name' || true)"
         --set cortxHare.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
@@ -1271,9 +1239,8 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
 fi
 
 deployRancherProvisioner
-deployCortx
 deployZookeeper
-deployKafka
+deployCortx
 waitForThirdParty
 
 ##########################################################
