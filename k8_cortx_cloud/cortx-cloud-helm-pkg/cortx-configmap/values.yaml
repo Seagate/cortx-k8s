@@ -53,8 +53,8 @@ externalKafka:
 externalConsul:
   enabled: false
   endpoints:
-    - tcp://consul-server:8301
-    - http://consul-server:8500
+    - tcp://cortx-consul-server:8301
+    - http://cortx-consul-server:8500
   adminUser: admin
   adminSecretName: consul_admin_secret
 
