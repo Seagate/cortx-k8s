@@ -329,6 +329,17 @@ This section contains information about all the worker nodes used to deploy CORT
 
 The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
 
+### Overriding Helm Install  / Wait Timeouts
+
+There is a "wait" after each of the cortx helm charts are deployed.  This wait is guarded by a timeout.  If needed, these timeout values can be overridden by environment variables.
+
+| Environment Variable           | Default Value |
+| ------------------------------ | ------------- |
+| `CORTX_DEPLOY_CONTROL_TIMEOUT` | `300s`        |
+| `CORTX_DEPLOY_DATA_TIMEOUT`    | `300s`        |
+| `CORTX_DEPLOY_SERVER_TIMEOUT`  | `300s`        |
+| `CORTX_DEPLOY_HA_TIMEOUT`      | `120s`        |
+
 ### Crash-looping InitContainers
 
 During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such error conditions. This command can be used to spin up a debugging container instance that has access to those same logs.
