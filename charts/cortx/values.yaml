@@ -9,7 +9,7 @@ serviceAccount:
   name: ""
   # -- Custom annotations for the CORTX ServiceAccount
   annotations: {}
-  # -- Enable/disable auto mounting of the service account token
+  # -- Allow auto mounting of the service account token
   automountServiceAccountToken: false
 
 # Consul chart configuration
@@ -23,10 +23,34 @@ consul:
   server:
     containerSecurityContext:
       server:
-        # -- Enable extra privileges in Consul server agent containers
+        # -- Allow extra privileges in Consul server agent containers
         allowPrivilegeEscalation: false
   client:
     containerSecurityContext:
       client:
-        # -- Enable extra privileges in Consul client agent containers
+        # -- Allow extra privileges in Consul client agent containers
         allowPrivilegeEscalation: false
+
+# Kafka chart configuration
+# ref: https://github.com/bitnami/charts/blob/master/bitnami/kafka/values.yaml
+kafka:
+  # -- Enable installation of the Kafka chart
+  enabled: true
+  serviceAccount:
+    # -- Enable the creation of a ServiceAccount for Kafka pods
+    create: true
+    # -- Allow auto mounting of the service account token
+    automountServiceAccountToken: false
+  containerSecurityContext:
+    # -- Allow extra privileges in Kafka containers
+    allowPrivilegeEscalation: false
+  # -- Enable topic deletion
+  deleteTopicEnable: true
+  # -- Overridden min.insync.replicas config for the transaction topic
+  transactionStateLogMinIsr: 2
+
+  # ZooKeeper chart configuration
+  # ref: https://github.com/bitnami/charts/blob/master/bitnami/zookeeper/values.yaml
+  zookeeper:
+    # -- Enable installation of the Zookeeper chart
+    enabled: false

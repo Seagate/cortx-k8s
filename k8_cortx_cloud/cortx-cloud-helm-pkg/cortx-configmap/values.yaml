@@ -43,15 +43,15 @@ clusterStorageSets: {}
 
 # externalKafka allows configuring an external Kafka service
 externalKafka:
-  enabled: false
+  enabled: true
   endpoints:
-    - tcp://kafka:9092
+    - tcp://cortx-kafka:9092
   adminUser: admin
   adminSecretName: kafka_admin_secret
 
 # externalConsul allows configuring an external Consul service
 externalConsul:
-  enabled: false
+  enabled: true
   endpoints:
     - tcp://cortx-consul-server:8301
     - http://cortx-consul-server:8500
