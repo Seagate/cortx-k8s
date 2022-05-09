@@ -70,7 +70,10 @@ helm uninstall cortx
 | kafka.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | kafka.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Kafka pods |
 | kafka.transactionStateLogMinIsr | int | `2` | Overridden min.insync.replicas config for the transaction topic |
-| kafka.zookeeper.enabled | bool | `false` | Enable installation of the Zookeeper chart |
+| kafka.zookeeper.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Zookeeper containers |
+| kafka.zookeeper.enabled | bool | `true` | Enable installation of the Zookeeper chart |
+| kafka.zookeeper.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
+| kafka.zookeeper.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Zookeeper pods |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
