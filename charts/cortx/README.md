@@ -115,6 +115,23 @@ helm uninstall cortx
 | kafka.zookeeper.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | kafka.zookeeper.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Zookeeper pods |
 | nameOverride | string | `""` |  |
+| platform.networkPolicy.cortxControl.podAppLabel | string | `"cortx-control-pod"` |  |
+| platform.networkPolicy.cortxData.podNameLabel | string | `"cortx-data"` |  |
+| platform.networkPolicy.create | bool | `false` |  |
+| platform.podSecurityPolicy.create | bool | `false` |  |
+| platform.rbacRole.create | bool | `true` |  |
+| platform.rbacRoleBinding.create | bool | `true` |  |
+| platform.services.create | bool | `true` |  |
+| platform.services.hax.name | string | `"cortx-hax-svc"` |  |
+| platform.services.hax.port | int | `22003` |  |
+| platform.services.hax.type | string | `"ClusterIP"` |  |
+| platform.services.io.count | int | `1` |  |
+| platform.services.io.name | string | `"cortx-io-svc"` |  |
+| platform.services.io.nodePorts.http | string | `""` |  |
+| platform.services.io.nodePorts.https | string | `""` |  |
+| platform.services.io.ports.http | int | `80` |  |
+| platform.services.io.ports.https | int | `443` |  |
+| platform.services.io.type | string | `"ClusterIP"` |  |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |

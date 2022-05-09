@@ -1,8 +1,8 @@
-{{- if .Values.networkPolicy.create -}}
+{{- if .Values.platform.networkPolicy.create -}}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.networkPolicy.namePrefix }}cortx-s3-haproxy
+  name: {{ include "cortx.fullname" . }}-s3-haproxy
   labels:
     source-pod: cortx-data
     target-pod: cortx-data
@@ -11,12 +11,12 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
+      name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
   ingress:
   - from:
     - podSelector:
         matchLabels:
-          name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
+          name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
     ports:
       - protocol: TCP
         port: 80
@@ -34,7 +34,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.networkPolicy.namePrefix }}cortx-motr-ios
+  name: {{ include "cortx.fullname" . }}-motr-ios
   labels:
     source-pod: cortx-data
     target-pod: cortx-data
@@ -43,12 +43,12 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
+      name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
   ingress:
   - from:
     - podSelector:
         matchLabels:
-          name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
+          name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
     ports:
       - protocol: TCP
         port: 29000
@@ -60,7 +60,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.networkPolicy.namePrefix }}cortx-control
+  name: {{ include "cortx.fullname" . }}-control
   labels:
     source-pod: cortx-control
     target-pod: cortx-data
@@ -69,12 +69,12 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
+      name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
   ingress:
   - from:
     - podSelector:
         matchLabels:
-          app: {{ .Values.networkPolicy.cortxControl.podAppLabel }}
+          app: {{ .Values.platform.networkPolicy.cortxControl.podAppLabel }}
     ports:
       - protocol: TCP
         port: 28049
@@ -84,7 +84,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.networkPolicy.namePrefix }}cortx-data-misc
+  name: {{ include "cortx.fullname" . }}-data-misc
   labels:
     source-pod: cortx-data
     target-pod: cortx-data
@@ -93,12 +93,12 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
+      name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
   ingress:
   - from:
     - podSelector:
         matchLabels:
-          name: {{ .Values.networkPolicy.cortxData.podNameLabel }}
+          name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
     ports:
       - protocol: TCP
         port: 2001
@@ -118,7 +118,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.networkPolicy.namePrefix }}cortx-consul-server
+  name: {{ include "cortx.fullname" . }}-consul-server
   labels:
     source-pod: any
     target-pod: cortx-consul-server
@@ -155,7 +155,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.networkPolicy.namePrefix }}cortx-consul-dns
+  name: {{ include "cortx.fullname" . }}-consul-dns
   labels:
     source-pod: any
     target-pod: consul-all
@@ -181,7 +181,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.networkPolicy.namePrefix }}cortx-kafka
+  name: {{ include "cortx.fullname" . }}-consul-kafka
   labels:
     source-pod: any
     target-pod: kafka
@@ -200,5 +200,4 @@ spec:
         port: 9092
       - protocol: TCP
         port: 9093
-
 {{- end }}
