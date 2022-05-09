@@ -51,10 +51,10 @@ cortx:
       - name: rgw
         memory:
           min: 128Mi
-          max: 1Gi
+          max: 2Gi
         cpu:
           min: 250m
-          max: 1000m
+          max: 2000m
     {{- if .Values.cortxRgw.extraConfiguration }}
     {{- tpl .Values.cortxRgw.extraConfiguration . | nindent 4 }}
     {{- end }}
@@ -77,10 +77,10 @@ cortx:
       - name: hax
         memory:
           min: 128Mi
-          max: 1Gi
+          max: 2Gi
         cpu:
           min: 250m
-          max: 500m
+          max: 1000m
   motr:
     interface_family: inet
     transport_type: libfab
@@ -105,17 +105,17 @@ cortx:
       - name: ios
         memory:
           min: 1Gi
-          max: 2Gi
+          max: 3Gi
         cpu:
           min: 250m
-          max: 1000m
+          max: 2000m
       - name: confd
         memory:
           min: 128Mi
-          max: 512Mi
+          max: 1Gi
         cpu:
           min: 250m
-          max: 500m
+          max: 1000m
     {{- if .Values.cortxMotr.extraConfiguration }}
     {{- tpl .Values.cortxMotr.extraConfiguration . | nindent 4 }}
     {{- end }}
@@ -137,10 +137,10 @@ cortx:
       - name: agent
         memory:
           min: 128Mi
-          max: 256Mi
+          max: 500Mi
         cpu:
           min: 250m
-          max: 500m
+          max: 1000m
   {{- end }}
   {{- if .Values.cortxHa.enabled }}
   ha:
