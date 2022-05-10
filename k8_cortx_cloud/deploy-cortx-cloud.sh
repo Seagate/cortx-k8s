@@ -387,6 +387,13 @@ function deployCortx()
     local kafka_registry="${registry}"
     local kafka_repository="${repository}"
 
+    local zookeeper_image
+    zookeeper_image=$(parseSolution 'solution.images.zookeeper' | cut -f2 -d'>')
+    splitDockerImage "${zookeeper_image}"
+    local zookeeper_tag="${tag}"
+    local zookeeper_registry="${registry}"
+    local zookeeper_repository="${repository}"
+
     helm install cortx ../charts/cortx \
         --set global.storageClass=${storage_class} \
         --set consul.server.image="${consul_image}" \
@@ -406,7 +413,6 @@ function deployCortx()
         --set kafka.image.registry="${kafka_registry}" \
         --set kafka.image.repository="${kafka_repository}" \
         --set kafka.replicaCount="${num_kafka_replicas}" \
-        --set kafka.externalZookeeper.servers="zookeeper" \
         --set kafka.defaultReplicationFactor="${num_kafka_replicas}" \
         --set kafka.offsetsTopicReplicationFactor="${num_kafka_replicas}" \
         --set kafka.transactionStateLogReplicationFactor="${num_kafka_replicas}" \
@@ -415,6 +421,16 @@ function deployCortx()
         --set kafka.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory')" \
         --set kafka.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu')" \
         --set kafka.persistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size')" \
+        --set kafka.zookeeper.image.tag="${zookeeper_tag}" \
+        --set kafka.zookeeper.image.registry="${zookeeper_registry}" \
+        --set kafka.zookeeper.image.repository="${zookeeper_repository}" \
+        --set kafka.zookeeper.replicaCount="${num_kafka_replicas}" \
+        --set kafka.zookeeper.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory')" \
+        --set kafka.zookeeper.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu')" \
+        --set kafka.zookeeper.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.memory')" \
+        --set kafka.zookeeper.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.cpu')" \
+        --set kafka.zookeeper.persistence.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size')" \
+        --set kafka.zookeeper.persistence.dataLogDir.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size')" \
         --namespace "${namespace}" \
         --wait \
         || exit $?
@@ -432,7 +448,6 @@ function deployCortx()
     kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
 
     ##TODO This needs to be maintained during upgrades etc...
-
 }
 
 function splitDockerImage()
@@ -448,62 +463,6 @@ function splitDockerImage()
     tag="${tag_arr[1]}"
 }
 
-function deployZookeeper()
-{
-    local image
-
-    printf "######################################################\n"
-    printf "# Deploy Zookeeper                                    \n"
-    printf "######################################################\n"
-    image=$(parseSolution 'solution.images.zookeeper')
-    image=$(echo "${image}" | cut -f2 -d'>')
-    splitDockerImage "${image}"
-    printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
-
-    helm install zookeeper bitnami/zookeeper \
-        --version 9.1.0 \
-        --set image.tag="${tag}" \
-        --set image.registry="${registry}" \
-        --set image.repository="${repository}" \
-        --set replicaCount="${num_kafka_replicas}" \
-        --set global.storageClass=${storage_class} \
-        --set resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory')" \
-        --set resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu')" \
-        --set resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.memory')" \
-        --set resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.cpu')" \
-        --set persistence.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size')" \
-        --set persistence.dataLogDir.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size')" \
-        --set serviceAccount.create=true \
-        --set serviceAccount.name="cortx-zookeeper" \
-        --set serviceAccount.automountServiceAccountToken=false \
-        --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --namespace "${namespace}" \
-        --wait \
-        || exit $?
-
-    printf "\nWait for Zookeeper to be ready before starting kafka"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "${line}"
-            IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
-            if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                count=$((count+1))
-                break
-            fi
-        done <<< "$(kubectl get pods -A | grep 'zookeeper')"
-
-        if [[ ${count} -eq 0 ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-    sleep 2s
-}
-
 function waitForThirdParty()
 {
     printf "\nWait for CORTX 3rd party to be ready"
@@ -516,7 +475,7 @@ function waitForThirdParty()
                 count=$((count+1))
                 break
             fi
-        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|^cortx-kafka\|zookeeper')"
+        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|^cortx-kafka\|^cortx-zookeeper')"
 
         if [[ ${count} -eq 0 ]]; then
             break
@@ -1231,7 +1190,6 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
 fi
 
 deployRancherProvisioner
-deployZookeeper
 deployCortx
 waitForThirdParty
 
