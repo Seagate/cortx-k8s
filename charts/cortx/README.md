@@ -17,6 +17,7 @@ Kubernetes: `>=1.22.0-0`
 
 | Repository | Name | Version |
 |------------|------|---------|
+| https://charts.bitnami.com/bitnami | kafka | 16.2.7 |
 | https://helm.releases.hashicorp.com | consul | 0.42.0 |
 
 ## Installation
@@ -59,11 +60,21 @@ helm uninstall cortx
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Enable extra privileges in Consul client agent containers |
+| consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul client agent containers |
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
-| consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Enable extra privileges in Consul server agent containers |
+| consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
+| kafka.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Kafka containers |
+| kafka.deleteTopicEnable | bool | `true` | Enable topic deletion |
+| kafka.enabled | bool | `true` | Enable installation of the Kafka chart |
+| kafka.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
+| kafka.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Kafka pods |
+| kafka.transactionStateLogMinIsr | int | `2` | Overridden min.insync.replicas config for the transaction topic |
+| kafka.zookeeper.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Zookeeper containers |
+| kafka.zookeeper.enabled | bool | `true` | Enable installation of the Zookeeper chart |
+| kafka.zookeeper.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
+| kafka.zookeeper.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Zookeeper pods |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
-| serviceAccount.automountServiceAccountToken | bool | `false` | Enable/disable auto mounting of the service account token |
+| serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and `create` is true, a name is generated using the fullname template |

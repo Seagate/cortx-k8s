@@ -69,12 +69,11 @@ function extractBlock()
     ./parse_scripts/yaml_extract_block.sh ${solution_yaml} "$1"
 }
 
-namespace=$(parseSolution 'solution.namespace')
-namespace=$(echo "${namespace}" | cut -f2 -d'>')
+namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
 
-readonly pvc_consul_filter="data-${namespace}-cortx-consul"
-readonly pvc_consul_filter_old="data-${namespace}-consul"  # backwards compatibility for older deployments
-readonly pvc_filter="${pvc_consul_filter}|${pvc_consul_filter_old}|kafka|zookeeper|openldap-data|cortx|3rd-party"
+readonly pvc_consul_filter="data-.*-consul-server-"
+readonly pvc_kafka_filter="data-cortx-kafka-|data-kafka-"
+readonly pvc_filter="${pvc_consul_filter}|${pvc_kafka_filter}|zookeeper|openldap-data|cortx|3rd-party"
 
 parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 
@@ -110,8 +109,6 @@ do
         printf "%s" "${device}" >> "${data_file_path}"
     done
 done
-
-num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 
 function uninstallHelmChart()
 {
@@ -179,7 +176,7 @@ function waitForCortxPodsToTerminate()
         count=0
         while IFS= read -r line; do
             count=$(( count + 1 ))
-        done < <(kubectl get pods --namespace="${namespace}" --selector=release!=cortx --no-headers | grep cortx)
+        done < <(kubectl get pods --namespace="${namespace}" --selector=release!=cortx,app.kubernetes.io/instance!=cortx --no-headers | grep cortx)
 
         (( count == 0 )) && break || printf "."
         sleep 1s
@@ -200,20 +197,14 @@ function deleteCortxPVs()
     printf "########################################################\n"
     printf "# Delete CORTX Persistent Volumes                      #\n"
     printf "########################################################\n"
-    while IFS= read -r line; do
-        if [[ ${line} != *"master"* && ${line} != *"AGE"* ]]
-        then
-            IFS=" " read -r -a pvc_line <<< "${line}"
-            if [[ ${pvc_line[5]} =~ ^${namespace}/cortx-data-fs-local-pvc* \
-                    || ${pvc_line[5]} =~ ^${namespace}/cortx-control-fs-local-pvc* ]]; then
-                printf "Removing %s\n" "${pvc_line[0]}"
-                if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-                    kubectl patch pv "${pvc_line[0]}" -p '{"metadata":{"finalizers":null}}'
-                fi
-                kubectl delete pv "${pvc_line[0]}"
-            fi
+    local -r pv_filter="^${namespace}/cortx-data-fs-local-pvc|^${namespace}/cortx-control-fs-local-pvc"
+    while IFS= read -r persistent_volume; do
+        printf "Removing %s\n" "${persistent_volume}"
+        if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
+            kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
         fi
-    done < <(kubectl get pv --all-namespaces)
+        kubectl delete pv "${persistent_volume}"
+    done < <(kubectl get pv --no-headers | grep -E "${pv_filter}" | cut -f1 -d" ")
 }
 
 function deleteCortxConfigmap()
@@ -255,19 +246,6 @@ function deleteCortxConfigmap()
 #############################################################
 # Destroy CORTX 3rd party functions
 #############################################################
-function deleteKafkaZookeper()
-{
-    printf "########################################################\n"
-    printf "# Delete Kafka                                         #\n"
-    printf "########################################################\n"
-    uninstallHelmChart kafka "${namespace}"
-
-    printf "########################################################\n"
-    printf "# Delete Zookeeper                                     #\n"
-    printf "########################################################\n"
-    uninstallHelmChart zookeeper "${namespace}"
-}
-
 function deleteOpenLdap()
 {
     ## Backwards compatibility check
@@ -305,24 +283,13 @@ function deleteSecrets()
 
 function deleteDeprecated()
 {
+    # Delete resources that were created by a previous version of this deployment.
     deleteOpenLdap
-    deleteConsul
-}
-
-function deleteConsul()
-{
-    printf "########################################################\n"
-    printf "# Delete Consul                                        #\n"
-    printf "########################################################\n"
     uninstallHelmChart consul "${namespace}"
-}
+    uninstallHelmChart kafka "${namespace}"
+    uninstallHelmChart zookeeper "${namespace}"
 
-function deleteCortx()
-{
-    printf "########################################################\n"
-    printf "# Delete CORTX                                         #\n"
-    printf "########################################################\n"
-    uninstallHelmChart cortx "${namespace}"
+    waitFor3rdPartyToTerminate
 }
 
 function waitFor3rdPartyToTerminate()
@@ -334,7 +301,7 @@ function waitFor3rdPartyToTerminate()
         while IFS= read -r line; do
             count=$(( count + 1 ))
         done < <(kubectl get pods --namespace "${namespace}" --no-headers | \
-                  grep -e kafka -e zookeeper -e openldap -e '^consul' -e '^cortx-consul' 2>&1)
+                  grep -e '^zookeeper' -e openldap -e '^consul' -e '^kafka')
 
         (( count == 0 )) && break || printf "."
         sleep 1s
@@ -347,17 +314,14 @@ function delete3rdPartyPVCs()
     printf "########################################################\n"
     printf "# Delete Persistent Volume Claims                      #\n"
     printf "########################################################\n"
-    volume_claims=$(kubectl get pvc --namespace="${namespace}" | grep -E "${pvc_filter}" | cut -f1 -d " ")
-    [[ -n ${volume_claims} ]] && echo "${volume_claims}"
-    for volume_claim in ${volume_claims}
-    do
+    while IFS= read -r volume_claim; do
         printf "Removing %s\n" "${volume_claim}"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
             kubectl patch pvc --namespace "${namespace}" "${volume_claim}" \
                       -p '{"metadata":{"finalizers":null}}'
         fi
         kubectl delete pvc --namespace "${namespace}" "${volume_claim}"
-    done
+    done < <(kubectl get pvc --no-headers --namespace="${namespace}" | grep -E "${pvc_filter}" | cut -f1 -d " ")
 }
 
 function delete3rdPartyPVs()
@@ -365,16 +329,13 @@ function delete3rdPartyPVs()
     printf "########################################################\n"
     printf "# Delete Persistent Volumes                            #\n"
     printf "########################################################\n"
-    persistent_volumes=$(kubectl get pv | grep -E "${pvc_filter}" | cut -f1 -d " ")
-    [[ -n ${persistent_volumes} ]] && echo "${persistent_volumes}"
-    for persistent_volume in ${persistent_volumes}
-    do
+    while IFS= read -r persistent_volume; do
         printf "Removing %s\n" "${persistent_volume}"
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
             kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
         fi
         kubectl delete pv "${persistent_volume}"
-    done
+    done < <(kubectl get pv --no-headers | grep -E "${pvc_filter}" | cut -f1 -d " ")
 }
 
 function deleteKubernetesPrereqs()
@@ -391,7 +352,7 @@ function deleteKubernetesPrereqs()
     kubectl delete svc/cortx-io-svc --ignore-not-found=true
 }
 
-function cleanup()
+function deleteNodeDataFiles()
 {
     #################################################################
     # Delete files that contain disk partitions on the worker nodes #
@@ -414,11 +375,9 @@ function cleanup()
 }
 
 #############################################################
-# Destroy CORTX Cloud
+# Delete CORTX Cloud resources
 #############################################################
-if [[ ${num_motr_client} -gt 0 ]]; then
-    deleteCortxClient
-fi
+deleteCortxClient
 deleteCortxHa
 deleteCortxServer
 deleteCortxData
@@ -426,22 +385,20 @@ deleteCortxControl
 waitForCortxPodsToTerminate
 deleteSecrets
 deleteCortxLocalBlockStorage
-deleteCortxPVs
 deleteCortxConfigmap
 
 #############################################################
-# Destroy CORTX 3rd party
+# Delete CORTX 3rd party resources
 #############################################################
-
-deleteKafkaZookeper
 deleteDeprecated
-deleteCortx
-waitFor3rdPartyToTerminate
-delete3rdPartyPVCs
-delete3rdPartyPVs
+
+# Delete remaining CORTX Cloud resources
+uninstallHelmChart cortx "${namespace}"
 
 #############################################################
 # Clean up
 #############################################################
+delete3rdPartyPVCs
+delete3rdPartyPVs
 deleteKubernetesPrereqs
-cleanup
+deleteNodeDataFiles

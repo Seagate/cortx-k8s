@@ -380,7 +380,22 @@ function deployCortx()
     local consul_image
     consul_image=$(parseSolution 'solution.images.consul' | cut -f2 -d'>')
 
+    local kafka_image
+    kafka_image=$(parseSolution 'solution.images.kafka' | cut -f2 -d'>')
+    splitDockerImage "${kafka_image}"
+    local kafka_tag="${tag}"
+    local kafka_registry="${registry}"
+    local kafka_repository="${repository}"
+
+    local zookeeper_image
+    zookeeper_image=$(parseSolution 'solution.images.zookeeper' | cut -f2 -d'>')
+    splitDockerImage "${zookeeper_image}"
+    local zookeeper_tag="${tag}"
+    local zookeeper_registry="${registry}"
+    local zookeeper_repository="${repository}"
+
     helm install cortx ../charts/cortx \
+        --set global.storageClass=${storage_class} \
         --set consul.server.image="${consul_image}" \
         --set consul.client.image="${consul_image}" \
         --set consul.server.storageClass=${storage_class} \
@@ -394,6 +409,28 @@ function deployCortx()
         --set consul.client.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.requests.cpu')" \
         --set consul.client.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.memory')" \
         --set consul.client.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.consul.client.resources.limits.cpu')" \
+        --set kafka.image.tag="${kafka_tag}" \
+        --set kafka.image.registry="${kafka_registry}" \
+        --set kafka.image.repository="${kafka_repository}" \
+        --set kafka.replicaCount="${num_kafka_replicas}" \
+        --set kafka.defaultReplicationFactor="${num_kafka_replicas}" \
+        --set kafka.offsetsTopicReplicationFactor="${num_kafka_replicas}" \
+        --set kafka.transactionStateLogReplicationFactor="${num_kafka_replicas}" \
+        --set kafka.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory')" \
+        --set kafka.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu')" \
+        --set kafka.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory')" \
+        --set kafka.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu')" \
+        --set kafka.persistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size')" \
+        --set kafka.zookeeper.image.tag="${zookeeper_tag}" \
+        --set kafka.zookeeper.image.registry="${zookeeper_registry}" \
+        --set kafka.zookeeper.image.repository="${zookeeper_repository}" \
+        --set kafka.zookeeper.replicaCount="${num_kafka_replicas}" \
+        --set kafka.zookeeper.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory')" \
+        --set kafka.zookeeper.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu')" \
+        --set kafka.zookeeper.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.memory')" \
+        --set kafka.zookeeper.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.cpu')" \
+        --set kafka.zookeeper.persistence.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size')" \
+        --set kafka.zookeeper.persistence.dataLogDir.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size')" \
         --namespace "${namespace}" \
         --wait \
         || exit $?
@@ -411,7 +448,6 @@ function deployCortx()
     kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
 
     ##TODO This needs to be maintained during upgrades etc...
-
 }
 
 function splitDockerImage()
@@ -427,112 +463,6 @@ function splitDockerImage()
     tag="${tag_arr[1]}"
 }
 
-function deployZookeeper()
-{
-    local image
-
-    printf "######################################################\n"
-    printf "# Deploy Zookeeper                                    \n"
-    printf "######################################################\n"
-    image=$(parseSolution 'solution.images.zookeeper')
-    image=$(echo "${image}" | cut -f2 -d'>')
-    splitDockerImage "${image}"
-    printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
-
-    helm install zookeeper bitnami/zookeeper \
-        --version 9.1.0 \
-        --set image.tag="${tag}" \
-        --set image.registry="${registry}" \
-        --set image.repository="${repository}" \
-        --set replicaCount="${num_kafka_replicas}" \
-        --set auth.enabled=false \
-        --set allowAnonymousLogin=true \
-        --set global.storageClass=${storage_class} \
-        --set resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.memory')" \
-        --set resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.requests.cpu')" \
-        --set resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.memory')" \
-        --set resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.zookeeper.resources.limits.cpu')" \
-        --set persistence.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.storage_request_size')" \
-        --set persistence.dataLogDir.size="$(extractBlock 'solution.common.resource_allocation.zookeeper.data_log_dir_request_size')" \
-        --set serviceAccount.create=true \
-        --set serviceAccount.name="cortx-zookeeper" \
-        --set serviceAccount.automountServiceAccountToken=false \
-        --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --namespace "${namespace}" \
-        --wait \
-        || exit $?
-
-    printf "\nWait for Zookeeper to be ready before starting kafka"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "${line}"
-            IFS="/" read -r -a ready_status <<< "${pod_status[2]}"
-            if [[ "${pod_status[3]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                count=$((count+1))
-                break
-            fi
-        done <<< "$(kubectl get pods -A | grep 'zookeeper')"
-
-        if [[ ${count} -eq 0 ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-    sleep 2s
-}
-
-function deployKafka()
-{
-    local image
-
-    printf "######################################################\n"
-    printf "# Deploy Kafka                                        \n"
-    printf "######################################################\n"
-
-    image=$(parseSolution 'solution.images.kafka')
-    image=$(echo "${image}" | cut -f2 -d'>')
-    splitDockerImage "${image}"
-    printf "\nRegistry: %s\nRepository: %s\nTag: %s\n" "${registry}" "${repository}" "${tag}"
-
-    helm install kafka bitnami/kafka \
-        --version 16.2.7 \
-        --set zookeeper.enabled=false \
-        --set image.tag="${tag}" \
-        --set image.registry="${registry}" \
-        --set image.repository="${repository}" \
-        --set replicaCount="${num_kafka_replicas}" \
-        --set externalZookeeper.servers="zookeeper" \
-        --set global.storageClass=${storage_class} \
-        --set defaultReplicationFactor="${num_kafka_replicas}" \
-        --set offsetsTopicReplicationFactor="${num_kafka_replicas}" \
-        --set transactionStateLogReplicationFactor="${num_kafka_replicas}" \
-        --set auth.enabled=false \
-        --set allowAnonymousLogin=true \
-        --set deleteTopicEnable=true \
-        --set transactionStateLogMinIsr=2 \
-        --set resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.memory')" \
-        --set resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.requests.cpu')" \
-        --set resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.memory')" \
-        --set resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.kafka.resources.limits.cpu')" \
-        --set persistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.storage_request_size')" \
-        --set logPersistence.size="$(extractBlock 'solution.common.resource_allocation.kafka.log_persistence_request_size')" \
-        --set serviceAccount.create=true \
-        --set serviceAccount.name="cortx-kafka" \
-        --set serviceAccount.automountServiceAccountToken=false \
-        --set serviceAccount.automountServiceAccountToken=false \
-        --set containerSecurityContext.enabled=true \
-        --set containerSecurityContext.allowPrivilegeEscalation=false \
-        --namespace "${namespace}" \
-        --wait \
-        || exit $?
-
-    printf "\n\n"
-}
-
 function waitForThirdParty()
 {
     printf "\nWait for CORTX 3rd party to be ready"
@@ -545,7 +475,7 @@ function waitForThirdParty()
                 count=$((count+1))
                 break
             fi
-        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|kafka\|zookeeper')"
+        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|^cortx-kafka\|^cortx-zookeeper')"
 
         if [[ ${count} -eq 0 ]]; then
             break
@@ -637,9 +567,6 @@ function deployCortxConfigMap()
     splitDockerImage "$(parseSolution 'solution.images.cortxdata' | cut -f2 -d'>' || true)"
 
     helm_install_args=(
-        --set externalKafka.enabled=true
-        --set externalLdap.enabled=true
-        --set externalConsul.enabled=true
         --set cortxHare.haxService.protocol="$(extractBlock 'solution.common.hax.protocol' || true)"
         --set cortxHare.haxService.name="$(extractBlock 'solution.common.hax.service_name' || true)"
         --set cortxHare.haxService.port="$(extractBlock 'solution.common.hax.port_num' || true)"
@@ -824,39 +751,31 @@ function deployCortxSecrets()
     printf "########################################################\n"
     printf "# Deploy CORTX Secrets                                  \n"
     printf "########################################################\n"
-    # Parse secret from the solution file and create all secret yaml files
+    # Parse secret from the solution file and create all secret files
     # in the "auto-gen-secret" folder
-    secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
+    local secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
     mkdir -p "${secret_auto_gen_path}"
-    cortx_secret_name=$(getSolutionValue "solution.secrets.name")
-    cortx_secret_ext=$(getSolutionValue "solution.secrets.external_secret")
+    cortx_secret_name=$(getSolutionValue "solution.secrets.name")  # This is a global variable
     if [[ -n "${cortx_secret_name}" ]]; then
         # Process secrets from solution.yaml
-        secrets=()
         for field in "${cortx_secret_fields[@]}"; do
             fcontent=$(getSolutionValue "solution.secrets.content.${field}")
             if [[ -z ${fcontent} ]]; then
                 # No data for this field.  Generate a password.
-                pw=$(pwgen)
-                fcontent=${pw}
+                fcontent=$(pwgen)
                 printf "Generated secret for %s\n" "${field}"
             fi
-            secrets+=( "  ${field}: ${fcontent}" )
+            printf "%s" "${fcontent}" > "${secret_auto_gen_path}/${field}"
         done
-        secrets_block=$( printf "%s\n" "${secrets[@]}" )
 
-        new_secret_gen_file="${secret_auto_gen_path}/${cortx_secret_name}.yaml"
-        cp "${cfgmap_path}/other/secret-template.yaml" "${new_secret_gen_file}"
-        ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.name" "${cortx_secret_name}"
-        ./parse_scripts/subst.sh "${new_secret_gen_file}" "secret.content" "${secrets_block}"
-        kubectl_create_secret_cmd="kubectl create -f ${new_secret_gen_file} --namespace=${namespace}"
-        if ! ${kubectl_create_secret_cmd}; then
+        if ! kubectl create secret generic "${cortx_secret_name}" \
+            --from-file="${secret_auto_gen_path}" \
+            --namespace="${namespace}"; then
             printf "Exit early.  Failed to create Secret '%s'\n" "${cortx_secret_name}"
             exit 1
         fi
-
-    elif [[ -n "${cortx_secret_ext}" ]]; then
-        cortx_secret_name="${cortx_secret_ext}"
+    else
+        cortx_secret_name="$(getSolutionValue "solution.secrets.external_secret")"
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
 
@@ -1272,8 +1191,6 @@ fi
 
 deployRancherProvisioner
 deployCortx
-deployZookeeper
-deployKafka
 waitForThirdParty
 
 ##########################################################
