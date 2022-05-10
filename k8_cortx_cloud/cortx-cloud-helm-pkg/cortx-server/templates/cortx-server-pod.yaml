@@ -65,8 +65,8 @@ spec:
         imagePullPolicy: IfNotPresent
         command:
           - /bin/sh
-          - -c
         args:
+          - -c
           {{- if eq .Values.cortxserver.image "ghcr.io/seagate/centos:7" }}
           - sleep $(shuf -i 5-10 -n 1)s
           {{- else }}
@@ -156,7 +156,6 @@ spec:
             allowPrivilegeEscalation: false
   volumeClaimTemplates:
   - metadata:
-      ### TODO CORTX-28968 Evaluate volumeClaimTemplate versus emptyDir
       name: local-path
     spec:
       accessModes: {{- toYaml .Values.cortxserver.localpathpvc.accessmodes | nindent 6 }}

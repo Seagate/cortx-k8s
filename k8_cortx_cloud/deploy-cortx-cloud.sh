@@ -741,6 +741,13 @@ function deployCortxConfigMap()
         # local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
         # Use below when hostname of pod is fqdn
         local md5hash=$(echo -n "${pod_fqdn}" | md5sum | awk '{print $1}')
+        ### Per https://github.com/Seagate/cortx-prvsnr/pull/6366/files#diff-143c717074b09aed81d7a3fd89a90e273676caf9d68a8d0053f506182188d780R87
+        ### cortx-k8s should generate a list item with the following information:
+        ### - name: should be able to be pod short name
+        ### - hostname: should be fqdn
+        ### - id: we initially write this as FQDN and provisioner stores in gconf as md5 hashed version
+        ### - type: server_node
+        ### Once CORTX-30726 is merged and available, we will no longer have to do any hashing work at the cortx-k8s level
         helm_install_args+=(
             ### TODO CORTX-28968 Does ${pod_name} below need to be ${pod_fqdn} for the Helm chart instead?
             ### Reviewing internals of cortx-configmap Helm Chart would say "no".
