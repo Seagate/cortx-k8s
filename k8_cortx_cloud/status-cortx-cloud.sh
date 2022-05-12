@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC2312
 
@@ -49,10 +49,6 @@ msg_overall_failed() {
 
 parseSolution() {
     ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
-}
-
-extractBlock() {
-    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
 }
 
 setup_colors
@@ -662,7 +658,7 @@ else
 fi
 
 
-num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
+num_motr_client=$(parseSolution 'solution.common.motr.num_client_inst' | cut -f2 -d'>')
 
 if [[ ${num_motr_client} -gt 0 ]]; then
     #########################################################################################
