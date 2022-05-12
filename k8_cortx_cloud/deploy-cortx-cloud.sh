@@ -1,6 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC2312
+
+# Check required dependencies
+if ! ./parse_scripts/check_yq.sh; then
+    exit 1
+fi
 
 solution_yaml=${1:-'solution.yaml'}
 storage_class='local-path'
@@ -24,7 +29,7 @@ function parseSolution()
 
 function extractBlock()
 {
-    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
+    yq ".$1" "${solution_yaml}"
 }
 
 #######################################

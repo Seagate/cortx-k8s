@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC2312
 
@@ -62,11 +62,6 @@ fi
 function parseSolution()
 {
     ./parse_scripts/parse_yaml.sh ${solution_yaml} "$1"
-}
-
-function extractBlock()
-{
-    ./parse_scripts/yaml_extract_block.sh ${solution_yaml} "$1"
 }
 
 namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
