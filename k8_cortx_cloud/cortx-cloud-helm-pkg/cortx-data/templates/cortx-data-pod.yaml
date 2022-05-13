@@ -184,6 +184,13 @@ spec:
             protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
+          resources:
+            limits:
+              cpu: {{ .Values.cortxdata.resources.hax.limits.cpu }}
+              memory: {{ .Values.cortxdata.resources.hax.limits.memory }}
+            requests:
+              cpu: {{ .Values.cortxdata.resources.hax.requests.cpu }}
+              memory: {{ .Values.cortxdata.resources.hax.requests.memory }}
         - name: cortx-motr-confd
           image: {{ .Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -236,6 +243,13 @@ spec:
           - containerPort: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
           securityContext:
             allowPrivilegeEscalation: false
+          resources:
+            limits:
+              cpu: {{ .Values.cortxdata.resources.confd.limits.cpu }}
+              memory: {{ .Values.cortxdata.resources.confd.limits.memory }}
+            requests:
+              cpu: {{ .Values.cortxdata.resources.confd.requests.cpu }}
+              memory: {{ .Values.cortxdata.resources.confd.requests.memory }}
         {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
         - name: {{ printf "cortx-motr-io-%03d" (add 1 $i) }}
           image: {{ $.Values.cortxdata.image }}
@@ -291,6 +305,13 @@ spec:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
           securityContext:
             allowPrivilegeEscalation: false
+          resources:
+            limits:
+              cpu: {{ $.Values.cortxdata.resources.ios.limits.cpu }}
+              memory: {{ $.Values.cortxdata.resources.ios.limits.memory }}
+            requests:
+              cpu: {{ $.Values.cortxdata.resources.ios.requests.cpu }}
+              memory: {{ $.Values.cortxdata.resources.ios.requests.memory }}
         {{- end }}
       nodeSelector:
         kubernetes.io/hostname: {{ .Values.cortxdata.nodeselector }}

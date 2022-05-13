@@ -988,6 +988,37 @@ function deployCortxData()
     cortxdata_image=$(parseSolution 'solution.images.cortxdata')
     cortxdata_image=$(echo "${cortxdata_image}" | cut -f2 -d'>')
 
+    server_memory=`expr $(cat /proc/meminfo  | grep MemTotal | awk {'print($2)'})  / 1048576 + 1`
+
+    (( server_cpu = $(nproc) * 1000 ))
+    group_size=1 #currently it is 1
+    cvg_cnt=${#cvg_index_list[@]}
+    num_containers=${#cvg_index_list[@]} #currently 1 cvg in 1 containers
+
+    ### CORTX DATA IOS MEM AND CPU CALCULATION ###
+    val1=$(echo $cvg_cnt | awk '{printf "%4.2f\n",$1/2}')
+    mem_request_ios1=$(echo $val1 $num_containers | awk '{printf "%4.2f\n",$1*$2}')
+
+    val1=$(echo $server_memory $num_containers | awk '{printf "%4.2f\n",$1/$2}')
+    val2=$(echo $cvg_cnt $num_containers | awk '{printf "%d\n",$1/$2}')
+    val3=$(echo $val1 $val2 | awk '{printf "%4.2f\n",$1*0.05*$2}')
+    mem_request_ios2=$(echo $val3 $group_size | awk '{printf "%4.2f\n",$1*$2}')
+
+    if (( $(echo "$mem_request_ios1 $mem_request_ios2" | awk '{print ($1 > $2)}') )); then
+        mem_request_ios=$(echo $mem_request_ios1 | awk '{printf "%d\n",$1*1000}')
+    else
+        mem_request_ios=$(echo $mem_request_ios2 | awk '{printf "%d\n",$1*1000}')
+    fi
+
+    mem_limits_ios=$(echo $mem_request_ios | awk '{printf "%d\n", $1*1.1}')
+
+    val1=$(echo  $server_cpu $cvg_cnt | awk '{printf "%4.2f\n",$1/$2}')
+    cpu_request_ios=$(echo  $val1 $group_size | awk '{printf "%4.2f\n",$1*$2/1.5}')
+    cpu_limits_ios=$(echo  $cpu_request_ios | awk '{printf "%d\n",$1*1.25}')
+
+    echo "# Calculated Value of ios mem_limit ${mem_limits_ios}Mi ios_mem_request ${mem_request_ios}Mi"
+    echo "# Calculated Value of ios cpu_limit $cpu_limits_ios cpu_mem_request $cpu_request_ios"
+
     num_nodes=0
     for i in "${!node_selector_list[@]}"; do
         num_nodes=$((num_nodes+1))
@@ -1019,6 +1050,18 @@ function deployCortxData()
             --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
             --set cortxdata.secretinfo="secret-info.txt" \
             --set cortxdata.serviceaccountname="${serviceAccountName}" \
+            --set cortxdata.resources.hax.limits.memory="1Gi" \
+            --set cortxdata.resources.hax.requests.memory="128Mi" \
+            --set cortxdata.resources.hax.limits.cpu="500m" \
+            --set cortxdata.resources.hax.requests.cpu="250m" \
+            --set cortxdata.resources.confd.limits.memory="1Gi" \
+            --set cortxdata.resources.confd.requests.memory="128Mi" \
+            --set cortxdata.resources.confd.limits.cpu="500m" \
+            --set cortxdata.resources.confd.requests.cpu="250m" \
+            --set cortxdata.resources.ios.limits.memory="{mem_limits_ios}Mi" \
+            --set cortxdata.resources.ios.requests.memory="{mem_request_ios}Mi" \
+            --set cortxdata.resources.ios.limits.cpu="{cpu_limits_ios}m" \
+            --set cortxdata.resources.ios.requests.cpu="{cpu_request_ios}m" \
             -n "${namespace}" \
             || exit $?
     done
