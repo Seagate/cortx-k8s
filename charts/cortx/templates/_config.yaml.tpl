@@ -1,50 +1,54 @@
 {{- define "config.yaml" -}}
 cortx:
   external:
-    {{- if .Values.externalKafka.enabled }}
     kafka:
+      {{- if .Values.kafka.enabled }}
+      endpoints:
+        - tcp://{{ include "cortx.fullname" . }}-kafka:9092
+      {{- else }}
       endpoints: {{- toYaml .Values.externalKafka.endpoints | nindent 8 }}
+      {{- end }}
       admin: {{ .Values.externalKafka.adminUser }}
       secret: {{ .Values.externalKafka.adminSecretName }}
-    {{- end }}
-    {{- if .Values.externalConsul.enabled }}
     consul:
+      {{- if .Values.consul.enabled }}
+      endpoints:
+        - tcp://{{ include "cortx.fullname" . }}-consul-server:8301
+        - http://{{ include "cortx.fullname" . }}-consul-server:8500
+      {{- else }}
       endpoints: {{- toYaml .Values.externalConsul.endpoints | nindent 8 }}
+      {{- end }}
       admin: {{ .Values.externalConsul.adminUser }}
       secret: {{ .Values.externalConsul.adminSecretName }}
-    {{- end }}
   common:
     release:
       name: CORTX
-      version: {{ .Values.cortxVersion }}
+      version: {{ .Values.configmap.cortxVersion }}
     service:
       admin: admin
       secret: common_admin_secret
-    storage: {{- toYaml .Values.cortxStoragePaths | nindent 6 }}
+    storage: {{- toYaml .Values.configmap.cortxStoragePaths | nindent 6 }}
     security:
       ssl_certificate: /etc/cortx/solution/ssl/s3.seagate.com.pem
       domain_certificate: /etc/cortx/solution/ssl/stx.pem
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
-  {{- if .Values.cortxRgw.enabled }}
+  {{- if .Values.configmap.cortxRgw.enabled }}
   rgw:
-    {{- $ioSvcName := required "A valid cortxIoService.name is required!" .Values.cortxIoService.name }}
-    {{- $iosvcHttpPort := required "A valid cortxIoService.ports.http is required!" .Values.cortxIoService.ports.http }}
-    {{- $iosvcHttpsPort := required "A valid cortxIoService.ports.https is required!" .Values.cortxIoService.ports.https }}
-    auth_user: {{ .Values.cortxRgw.authUser }}
-    auth_admin: {{ .Values.cortxRgw.authAdmin }}
-    auth_secret: {{ .Values.cortxRgw.authSecret }}
+    auth_user: {{ .Values.configmap.cortxRgw.authUser }}
+    auth_admin: {{ .Values.configmap.cortxRgw.authAdmin }}
+    auth_secret: {{ .Values.configmap.cortxRgw.authSecret }}
     public:
       endpoints:
-      - http://{{ $ioSvcName }}:{{ $iosvcHttpPort }}
-      - https://{{ $ioSvcName }}:{{ $iosvcHttpsPort }}
+      - http://{{ .Values.configmap.cortxIoService.name }}:{{ .Values.configmap.cortxIoService.ports.http }}
+      - https://{{ .Values.configmap.cortxIoService.name }}:{{ .Values.configmap.cortxIoService.ports.https }}
     service:
       endpoints:
       - http://:22751
       - https://:23001
     io_max_units: 8
-    max_start_timeout: {{ .Values.cortxRgw.maxStartTimeout | int }}
+    max_start_timeout: {{ .Values.configmap.cortxRgw.maxStartTimeout | int }}
     service_instances: 1
     limits:
       services:
@@ -55,22 +59,19 @@ cortx:
         cpu:
           min: 250m
           max: 1000m
-    {{- if .Values.cortxRgw.extraConfiguration }}
-    {{- tpl .Values.cortxRgw.extraConfiguration . | nindent 4 }}
+    {{- if .Values.configmap.cortxRgw.extraConfiguration }}
+    {{- tpl .Values.configmap.cortxRgw.extraConfiguration . | nindent 4 }}
     {{- end }}
   {{- end }}
   hare:
     hax:
+      {{- with .Values.configmap.cortxHare }}
+      {{- $endpoints := concat (list (printf "%s://%s:%d" .haxService.protocol .haxService.name (.haxService.port | int))) .haxDataEndpoints .haxClientEndpoints -}}
+      {{- if $.Values.configmap.cortxRgw.enabled }}
+      {{- $endpoints = concat $endpoints .haxServerEndpoints -}}
+      {{- end }}
       endpoints:
-      {{- with .Values.cortxHare.haxService }}
-        - {{ .protocol }}://{{ .name }}:{{ .port }}
-      {{- end }}
-      {{- toYaml .Values.cortxHare.haxDataEndpoints | nindent 8 }}
-      {{- if .Values.cortxRgw.enabled }}
-      {{- toYaml .Values.cortxHare.haxServerEndpoints | nindent 8 }}
-      {{- end }}
-      {{- if gt (len .Values.cortxHare.haxClientEndpoints) 0 -}}
-        {{- toYaml .Values.cortxHare.haxClientEndpoints | nindent 8 }}
+      {{- toYaml (default (list) $endpoints) | nindent 8 }}
       {{- end }}
     limits:
       services:
@@ -85,21 +86,21 @@ cortx:
     interface_family: inet
     transport_type: libfab
     ios:
-      endpoints: {{- toYaml .Values.cortxMotr.iosEndpoints | nindent 6 }}
+      endpoints: {{- toYaml .Values.configmap.cortxMotr.iosEndpoints | nindent 6 }}
     confd:
-      endpoints: {{- toYaml .Values.cortxMotr.confdEndpoints | nindent 6 }}
+      endpoints: {{- toYaml .Values.configmap.cortxMotr.confdEndpoints | nindent 6 }}
     clients:
-    {{- if .Values.cortxRgw.enabled }}
+    {{- if .Values.configmap.cortxRgw.enabled }}
     - name: rgw_s3
       num_instances: 1  # number of instances *per-pod*
-      endpoints: {{- toYaml .Values.cortxMotr.rgwEndpoints | nindent 8 }}
+      endpoints: {{- toYaml .Values.configmap.cortxMotr.rgwEndpoints | nindent 8 }}
     {{- end }}
     - name: motr_client
-      num_instances: {{ .Values.cortxMotr.clientInstanceCount | int }}
+      num_instances: {{ .Values.configmap.cortxMotr.clientInstanceCount | int }}
       num_subscriptions: 1
       subscriptions:
       - fdmi
-      endpoints: {{- toYaml .Values.cortxMotr.clientEndpoints | nindent 8 }}
+      endpoints: {{- toYaml .Values.configmap.cortxMotr.clientEndpoints | nindent 8 }}
     limits:
       services:
       - name: ios
@@ -116,14 +117,11 @@ cortx:
         cpu:
           min: 250m
           max: 500m
-    {{- if .Values.cortxMotr.extraConfiguration }}
-    {{- tpl .Values.cortxMotr.extraConfiguration . | nindent 4 }}
+    {{- if .Values.configmap.cortxMotr.extraConfiguration }}
+    {{- tpl .Values.configmap.cortxMotr.extraConfiguration . | nindent 4 }}
     {{- end }}
-  {{- if .Values.cortxControl.enabled }}
+  {{- if .Values.configmap.cortxControl.enabled }}
   csm:
-    {{- $ioSvcName := required "A valid cortxIoService.name is required!" .Values.cortxIoService.name }}
-    {{- $iosvcHttpPort := required "A valid cortxIoService.ports.http is required!" .Values.cortxIoService.ports.http }}
-    {{- $iosvcHttpsPort := required "A valid cortxIoService.ports.https is required!" .Values.cortxIoService.ports.https }}
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
     mgmt_admin: cortxadmin
@@ -131,7 +129,7 @@ cortx:
     email_address: cortx@seagate.com
     agent:
       endpoints:
-      - https://{{ $ioSvcName }}:8081
+      - https://{{ .Values.configmap.cortxIoService.name }}:8081
     limits:
       services:
       - name: agent
@@ -142,7 +140,7 @@ cortx:
           min: 250m
           max: 500m
   {{- end }}
-  {{- if .Values.cortxHa.enabled }}
+  {{- if .Values.configmap.cortxHa.enabled }}
   ha:
     limits:
       services:

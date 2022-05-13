@@ -227,6 +227,7 @@ function deleteCortxConfigmap()
         rm -rf "${cfgmap_path}/auto-gen-${type}-${namespace}"
     done
 
+    # Backwards compatibility uninstall
     uninstallHelmChart "cortx-cfgmap-${namespace}" "${namespace}"
     rm -rf "${cfgmap_path}/auto-gen-cfgmap-${namespace}"
 

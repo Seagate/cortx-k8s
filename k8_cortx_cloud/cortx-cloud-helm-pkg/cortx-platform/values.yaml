@@ -23,7 +23,7 @@ serviceAccount:
   create: false
   # Annotations to add to the service account
   annotations: {}
-  name: cortx-sa
+  name: cortx
 
 podSecurityPolicy:
   create: false
