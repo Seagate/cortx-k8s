@@ -54,11 +54,11 @@ cortx:
       services:
       - name: rgw
         memory:
-          min: 128Mi
-          max: 1Gi
+          min: {{ .Values.configmap.cortxRgw.resources.rgw.requests.memory }}
+          max: {{ .Values.configmap.cortxRgw.resources.rgw.limits.memory }}
         cpu:
-          min: 250m
-          max: 1000m
+          min: {{ .Values.configmap.cortxRgw.resources.rgw.requests.cpu }}
+          max: {{ .Values.configmap.cortxRgw.resources.rgw.limits.cpu }}
     {{- if .Values.configmap.cortxRgw.extraConfiguration }}
     {{- tpl .Values.configmap.cortxRgw.extraConfiguration . | nindent 4 }}
     {{- end }}
@@ -77,11 +77,11 @@ cortx:
       services:
       - name: hax
         memory:
-          min: 128Mi
-          max: 1Gi
+          min: {{ .Values.configmap.cortxHare.resources.hax.requests.memory }}
+          max: {{ .Values.configmap.cortxHare.resources.hax.limits.memory }}
         cpu:
-          min: 250m
-          max: 500m
+          min: {{ .Values.configmap.cortxHare.resources.hax.requests.cpu }}
+          max: {{ .Values.configmap.cortxHare.resources.hax.limits.cpu }}
   motr:
     interface_family: inet
     transport_type: libfab
@@ -105,18 +105,18 @@ cortx:
       services:
       - name: ios
         memory:
-          min: 1Gi
-          max: 2Gi
+          min: {{ .Values.configmap.cortxMotr.resources.motr.requests.memory }}
+          max: {{ .Values.configmap.cortxMotr.resources.motr.limits.memory }}
         cpu:
-          min: 250m
-          max: 1000m
+          min: {{ .Values.configmap.cortxMotr.resources.motr.requests.cpu }}
+          max: {{ .Values.configmap.cortxMotr.resources.motr.limits.cpu }}
       - name: confd
         memory:
-          min: 128Mi
-          max: 512Mi
+          min: {{ .Values.configmap.cortxMotr.resources.confd.requests.memory }}
+          max: {{ .Values.configmap.cortxMotr.resources.confd.limits.memory }}
         cpu:
-          min: 250m
-          max: 500m
+          min: {{ .Values.configmap.cortxMotr.resources.confd.requests.cpu }}
+          max: {{ .Values.configmap.cortxMotr.resources.confd.limits.cpu }}
     {{- if .Values.configmap.cortxMotr.extraConfiguration }}
     {{- tpl .Values.configmap.cortxMotr.extraConfiguration . | nindent 4 }}
     {{- end }}
@@ -134,11 +134,11 @@ cortx:
       services:
       - name: agent
         memory:
-          min: 128Mi
-          max: 256Mi
+          min: {{ .Values.configmap.cortxControl.resources.agent.requests.memory }}
+          max: {{ .Values.configmap.cortxControl.resources.agent.limits.memory }}
         cpu:
-          min: 250m
-          max: 500m
+          min: {{ .Values.configmap.cortxControl.resources.agent.requests.cpu }}
+          max: {{ .Values.configmap.cortxControl.resources.agent.limits.cpu }}
   {{- end }}
   {{- if .Values.configmap.cortxHa.enabled }}
   ha:
@@ -146,24 +146,24 @@ cortx:
       services:
       - name: fault_tolerance
         memory:
-          min: 128Mi
-          max: 1Gi
+          min: {{ .Values.configmap.cortxHa.resources.fault_tolerance.requests.memory }}
+          max: {{ .Values.configmap.cortxHa.resources.fault_tolerance.limits.memory }}
         cpu:
-          min: 250m
-          max: 500m
+          min: {{ .Values.configmap.cortxHa.resources.fault_tolerance.requests.cpu }}
+          max: {{ .Values.configmap.cortxHa.resources.fault_tolerance.limits.cpu }}
       - name: health_monitor
         memory:
-          min: 128Mi
-          max: 1Gi
+          min: {{ .Values.configmap.cortxHa.resources.health_monitor.requests.memory }}
+          max: {{ .Values.configmap.cortxHa.resources.health_monitor.limits.memory }}
         cpu:
-          min: 250m
-          max: 500m
+          min: {{ .Values.configmap.cortxHa.resources.health_monitor.requests.cpu }}
+          max: {{ .Values.configmap.cortxHa.resources.health_monitor.limits.cpu }}
       - name: k8s_monitor
         memory:
-          min: 128Mi
-          max: 1Gi
+          min: {{ .Values.configmap.cortxHa.resources.k8s_monitor.requests.memory }}
+          max: {{ .Values.configmap.cortxHa.resources.k8s_monitor.limits.memory }}
         cpu:
-          min: 250m
-          max: 500m
+          min: {{ .Values.configmap.cortxHa.resources.k8s_monitor.requests.cpu }}
+          max: {{ .Values.configmap.cortxHa.resources.k8s_monitor.limits.cpu }}
   {{- end }}
 {{- end -}}
