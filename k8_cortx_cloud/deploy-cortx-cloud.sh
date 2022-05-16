@@ -256,6 +256,20 @@ buildValues() {
             | \$to" "${values_file}" "${solution_yaml}"
     done
 
+    ### TODO CORTX-31350 Update Resources with YQ statements
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.configmap;
+            .cortxControl.agent.resources           = $from.solution.common.resource_allocation.control.agent.resources
+            | .cortxHa.fault_tolerance.resources    = $from.solution.common.resource_allocation.ha.fault_tolerance.resources
+            | .cortxHa.health_monitor.resources     = $from.solution.common.resource_allocation.ha.health_monitor.resources
+            | .cortxHa.k8s_monitor.resources        = $from.solution.common.resource_allocation.ha.k8s_monitor.resources
+            | .cortxHare.hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
+            | .cortxMotr.motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
+            | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources
+            | .cortxRgw.rgw.resources               = $from.solution.common.resource_allocation.server.rgw.resources)
+        | $to' "${values_file}" "${solution_yaml}"
+
     set +e
 }
 
