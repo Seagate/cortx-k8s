@@ -112,6 +112,10 @@ buildValues() {
 
     local -r values_file="$1"
 
+    #
+    # Values for third-party Charts, and previous cortx-configmap Helm Chart
+    #
+
     # Initialize
     yq --null-input "(.global.storageClass, .consul.server.storageClass) = \"${storage_class}\"" > "${values_file}"
 
@@ -255,6 +259,51 @@ buildValues() {
                 | .dataDevices = [\$cvg.devices.data.d*.device])
             | \$to" "${values_file}" "${solution_yaml}"
     done
+
+    #
+    # Values from previous cortx-platform Helm Chart
+    #
+
+    ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
+    ## in the same chart as Namespace-scoped objects.
+    local podSecurityPolicyName="cortx"
+    local createPodSecurityPolicy="true"
+    local output
+    output=$(kubectl get psp --no-headers ${podSecurityPolicyName} 2>/dev/null | wc -l || true)
+    if [[ ${output} == "1" ]]; then
+        createPodSecurityPolicy="false"
+    fi
+
+    local hax_service_name
+    local hax_service_port
+    local s3_service_type
+    local s3_service_ports_http
+    local s3_service_ports_https
+    hax_service_name=$(getSolutionValue 'solution.common.hax.service_name')
+    hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
+    s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
+    s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
+    s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
+    s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
+
+    [[ ${deployment_type} == "data-only" ]] && s3_service_count=0
+
+    local s3_service_nodeports_http
+    local s3_service_nodeports_https
+    s3_service_nodeports_http=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.http')
+    s3_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.https')
+    [[ -n ${s3_service_nodeports_http} ]] && yq -i ".platform.services.io.nodePorts.http = ${s3_service_nodeports_http}" "${values_file}"
+    [[ -n ${s3_service_nodeports_https} ]] && yq -i ".platform.services.io.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
+
+    yq -i "
+        with(.platform; (
+            .podSecurityPolicy.create = ${createPodSecurityPolicy}
+            | .services.hax.name = \"${hax_service_name}\"
+            | .services.hax.port = ${hax_service_port}
+            | .services.io.type = \"${s3_service_type}\"
+            | .services.io.count = ${s3_service_count}
+            | .services.io.ports.http = ${s3_service_ports_http}
+            | .services.io.ports.https = ${s3_service_ports_https}))" "${values_file}"
 
     set +e
 }
@@ -440,55 +489,6 @@ function deployKubernetesPrereqs()
 
     # Installing a chart from the filesystem requires fetching the dependencies
     helm dependency build ../charts/cortx
-
-    ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
-    ## in the same chart as Namespace-scoped objects.
-    local podSecurityPolicyName="cortx-baseline"
-    local createPodSecurityPolicy="true"
-    local output
-    output=$(kubectl get psp --no-headers ${podSecurityPolicyName} 2>/dev/null | wc -l || true)
-    if [[ ${output} == "1" ]]; then
-        createPodSecurityPolicy="false"
-    fi
-
-    local hax_service_name
-    local hax_service_port
-    local s3_service_type
-    local s3_service_ports_http
-    local s3_service_ports_https
-    hax_service_name=$(getSolutionValue 'solution.common.hax.service_name')
-    hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
-    s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
-    s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
-    s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
-    s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
-
-    [[ ${deployment_type} == "data-only" ]] && s3_service_count=0
-
-    local optional_values=()
-    local s3_service_nodeports_http
-    local s3_service_nodeports_https
-    s3_service_nodeports_http=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.http')
-    s3_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.https')
-    [[ -n ${s3_service_nodeports_http} ]] && optional_values+=(--set services.io.nodePorts.http="${s3_service_nodeports_http}")
-    [[ -n ${s3_service_nodeports_https} ]] && optional_values+=(--set services.io.nodePorts.https="${s3_service_nodeports_https}")
-
-    helm install "cortx-platform" cortx-cloud-helm-pkg/cortx-platform \
-        --set podSecurityPolicy.create="${createPodSecurityPolicy}" \
-        --set rbacRole.create="true" \
-        --set rbacRoleBinding.create="true" \
-        --set networkPolicy.create="false" \
-        --set services.create="true" \
-        --set services.hax.name="${hax_service_name}" \
-        --set services.hax.port="${hax_service_port}" \
-        --set services.io.type="${s3_service_type}" \
-        --set services.io.count="${s3_service_count}" \
-        --set services.io.ports.http="${s3_service_ports_http}" \
-        --set services.io.ports.https="${s3_service_ports_https}" \
-        "${optional_values[@]}" \
-        --namespace "${namespace}" \
-        --create-namespace \
-        || exit $?
 }
 
 
@@ -1131,7 +1131,7 @@ cleanup
 # Note: It is not ideal that some of these values are hard-coded here.
 #       The data comes from the helm charts and so there is no feasible
 #       way of getting the values otherwise.
-data_service_name="cortx-io-svc-0"  # present in cortx-platform/values.yaml... what to do?
+data_service_name="cortx-io-svc-0"  # present in cortx values.yaml... what to do?
 data_service_default_user="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
 control_service_name="cortx-control-loadbal-svc"  # hard coded in script above installing help or cortx-control
 control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templates/_config.tpl
