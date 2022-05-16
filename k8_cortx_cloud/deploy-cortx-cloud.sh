@@ -256,6 +256,7 @@ buildValues() {
             | \$to" "${values_file}" "${solution_yaml}"
     done
 
+    # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.configmap;
