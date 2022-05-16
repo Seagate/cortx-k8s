@@ -112,10 +112,10 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxcontrol.name }}
           ports:
           - containerPort: 8081
+          {{- if .Values.cortxcontrol.agent.resources }}
+          resources: {{- toYaml .Values.cortxcontrol.agent.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

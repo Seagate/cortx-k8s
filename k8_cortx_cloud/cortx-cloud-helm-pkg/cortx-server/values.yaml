@@ -4,8 +4,23 @@ cortxserver:
   nodeselector: node-1
   secretinfo: secret-info.txt
   serviceaccountname: cortx
+  rgw:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 2Gi
+        cpu:    2000m
   hax:
     port: 22003
+    resources: 
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 2Gi
+        cpu:    1000m
   service:
     clusterip:
       name: cortx-server-clusterip-svc

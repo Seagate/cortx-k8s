@@ -101,31 +101,16 @@ solution:
             memory: 2Gi
             cpu: 1
       data:
-        # This may need to be revisited during multi-data pod implementation
-        motr:
-          resources:
-            requests:
-              memory: 1Gi
-              cpu:    250m
-            limits:
-              memory: 2Gi
-              cpu:    1000m   
-        confd:
-          resources:
-            requests:
-              memory: 128Mi
-              cpu:    250m
-            limits:
-              memory: 512Mi
-              cpu:    500m
-        hax:
-          resources:
-            requests:
-              memory: 128Mi
-              cpu:    250m
-            limits:
-              memory: 1Gi
-              cpu:    500m
+        #Includes io (x2), confd, & hax services resource requirements
+        ## TODO This will need to be revisited during multi-data pod implementation
+        ## TODO PIVOT TO CONTAINER SERVICES (NOT AGGREGATE)
+        resources:
+          requests:
+            memory: 2.25Gi
+            cpu:    1000m
+          limits:
+            memory: 5.5Gi
+            cpu:    3000m            
       server:
         rgw:
           resources:
@@ -144,39 +129,25 @@ solution:
               memory: 2Gi
               cpu:    1000m
       control:
-        agent:
-          resources:
-            requests:
-              memory: 128Mi 
-              cpu:    250m
-            limits:
-              memory: 256Mi
-              cpu:    500m
+        #Includes agent service resource requirements
+        ## TODO PIVOT TO CONTAINER SERVICES (NOT AGGREGATE)
+        resources:
+          requests:
+            memory: 128Mi 
+            cpu:    250m
+          limits:
+            memory: 256Mi
+            cpu:    500m
       ha:
-        fault_tolerance:
-          resources:
-            requests:
-              memory: 128Mi
-              cpu:    250m
-            limits:
-              memory: 1Gi
-              cpu:    500m
-        health_monitor:
-          resources:
-            requests:
-              memory: 128Mi
-              cpu:    250m
-            limits:
-              memory: 1Gi
-              cpu:    500m
-        k8s_monitor:
-          resources:
-            requests:
-              memory: 128Mi
-              cpu:    250m
-            limits:
-              memory: 1Gi
-              cpu:    500m
+        #Includes fault_tolerance, health_monitor, & k8s_monitor services resource requirements
+        ## TODO PIVOT TO CONTAINER SERVICES (NOT AGGREGATE)
+        resources:
+          requests:
+            memory: 384Mi
+            cpu:    750m
+          limits:
+            memory: 3Gi
+            cpu:    1500m
   storage:
     cvg1:
       name: cvg-01

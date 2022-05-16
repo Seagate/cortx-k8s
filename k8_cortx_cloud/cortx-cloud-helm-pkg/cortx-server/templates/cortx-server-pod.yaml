@@ -116,9 +116,6 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxserver.name }}
           ports:
           - name: rgw-http
             containerPort: 22751
@@ -126,6 +123,9 @@ spec:
           - name: rgw-https
             containerPort: 23001
             protocol: TCP
+          {{- if .Values.cortxserver.rgw.resources }}
+          resources: {{- toYaml .Values.cortxserver.rgw.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-hax
@@ -151,13 +151,13 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxserver.name }}
           ports:
           - name: hax
             containerPort: {{ .Values.cortxserver.hax.port | int }}
             protocol: TCP
+          {{- if .Values.cortxserver.hax.resources }}
+          resources: {{- toYaml .Values.cortxserver.hax.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
       nodeSelector:

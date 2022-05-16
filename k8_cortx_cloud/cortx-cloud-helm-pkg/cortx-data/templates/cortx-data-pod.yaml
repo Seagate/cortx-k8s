@@ -175,13 +175,13 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
           ports:
           - name: hax
             containerPort: {{ .Values.cortxdata.hax.port }}
             protocol: TCP
+          {{- if .Values.cortxdata.hax.resources }}
+          resources: {{- toYaml .Values.cortxdata.hax.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-motr-confd
@@ -229,11 +229,11 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxdata.name }}
           ports:
           - containerPort: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
+          {{- if .Values.cortxdata.confd.resources }}
+          resources: {{- toYaml .Values.cortxdata.confd.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
@@ -241,8 +241,6 @@ spec:
           image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
           env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ $.Values.cortxdata.name }}
             - name: IO_INDEX
               value: {{ printf "%d" (add 1 $i) | quote }}
           {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
@@ -289,6 +287,9 @@ spec:
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
           ports:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+          {{- if $.Values.cortxdata.motr.resources }}
+          resources: {{- toYaml $.Values.cortxdata.motr.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         {{- end }}

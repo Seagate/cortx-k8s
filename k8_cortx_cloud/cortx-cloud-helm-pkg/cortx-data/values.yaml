@@ -9,8 +9,30 @@ cortxdata:
   motr:
     startportnum: 29000
     numiosinst: 1
+    resources:
+      requests:
+        memory: 1Gi
+        cpu:    250m
+      limits:
+        memory: 2Gi
+        cpu:    1000m   
+  confd:
+    resources: 
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 512Mi
+        cpu:    500m
   hax:
     port: 22003
+    resources: 
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 2Gi
+        cpu:    1000m
   service:
     clusterip:
       name: cortx-data-clusterip-svc
