@@ -1,3 +1,13 @@
+{{- define "config.yaml.service.limits" -}}
+- name: {{ .name }}
+  memory:
+    min: {{ .resources.requests.memory }}
+    max: {{ .resources.limits.memory }}
+  cpu:
+    min: {{ .resources.requests.cpu }}
+    max: {{ .resources.limits.cpu }}
+{{- end }}
+
 {{- define "config.yaml" -}}
 cortx:
   external:
@@ -75,13 +85,7 @@ cortx:
       {{- end }}
     limits:
       services:
-      - name: hax
-        memory:
-          min: {{ .Values.configmap.cortxHare.hax.resources.requests.memory }}
-          max: {{ .Values.configmap.cortxHare.hax.resources.limits.memory }}
-        cpu:
-          min: {{ .Values.configmap.cortxHare.hax.resources.requests.cpu }}
-          max: {{ .Values.configmap.cortxHare.hax.resources.limits.cpu }}
+      {{- include "config.yaml.service.limits" (dict "name" "hax" "resources" .Values.configmap.cortxHare.hax.resources) | nindent 6 }}
   motr:
     interface_family: inet
     transport_type: libfab
@@ -103,20 +107,8 @@ cortx:
       endpoints: {{- toYaml .Values.configmap.cortxMotr.clientEndpoints | nindent 8 }}
     limits:
       services:
-      - name: ios
-        memory:
-          min: {{ .Values.configmap.cortxMotr.motr.resources.requests.memory }}
-          max: {{ .Values.configmap.cortxMotr.motr.resources.limits.memory }}
-        cpu:
-          min: {{ .Values.configmap.cortxMotr.motr.resources.requests.cpu }}
-          max: {{ .Values.configmap.cortxMotr.motr.resources.limits.cpu }}
-      - name: confd
-        memory:
-          min: {{ .Values.configmap.cortxMotr.confd.resources.requests.memory }}
-          max: {{ .Values.configmap.cortxMotr.confd.resources.limits.memory }}
-        cpu:
-          min: {{ .Values.configmap.cortxMotr.confd.resources.requests.cpu }}
-          max: {{ .Values.configmap.cortxMotr.confd.resources.limits.cpu }}
+      {{- include "config.yaml.service.limits" (dict "name" "ios" "resources" .Values.configmap.cortxMotr.motr.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "confd" "resources" .Values.configmap.cortxMotr.confd.resources) | nindent 6 }}
     {{- if .Values.configmap.cortxMotr.extraConfiguration }}
     {{- tpl .Values.configmap.cortxMotr.extraConfiguration . | nindent 4 }}
     {{- end }}
@@ -132,38 +124,14 @@ cortx:
       - https://{{ .Values.configmap.cortxIoService.name }}:8081
     limits:
       services:
-      - name: agent
-        memory:
-          min: {{ .Values.configmap.cortxControl.agent.resources.requests.memory }}
-          max: {{ .Values.configmap.cortxControl.agent.resources.limits.memory }}
-        cpu:
-          min: {{ .Values.configmap.cortxControl.agent.resources.requests.cpu }}
-          max: {{ .Values.configmap.cortxControl.agent.resources.limits.cpu }}
+      {{- include "config.yaml.service.limits" (dict "name" "agent" "resources" .Values.configmap.cortxControl.agent.resources) | nindent 6 }}
   {{- end }}
   {{- if .Values.configmap.cortxHa.enabled }}
   ha:
     limits:
       services:
-      - name: fault_tolerance
-        memory:
-          min: {{ .Values.configmap.cortxHa.fault_tolerance.resources.requests.memory }}
-          max: {{ .Values.configmap.cortxHa.fault_tolerance.resources.limits.memory }}
-        cpu:
-          min: {{ .Values.configmap.cortxHa.fault_tolerance.resources.requests.cpu }}
-          max: {{ .Values.configmap.cortxHa.fault_tolerance.resources.limits.cpu }}
-      - name: health_monitor
-        memory:
-          min: {{ .Values.configmap.cortxHa.health_monitor.resources.requests.memory }}
-          max: {{ .Values.configmap.cortxHa.health_monitor.resources.limits.memory }}
-        cpu:
-          min: {{ .Values.configmap.cortxHa.health_monitor.resources.requests.cpu }}
-          max: {{ .Values.configmap.cortxHa.health_monitor.resources.limits.cpu }}
-      - name: k8s_monitor
-        memory:
-          min: {{ .Values.configmap.cortxHa.k8s_monitor.resources.requests.memory }}
-          max: {{ .Values.configmap.cortxHa.k8s_monitor.resources.limits.memory }}
-        cpu:
-          min: {{ .Values.configmap.cortxHa.k8s_monitor.resources.requests.cpu }}
-          max: {{ .Values.configmap.cortxHa.k8s_monitor.resources.limits.cpu }}
+      {{- include "config.yaml.service.limits" (dict "name" "fault_tolerance" "resources" .Values.configmap.cortxHa.fault_tolerance.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "health_monitor" "resources" .Values.configmap.cortxHa.health_monitor.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "k8s_monitor" "resources" .Values.configmap.cortxHa.k8s_monitor.resources) | nindent 6 }}
   {{- end }}
 {{- end -}}
