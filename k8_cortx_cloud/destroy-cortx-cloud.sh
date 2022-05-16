@@ -336,9 +336,7 @@ function delete3rdPartyPVs()
 
 function deleteKubernetesPrereqs()
 {
-    printf "########################################################\n"
-    printf "# Delete Cortx Kubernetes Prereqs                      #\n"
-    printf "########################################################\n"
+    # This chart has been removed, this is for backwards compatibility.
     uninstallHelmChart cortx-platform "${namespace}"
 
     ## Backwards compatibility check

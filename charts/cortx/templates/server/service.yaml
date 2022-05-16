@@ -1,5 +1,5 @@
-{{- if .Values.services.create -}}
-{{- $svc := .Values.services.io -}}
+{{- if .Values.platform.services.create -}}
+{{- $svc := .Values.platform.services.io -}}
 {{- if gt (int $svc.count) 0 -}}
 {{- $isLB := eq $svc.type "LoadBalancer" -}}
 {{- $nodePortAllowed := or (eq $svc.type "NodePort") $isLB -}}
@@ -11,19 +11,20 @@ kind: Service
 metadata:
   name: {{ printf "%s-%d" $svc.name $i | trunc 63 | trimSuffix "-" }}
   namespace: {{ $root.Release.Namespace }}
+  labels: {{ include "cortx.labels" $ | nindent 4 }}
 spec:
   type: {{ $svc.type }}
   selector:
     cortx.io/service-type: "cortx-server"
   ports:
-    - name: cortx-rgw-http
+    - name: rgw-http
       protocol: TCP
       port: {{ $svc.ports.http }}
       targetPort: rgw-http
       {{- if and $nodePortAllowed (not (empty $svc.nodePorts.http)) }}
       nodePort: {{ add $svc.nodePorts.http $i }}
       {{- end }}
-    - name: cortx-rgw-https
+    - name: rgw-https
       protocol: TCP
       port: {{ $svc.ports.https }}
       targetPort: rgw-https

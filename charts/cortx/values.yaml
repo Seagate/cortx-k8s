@@ -274,3 +274,40 @@ configmap:
   cortxSecretName: "cortx-secret"
   # cortxSecretValues: is a Dictionary of CORTX secret names and values
   cortxSecretValues: {}
+
+##
+## Imported values from cortx-platform Helm Chart. These will be changed.
+##
+platform:
+  podSecurityPolicy:
+    create: false
+
+  rbacRole:
+    create: true
+
+  rbacRoleBinding:
+    create: true
+
+  networkPolicy:
+    create: false
+    cortxControl:
+      podAppLabel: cortx-control-pod
+    cortxData:
+      podNameLabel: cortx-data
+
+  services:
+    create: true
+    hax:
+      name: cortx-hax-svc
+      type: ClusterIP
+      port: 22003
+    io:
+      name: cortx-io-svc
+      type: ClusterIP
+      count: 1
+      ports:
+        http: 80
+        https: 443
+      nodePorts:
+        http: ""
+        https: ""
