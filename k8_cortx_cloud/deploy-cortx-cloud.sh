@@ -892,10 +892,10 @@ function deployCortxData()
             --set cortxdata.confd.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.requests.cpu')" \
             --set cortxdata.confd.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.limits.memory')" \
             --set cortxdata.confd.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.limits.cpu')" \
-            --set cortxdata.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.data.hax.resources.requests.memory')" \
-            --set cortxdata.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.data.hax.resources.requests.cpu')" \
-            --set cortxdata.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.data.hax.resources.limits.memory')" \
-            --set cortxdata.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.data.hax.resources.limits.cpu')" \
+            --set cortxdata.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.memory')" \
+            --set cortxdata.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.cpu')" \
+            --set cortxdata.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.memory')" \
+            --set cortxdata.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.cpu')" \
             -n "${namespace}" \
             || exit $?
     done
@@ -964,10 +964,10 @@ function deployCortxServer()
             --set cortxserver.rgw.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.cpu')" \
             --set cortxserver.rgw.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.memory')" \
             --set cortxserver.rgw.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.cpu')" \
-            --set cortxserver.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.server.hax.resources.requests.memory')" \
-            --set cortxserver.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.server.hax.resources.requests.cpu')" \
-            --set cortxserver.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.server.hax.resources.limits.memory')" \
-            --set cortxserver.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.server.hax.resources.limits.cpu')" \
+            --set cortxserver.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.memory')" \
+            --set cortxserver.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.cpu')" \
+            --set cortxserver.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.memory')" \
+            --set cortxserver.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.cpu')" \
             --namespace "${namespace}" \
             || exit $?
     done

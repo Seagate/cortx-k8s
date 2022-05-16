@@ -100,6 +100,15 @@ solution:
           limits:
             memory: 2Gi
             cpu: 1
+      hare:
+        hax:
+          resources:
+            requests:
+              memory: 128Mi
+              cpu:    250m
+            limits:
+              memory: 2Gi
+              cpu:    1000m
       data:
         # This may need to be revisited during multi-data pod implementation
         motr:
@@ -118,14 +127,6 @@ solution:
             limits:
               memory: 512Mi
               cpu:    500m
-        hax:
-          resources:
-            requests:
-              memory: 128Mi
-              cpu:    250m
-            limits:
-              memory: 1Gi
-              cpu:    500m
       server:
         rgw:
           resources:
@@ -135,14 +136,6 @@ solution:
             limits:
               memory: 2Gi
               cpu:    2000m
-        hax:
-          resources:
-            requests:
-              memory: 128Mi
-              cpu:    250m
-            limits:
-              memory: 2Gi
-              cpu:    1000m
       control:
         agent:
           resources:
