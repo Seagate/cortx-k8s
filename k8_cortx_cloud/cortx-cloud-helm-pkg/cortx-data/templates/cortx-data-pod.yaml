@@ -33,9 +33,6 @@ spec:
         - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxdata.sslcfgmap.name }}
-        - name: {{ .Values.cortxdata.machineid.volmountname }}
-          configMap:
-            name: {{ .Values.cortxdata.machineid.name }}
         # Loop through the node list info file which contains the following example:
         # 0 node-1
         # 1 node-2

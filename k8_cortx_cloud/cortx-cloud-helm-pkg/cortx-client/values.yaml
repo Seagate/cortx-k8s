@@ -19,8 +19,6 @@ cortxclient:
     name: cortx-ssl-cert
   machineid:
     mountpath: /etc/cortx/solution/node
-    volmountname: machine-id-config
-    name:  cortx-client-machine-id-cfgmap
     value: ""
   localpathpvc:
     name: cortx-client-fs-local-pvc

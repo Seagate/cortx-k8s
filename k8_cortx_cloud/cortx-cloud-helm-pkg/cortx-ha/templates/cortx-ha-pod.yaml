@@ -30,9 +30,6 @@ spec:
         - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxha.sslcfgmap.name }}
-        - name: {{ .Values.cortxha.machineid.volmountname }}
-          configMap:
-            name: {{ .Values.cortxha.machineid.name }}
         {{- if .Values.cortxha.machineid.value }}
         - name: machine-id
           downwardAPI:
