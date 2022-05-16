@@ -24,8 +24,8 @@ on:
   pull_request:
     types: [ opened, synchronize ]
     branches:
-      - main
       - integration
+      - main
   # Trigger the workflow on demand
   workflow_dispatch:
 jobs:
@@ -36,12 +36,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
+      
       - name: "Enable the permissions"
         run: |
           sudo chown -R root:root $GITHUB_WORKSPACE
       
-      - uses: Seagate/action-alex@v1
+      - uses: seagate/action-alex@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           filter_mode: added
