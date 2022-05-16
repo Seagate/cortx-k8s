@@ -110,7 +110,6 @@ solution:
               memory: 2Gi
               cpu:    1000m
       data:
-        # This may need to be revisited during multi-data pod implementation
         motr:
           resources:
             requests:

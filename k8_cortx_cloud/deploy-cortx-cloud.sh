@@ -256,7 +256,6 @@ buildValues() {
             | \$to" "${values_file}" "${solution_yaml}"
     done
 
-    ### TODO CORTX-31350 Update Resources with YQ statements
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.configmap;
