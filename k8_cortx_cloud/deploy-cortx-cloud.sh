@@ -649,32 +649,6 @@ function generateMachineIds()
     done
 }
 
-function deployCortxConfigMap()
-{
-    # Create node machine ID config maps
-    for node in "${node_name_list[@]}"; do
-        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-        for type in data server client; do
-            local id_path="${auto_gen_path}/${type}/id"
-            if [[ -f ${id_path} ]]; then
-                kubectl create configmap "cortx-${type}-machine-id-cfgmap-${node}-${namespace}" \
-                    --namespace="${namespace}" \
-                    --from-file="${id_path}"
-                fi
-        done
-    done
-
-    # Create control and HA machine ID config maps
-    for type in control ha; do
-        local id_path="${cfgmap_path}/auto-gen-{type}-${namespace}/id"
-        if [[ -f ${id_path} ]]; then
-            kubectl create configmap "cortx-${type}-machine-id-cfgmap-${namespace}" \
-                --namespace="${namespace}" \
-                --from-file="${id_path}"
-        fi
-    done
-}
-
 function pwgen()
 {
     # This function generates a random password that is
@@ -1109,15 +1083,14 @@ num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 deployKubernetesPrereqs
 deployRancherProvisioner
 deployCortxLocalBlockStorage
+deleteStaleAutoGenFolders
+generateMachineIds
 
 ##########################################################
 # Deploy CORTX cloud
 ##########################################################
-deleteStaleAutoGenFolders
-generateMachineIds
 deployCortx
 waitForThirdParty
-deployCortxConfigMap
 deployCortxSecrets
 deployCortxControl
 deployCortxData
