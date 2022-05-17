@@ -3,6 +3,14 @@ cortxcontrol:
   image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
   serviceaccountname: cortx
+  agent:
+    resources:
+      requests:
+        memory: 128Mi 
+        cpu:    250m
+      limits:
+        memory: 256Mi
+        cpu:    500m
   service:
     loadbal:
       enabled: true

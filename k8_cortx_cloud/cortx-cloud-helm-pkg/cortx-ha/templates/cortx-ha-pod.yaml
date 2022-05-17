@@ -110,9 +110,9 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxha.name }}
+          {{- if .Values.cortxha.fault_tolerance.resources }}
+          resources: {{- toYaml .Values.cortxha.fault_tolerance.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-health-monitor
@@ -138,9 +138,9 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxha.name }}
+          {{- if .Values.cortxha.health_monitor.resources }}
+          resources: {{- toYaml .Values.cortxha.health_monitor.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-k8s-monitor
@@ -166,8 +166,8 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
-          env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxha.name }}
+          {{- if .Values.cortxha.k8s_monitor.resources }}
+          resources: {{- toYaml .Values.cortxha.k8s_monitor.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

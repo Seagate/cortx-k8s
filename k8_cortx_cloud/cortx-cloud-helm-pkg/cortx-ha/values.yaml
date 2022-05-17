@@ -3,6 +3,30 @@ cortxha:
   image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
   serviceaccountname: ha-monitor
+  fault_tolerance:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 1Gi
+        cpu:    500m
+  health_monitor:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 1Gi
+        cpu:    500m
+  k8s_monitor:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 1Gi
+        cpu:    500m
   service:
     clusterip:
       name: cortx-ha-clusterip-svc
