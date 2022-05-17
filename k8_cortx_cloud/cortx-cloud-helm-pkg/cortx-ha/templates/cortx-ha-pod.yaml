@@ -84,6 +84,14 @@ spec:
         env:
           - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxha.machineid.value | quote }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         ports:
         - containerPort: 5050
       containers:
@@ -110,6 +118,15 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           {{- if .Values.cortxha.fault_tolerance.resources }}
           resources: {{- toYaml .Values.cortxha.fault_tolerance.resources | nindent 12 }}
           {{- end }}
@@ -138,6 +155,15 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           {{- if .Values.cortxha.health_monitor.resources }}
           resources: {{- toYaml .Values.cortxha.health_monitor.resources | nindent 12 }}
           {{- end }}
@@ -166,6 +192,15 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           {{- if .Values.cortxha.k8s_monitor.resources }}
           resources: {{- toYaml .Values.cortxha.k8s_monitor.resources | nindent 12 }}
           {{- end }}
