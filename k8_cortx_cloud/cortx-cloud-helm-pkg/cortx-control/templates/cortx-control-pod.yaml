@@ -29,9 +29,6 @@ spec:
         - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxcontrol.sslcfgmap.name }}
-        - name: {{ .Values.cortxcontrol.machineid.volmountname }}
-          configMap:
-            name: {{ .Values.cortxcontrol.machineid.name }}
         {{- if .Values.cortxcontrol.machineid.value }}
         - name: machine-id
           downwardAPI:

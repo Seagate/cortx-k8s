@@ -49,8 +49,6 @@ cortxdata:
     name: cortx-ssl-cert
   machineid:
     mountpath: /etc/cortx/solution/node
-    volmountname: machine-id-config
-    name:  cortx-data-machine-id-cfgmap
     value: ""
   localpathpvc:
     name: cortx-fs-local-pvc

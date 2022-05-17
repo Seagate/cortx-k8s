@@ -204,9 +204,10 @@ function deleteCortxPVs()
 
 function deleteCortxConfigmap()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX Configmap                               #\n"
-    printf "########################################################\n"
+    #
+    # These configmaps are deprecated, and removed for backwards compatibility.
+    #
+
     cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 
     for node in "${node_name_list[@]}"; do
@@ -379,7 +380,7 @@ deleteCortxControl
 waitForCortxPodsToTerminate
 deleteSecrets
 deleteCortxLocalBlockStorage
-deleteCortxConfigmap
+deleteCortxConfigmap  # deprecated
 
 #############################################################
 # Delete CORTX 3rd party resources
