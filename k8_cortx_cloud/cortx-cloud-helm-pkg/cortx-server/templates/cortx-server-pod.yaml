@@ -87,6 +87,14 @@ spec:
         env:
           - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxserver.machineid.value | quote }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         ports:
         - containerPort: 5050
       containers:
@@ -113,6 +121,15 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           ports:
           - name: rgw-http
             containerPort: 22751
@@ -148,6 +165,15 @@ spec:
             {{- end }}
             - name: local-path-pv
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           ports:
           - name: hax
             containerPort: {{ .Values.cortxserver.hax.port | int }}

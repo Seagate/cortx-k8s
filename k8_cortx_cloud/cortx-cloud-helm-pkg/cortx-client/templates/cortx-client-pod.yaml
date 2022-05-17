@@ -82,6 +82,14 @@ spec:
         env:
           - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxclient.machineid.value | quote }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
       containers:
         {{- range $i := until (.Values.cortxclient.motr.numclientinst|int) }}
         - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
@@ -109,10 +117,16 @@ spec:
             - name: local-path-pv
               mountPath: {{ $.Values.cortxclient.localpathpvc.mountpath }}
           env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ $.Values.cortxclient.name }}
             - name: CLIENT_INDEX
               value: {{ printf "%d" (add 1 $i) | quote }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           securityContext:
             allowPrivilegeEscalation: false
         {{- end }}
@@ -141,7 +155,13 @@ spec:
             - name: local-path-pv
               mountPath: {{ .Values.cortxclient.localpathpvc.mountpath }}
           env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxclient.name }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           securityContext:
             allowPrivilegeEscalation: false
