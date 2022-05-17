@@ -155,6 +155,14 @@ configmap:
   # cortxControl allows configuring CORTX CSM settings
   cortxControl:
     enabled: true
+    agent:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 250m
+        limits:
+          memory: 256Mi
+          cpu: 500m
 
   # cortxRgw allows configuring CORTX RGW settings
   cortxRgw:
@@ -174,10 +182,42 @@ configmap:
     #   gc_max_objs: 32
     #   motr_max_rpc_msg_size: 524288
     extraConfiguration: ""
+    rgw:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 250m
+        limits:
+          memory: 2Gi
+          cpu: 2000m
 
   # cortxHA allows configuring CORTX HA settings
   cortxHa:
     enabled: true
+    fault_tolerance:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 250m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+    health_monitor:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 250m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+    k8s_monitor:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 250m
+        limits:
+          memory: 1Gi
+          cpu: 500m
 
   # cortxHare allows configuring CORTX HARE settings
   cortxHare:
@@ -188,6 +228,15 @@ configmap:
       protocol: https
       name: cortx-hax-svc
       port: 22003
+    hax:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 250m
+        limits:
+          memory: 2Gi
+          cpu: 1000m
+
 
   # cortxMotr allows configuring CORTX MOTR settings
   cortxMotr:
@@ -204,6 +253,22 @@ configmap:
     #   md_size: 10
     #   group_size: 1
     extraConfiguration: ""
+    motr:
+      resources:
+        requests:
+          memory: 1Gi
+          cpu: 250m
+        limits:
+          memory: 2Gi
+          cpu: 1000m
+    confd:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 250m
+        limits:
+          memory: 512Mi
+          cpu: 500m
 
   # cortxSecretName is the name of the Secret mounted in CORTX Pods
   cortxSecretName: "cortx-secret"

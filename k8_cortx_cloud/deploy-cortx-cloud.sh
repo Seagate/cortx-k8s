@@ -260,6 +260,20 @@ buildValues() {
             | \$to" "${values_file}" "${solution_yaml}"
     done
 
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.configmap;
+            .cortxControl.agent.resources           = $from.solution.common.resource_allocation.control.agent.resources
+            | .cortxHa.fault_tolerance.resources    = $from.solution.common.resource_allocation.ha.fault_tolerance.resources
+            | .cortxHa.health_monitor.resources     = $from.solution.common.resource_allocation.ha.health_monitor.resources
+            | .cortxHa.k8s_monitor.resources        = $from.solution.common.resource_allocation.ha.k8s_monitor.resources
+            | .cortxHare.hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
+            | .cortxMotr.motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
+            | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources
+            | .cortxRgw.rgw.resources               = $from.solution.common.resource_allocation.server.rgw.resources)
+        | $to' "${values_file}" "${solution_yaml}"
+
     #
     # Values from previous cortx-platform Helm Chart
     #
@@ -811,6 +825,10 @@ function deployCortxControl()
         --set cortxcontrol.machineid.value="${control_machineid}" \
         --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-${namespace}" \
         --set cortxcontrol.localpathpvc.mountpath="${local_storage}" \
+        --set cortxcontrol.agent.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.control.agent.resources.requests.memory')" \
+        --set cortxcontrol.agent.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.control.agent.resources.requests.cpu')" \
+        --set cortxcontrol.agent.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.control.agent.resources.limits.memory')" \
+        --set cortxcontrol.agent.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.control.agent.resources.limits.cpu')" \
         "${optional_values[@]}" \
         --namespace "${namespace}" \
         || exit $?
@@ -854,6 +872,18 @@ function deployCortxData()
             --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
             --set cortxdata.motr.startportnum="$(extractBlock 'solution.common.motr.start_port_num')" \
             --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
+            --set cortxdata.motr.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.data.motr.resources.requests.memory')" \
+            --set cortxdata.motr.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.data.motr.resources.requests.cpu')" \
+            --set cortxdata.motr.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.data.motr.resources.limits.memory')" \
+            --set cortxdata.motr.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.data.motr.resources.limits.cpu')" \
+            --set cortxdata.confd.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.requests.memory')" \
+            --set cortxdata.confd.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.requests.cpu')" \
+            --set cortxdata.confd.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.limits.memory')" \
+            --set cortxdata.confd.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.limits.cpu')" \
+            --set cortxdata.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.memory')" \
+            --set cortxdata.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.cpu')" \
+            --set cortxdata.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.memory')" \
+            --set cortxdata.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.cpu')" \
             -n "${namespace}" \
             || exit $?
     done
@@ -918,6 +948,14 @@ function deployCortxServer()
             --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
             --set cortxserver.localpathpvc.mountpath="${local_storage}" \
             --set cortxserver.hax.port="${hax_port}" \
+            --set cortxserver.rgw.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.memory')" \
+            --set cortxserver.rgw.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.cpu')" \
+            --set cortxserver.rgw.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.memory')" \
+            --set cortxserver.rgw.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.cpu')" \
+            --set cortxserver.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.memory')" \
+            --set cortxserver.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.cpu')" \
+            --set cortxserver.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.memory')" \
+            --set cortxserver.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.cpu')" \
             --namespace "${namespace}" \
             || exit $?
     done
@@ -955,6 +993,18 @@ function deployCortxHa()
         --set cortxha.machineid.value="$(cat "${cfgmap_path}/auto-gen-ha-${namespace}/id")" \
         --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-${namespace}" \
         --set cortxha.localpathpvc.mountpath="${local_storage}" \
+        --set cortxha.fault_tolerance.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.ha.fault_tolerance.resources.requests.memory')" \
+        --set cortxha.fault_tolerance.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.ha.fault_tolerance.resources.requests.cpu')" \
+        --set cortxha.fault_tolerance.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.ha.fault_tolerance.resources.limits.memory')" \
+        --set cortxha.fault_tolerance.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.ha.fault_tolerance.resources.limits.cpu')" \
+        --set cortxha.health_monitor.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.ha.health_monitor.resources.requests.memory')" \
+        --set cortxha.health_monitor.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.ha.health_monitor.resources.requests.cpu')" \
+        --set cortxha.health_monitor.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.ha.health_monitor.resources.limits.memory')" \
+        --set cortxha.health_monitor.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.ha.health_monitor.resources.limits.cpu')" \
+        --set cortxha.k8s_monitor.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.ha.k8s_monitor.resources.requests.memory')" \
+        --set cortxha.k8s_monitor.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.ha.k8s_monitor.resources.requests.cpu')" \
+        --set cortxha.k8s_monitor.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.ha.k8s_monitor.resources.limits.memory')" \
+        --set cortxha.k8s_monitor.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.ha.k8s_monitor.resources.limits.cpu')" \
         -n "${namespace}" \
         || exit $?
 
