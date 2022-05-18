@@ -376,7 +376,7 @@ deleteCortxClient
 deleteCortxHa
 deleteCortxServer
 deleteCortxData
-deleteCortxControl
+deleteCortxControl  # deprecated
 waitForCortxPodsToTerminate
 deleteSecrets
 deleteCortxLocalBlockStorage
