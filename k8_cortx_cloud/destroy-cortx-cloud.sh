@@ -129,9 +129,6 @@ function deleteCortxClient()
 
 function deleteCortxHa()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX HA                                      #\n"
-    printf "########################################################\n"
     uninstallHelmChart "cortx-ha-${namespace}" "${namespace}"
 }
 
@@ -157,9 +154,6 @@ function deleteCortxData()
 
 function deleteCortxControl()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX Control                                 #\n"
-    printf "########################################################\n"
     uninstallHelmChart "cortx-control-${namespace}" "${namespace}"
 }
 

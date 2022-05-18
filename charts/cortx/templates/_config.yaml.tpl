@@ -126,12 +126,12 @@ cortx:
       services:
       {{- include "config.yaml.service.limits" (dict "name" "agent" "resources" .Values.configmap.cortxControl.agent.resources) | nindent 6 }}
   {{- end }}
-  {{- if .Values.configmap.cortxHa.enabled }}
+  {{- if .Values.cortxha.enabled }}
   ha:
     limits:
       services:
-      {{- include "config.yaml.service.limits" (dict "name" "fault_tolerance" "resources" .Values.configmap.cortxHa.fault_tolerance.resources) | nindent 6 }}
-      {{- include "config.yaml.service.limits" (dict "name" "health_monitor" "resources" .Values.configmap.cortxHa.health_monitor.resources) | nindent 6 }}
-      {{- include "config.yaml.service.limits" (dict "name" "k8s_monitor" "resources" .Values.configmap.cortxHa.k8s_monitor.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "fault_tolerance" "resources" .Values.cortxha.fault_tolerance.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "health_monitor" "resources" .Values.cortxha.health_monitor.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "k8s_monitor" "resources" .Values.cortxha.k8s_monitor.resources) | nindent 6 }}
   {{- end }}
 {{- end -}}

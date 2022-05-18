@@ -81,3 +81,10 @@ Return the name of the Control component
 {{- define "cortx.control.fullname" -}}
 {{- printf "%s-control" (include "cortx.fullname" .) -}}
 {{- end -}}
+
+{{/*
+Return the name of the HA component
+*/}}
+{{- define "cortx.ha.fullname" -}}
+{{- printf "%s-ha" (include "cortx.fullname" .) -}}
+{{- end -}}
