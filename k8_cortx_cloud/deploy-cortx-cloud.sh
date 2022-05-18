@@ -551,6 +551,7 @@ function deployCortx()
     helm install cortx ../charts/cortx \
         -f ${values_file} \
         --namespace "${namespace}" \
+        --create-namespace \
         --wait \
         || exit $?
 
@@ -606,7 +607,8 @@ function deployCortxLocalBlockStorage()
         --set cortxblkdata.nodelistinfo="node-list-info.txt" \
         --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
         --set cortxblkdata.storage.volumemode="Block" \
-        -n "${namespace}" \
+        --namespace "${namespace}" \
+        --create-namespace \
         || exit $?
 }
 
