@@ -63,7 +63,7 @@ CORTX on Kubernetes is provided via Helm Charts. As such, you will need Helm ins
 
 #### [yq](https://mikefarah.gitbook.io/yq/)
 
-yq is a command-line YAML processor and must be [installed](https://github.com/mikefarah/yq/#install) for use by the deployment scripts.
+yq is a command-line YAML processor and must be [installed](https://github.com/mikefarah/yq/#install) for use by the deployment scripts. Version 4.25.1 or later is required.
 
 ### Node configuration
 
