@@ -206,10 +206,8 @@ buildValues() {
         yq -i "
             with(.configmap; (
                 .cortxHare.haxDataEndpoints += [\"tcp://cortx-data-headless-svc-${node}:22001\"]
-                | .cortxHare.haxServerEndpoints += [\"tcp://cortx-server-headless-svc-${node}:22001\"]
                 | .cortxMotr.confdEndpoints += [\"tcp://cortx-data-headless-svc-${node}:22002\"]
-                | .cortxMotr.iosEndpoints += [\"tcp://cortx-data-headless-svc-${node}:21001\"]
-                | .cortxMotr.rgwEndpoints += [\"tcp://cortx-server-headless-svc-${node}:21001\"]))" "${values_file}"
+                | .cortxMotr.iosEndpoints += [\"tcp://cortx-data-headless-svc-${node}:21001\"]))" "${values_file}"
 
         if ((num_motr_client > 0)); then
             yq -i "
@@ -353,9 +351,9 @@ buildValues() {
         ### TODO CORTX-28968 Observe switch below based on setting of Pod hostname
         ### Must match with setting in config-map/_cluster.tpl:84 as well ($serverName)
         # Use below when hostname of pod is only short name
-        # local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
+        local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
         # Use below when hostname of pod is fqdn
-        local md5hash=$(echo -n "${pod_fqdn}" | md5sum | awk '{print $1}')
+        # local md5hash=$(echo -n "${pod_fqdn}" | md5sum | awk '{print $1}')
         ### Per https://github.com/Seagate/cortx-prvsnr/pull/6366/files#diff-143c717074b09aed81d7a3fd89a90e273676caf9d68a8d0053f506182188d780R87
         ### cortx-k8s should generate a list item with the following information:
         ### - name: should be able to be pod short name
@@ -363,22 +361,15 @@ buildValues() {
         ### - id: we initially write this as FQDN and provisioner stores in gconf as md5 hashed version
         ### - type: server_node
         ### Once CORTX-30726 is merged and available, we will no longer have to do any hashing work at the cortx-k8s level
-        
 
-        ### TODO CORTX-28968 Does ${pod_name} below need to be ${pod_fqdn} for the Helm chart instead?
-        ### Reviewing internals of cortx-configmap Helm Chart would say "no".
-        ##--set "clusterStorageSets.${storage_set_name}.nodes.${pod_name}.serverUuid=${pod_fqdn}"
-        
+        local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
 
-        yq -i eval-all "
-            select(fi==0) ref \$to | select(fi==1).solution.common.storage_sets.name as \$name
-            | \$to.configmap.clusterStorageSets.[\$name].nodes.${pod_name}.serverUuid=${md5hash}
-            | \$to.configmap.cortxMotr.rgwEndpoints[${count}]=tcp://${pod_fqdn}:21001
-            | \$to.configmap.cortxHare.haxServerEndpoints[${count}]=tcp://${pod_fqdn}:22001
-            | \$to" "${values_file}" "${solution_yaml}"
+        yq -i "
+            .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${md5hash}\"
+            | .configmap.cortxMotr.rgwEndpoints += [\"tcp://${pod_fqdn}:21001\"]
+            | .configmap.cortxHare.haxServerEndpoints += [\"tcp://${pod_fqdn}:22001\"]" "${values_file}"
 
     done
-
 
     set +e
 }
@@ -554,20 +545,24 @@ cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
 ##########################################################
 # Extract & establish required cluster-wide constants
-### TODO Define these elements as reasonable defaults in eventual values.yaml
+### TODO CORTX-28968 Define these elements as reasonable defaults in eventual values.yaml
 ##########################################################
 
 global_cortx_secret_name=""
 
+###TODO CORTX-28968 This can be replaced with yq query
 cortxserver_service_headless_name="cortx-server"
 readonly cortxserver_service_headless_name
 
+###TODO CORTX-28968 This can be replaced with yq query
 cortxserver_server_pod_prefix="cortx-server"
 readonly cortxserver_server_pod_prefix
 
+###TODO CORTX-28968 This can be replaced with yq query
 cluster_domain="cluster.local"
 readonly cluster_domain
 
+###TODO CORTX-28968 This can be replaced with yq query
 server_instances_per_node="$(getSolutionValue 'solution.common.s3.instances_per_node')"
 data_node_count=${#node_name_list[@]}
 total_server_pods=$(( data_node_count * server_instances_per_node ))

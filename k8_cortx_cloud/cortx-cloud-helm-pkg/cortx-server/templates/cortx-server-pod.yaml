@@ -43,9 +43,6 @@ spec:
         cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
     spec:
       subdomain: {{ .Values.cortxserver.service.headless.name }}
-      ### Avoid using below if possible due to limitations around Linux kernel field length limitations
-      ### See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-sethostnameasfqdn-field
-      setHostnameAsFQDN: true
       serviceAccountName: {{ .Values.cortxserver.serviceaccountname }}
       volumes:
         - name: {{ .Values.cortxserver.cfgmap.volmountname }}
@@ -70,8 +67,7 @@ spec:
           {{- if eq .Values.cortxserver.image "ghcr.io/seagate/centos:7" }}
           - sleep $(shuf -i 5-10 -n 1)s
           {{- else }}
-          - export MACHINE_ID=$(hostname --fqdn);
-            export HOSTNAME=$(hostname);
+          - export HOSTNAME=$(hostname);
             export MACHINE_ID=$(echo -n ${HOSTNAME} | md5sum | awk '{print $1}');
             echo "Storing MACHINE_ID of '${MACHINE_ID}' in '${MACHINE_ID_PATH}'.";
             echo "${MACHINE_ID}" > ${MACHINE_ID_PATH};
@@ -79,6 +75,7 @@ spec:
             sleep 10s;
           {{- end }}
           ### TODO CORTX-28968 Remove sleep from initContainer
+          ### TODO CORTX-28968 The --fqdn flag can be added to the hostname above to get the FQDN of the container
         volumeMounts:
           - name: {{ .Values.cortxserver.cfgmap.volmountname }}
             mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
