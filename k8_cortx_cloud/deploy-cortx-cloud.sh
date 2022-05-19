@@ -1047,21 +1047,12 @@ function deployCortxClient()
 
 function cleanup()
 {
-    #################################################################
-    # Delete files that contain disk partitions on the worker nodes
-    # and the node info
-    #################################################################
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "secret-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-server" -name "secret-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-ha" -name "secret-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-client" -name "secret-*" -delete
+    # Delete files that contain disk partitions on the worker nodes and the node info
+    # and left-over secret data
+    find "$(pwd)/cortx-cloud-helm-pkg" -type f \( -name 'mnt-blk-*' -o -name 'node-list-*' -o -name secret-info.txt \) -delete
 
-    rm -rf "${cfgmap_path}/auto-gen-secret-${namespace}"
-
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
+    # Delete left-over machine IDs and any other auto-gen data
+    rm -rf "${cfgmap_path}"
 }
 
 # Extract storage provisioner path from the "solution.yaml" file
