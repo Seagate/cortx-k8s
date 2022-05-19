@@ -30,9 +30,6 @@ spec:
         - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxha.sslcfgmap.name }}
-        - name: {{ .Values.cortxha.machineid.volmountname }}
-          configMap:
-            name: {{ .Values.cortxha.machineid.name }}
         {{- if .Values.cortxha.machineid.value }}
         - name: machine-id
           downwardAPI:
@@ -87,6 +84,14 @@ spec:
         env:
           - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxha.machineid.value | quote }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         ports:
         - containerPort: 5050
       containers:
@@ -114,8 +119,17 @@ spec:
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
           env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxha.name }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- if .Values.cortxha.fault_tolerance.resources }}
+          resources: {{- toYaml .Values.cortxha.fault_tolerance.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-health-monitor
@@ -142,8 +156,17 @@ spec:
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
           env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxha.name }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- if .Values.cortxha.health_monitor.resources }}
+          resources: {{- toYaml .Values.cortxha.health_monitor.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-k8s-monitor
@@ -170,7 +193,16 @@ spec:
             - name: local-path-pv
               mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
           env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxha.name }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- if .Values.cortxha.k8s_monitor.resources }}
+          resources: {{- toYaml .Values.cortxha.k8s_monitor.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

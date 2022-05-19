@@ -74,7 +74,6 @@ solution:
             cpu: required
       kafka:
         storage_request_size: required
-        log_persistence_request_size: required
         resources:
           requests:
             memory: required
@@ -82,6 +81,75 @@ solution:
           limits:
             memory: required
             cpu: required
+      control:
+        agent:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+      data:
+        motr:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+        confd:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+      ha:
+        fault_tolerance:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+        health_monitor:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+        k8s_monitor:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+      hare:
+        hax:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
+      server:
+        rgw:
+          resources:
+            requests:
+              memory: required
+              cpu: required
+            limits:
+              memory: required
+              cpu: required
   storage:
     cvg1:
       name: required

@@ -1,0 +1,203 @@
+{{- if .Values.platform.networkPolicy.create -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cortx.fullname" . }}-s3-haproxy
+  labels:
+    source-pod: cortx-data
+    target-pod: cortx-data
+    target-container: cortx-s3-haproxy
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
+    ports:
+      - protocol: TCP
+        port: 80
+      - protocol: TCP
+        port: 443
+      - protocol: TCP
+        port: 9080
+      - protocol: TCP
+        port: 9443
+      - protocol: TCP
+        port: 28049
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cortx.fullname" . }}-motr-ios
+  labels:
+    source-pod: cortx-data
+    target-pod: cortx-data
+    target-container: cortx-motr-ios
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
+    ports:
+      - protocol: TCP
+        port: 29000
+      - protocol: TCP
+        port: 29001
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cortx.fullname" . }}-control
+  labels:
+    source-pod: cortx-control
+    target-pod: cortx-data
+    target-container: cortx-s3-bg-consumer
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: {{ .Values.platform.networkPolicy.cortxControl.podAppLabel }}
+    ports:
+      - protocol: TCP
+        port: 28049
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cortx.fullname" . }}-data-misc
+  labels:
+    source-pod: cortx-data
+    target-pod: cortx-data
+    target-container: misc
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          name: {{ .Values.platform.networkPolicy.cortxData.podNameLabel }}
+    ports:
+      - protocol: TCP
+        port: 2001
+      - protocol: TCP
+        port: 3001
+      - protocol: TCP
+        port: 3002
+      - protocol: TCP
+        port: 3003
+      - protocol: TCP
+        port: 4001
+      - protocol: TCP
+        port: 4002
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cortx.fullname" . }}-consul-server
+  labels:
+    source-pod: any
+    target-pod: cortx-consul-server
+    target-container: consul
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: consul
+      component: server
+  ingress:
+  - from:
+    - podSelector: {}
+    ports:
+      - protocol: TCP
+        port: 8300
+      - protocol: TCP
+        port: 8301
+      - protocol: UDP
+        port: 8301
+      - protocol: TCP
+        port: 8302
+      - protocol: UDP
+        port: 8302
+      - protocol: TCP
+        port: 8500
+      - protocol: TCP
+        port: 8600
+      - protocol: UDP
+        port: 8600
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cortx.fullname" . }}-consul-dns
+  labels:
+    source-pod: any
+    target-pod: consul-all
+    target-container: any
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: consul
+      hasDNS: "true"
+      release: {{ .Release.Name | quote }}
+  ingress:
+  - from:
+    - podSelector: {}
+    ports:
+      - protocol: TCP
+        port: 53
+      - protocol: UDP
+        port: 53
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cortx.fullname" . }}-consul-kafka
+  labels:
+    source-pod: any
+    target-pod: kafka
+    target-container: any
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: kafka
+      app.kubernetes.io/name: kafka
+  ingress:
+  - from:
+    - podSelector: {}
+    ports:
+      - protocol: TCP
+        port: 9092
+      - protocol: TCP
+        port: 9093
+{{- end }}

@@ -6,20 +6,20 @@
 
 ## Table of Contents
 
-1.  [Project Overview](#project-overview)
-2.  [Reference Architecture](#reference-architecture)
-3.  [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites)
-4.  [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
-5.  [Getting Started](#getting-started)
-    1.  [Using the prereq deploy script (Optional)](#using-the-prereq-deploy-script-optional)
-    2.  [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
-    3.  [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
-    4.  [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
-    5.  [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
-    6.  [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
-6.  [Solution YAML Overview](#solution-yaml-overview)
-7.  [Troubleshooting](#troubleshooting)
-8.  [License](#license)
+1. [Project Overview](#project-overview)
+2. [Reference Architecture](#reference-architecture)
+3. [CORTX on Kubernetes Prerequisites](#cortx-on-kubernetes-prerequisites)
+4. [Kubernetes Reference Deployments](#kubernetes-reference-deployments)
+5. [Getting Started](#getting-started)
+    1. [Using the prereq deploy script (Optional)](#using-the-prereq-deploy-script-optional)
+    2. [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes)
+    3. [Upgrading CORTX on Kubernetes](#upgrading-cortx-on-kubernetes)
+    4. [Using CORTX on Kubernetes](#using-cortx-on-kubernetes)
+    5. [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
+    6. [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
+6. [Solution YAML Overview](#solution-yaml-overview)
+7. [Troubleshooting](#troubleshooting)
+8. [License](#license)
 
 ## Project Overview
 
@@ -32,53 +32,64 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 ![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s-28968.jpg)
 
 CORTX on Kubernetes consists of five primary components:
-1.  Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul) and [Apache Kafka](https://kafka.apache.org/).
 
-2.  CORTX Control Pods
-    -  These pods maintain the CORTX control plane
-    -  Usually with a cardinality of one pod per CORTX deployment
+1. Prerequisite services, consisting of [Consul](https://github.com/hashicorp/consul) and [Apache Kafka](https://kafka.apache.org/).
 
-3.  CORTX Data Pods
-    -  These pods maintain the CORTX data plane
-    -  Usually with a cardinality of one pod per CORTX node
+2. CORTX Control Pods
+    - These pods maintain the CORTX control plane
+    - Usually with a cardinality of one pod per CORTX deployment
 
-4.  CORTX Server Pods
-    -  These pods maintain the CORTX API and user interfaces
-    -  Usually with a cardinality of three pods per CORTX node (but scalable based on system traffic)
+3. CORTX Data Pods
+    - These pods maintain the CORTX data plane
+    - Usually with a cardinality of one pod per CORTX node
 
-5.  CORTX HA Pods
-    -  These pods maintain the overall high-availability of the CORTX deployment
-    -  Usually with a cardinality of one pod per CORTX deployment
+4. CORTX Server Pods
+    - These pods maintain the CORTX API and user interfaces
+    - Usually with a cardinality of three pods per CORTX node (but scalable based on system traffic)
+
+5. CORTX HA Pods
+    - These pods maintain the overall high-availability of the CORTX deployment
+    - Usually with a cardinality of one pod per CORTX deployment
 
 ## CORTX on Kubernetes Prerequisites
 
 For additional discussion on infrastructure prerequisites in support of other Kubernetes capabilities prior to installing CORTX, please reference the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md) guide.
 
-1.  **[Helm](https://helm.sh/)**
+### Required software
 
-    CORTX on Kubernetes is provided via Helm Charts. As such, you will need Helm installed locally to deploy CORTX on Kubernetes. You can find the specific installation instructions for your local platform via the [Installing Helm](https://helm.sh/docs/intro/install/) section of the official Helm documentation.
+#### [Helm](https://helm.sh/)
 
-2.  **Uniform device paths**
+CORTX on Kubernetes is provided via Helm Charts. As such, you will need Helm installed locally to deploy CORTX on Kubernetes. You can find the specific installation instructions for your local platform via the [Installing Helm](https://helm.sh/docs/intro/install/) section of the official Helm documentation.
 
-    CORTX on Kubernetes currently expects all Kubernetes Nodes to have a uniform device/drive setup across the Kubernetes cluster. This is to say that CORTX on Kubernetes expects all Kubernetes Nodes to have the same `/dev/sdb`, `/dev/sdc`, `/dev/sdN`, etc device paths on every node.
+#### [yq](https://mikefarah.gitbook.io/yq/)
 
-3. **Persistent disk naming and node reboot support**
+yq is a command-line YAML processor and must be [installed](https://github.com/mikefarah/yq/#install) for use by the deployment scripts. Version 4.25.1 or later is required.
 
-    For configuration options in support of persistent device naming and stability across Kubernetes Node reboot support, reference the [Persistent disk naming and node reboot support](/doc/prereq-deploy-use-cases.md#persistent-disk-naming-and-node-reboot-support) section of the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md) guide.
+### Node configuration
 
-4.  **Required kernel parameters**
+#### Uniform device paths
 
-    CORTX on Kubernetes currently requires the `vm.max_map_count` set to a specific minimum level of `30000000` (thirty million) on the Kubernetes Nodes which `cortx-data` Pods will run.
-    - The `prereq-deploy-cortx-cloud.sh` script will set this value prior to deployment if you choose to utilize it.
-    - The `cortx-data` Pods include an initContainer that will check for this minimal value and halt deployment if not met.
+All Kubernetes Nodes must have a uniform device/drive setup across the Kubernetes cluster, i.e. all nodes will have the same `/dev/sdb`, `/dev/sdc`, `/dev/sdN`, etc. device paths.
 
-5.  **Local path provisioner**
+#### Persistent disk naming and node reboot support
 
-    CORTX on Kubernetes currently uses the [Rancher Local Provisioner](https://github.com/rancher/local-path-provisioner) to manage some dynamic provisioning of local storage for prerequisite services.
-    - The `prereq-deploy-cortx-cloud.sh` script will ensure this directory exists, if you choose to utilize it.
-    - This directory prefix is configurable in the `solution.yaml` file via the `solution.common.storage_provisioner_path`, while appending `local-path-provisioner` to it.
-       - You can manually create this path via the default values of `/mnt/fs-local-volume/local-path-provisioner` on every Kubernetes Node
-       - Or you can customize the value of `solution.common.storage_provisioner_path` and create directories on every Kubernetes Node to match (i.e. `/mnt/cortx-k8s/local-volumes/local-path-provisioner`.
+For configuration options in support of persistent device naming and stability across Kubernetes Node reboot support, reference the [Persistent disk naming and node reboot support](/doc/prereq-deploy-use-cases.md#persistent-disk-naming-and-node-reboot-support) section of the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md) guide.
+
+#### Kernel parameters
+
+Kernel parameter `vm.max_map_count` must be set to a specific minimum level of `30000000` (thirty million) on the Kubernetes Nodes where `cortx-data` Pods will run.
+
+- The `prereq-deploy-cortx-cloud.sh` script will set this value prior to deployment if you choose to utilize it.
+- The `cortx-data` Pods include an initContainer that will check for this minimal value and halt deployment if not met.
+
+### Storage Provisioning
+
+[Rancher Local Path Provisioner](https://github.com/rancher/local-path-provisioner) is used to manage dynamic provisioning of local storage for prerequisite services.
+
+- The `prereq-deploy-cortx-cloud.sh` script will ensure this directory exists, if you choose to utilize it.
+- This directory prefix is configurable in the `solution.yaml` file via the `solution.common.storage_provisioner_path`, while appending `local-path-provisioner` to it.
+  - You can manually create this path via the default values of `/mnt/fs-local-volume/local-path-provisioner` on every Kubernetes Node
+  - Or you can customize the value of `solution.common.storage_provisioner_path` and create directories on every Kubernetes Node to match (i.e. `/mnt/cortx-k8s/local-volumes/local-path-provisioner`.
 
 ## Kubernetes Reference Deployments
 
@@ -86,9 +97,9 @@ There are numerous ways to install and configure a complete Kubernetes cluster. 
 
 For reference material, we have provided existing Kubernetes deployment models that have been verified to work with CORTX on Kubernetes. These are only provided for reference and are not meant to be explicit deployment constraints.
 
-1.  [Seagate Internal Jenkins Job](http://eos-jenkins.mero.colo.seagate.com/job/Cortx-kubernetes/job/setup-kubernetes-cluster/)
-2.  [CORTX on AWS and Kubernetes - Quick Start Guide](doc/cortx-aws-k8s-installation.md)
-3.  [CORTX on minikube - Quick Start Guide](doc/cortx-minikube-k8s-installation.md)
+1. [Seagate Internal Jenkins Job](http://eos-jenkins.mero.colo.seagate.com/job/Cortx-kubernetes/job/setup-kubernetes-cluster/)
+2. [CORTX on AWS and Kubernetes - Quick Start Guide](doc/cortx-aws-k8s-installation.md)
+3. [CORTX on minikube - Quick Start Guide](doc/cortx-minikube-k8s-installation.md)
 
 Should you have trouble deploying CORTX on Kubernetes to your Kubernetes cluster, please open an [Issue](https://github.com/Seagate/cortx-k8s/issues) in this repository for further troubleshooting.
 
@@ -100,21 +111,22 @@ All steps in this section assume the proper prerequisites have been installed or
 
 If you have direct access to the underlying Kubernetes Nodes in your cluster, CORTX on Kubernetes provides a [prerequisite deployment script](k8_cortx_cloud/prereq-deploy-cortx-cloud.sh) that will configure the majority of the low-level system configuration requirements prior to CORTX deployment. This is not a required step if you choose to ensure all the [prerequisites](#cortx-on-kubernetes-prerequisites) mentioned above are satisfied manually.
 
-   1.  Copy `prereq-deploy-cortx-cloud.sh` script, and the solution yaml file to all worker nodes:
+   1. Copy `prereq-deploy-cortx-cloud.sh` script, and the solution yaml file to all worker nodes:
 
-   ```bash
-   scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
-   scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-solution-yaml>
-   ```
+      ```bash
+      scp prereq-deploy-cortx-cloud.sh <user>@<worker-node-IP-address>:<path-to-prereq-script>
+      scp <solution_yaml_file> <user>@<worker-node-IP-address>:<path-to-solution-yaml>
+      ```
 
-   2.  Run prerequisite script on all worker nodes in the cluster, and any untainted control nodes which allow Pod scheduling. `<disk>` is a required input to run this script. This disk should NOT be any of the devices listed in `solution.storage.cvg*` in the `solution.yaml` file:
+   2. Run prerequisite script on all worker nodes in the cluster, and any untainted control nodes which allow Pod scheduling. `<disk>` is a required input to run this script. This disk should NOT be any of the devices listed in `solution.storage.cvg*` in the `solution.yaml` file:
 
-   ```bash
-   sudo ./prereq-deploy-cortx-cloud.sh -d <disk> [ -s <solution-file> ]
-   ```
+      ```bash
+      sudo ./prereq-deploy-cortx-cloud.sh -d <disk> [ -s <solution-file> ]
+      ```
 
-   - The `-d <disk>` flag is a required flag to pass the path of the disk or device to mount for secondary storage to the `prereq-deploy-cortx-cloud.sh` script. This should be in the format of `/dev/sdb` etc.
-   - The `-s <solution-file>` flag is an optional flag to the `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml` if the `-s` flag is not supplied.
+      - The `-d <disk>` flag is a required flag to pass the path of the disk or device to mount for secondary storage to the `prereq-deploy-cortx-cloud.sh` script. This should be in the format of `/dev/sdb` etc.
+
+      - The `-s <solution-file>` flag is an optional flag to the `prereq-deploy-cortx-cloud.sh` script. Make sure to use the same solution file for prereqs, deploy and destroy scripts. The default `<solution-file>` is `solution.yaml` if the `-s` flag is not supplied.
 
 ### Deploying CORTX on Kubernetes
 
@@ -124,14 +136,14 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
    git clone https://github.com/Seagate/cortx-k8s
    ```
 
-   >  :information_source: You can also use the latest released version of the CORTX on Kubernetes code via the **Releases** page found at https://github.com/Seagate/cortx-k8s/releases/latest
+   >  :information_source: You can also use the latest released version of the CORTX on Kubernetes code via the [**Latest Releases**](https://github.com/Seagate/cortx-k8s/releases/latest) page
 
 2. For initial deployments, copy the example solution configuration file [`./k8_cortx_cloud/solution.example.yaml`](k8_cortx_cloud/solution.example.yaml) to `./k8_cortx_cloud/solution.yaml` or to a filename of your choice.
 
 3. Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
 
    - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created.
-   
+
    - Update the `deployment_type` with the desired deployment mode. See under [Global Parameters](#global-parameters) for more details.
 
    - Update all passwords. The `csm-secret` should include one special character in cortx-secret.
@@ -165,11 +177,11 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 ### Upgrading CORTX on Kubernetes
 
->  :information_source: As the CORTX on Kubernetes architecture is evolving, the upgrade path for CORTX on Kubernetes is evolving as well. As a workaround until more foundational upgrade capabilities exist, the following steps are available to manually upgrade your CORTX on Kubernetes environment to a more recent release.
+> :information_source: As the CORTX on Kubernetes architecture is evolving, the upgrade path for CORTX on Kubernetes is evolving as well. As a workaround until more foundational upgrade capabilities exist, the following steps are available to manually upgrade your CORTX on Kubernetes environment to a more recent release.
 
-1.  Deploy CORTX on Kubernetes according to the [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes) steps above.
+1. Deploy CORTX on Kubernetes according to the [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes) steps above.
 
-2.  Run the upgrade script to patch the CORTX on Kubernetes deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments and StatefulSets, and then re-start the Pods.
+2. Run the upgrade script to patch the CORTX on Kubernetes deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments and StatefulSets, and then re-start the Pods.
 
    ```bash
    TARGET_IMAGE="ghcr.io/seagate/cortx-all:2.0.0-641-custom-ci"
@@ -178,7 +190,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 ### Using CORTX on Kubernetes
 
-**_TODO_** Port https://seagate-systems.atlassian.net/wiki/spaces/PUB/pages/754155622/CORTX+Kubernetes+N-Pod+Deployment+and+Upgrade+Document+using+Services+Framework#5.-Understanding-Management-and-S3-Endpoints-and-configuring-External-Load-balancer-service(Optional) here or into a linked `doc/readme` file.
+**_TODO_** Port [this Confluence Page](https://seagate-systems.atlassian.net/wiki/spaces/PUB/pages/754155622/CORTX+Kubernetes+N-Pod+Deployment+and+Upgrade+Document+using+Services+Framework#5.-Understanding-Management-and-S3-Endpoints-and-configuring-External-Load-balancer-service(Optional)) here or into a linked `doc/readme` file.
 
 ### Log collection for CORTX on Kubernetes
 
@@ -202,8 +214,6 @@ Note: This script does not uninstall the local provisioner.  If you need to unin
 kubectl delete -f ./cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner/local-path-storage.yaml
 ```
 
-
-
 ## Solution YAML Overview
 
 The CORTX solution configuration file consists of all parameters required to deploy CORTX on Kubernetes. The pre-req, deploy, and destroy scripts parse the solution configuration file and extract information they need to deploy and destroy CORTX.
@@ -224,10 +234,12 @@ All paths below are prefixed with `solution.` for fully-qualified naming and are
 This section contains the CORTX and third-party authentication information used to deploy CORTX on Kubernetes.
 
 A Kubernetes Secret is used to hold the various passwords and secret keys needed by the various components.
+
 - If the `secrets.name` field is specified, then CORTX will create and populate this Secret object, using this specified name.  For any `secrets.content` fields that are not specified or do not have a value specified, CORTX will generate a random password.
 - If the `secrets.external_secret` field is specified, then CORTX will expect a Kubernetes Secret object to already exist with the specified name, which contains the passwords for these fields.  This allows an admin to specify passwords outside of solution.yaml.  Note: If a `secrets.external_secret` is used, then the specified Secret must define _all_ CORTX-required passwords.
 
 :bulb: To create a new Kubernetes Secret object with admin-specified values for required CORTX passwords:
+
 ```bash
 kubectl create secret generic my-cortx-secret \
   --from-literal=common_admin_secret=Password1@123 \
@@ -300,9 +312,9 @@ This section contains common parameters that affect all CORTX components running
 | `common.external_services.control.type`               | Kubernetes Service type for external access to CSM Management API                                 | `NodePort` |
 | `common.external_services.control.ports.https`        | Secure (https) service port number for CSM Management API.                                        | `8081` |
 | `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | `null` |
-| `common.resource_allocation.*.storage`                | The desired storage space allocated to PVCs used by that component                                | See `solution.yaml` |
-| `common.resource_allocation.*.resources.requests.*`   | CPU & Memory requested for Pods managed by a specific component                                   | See `solution.yaml` |
-| `common.resource_allocation.*.resources.limits.*`     | CPU & Memory limits for Pods managed by a specific component                                      | See `solution.yaml` |
+| `common.resource_allocation.**.storage`               | The desired storage space allocated to PVCs used by that component or sub-component.              | See `solution.yaml` |
+| `common.resource_allocation.**.resources.requests.*`  | CPU & Memory requested for Pods managed by a specific component or sub-component.                 | See `solution.yaml` |
+| `common.resource_allocation.**.resources.limits.*`    | CPU & Memory limits for Pods managed by a specific component or sub-component.                    | See `solution.yaml` |
 
 ### Storage parameters
 
@@ -329,6 +341,17 @@ This section contains information about all the worker nodes used to deploy CORT
 ### Using stub containers
 
 The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
+
+### Overriding Helm Install  / Wait Timeouts
+
+There is a "wait" after each of the cortx helm charts are deployed.  This wait is guarded by a timeout.  If needed, these timeout values can be overridden by environment variables.
+
+| Environment Variable           | Default Value |
+| ------------------------------ | ------------- |
+| `CORTX_DEPLOY_CONTROL_TIMEOUT` | `300s`        |
+| `CORTX_DEPLOY_DATA_TIMEOUT`    | `300s`        |
+| `CORTX_DEPLOY_SERVER_TIMEOUT`  | `300s`        |
+| `CORTX_DEPLOY_HA_TIMEOUT`      | `120s`        |
 
 ### Crash-looping InitContainers
 

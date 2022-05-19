@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC2312
 
@@ -16,13 +16,8 @@ function parseSolution()
     ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
 }
 
-function extractBlock()
-{
-    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
-}
-
-namespace=$(parseSolution 'solution.namespace')
-namespace=$(echo "${namespace}" | cut -f2 -d'>')
+namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
+readonly namespace
 
 printf "########################################################\n"
 printf "# Shutdown CORTX Control                                \n"
@@ -116,7 +111,7 @@ printf "\n\n"
 printf "All CORTX HA pods have been shutdown"
 printf "\n\n"
 
-num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
+num_motr_client=$(parseSolution 'solution.common.motr.num_client_inst' | cut -f2 -d'>')
 
 if [[ ${num_motr_client} -gt 0 ]]; then
     printf "########################################################\n"

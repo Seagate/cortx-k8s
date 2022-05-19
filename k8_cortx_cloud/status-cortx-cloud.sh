@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC2312
 
@@ -51,10 +51,6 @@ parseSolution() {
     ./parse_scripts/parse_yaml.sh "${solution_yaml}" "$1"
 }
 
-extractBlock() {
-    ./parse_scripts/yaml_extract_block.sh "${solution_yaml}" "$1"
-}
-
 setup_colors
 
 namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
@@ -78,6 +74,7 @@ failcount=0
 alert_msg "######################################################"
 alert_msg "# CORTX Control                                       "
 alert_msg "######################################################"
+control_selector="app.kubernetes.io/component=control,app.kubernetes.io/instance=cortx"
 # Check deployments
 expected_count=1
 [[ ${data_deployment} == true ]] && expected_count=0
@@ -86,17 +83,15 @@ msg_info "| Checking Deployments |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-control')
+done < <(kubectl get deployments --namespace="${namespace}" --selector=${control_selector} --no-headers)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -111,17 +106,15 @@ msg_info "| Checking Pods |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-control-')
+done < <(kubectl get pods --namespace="${namespace}" --selector=${control_selector} --no-headers)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -135,12 +128,10 @@ count=0
 msg_info "| Checking Services: cortx-control-loadbal-svc |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        msg_passed
-        count=$((count+1))
-    fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'cortx-control-loadbal-')
+    printf "%s..." "${status[0]}"
+    msg_passed
+    count=$((count+1))
+done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector} --no-headers)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -156,17 +147,15 @@ num_pvs_pvcs=2
 msg_info "| Checking Storage: Local [PVCs/PVs] |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PVC: %s..." "${status[0]}"
-        if [[ "${status[1]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PVC: %s..." "${status[0]}"
+    if [[ "${status[1]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pvc --namespace="${namespace}" | grep 'cortx-control-fs-local-pvc')
+done < <(kubectl get pvc --namespace="${namespace}" --selector=${control_selector} --no-headers)
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -180,7 +169,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pv --namespace="${namespace}" | grep 'cortx-control-fs-local-pvc')
+done < <(kubectl get pv --no-headers | grep "${namespace}/cortx-control")
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed
@@ -188,7 +177,6 @@ else
     msg_overall_failed
     failcount=$((failcount+1))
 fi
-
 
 #########################################################################################
 # CORTX Data
@@ -662,7 +650,7 @@ else
 fi
 
 
-num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
+num_motr_client=$(parseSolution 'solution.common.motr.num_client_inst' | cut -f2 -d'>')
 
 if [[ ${num_motr_client} -gt 0 ]]; then
     #########################################################################################
@@ -809,6 +797,7 @@ alert_msg "# 3rd Party                                           "
 alert_msg "######################################################"
 
 alert_msg "### Kafka"
+kafka_selector="app.kubernetes.io/component=kafka"
 # Check StatefulSet
 num_items=1
 count=0
@@ -816,17 +805,15 @@ msg_info "| Checking StatefulSet |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get statefulsets --namespace="${namespace}" | grep 'kafka')
+done < <(kubectl get statefulsets --namespace="${namespace}" --selector=${kafka_selector} --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -840,19 +827,17 @@ num_items=${num_replicas}
 count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
-        IFS=" " read -r -a status <<< "${line}"
+    IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pods --namespace="${namespace}" | grep 'kafka-')
+done < <(kubectl get pods --namespace="${namespace}" --selector=${kafka_selector} --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -867,17 +852,15 @@ count=0
 msg_info "| Checking Services: Cluster IP |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[1]}" != "ClusterIP" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'kafka' | grep -v 'kafka-headless')
+done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep -v cortx-kafka-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -892,17 +875,15 @@ count=0
 msg_info "| Checking Services: Headless |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[1]}" != "ClusterIP" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'kafka-headless')
+done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep cortx-kafka-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -917,31 +898,27 @@ num_pvs_pvcs=$(( num_replicas * 2 ))
 msg_info "| Checking Storage: Local [PVCs/PVs] |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PVC: %s..." "${status[0]}"
-        if [[ "${status[1]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PVC: %s..." "${status[0]}"
+    if [[ "${status[1]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pvc --namespace="${namespace}" | grep 'kafka-')
+done < <(kubectl get pvc --namespace="${namespace}" --selector=${kafka_selector} --no-headers)
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PV: %s..." "${status[5]}"
-        if [[ "${status[4]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PV: %s..." "${status[5]}"
+    if [[ "${status[4]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pv --namespace="${namespace}" | grep 'kafka-')
+done < <(kubectl get pv --no-headers | grep "${namespace}/data-.*kafka-")
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed
@@ -951,6 +928,7 @@ else
 fi
 
 alert_msg "### Zookeeper"
+zookeeper_selector="app.kubernetes.io/component=zookeeper"
 # Check StatefulSet
 num_items=1
 count=0
@@ -958,17 +936,15 @@ msg_info "| Checking StatefulSet |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get statefulsets --namespace="${namespace}" | grep 'zookeeper')
+done < <(kubectl get statefulsets --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -982,19 +958,17 @@ num_items=${num_replicas}
 count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
-        IFS=" " read -r -a status <<< "${line}"
+    IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pods --namespace="${namespace}" | grep 'zookeeper-')
+done < <(kubectl get pods --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1009,17 +983,15 @@ count=0
 msg_info "| Checking Services: Cluster IP |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[1]}" != "ClusterIP" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'zookeeper' | grep -v 'zookeeper-headless')
+done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep -v cortx-zookeeper-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1034,17 +1006,15 @@ count=0
 msg_info "| Checking Services: Headless |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[1]}" != "ClusterIP" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'zookeeper-headless')
+done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep cortx-zookeeper-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1059,31 +1029,27 @@ num_pvs_pvcs=$(( num_replicas * 2 ))
 msg_info "| Checking Storage: Local [PVCs/PVs] |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PVC: %s..." "${status[0]}"
-        if [[ "${status[1]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PVC: %s..." "${status[0]}"
+    if [[ "${status[1]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pvc --namespace="${namespace}" | grep 'zookeeper-')
+done < <(kubectl get pvc --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers)
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PV: %s..." "${status[5]}"
-        if [[ "${status[4]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PV: %s..." "${status[5]}"
+    if [[ "${status[4]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pv | grep 'zookeeper-')
+done < <(kubectl get pv --no-headers | grep "${namespace}/data-.*zookeeper-")
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed
@@ -1093,6 +1059,7 @@ else
 fi
 
 alert_msg "### Consul"
+consul_selector="app=consul"
 # Check StatefulSet
 num_items=1
 count=0
@@ -1100,17 +1067,15 @@ msg_info "| Checking StatefulSet |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get statefulsets --namespace="${namespace}" | grep 'consul')
+done < <(kubectl get statefulsets --namespace="${namespace}" --selector=${consul_selector} --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1125,17 +1090,15 @@ count=0
 msg_info "| Checking DaemonSet |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[3]}" != "${num_worker_nodes}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[3]}" != "${num_worker_nodes}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get daemonsets --namespace="${namespace}" | grep 'consul')
+done < <(kubectl get daemonsets --namespace="${namespace}" --selector=${consul_selector} --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1149,19 +1112,17 @@ num_items=$(( num_replicas + num_worker_nodes ))
 count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
-        IFS=" " read -r -a status <<< "${line}"
+    IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pods --namespace="${namespace}" | grep 'consul-')
+done < <(kubectl get pods --namespace="${namespace}" --selector=${consul_selector} --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1173,20 +1134,18 @@ fi
 # Check services cluster IP
 num_items=1
 count=0
-msg_info "| Checking Services: Cluster IP |"
+msg_info "| Checking Services: DNS Cluster IP |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[1]}" != "ClusterIP" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'consul' | grep -v 'consul-server')
+done < <(kubectl get services --namespace="${namespace}" --selector ${consul_selector},component==dns --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1198,20 +1157,18 @@ fi
 # Check services headless
 num_items=1
 count=0
-msg_info "| Checking Services: Headless |"
+msg_info "| Checking Services: Server Headless |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "%s..." "${status[0]}"
+    if [[ "${status[1]}" != "ClusterIP" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'consul-server')
+done < <(kubectl get services --namespace="${namespace}" --selector ${consul_selector},component==server --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -1223,34 +1180,30 @@ fi
 # Check storage local
 count=0
 num_pvs_pvcs=$(( num_replicas * 2 ))
-msg_info "| Checking Storage: Local [PVCs/PVs] |"
+msg_info "| Checking Storage: Server Local [PVCs/PVs] |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PVC: %s..." "${status[0]}"
-        if [[ "${status[1]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PVC: %s..." "${status[0]}"
+    if [[ "${status[1]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pvc --namespace="${namespace}" | grep 'consul-server-')
+done < <(kubectl get pvc --namespace="${namespace}" --selector=${consul_selector},component=server --no-headers)
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PV: %s..." "${status[5]}"
-        if [[ "${status[4]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PV: %s..." "${status[5]}"
+    if [[ "${status[4]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pv | grep 'consul-server-')
+done < <(kubectl get pv --no-headers | grep "${namespace}/data-.*consul-server-")
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed

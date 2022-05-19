@@ -1,0 +1,24 @@
+{{- if .Values.cortxcontrol.enabled }}
+{{- $svc := .Values.cortxcontrol.service.loadbal }}
+{{- if $svc.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cortx.control.fullname" . }}-loadbal-svc
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control
+spec:
+  type: {{ $svc.type }}
+  selector:
+    app.kubernetes.io/component: control
+  ports:
+    {{- $nodePortAllowed := or (eq $svc.type "NodePort") (eq $svc.type "LoadBalancer") }}
+    - name: control-https
+      port: {{ $svc.ports.https }}
+      targetPort: control-https
+      {{- if and $nodePortAllowed (not (empty $svc.nodePorts.https)) }}
+      nodePort: {{ $svc.nodePorts.https }}
+      {{- end }}
+{{- end }}
+{{- end }}

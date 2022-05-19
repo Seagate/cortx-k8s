@@ -94,6 +94,14 @@ spec:
         env:
           - name: MACHINE_ID_PATH
             value: "{{ .Values.cortxserver.machineid.mountpath }}/id"
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         ports:
         - containerPort: 5050
       containers:
@@ -118,6 +126,15 @@ spec:
               mountPath: {{ .Values.cortxserver.machineid.mountpath }}
             - name: local-path
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           ports:
           - name: rgw-http
             containerPort: 22751
@@ -125,6 +142,9 @@ spec:
           - name: rgw-https
             containerPort: 23001
             protocol: TCP
+          {{- if .Values.cortxserver.rgw.resources }}
+          resources: {{- toYaml .Values.cortxserver.rgw.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-hax
@@ -148,10 +168,22 @@ spec:
               mountPath: {{ .Values.cortxserver.machineid.mountpath }}
             - name: local-path
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           ports:
           - name: hax
             containerPort: {{ .Values.cortxserver.hax.port | int }}
             protocol: TCP
+          {{- if .Values.cortxserver.hax.resources }}
+          resources: {{- toYaml .Values.cortxserver.hax.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
   volumeClaimTemplates:

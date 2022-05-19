@@ -5,9 +5,24 @@ cortxserver:
   image: ghcr.io/seagate/centos:7
   replicas: 3
   secretname: cortx-secret
-  serviceaccountname: cortx-sa
+  serviceaccountname: cortx
+  rgw:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 2Gi
+        cpu:    2000m
   hax:
-    port: 22001
+    port: 22003
+    resources: 
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 2Gi
+        cpu:    1000m
   service:
     clusterip:
       name: cortx-server-clusterip-svc
@@ -22,13 +37,14 @@ cortxserver:
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-server-cfgmap
+    name: cortx
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
-    name: cortx-ssl-cert-cfgmap
+    name: cortx-ssl-cert
   machineid:
     mountpath: /etc/cortx/solution/node
+    value: ""
   localpathpvc:
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
