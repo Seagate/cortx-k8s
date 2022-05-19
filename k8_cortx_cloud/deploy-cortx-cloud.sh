@@ -117,7 +117,9 @@ buildValues() {
     #
 
     # Initialize
-    yq --null-input "(.global.storageClass, .consul.server.storageClass) = \"${storage_class}\"" > "${values_file}"
+    yq --null-input "
+        (.global.storageClass, .consul.server.storageClass) = \"${storage_class}\"
+        | .configmap.cortxSecretName = \"${cortx_secret_name}\"" > "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -191,7 +193,7 @@ buildValues() {
         yq -i "(
             .configmap.cortxRgw.enabled,
             .configmap.cortxHa.enabled,
-            .configmap.cortxControl.enabled) = false" "${values_file}"
+            .cortxcontrol.enabled) = false" "${values_file}"
     fi
 
     # shellcheck disable=SC2016
@@ -318,6 +320,27 @@ buildValues() {
             | .services.io.count = ${s3_service_count}
             | .services.io.ports.http = ${s3_service_ports_http}
             | .services.io.ports.https = ${s3_service_ports_https}))" "${values_file}"
+
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.cortxcontrol;
+            .image                             = $from.solution.images.cortxcontrol
+            | .service.loadbal.type            = $from.solution.common.external_services.control.type
+            | .service.loadbal.ports.https     = $from.solution.common.external_services.control.ports.https
+            | .agent.resources.requests.memory = $from.solution.common.resource_allocation.control.agent.resources.requests.memory
+            | .agent.resources.requests.cpu    = $from.solution.common.resource_allocation.control.agent.resources.requests.cpu
+            | .agent.resources.limits.memory   = $from.solution.common.resource_allocation.control.agent.resources.limits.memory
+            | .agent.resources.limits.cpu      = $from.solution.common.resource_allocation.control.agent.resources.limits.cpu)
+        | $to' "${values_file}" "${solution_yaml}"
+
+    yq -i "
+        .cortxcontrol.localpathpvc.mountpath = \"${local_storage}\"
+        | .cortxcontrol.machineid.value = \"$(cat "${cfgmap_path}/auto-gen-control-${namespace}/id")\"" "${values_file}"
+
+    local control_service_nodeports_https
+    control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
+    [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
     set +e
 }
@@ -732,12 +755,10 @@ function deployCortxSecrets()
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
 
-    control_secret_path="./cortx-cloud-helm-pkg/cortx-control/secret-info.txt"
     data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
     server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
     ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
 
-    printf "%s" "${cortx_secret_name}" > ${control_secret_path}
     printf "%s" "${cortx_secret_name}" > ${data_secret_path}
     printf "%s" "${cortx_secret_name}" > ${server_secret_path}
     printf "%s" "${cortx_secret_name}" > ${ha_secret_path}
@@ -791,58 +812,6 @@ function waitForAllDeploymentsAvailable()
     fi
     echo
     return ${FAIL}
-}
-
-
-function deployCortxControl()
-{
-    if [[ ${deployment_type} == "data-only" ]]; then
-        return
-    fi
-
-    printf "########################################################\n"
-    printf "# Deploy CORTX Control                                  \n"
-    printf "########################################################\n"
-
-    local control_image
-    local control_service_type
-    local control_service_ports_https
-    local control_machineid
-    control_image=$(getSolutionValue 'solution.images.cortxcontrol')
-    control_service_type=$(getSolutionValue 'solution.common.external_services.control.type')
-    control_service_ports_https=$(getSolutionValue 'solution.common.external_services.control.ports.https')
-    control_machineid=$(cat "${cfgmap_path}/auto-gen-control-${namespace}/id")
-
-    local optional_values=()
-    local control_service_nodeports_https
-    control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
-    [[ -n ${control_service_nodeports_https} ]] && optional_values+=(--set cortxcontrol.service.loadbal.nodePorts.https="${control_service_nodeports_https}")
-
-    [[ ${deployment_type} == "data-only" ]] && optional_values+=(--set cortxcontrol.service.loadbal.enabled=false)
-
-    helm install "cortx-control-${namespace}" cortx-cloud-helm-pkg/cortx-control \
-        --set cortxcontrol.image="${control_image}" \
-        --set cortxcontrol.service.loadbal.type="${control_service_type}" \
-        --set cortxcontrol.service.loadbal.ports.https="${control_service_ports_https}" \
-        --set cortxcontrol.machineid.value="${control_machineid}" \
-        --set cortxcontrol.localpathpvc.name="cortx-control-fs-local-pvc-${namespace}" \
-        --set cortxcontrol.localpathpvc.mountpath="${local_storage}" \
-        --set cortxcontrol.agent.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.control.agent.resources.requests.memory')" \
-        --set cortxcontrol.agent.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.control.agent.resources.requests.cpu')" \
-        --set cortxcontrol.agent.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.control.agent.resources.limits.memory')" \
-        --set cortxcontrol.agent.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.control.agent.resources.limits.cpu')" \
-        "${optional_values[@]}" \
-        --namespace "${namespace}" \
-        || exit $?
-
-    printf "\nWait for CORTX Control to be ready"
-    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CONTROL_TIMEOUT:-300s}" \
-                                        "CORTX Control" "${namespace}" \
-                                        deployment/cortx-control; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
-    printf "\n\n"
 }
 
 function deployCortxData()
@@ -1082,7 +1051,6 @@ function cleanup()
     # Delete files that contain disk partitions on the worker nodes
     # and the node info
     #################################################################
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-control" -name "secret-*" -delete
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "secret-*" -delete
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-server" -name "secret-*" -delete
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-ha" -name "secret-*" -delete
@@ -1132,10 +1100,11 @@ num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 ##########################################################
 # Deploy CORTX cloud pre-requisites
 ##########################################################
+deleteStaleAutoGenFolders
 deployKubernetesPrereqs
 deployRancherProvisioner
 deployCortxLocalBlockStorage
-deleteStaleAutoGenFolders
+deployCortxSecrets
 generateMachineIds
 
 ##########################################################
@@ -1143,8 +1112,6 @@ generateMachineIds
 ##########################################################
 deployCortx
 waitForThirdParty
-deployCortxSecrets
-deployCortxControl
 deployCortxData
 deployCortxServer
 deployCortxHa

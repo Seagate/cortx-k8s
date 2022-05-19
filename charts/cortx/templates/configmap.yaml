@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "cortx.fullname" . }}
+  name: {{ include "cortx.configmapName" . }}
   labels: {{- include "cortx.labels" . | nindent 4 }}
 data:
   cluster.yaml: |-

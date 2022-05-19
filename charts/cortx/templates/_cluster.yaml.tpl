@@ -36,7 +36,7 @@ cluster:
       services:
         - rgw_s3
   {{- end }}
-  {{- if .Values.configmap.cortxControl.enabled }}
+  {{- if .Values.cortxcontrol.enabled }}
   - name: control_node
     components:
     - name: utils
@@ -65,8 +65,8 @@ cluster:
       sns: {{ $val.durability.sns | quote }}
       dix: {{ $val.durability.dix | quote }}
     nodes:
-    {{- if $.Values.configmap.cortxControl.enabled }}
-    {{- include "storageset.node" (dict "name" "cortx-control" "id" $val.controlUuid "type" "control_node") | nindent 4 }}
+    {{- if $.Values.cortxcontrol.enabled }}
+    {{- include "storageset.node" (dict "name" (include "cortx.control.fullname" $) "id" $val.controlUuid "type" "control_node") | nindent 4 }}
     {{- end }}
     {{- if $.Values.configmap.cortxHa.enabled }}
     {{- include "storageset.node" (dict "name" "cortx-ha-headless-svc" "id" $val.haUuid "type" "ha_node") | nindent 4 }}

@@ -112,7 +112,7 @@ cortx:
     {{- if .Values.configmap.cortxMotr.extraConfiguration }}
     {{- tpl .Values.configmap.cortxMotr.extraConfiguration . | nindent 4 }}
     {{- end }}
-  {{- if .Values.configmap.cortxControl.enabled }}
+  {{- if .Values.cortxcontrol.enabled }}
   csm:
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret

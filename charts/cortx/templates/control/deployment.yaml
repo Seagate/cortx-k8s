@@ -1,34 +1,34 @@
+{{- if .Values.cortxcontrol.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: {{ .Values.cortxcontrol.name }}
-  name: {{ .Values.cortxcontrol.name }}
+  name: {{ include "cortx.control.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Values.cortxcontrol.name }}
+      app.kubernetes.io/component: control
   template:
     metadata:
-      labels:
-        app: {{ .Values.cortxcontrol.name }}
-        name: cortx-control
+      labels: {{- include "cortx.labels" . | nindent 8 }}
+        app.kubernetes.io/component: control
         {{- if .Values.cortxcontrol.machineid.value }}
         cortx.io/machine-id: {{ .Values.cortxcontrol.machineid.value }}
         {{- end }}
         cortx.io/service-type: cortx-control
     spec:
-      hostname: {{ .Values.cortxcontrol.name }}
-      serviceAccountName: {{ .Values.cortxcontrol.serviceaccountname }}
+      hostname: {{ include "cortx.control.fullname" . }}
+      serviceAccountName: {{ include "cortx.serviceAccountName" . }}
       volumes:
-        - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+        - name: cortx-configuration
           configMap:
-            name: {{ .Values.cortxcontrol.cfgmap.name }}
-        - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+            name: {{ include "cortx.configmapName" . }}
+        - name: cortx-ssl-cert
           configMap:
-            name: {{ .Values.cortxcontrol.sslcfgmap.name }}
+            name: {{ include "cortx.tls.configmapName" . }}
         {{- if .Values.cortxcontrol.machineid.value }}
         - name: machine-id
           downwardAPI:
@@ -39,12 +39,10 @@ spec:
         {{- end }}
         - name: local-path-pv
           persistentVolumeClaim:
-            claimName: {{ .Values.cortxcontrol.localpathpvc.name }}
-        {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
-        - name: {{ printf "%s" . }}
+            claimName: {{ include "cortx.control.fullname" . }}
+        - name: {{ .Values.configmap.cortxSecretName }}
           secret:
-            secretName: {{ printf "%s" . }}
-        {{- end }}
+            secretName: {{ .Values.configmap.cortxSecretName }}
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxcontrol.image }}
@@ -65,9 +63,9 @@ spec:
           {{- end }}
         {{- end }}
         volumeMounts:
-          - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+          - name: cortx-configuration
             mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
-          - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+          - name: cortx-ssl-cert
             mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
           {{- if .Values.cortxcontrol.machineid.value }}
           - name: machine-id
@@ -75,11 +73,9 @@ spec:
           {{- end }}
           - name: local-path-pv
             mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
-          {{- range .Files.Lines .Values.cortxcontrol.secretinfo }}
-          - name: {{ printf "%s" . }}
+          - name: {{ .Values.configmap.cortxSecretName }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
-          {{- end }}
         env:
           - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxcontrol.machineid.value | quote }}
@@ -107,9 +103,9 @@ spec:
             - /opt/seagate/cortx/csm/bin/csm_agent start -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxcontrol.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
-            - name: {{ .Values.cortxcontrol.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
             {{- if .Values.cortxcontrol.machineid.value }}
             - name: machine-id
@@ -127,9 +123,12 @@ spec:
               fieldRef:
                 fieldPath: metadata.name
           ports:
-          - containerPort: 8081
+            - name: control-https
+              containerPort: 8081
+              protocol: TCP
           {{- if .Values.cortxcontrol.agent.resources }}
           resources: {{- toYaml .Values.cortxcontrol.agent.resources | nindent 12 }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
+{{- end }}

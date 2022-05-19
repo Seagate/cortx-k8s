@@ -68,7 +68,6 @@ helm uninstall cortx
 | configmap.cortxControl.agent.resources.limits.memory | string | `"256Mi"` |  |
 | configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxControl.agent.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxControl.enabled | bool | `true` |  |
 | configmap.cortxHa.enabled | bool | `true` |  |
 | configmap.cortxHa.fault_tolerance.resources.limits.cpu | string | `"500m"` |  |
 | configmap.cortxHa.fault_tolerance.resources.limits.memory | string | `"1Gi"` |  |
@@ -129,6 +128,22 @@ helm uninstall cortx
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
+| cortxcontrol.agent.resources.limits.cpu | string | `"500m"` |  |
+| cortxcontrol.agent.resources.limits.memory | string | `"256Mi"` |  |
+| cortxcontrol.agent.resources.requests.cpu | string | `"250m"` |  |
+| cortxcontrol.agent.resources.requests.memory | string | `"128Mi"` |  |
+| cortxcontrol.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
+| cortxcontrol.enabled | bool | `true` |  |
+| cortxcontrol.image | string | `"ghcr.io/seagate/centos:7"` |  |
+| cortxcontrol.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
+| cortxcontrol.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
+| cortxcontrol.machineid.mountpath | string | `"/etc/cortx/solution/node"` |  |
+| cortxcontrol.machineid.value | string | `""` |  |
+| cortxcontrol.service.loadbal.enabled | bool | `true` |  |
+| cortxcontrol.service.loadbal.nodePorts.https | string | `""` |  |
+| cortxcontrol.service.loadbal.ports.https | int | `8081` |  |
+| cortxcontrol.service.loadbal.type | string | `"NodePort"` |  |
+| cortxcontrol.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
 | externalConsul.endpoints | list | `[]` |  |

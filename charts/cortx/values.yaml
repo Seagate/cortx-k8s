@@ -154,7 +154,6 @@ configmap:
 
   # cortxControl allows configuring CORTX CSM settings
   cortxControl:
-    enabled: true
     agent:
       resources:
         requests:
@@ -311,3 +310,36 @@ platform:
       nodePorts:
         http: ""
         https: ""
+
+##
+## Imported values from cortx-control Helm Chart. These will be changed.
+##
+cortxcontrol:
+  enabled: true
+  image: ghcr.io/seagate/centos:7
+  agent:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 256Mi
+        cpu: 500m
+  service:
+    loadbal:
+      enabled: true
+      type: NodePort
+      ports:
+        https: 8081
+      nodePorts:
+        https: ""
+  cfgmap:
+    mountpath: /etc/cortx/solution
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+  machineid:
+    mountpath: /etc/cortx/solution/node
+    value: ""
+  localpathpvc:
+    mountpath: /etc/cortx
+    requeststoragesize: 1Gi
