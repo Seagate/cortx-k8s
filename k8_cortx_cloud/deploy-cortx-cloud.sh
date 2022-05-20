@@ -578,19 +578,23 @@ function deployCortx()
         --wait \
         || exit $?
 
-    # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
-    kubectl patch serviceaccount/cortx-consul-client \
-        -p '{"automountServiceAccountToken": false}' \
-        --namespace "${namespace}"
-    kubectl patch serviceaccount/cortx-consul-server \
-        -p '{"automountServiceAccountToken": false}' \
-        --namespace "${namespace}"
+    # Restarting Consul at this time causes havoc. Disabling this for now until
+    # Consul supports configuring automountServiceAccountToken (a PR is planned
+    # to add support).
 
-    # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    kubectl rollout restart statefulset/cortx-consul-server --namespace "${namespace}"
-    kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
+    # # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
+    # kubectl patch serviceaccount/cortx-consul-client \
+    #     -p '{"automountServiceAccountToken": false}' \
+    #     --namespace "${namespace}"
+    # kubectl patch serviceaccount/cortx-consul-server \
+    #     -p '{"automountServiceAccountToken": false}' \
+    #     --namespace "${namespace}"
 
-    ##TODO This needs to be maintained during upgrades etc...
+    # # Rollout a new deployment version of Consul pods to use updated Service Account settings
+    # kubectl rollout restart statefulset/cortx-consul-server --namespace "${namespace}"
+    # kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
+
+    # ##TODO This needs to be maintained during upgrades etc...
 }
 
 function waitForThirdParty()
