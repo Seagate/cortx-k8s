@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2312
+
 solution_yaml=${1:-'solution.yaml'}
 solution_chk_yaml='./solution_validation_scripts/solution-check.yaml'
 
@@ -235,6 +237,19 @@ done
 
 if [[ "${dix_total}" -gt "${total_num_nodes}" ]]; then
     result_str="The sum of DIX (${dix_total}) is greater than the total number of worker nodes (${total_num_nodes}) in the cluster"
+    result="failed"
+fi
+
+# Validate Local Provisioner Image
+# example: ghcr.io/seagate/local-path-provisioner:v0.0.22
+rancher_image=$(parseSolution 'solution.images.rancher' | cut -f2 -d'>')
+rancher_version="${rancher_image##*:v}"
+IFS=. read -r rancher_major rancher_minor rancher_patch <<< "${rancher_version}"
+# Rancher version numbers don't have any significant meaning. A deployment using image
+# version 0.0.22 is not compatible with image 0.0.20, presumably. So we just assume
+# anything greater than 0.0.22 is OK.
+if (( rancher_major == 0 && rancher_minor == 0 && rancher_patch < 22 )); then
+    result_str="Rancher provisioner image ${rancher_image} is not supported. The image tag version must be v0.0.22 or newer."
     result="failed"
 fi
 

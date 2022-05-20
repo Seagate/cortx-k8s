@@ -84,7 +84,7 @@ Kernel parameter `vm.max_map_count` must be set to a specific minimum level of `
 
 ### Storage Provisioning
 
-[Rancher Local Path Provisioner](https://github.com/rancher/local-path-provisioner) is used to manage dynamic provisioning of local storage for prerequisite services.
+[Rancher Local Path Provisioner](https://github.com/rancher/local-path-provisioner) is used to manage dynamic provisioning of local storage for prerequisite services. v0.0.22 is required when using the provided deployment script.
 
 - The `prereq-deploy-cortx-cloud.sh` script will ensure this directory exists, if you choose to utilize it.
 - This directory prefix is configurable in the `solution.yaml` file via the `solution.common.storage_provisioner_path`, while appending `local-path-provisioner` to it.
@@ -275,7 +275,7 @@ This section contains the CORTX and third-party images used to deploy CORTX on K
 | `images.consul`          | Image registry, repository, & tag for the Consul required service                      | `ghcr.io/seagate/consul:1.11.4`             |
 | `images.kafka`           | Image registry, repository, & tag for the Kafka required service                       | `ghcr.io/seagate/kafka:3.0.0-debian-10-r97`  |
 | `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service                   | `ghcr.io/seagate/zookeeper:3.8.0-debian-10-r9` |
-| `images.rancher`         | Image registry, repository, & tag for the Rancher Local Path Provisioner container     | `ghcr.io/seagate/local-path-provisioner:v0.0.20` |
+| `images.rancher`         | Image registry, repository, & tag for the Rancher Local Path Provisioner container     | `ghcr.io/seagate/local-path-provisioner:v0.0.22` |
 | `images.busybox`         | Image registry, repository, & tag for the utility busybox container                    | `ghcr.io/seagate/busybox:latest`            |
 
 ### Common parameters
