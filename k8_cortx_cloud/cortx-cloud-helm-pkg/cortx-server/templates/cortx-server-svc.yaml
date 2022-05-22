@@ -43,11 +43,11 @@ spec:
   selector:
     app: {{ .Values.cortxserver.name }}
   ports:
-    - name: cortx-rgw-http
+    - name: rgw-http
       protocol: TCP
       port: {{ .Values.cortxserver.service.loadbal.ports.http | int }}
       targetPort: rgw-http
-    - name: cortx-rgw-https
+    - name: rgw-https
       protocol: TCP
       port: {{ .Values.cortxserver.service.loadbal.ports.https | int }}
       targetPort: rgw-https

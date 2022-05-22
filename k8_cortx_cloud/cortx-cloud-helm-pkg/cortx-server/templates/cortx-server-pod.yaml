@@ -33,9 +33,6 @@ spec:
         - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxserver.sslcfgmap.name }}
-        - name: {{ .Values.cortxserver.machineid.volmountname }}
-          configMap:
-            name: {{ .Values.cortxserver.machineid.name }}
         {{- if .Values.cortxserver.machineid.value }}
         - name: machine-id
           downwardAPI:
@@ -90,6 +87,14 @@ spec:
         env:
           - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxserver.machineid.value | quote }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         ports:
         - containerPort: 5050
       containers:
@@ -117,8 +122,14 @@ spec:
             - name: local-path-pv
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxserver.name }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           ports:
           - name: rgw-http
             containerPort: 22751
@@ -126,6 +137,9 @@ spec:
           - name: rgw-https
             containerPort: 23001
             protocol: TCP
+          {{- if .Values.cortxserver.rgw.resources }}
+          resources: {{- toYaml .Values.cortxserver.rgw.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-hax
@@ -152,12 +166,21 @@ spec:
             - name: local-path-pv
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           env:
-            - name: UDS_CLOUD_CONTAINER_NAME
-              value: {{ .Values.cortxserver.name }}
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           ports:
           - name: hax
             containerPort: {{ .Values.cortxserver.hax.port | int }}
             protocol: TCP
+          {{- if .Values.cortxserver.hax.resources }}
+          resources: {{- toYaml .Values.cortxserver.hax.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
       nodeSelector:

@@ -60,3 +60,24 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Return the CORTX configuration configmap
+*/}}
+{{- define "cortx.configmapName" -}}
+{{- include "cortx.fullname" . -}}
+{{- end -}}
+
+{{/*
+Return the CORTX SSL certificate configmap
+*/}}
+{{- define "cortx.tls.configmapName" -}}
+{{- printf "%s-ssl-cert" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Return the name of the Control component
+*/}}
+{{- define "cortx.control.fullname" -}}
+{{- printf "%s-control" (include "cortx.fullname" .) -}}
+{{- end -}}

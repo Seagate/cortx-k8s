@@ -2,7 +2,31 @@ cortxha:
   name: cortx-ha
   image: ghcr.io/seagate/centos:7
   secretinfo: secret-info.txt
-  serviceaccountname: cortx-sa
+  serviceaccountname: ha-monitor
+  fault_tolerance:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 1Gi
+        cpu:    500m
+  health_monitor:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 1Gi
+        cpu:    500m
+  k8s_monitor:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu:    250m
+      limits:
+        memory: 1Gi
+        cpu:    500m
   service:
     clusterip:
       name: cortx-ha-clusterip-svc
@@ -13,15 +37,13 @@ cortxha:
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
-    name: cortx-ha-cfgmap
+    name: cortx
   sslcfgmap:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
-    name: cortx-ssl-cert-cfgmap
+    name: cortx-ssl-cert
   machineid:
     mountpath: /etc/cortx/solution/node
-    volmountname: machine-id-config
-    name:  cortx-ha-machine-id-cfgmap
     value: ""
   localpathpvc:
     name: cortx-fs-local-pvc

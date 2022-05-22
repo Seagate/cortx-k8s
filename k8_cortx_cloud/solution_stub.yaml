@@ -84,8 +84,8 @@ solution:
               memory: 300Mi
               cpu: 100m
       zookeeper:
-        storage_request_size: 9Gi
-        data_log_dir_request_size: 9Gi
+        storage_request_size: 8Gi
+        data_log_dir_request_size: 8Gi
         resources:
           requests:
             memory: 256Mi
@@ -94,7 +94,7 @@ solution:
             memory: 512Mi
             cpu: 500m
       kafka:
-        storage_request_size: 9Gi
+        storage_request_size: 8Gi
         resources:
           requests:
             memory: 1Gi
@@ -102,6 +102,75 @@ solution:
           limits:
             memory: 2Gi
             cpu: 1
+      hare:
+        hax:
+          resources:
+            requests:
+              memory: 128Mi
+              cpu:    250m
+            limits:
+              memory: 2Gi
+              cpu:    1000m
+      data:
+        motr:
+          resources:
+            requests:
+              memory: 1Gi
+              cpu:    250m
+            limits:
+              memory: 2Gi
+              cpu:    1000m   
+        confd:
+          resources:
+            requests:
+              memory: 128Mi
+              cpu:    250m
+            limits:
+              memory: 512Mi
+              cpu:    500m
+      server:
+        rgw:
+          resources:
+            requests:
+              memory: 128Mi
+              cpu:    250m
+            limits:
+              memory: 2Gi
+              cpu:    2000m
+      control:
+        agent:
+          resources:
+            requests:
+              memory: 128Mi 
+              cpu:    250m
+            limits:
+              memory: 256Mi
+              cpu:    500m
+      ha:
+        fault_tolerance:
+          resources:
+            requests:
+              memory: 128Mi
+              cpu:    250m
+            limits:
+              memory: 1Gi
+              cpu:    500m
+        health_monitor:
+          resources:
+            requests:
+              memory: 128Mi
+              cpu:    250m
+            limits:
+              memory: 1Gi
+              cpu:    500m
+        k8s_monitor:
+          resources:
+            requests:
+              memory: 128Mi
+              cpu:    250m
+            limits:
+              memory: 1Gi
+              cpu:    500m
   storage:
     cvg1:
       name: cvg-01

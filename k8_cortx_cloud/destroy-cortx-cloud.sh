@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC2312
 
@@ -62,11 +62,6 @@ fi
 function parseSolution()
 {
     ./parse_scripts/parse_yaml.sh ${solution_yaml} "$1"
-}
-
-function extractBlock()
-{
-    ./parse_scripts/yaml_extract_block.sh ${solution_yaml} "$1"
 }
 
 namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
@@ -209,9 +204,10 @@ function deleteCortxPVs()
 
 function deleteCortxConfigmap()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX Configmap                               #\n"
-    printf "########################################################\n"
+    #
+    # These configmaps are deprecated, and removed for backwards compatibility.
+    #
+
     cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 
     for node in "${node_name_list[@]}"; do
@@ -232,6 +228,7 @@ function deleteCortxConfigmap()
         rm -rf "${cfgmap_path}/auto-gen-${type}-${namespace}"
     done
 
+    # Backwards compatibility uninstall
     uninstallHelmChart "cortx-cfgmap-${namespace}" "${namespace}"
     rm -rf "${cfgmap_path}/auto-gen-cfgmap-${namespace}"
 
@@ -246,14 +243,6 @@ function deleteCortxConfigmap()
 #############################################################
 # Destroy CORTX 3rd party functions
 #############################################################
-function deleteZookeeper()
-{
-    printf "########################################################\n"
-    printf "# Delete Zookeeper                                     #\n"
-    printf "########################################################\n"
-    uninstallHelmChart zookeeper "${namespace}"
-}
-
 function deleteOpenLdap()
 {
     ## Backwards compatibility check
@@ -281,11 +270,7 @@ function deleteSecrets()
         secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
         kubectl delete secret "${secret_name}" --namespace="${namespace}" --ignore-not-found=true
 
-        find "$(pwd)/cortx-cloud-helm-pkg/cortx-control" -name "secret-*" -delete
-        find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "secret-*" -delete
-        find "$(pwd)/cortx-cloud-helm-pkg/cortx-server" -name "secret-*" -delete
-        find "$(pwd)/cortx-cloud-helm-pkg/cortx-ha" -name "secret-*" -delete
-        find "$(pwd)/cortx-cloud-helm-pkg/cortx-client" -name "secret-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg" -name "secret-info.txt" -delete
     fi
 }
 
@@ -295,6 +280,9 @@ function deleteDeprecated()
     deleteOpenLdap
     uninstallHelmChart consul "${namespace}"
     uninstallHelmChart kafka "${namespace}"
+    uninstallHelmChart zookeeper "${namespace}"
+
+    waitFor3rdPartyToTerminate
 }
 
 function waitFor3rdPartyToTerminate()
@@ -306,7 +294,7 @@ function waitFor3rdPartyToTerminate()
         while IFS= read -r line; do
             count=$(( count + 1 ))
         done < <(kubectl get pods --namespace "${namespace}" --no-headers | \
-                  grep -e zookeeper -e openldap -e '^consul' -e '^kafka')
+                  grep -e '^zookeeper' -e openldap -e '^consul' -e '^kafka')
 
         (( count == 0 )) && break || printf "."
         sleep 1s
@@ -345,9 +333,7 @@ function delete3rdPartyPVs()
 
 function deleteKubernetesPrereqs()
 {
-    printf "########################################################\n"
-    printf "# Delete Cortx Kubernetes Prereqs                      #\n"
-    printf "########################################################\n"
+    # This chart has been removed, this is for backwards compatibility.
     uninstallHelmChart cortx-platform "${namespace}"
 
     ## Backwards compatibility check
@@ -386,18 +372,16 @@ deleteCortxClient
 deleteCortxHa
 deleteCortxServer
 deleteCortxData
-deleteCortxControl
+deleteCortxControl  # deprecated
 waitForCortxPodsToTerminate
 deleteSecrets
 deleteCortxLocalBlockStorage
-deleteCortxConfigmap
+deleteCortxConfigmap  # deprecated
 
 #############################################################
 # Delete CORTX 3rd party resources
 #############################################################
-deleteZookeeper
 deleteDeprecated
-waitFor3rdPartyToTerminate
 
 # Delete remaining CORTX Cloud resources
 uninstallHelmChart cortx "${namespace}"
