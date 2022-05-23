@@ -90,7 +90,7 @@ metadata:
   name: local-path
 provisioner: rancher.io/local-path
 volumeBindingMode: WaitForFirstConsumer
-reclaimPolicy: Retain
+reclaimPolicy: Delete
 
 ---
 kind: ConfigMap

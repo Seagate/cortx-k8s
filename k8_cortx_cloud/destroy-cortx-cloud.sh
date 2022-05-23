@@ -198,7 +198,7 @@ function deleteCortxPVs()
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
             kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pv "${persistent_volume}"
+        kubectl delete pv "${persistent_volume}" --ignore-not-found
     done < <(kubectl get pv --no-headers | grep -E "${pv_filter}" | cut -f1 -d" ")
 }
 
@@ -313,7 +313,7 @@ function delete3rdPartyPVCs()
             kubectl patch pvc --namespace "${namespace}" "${volume_claim}" \
                       -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pvc --namespace "${namespace}" "${volume_claim}"
+        kubectl delete pvc --namespace "${namespace}" "${volume_claim}" --ignore-not-found
     done < <(kubectl get pvc --no-headers --namespace="${namespace}" | grep -E "${pvc_filter}" | cut -f1 -d " ")
 }
 
@@ -327,7 +327,7 @@ function delete3rdPartyPVs()
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
             kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pv "${persistent_volume}"
+        kubectl delete pv "${persistent_volume}" --ignore-not-found
     done < <(kubectl get pv --no-headers | grep -E "${pvc_filter}" | cut -f1 -d " ")
 }
 
