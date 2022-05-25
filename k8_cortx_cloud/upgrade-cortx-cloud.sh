@@ -157,16 +157,32 @@ cortx_deployments="$(kubectl get deployments --namespace="${NAMESPACE}" --output
 if [[ -z ${cortx_deployments} ]]; then
     printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
 else
-    RGW_IMAGE="${UPGRADE_IMAGE/cortx-all/cortx-rgw}"
+    RGW_IMAGE=$(echo $UPGRADE_IMAGE | sed 's=cortx-[a-z]\+=cortx-rgw=g')
+    DATA_IMAGE=$(echo $UPGRADE_IMAGE | sed 's=cortx-[a-z]\+=cortx-data=g')
+    CONTROL_IMAGE=$(echo $UPGRADE_IMAGE | sed 's=cortx-[a-z]\+=cortx-control=g')
+
     printf "Updating CORTX Deployments to use:\n"
-    printf "   %s\n" "${UPGRADE_IMAGE}"
     printf "   %s\n" "${RGW_IMAGE}"
+    printf "   %s\n" "${DATA_IMAGE}"
+    printf "   %s\n" "${CONTROL_IMAGE}"
+    printf "\n"
+
     while IFS= read -r deployment; do
         if [[ "${deployment}" == "cortx-server-"* ]]; then
             IMAGE="${RGW_IMAGE}"
+        elif [[ "${deployment}" == "cortx-data-"* ]]; then
+            IMAGE="${DATA_IMAGE}"
+        elif [[ "${deployment}" == "cortx-client-"* ]]; then
+            IMAGE="${DATA_IMAGE}"
+        elif [[ "${deployment}" == "cortx-control" ]]; then
+            IMAGE="${CONTROL_IMAGE}"
+        elif [[ "${deployment}" == "cortx-ha" ]]; then
+            IMAGE="${CONTROL_IMAGE}"
         else
-            IMAGE="${UPGRADE_IMAGE}"
+            echo "NO MATCH FOR ${deployment}.  Skipping upgrade of image."
+            IMAGE=
         fi
+        printf "Updating deployment %s to use image %s\n" "${deployment}" "${IMAGE}"
         kubectl set image --namespace="${NAMESPACE}" deployment "${deployment}" "*=${IMAGE}"
     done <<< "${cortx_deployments}"
     printf "\n"
