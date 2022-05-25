@@ -44,6 +44,53 @@ spec:
           secret:
             secretName: {{ .Values.configmap.cortxSecretName }}
       initContainers:
+      {{- if .Values.consul.enabled }}
+      - name: wait-for-available-consul
+        image: {{ .Values.cortxcontrol.image }}
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+        args:
+          - -ec
+          - |
+            until curl http://{{ include "cortx.fullname" . }}-consul-server:8500/v1/status/leader 2>/dev/null | grep -E '".+"'; do
+              echo "Waiting for Consul"
+              sleep 5
+            done
+            echo "Consul is available"
+      {{- end  }}
+      {{- if .Values.kafka.enabled }}
+      - name: wait-for-available-kafka
+        {{- with .Values.kafka.image }}
+        image: {{ printf "%s/%s:%s" .registry .repository .tag }}
+        {{- end }}
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+        args:
+          - -ec
+          - |
+            /opt/bitnami/kafka/bin/kafka-topics.sh \
+                --bootstrap-server ${KAFKA_SERVICE} \
+                --create \
+                --topic "${POD_NAME}" \
+                --replication-factor {{ .Values.kafka.replicaCount }} \
+                --partitions {{ .Values.kafka.numPartitions }}
+            {{- if .Values.kafka.deleteTopicEnable }}
+            /opt/bitnami/kafka/bin/kafka-topics.sh \
+                --bootstrap-server ${KAFKA_SERVICE} \
+                --delete \
+                --topic "${POD_NAME}"
+            {{- end }}
+            echo "Kafka is available"
+        env:
+          - name: KAFKA_SERVICE
+            value: {{ printf "%s-kafka:%d" (include "cortx.fullname" .) (.Values.kafka.service.ports.client | int64) }}
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+      {{- end  }}
       - name: cortx-setup
         image: {{ .Values.cortxcontrol.image }}
         imagePullPolicy: IfNotPresent

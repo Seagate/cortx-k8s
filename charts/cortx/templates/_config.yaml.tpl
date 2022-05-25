@@ -14,7 +14,7 @@ cortx:
     kafka:
       {{- if .Values.kafka.enabled }}
       endpoints:
-        - tcp://{{ include "cortx.fullname" . }}-kafka:9092
+        - {{ printf "tcp://%s-kafka:%d" (include "cortx.fullname" .) (.Values.kafka.service.ports.client | int64) }}
       {{- else }}
       endpoints: {{- toYaml .Values.externalKafka.endpoints | nindent 8 }}
       {{- end }}
