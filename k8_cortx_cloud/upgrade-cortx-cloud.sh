@@ -157,9 +157,9 @@ cortx_deployments="$(kubectl get deployments --namespace="${NAMESPACE}" --output
 if [[ -z ${cortx_deployments} ]]; then
     printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
 else
-    RGW_IMAGE="$(echo "${UPGRADE_IMAGE}" | sed 's=cortx-[a-z]\+=cortx-rgw=g')"
-    DATA_IMAGE="$(echo "${UPGRADE_IMAGE}" | sed 's=cortx-[a-z]\+=cortx-data=g')"
-    CONTROL_IMAGE="$(echo "${UPGRADE_IMAGE}" | sed 's=cortx-[a-z]\+=cortx-control=g')"
+    RGW_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-rgw:}"
+    DATA_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-data:}"
+    CONTROL_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-control:}"
 
     printf "Updating CORTX Deployments to use:\n"
     printf "   %s\n" "${RGW_IMAGE}"
