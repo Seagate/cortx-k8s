@@ -180,7 +180,7 @@ else
             IMAGE="${CONTROL_IMAGE}"
         else
             echo "NO MATCH FOR ${deployment}.  Skipping upgrade of image."
-            IMAGE=
+            continue
         fi
         printf "Updating deployment %s to use image %s\n" "${deployment}" "${IMAGE}"
         kubectl set image --namespace="${NAMESPACE}" deployment "${deployment}" "*=${IMAGE}"
