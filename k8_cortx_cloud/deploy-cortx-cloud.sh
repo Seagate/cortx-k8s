@@ -645,19 +645,23 @@ function deployCortx()
         --wait \
         || exit $?
 
-    # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
-    kubectl patch serviceaccount/cortx-consul-client \
-        -p '{"automountServiceAccountToken": false}' \
-        --namespace "${namespace}"
-    kubectl patch serviceaccount/cortx-consul-server \
-        -p '{"automountServiceAccountToken": false}' \
-        --namespace "${namespace}"
+    # Restarting Consul at this time causes havoc. Disabling this for now until
+    # Consul supports configuring automountServiceAccountToken (a PR is planned
+    # to add support).
 
-    # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    kubectl rollout restart statefulset/cortx-consul-server --namespace "${namespace}"
-    kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
+    # # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
+    # kubectl patch serviceaccount/cortx-consul-client \
+    #     -p '{"automountServiceAccountToken": false}' \
+    #     --namespace "${namespace}"
+    # kubectl patch serviceaccount/cortx-consul-server \
+    #     -p '{"automountServiceAccountToken": false}' \
+    #     --namespace "${namespace}"
 
-    ##TODO This needs to be maintained during upgrades etc...
+    # # Rollout a new deployment version of Consul pods to use updated Service Account settings
+    # kubectl rollout restart statefulset/cortx-consul-server --namespace "${namespace}"
+    # kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
+
+    # ##TODO This needs to be maintained during upgrades etc...
 }
 
 function waitForThirdParty()
@@ -1104,23 +1108,12 @@ function deployCortxClient()
 
 function cleanup()
 {
-    #################################################################
-    # Delete files that contain disk partitions on the worker nodes
-    # and the node info
-    #################################################################
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "secret-*" -delete
-    ### DEPRECATED - Will be removed in a future release
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-server" -name "secret-*" -delete
-    ### END DEPRECATED
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-ha" -name "secret-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-client" -name "secret-*" -delete
+    # Delete files that contain disk partitions on the worker nodes and the node info
+    # and left-over secret data
+    find "$(pwd)/cortx-cloud-helm-pkg" -type f \( -name 'mnt-blk-*' -o -name 'node-list-*' -o -name secret-info.txt \) -delete
 
-    rm -rf "${cfgmap_path}/auto-gen-secret-${namespace}"
-
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
+    # Delete left-over machine IDs and any other auto-gen data
+    rm -rf "${cfgmap_path}"
 }
 
 # Extract storage provisioner path from the "solution.yaml" file
