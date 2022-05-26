@@ -90,7 +90,7 @@ function Validate_upgrade_status() {
     status=true
     while IFS= read -r deployment; do
         deployment_name=${deployment}
-        upgrade_status=$(yq '.cortx.deployments."'${deployment_name}'".status' ${UPGRADE_DATA})
+        upgrade_status=$(yq '.cortx.deployments."'${deployment_name}'".status' "${UPGRADE_DATA}")
         if [[ "${upgrade_status}" != "Done" ]]; then
             status=false
             break
@@ -100,7 +100,7 @@ function Validate_upgrade_status() {
     done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep 'cortx')"
     if ${status}
     then
-        yq e '.cortx.status='\"Done\"'' -i "$UPGRADE_DATA"
+        yq e '.cortx.status='\"Done\"'' -i "${UPGRADE_DATA}"
     fi
 
 }
@@ -154,7 +154,7 @@ function rolling_upgrade() {
             status_upgrade
             ;;
         * )
-            echo -e "Invalid argument provided : $1"
+            echo -e "Invalid argument provided"
             usage
             exit 1
             ;;
@@ -222,7 +222,7 @@ function Wait_for_deployment_to_be_ready() {
 
     if [[ ${pods_ready} == false ]]; then
         yq e '.cortx.deployments."'${deployment_name}'".status= '\"Failed\"'' -i "${UPGRADE_DATA}"
-        printf "pod readiness check failed. Ensure "${deployment_name}" is in a healthy state, or manually shutdown the cluster, and try again.\n"
+        printf "pod readiness check failed. Ensure %s is in a healthy state, or manually shutdown the cluster, and try again.\n" "${deployment_name}"
         exit 1
     fi
 }
@@ -230,7 +230,7 @@ function Wait_for_deployment_to_be_ready() {
 function compare_versions() {
     current_version=$1
     upgrade_version=$2
-    if [[ ${current_version} == ${upgrade_version} ]]; then
+    if [[ "${current_version}" == "${upgrade_version}" ]]; then
         echo "true"
     else
         echo "false"
@@ -239,17 +239,17 @@ function compare_versions() {
 
 function initiate_upgrade() {
     # Mark Cortx Upgrade as in progress in upgrade-data.yaml
-    yq e '.cortx.status='\"In-Progress\"'' -i "$UPGRADE_DATA"
+    yq e '.cortx.status='\"In-Progress\"'' -i "${UPGRADE_DATA}"
 
     # starts Upgrade on all cortx deployments by fetching their names from upgrade-data.yaml
     while IFS= read -r deployment; do
         deployment_name=${deployment}
-        upgrade_status=$(yq '.cortx.deployments."'${deployment_name}'".status' ${UPGRADE_DATA})
-        current_version=$(yq '.cortx.deployments."'${deployment_name}'".version' ${UPGRADE_DATA})
+        upgrade_status=$(yq '.cortx.deployments."'${deployment_name}'".status' "${UPGRADE_DATA}")
+        current_version=$(yq '.cortx.deployments."'${deployment_name}'".version' "${UPGRADE_DATA}")
         upgrade_image="$(fetch_upgrade_image "${deployment_name}")"
         upgrade_version=$(docker run "${upgrade_image}" cat /opt/seagate/cortx/RELEASE.INFO | grep VERSION | awk '{print $2}' | tr -d '"')
         check_version=$(compare_versions "${current_version}" "${upgrade_version}")
-        if [[ "$upgrade_status" == "Done" && "$check_version" == "true" ]]; then
+        if [[ "${upgrade_status}" == "Done" && "${check_version}" == "true" ]]; then
             echo "."
         else
             printf "\nStarting Upgrade for %s\n" "${deployment_name}"
@@ -272,14 +272,14 @@ function initiate_upgrade() {
 function start_upgrade() {
     # Use a PID file to prevent concurrent upgrades.
     if [[ -s ${PIDFILE} ]]; then
-       echo "An upgrade is already in progress (PID $(< "${PIDFILE}")). If this is incorrect, remove file "${PIDFILE}" and try again."
+       printf "An upgrade is already in progress (PID $(< %s)). If this is incorrect, remove file %s and try again." "${PIDFILE}" "${PIDFILE}"
        exit 1
     fi
     printf "%s" $$ > "${PIDFILE}"
 
     # Create Upgrade-data.yaml file to have all deployments and their upgrade status with respect to each delpoyment If not already present.
     if [[ -s "${UPGRADE_DATA}" ]]; then
-        upgrade_status=$(yq '.cortx.status' ${UPGRADE_DATA})
+        upgrade_status=$(yq '.cortx.status' "${UPGRADE_DATA}")
         if [[ "${upgrade_status}" == "Done" ]]; then
             rm -f "${UPGRADE_DATA}"
             # Create Upgrade-data.yaml file to have all deployments and their upgrade status with respect to each delpoyment.
@@ -338,7 +338,7 @@ function status_upgrade() {
         printf "Error: While fetching Upgrade status, upgrade-data.yaml not found\n"
         exit 1
     fi
-    if [[ upgrade_status == "Done" ]];then
+    if [[ "${upgrade_status}" == "Done" ]];then
         printf "Upgrade has been performed on all nodes\n"
     else
         printf "Upgrade is in %s state" "${upgrade_status}"
@@ -376,7 +376,7 @@ while [ $# -gt 0 ];  do
         SOLUTION_FILE="${1}"
         ;;
     * )
-        echo -e "Invalid argument provided : "${1}""
+        printf "Invalid argument provided : %s" "${1}"
         usage
         exit 1
         ;;
@@ -409,7 +409,7 @@ case "${UPGRADE_TYPE}" in
         rolling_upgrade
         ;;
     * )
-        echo -e "Invalid Upgrade_type provided : "${1}""
+        printf "Invalid Upgrade_type provided : %s" "{$1}"
         usage
         exit 1
         ;;
