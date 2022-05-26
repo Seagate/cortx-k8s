@@ -44,7 +44,7 @@ cluster:
       services:
       - agent
   {{- end }}
-  {{- if .Values.configmap.cortxHa.enabled }}
+  {{- if .Values.cortxha.enabled }}
   - name: ha_node
     components:
     - name: utils
@@ -68,8 +68,8 @@ cluster:
     {{- if $.Values.cortxcontrol.enabled }}
     {{- include "storageset.node" (dict "name" (include "cortx.control.fullname" $) "id" $val.controlUuid "type" "control_node") | nindent 4 }}
     {{- end }}
-    {{- if $.Values.configmap.cortxHa.enabled }}
-    {{- include "storageset.node" (dict "name" "cortx-ha-headless-svc" "id" $val.haUuid "type" "ha_node") | nindent 4 }}
+    {{- if $.Values.cortxha.enabled }}
+    {{- include "storageset.node" (dict "name" (printf "%s-headless" (include "cortx.ha.fullname" $)) "id" $val.haUuid "type" "ha_node") | nindent 4 }}
     {{- end }}
     {{- range $key, $val := $val.nodes }}
     {{- $shortHost := (split "." $key)._0 -}}
