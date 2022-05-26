@@ -173,7 +173,7 @@ else
             cortx-data-*|cortx-client-*) IMAGE="${DATA_IMAGE}" ;;
             cortx-control|cortx-ha) IMAGE="${CONTROL_IMAGE}" ;;
             *) 
-                printf "NO MATCH FOR %s.  Skipping upgrade of image." "${deployment}"
+                printf "NO MATCH FOR %s.  Skipping upgrade of image.\n" "${deployment}"
                 continue
                 ;;
         esac
