@@ -10,7 +10,7 @@ SCRIPT=$(readlink -f "$0")
 DIR=$(dirname "${SCRIPT}")
 SCRIPT_NAME=$(basename "${SCRIPT}")
 PIDFILE=/tmp/${SCRIPT_NAME}.pid
-TIMEDELAY="30"
+TIMEDELAY="50"
 
 readonly SCRIPT
 readonly DIR
@@ -116,9 +116,9 @@ function cold_upgrade() {
         printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
     else
         while IFS= read -r deployment; do
-            upgrade_image="$(fetch_upgrade_image "${deployment_name}")"
-            kubectl set image deployment "${deployment_name}" *="${upgrade_image}";
-            kubectl set env deployment/"${deployment_name}" UPGRADE_MODE="COLD"
+            upgrade_image="$(fetch_upgrade_image "${deployment}")"
+            kubectl set image deployment "${deployment}" *="${upgrade_image}";
+            kubectl set env deployment/"${deployment}" UPGRADE_MODE="COLD"
         done <<< "${cortx_deployments}"
         printf "\n"
     fi
@@ -147,7 +147,7 @@ function rolling_upgrade() {
             suspend_upgrade
             ;;
         resume )
-            fetch_upgrade_images
+            fetch_solution_images
             resume_upgrade
             ;;
         status )
@@ -181,7 +181,7 @@ function prepare_upgrade_data() {
         deployment_name=${deployment}
         if [ "${deployments}" == "" ]
             then
-            deployments=" "$'\n'"${deployment_name}:"$'\n'"  status: default"$'\n'"  version: null"
+            deployments="${deployment_name}:"$'\n'"  status: default"$'\n'"  version: null"
             else
             deployments="${deployments}"$'\n'"${deployment_name}:"$'\n'"  status: default"$'\n'"  version: null"
         fi
@@ -272,7 +272,7 @@ function initiate_upgrade() {
 function start_upgrade() {
     # Use a PID file to prevent concurrent upgrades.
     if [[ -s ${PIDFILE} ]]; then
-       printf "An upgrade is already in progress (PID $(< %s)). If this is incorrect, remove file %s and try again." "${PIDFILE}" "${PIDFILE}"
+       echo "An upgrade is already in progress (PID $(< "${PIDFILE}")). If this is incorrect, remove file "${PIDFILE}" and try again."
        exit 1
     fi
     printf "%s" $$ > "${PIDFILE}"
@@ -287,10 +287,10 @@ function start_upgrade() {
             initiate_upgrade "${1}"
         else
             # start Upgrade
+            yq e ".cortx.type=\"${1}\"" -i "${UPGRADE_DATA}"
             initiate_upgrade "${1}"
         fi
     else
-        echo "upgrade calling"
         prepare_upgrade_data "${1}"
         # start Upgrade
         initiate_upgrade "${1}"
@@ -338,7 +338,7 @@ function status_upgrade() {
         printf "Error: While fetching Upgrade status, upgrade-data.yaml not found\n"
         exit 1
     fi
-    if [[ "${upgrade_status}" == "Done" ]];then
+    if [[ "${upgrade_status}" == "Done" ]]; then
         printf "Upgrade has been performed on all nodes\n"
     else
         printf "Upgrade is in %s state" "${upgrade_status}"
@@ -407,13 +407,12 @@ case "${UPGRADE_TYPE}" in
         ;;
     Rolling )
         rolling_upgrade
+        # Validate upgrade status to remove PID file.
+        Validate_upgrade_status
         ;;
     * )
-        printf "Invalid Upgrade_type provided : %s" "{$1}"
+        echo "Invalid Upgrade_type provided"
         usage
         exit 1
         ;;
 esac
-
-# Validate upgrade status to remove PID file.
-Validate_upgrade_status
