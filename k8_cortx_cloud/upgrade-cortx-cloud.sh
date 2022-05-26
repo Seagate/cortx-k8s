@@ -168,20 +168,15 @@ else
     printf "\n"
 
     while IFS= read -r deployment; do
-        if [[ "${deployment}" == "cortx-server-"* ]]; then
-            IMAGE="${RGW_IMAGE}"
-        elif [[ "${deployment}" == "cortx-data-"* ]]; then
-            IMAGE="${DATA_IMAGE}"
-        elif [[ "${deployment}" == "cortx-client-"* ]]; then
-            IMAGE="${DATA_IMAGE}"
-        elif [[ "${deployment}" == "cortx-control" ]]; then
-            IMAGE="${CONTROL_IMAGE}"
-        elif [[ "${deployment}" == "cortx-ha" ]]; then
-            IMAGE="${CONTROL_IMAGE}"
-        else
-            echo "NO MATCH FOR ${deployment}.  Skipping upgrade of image."
-            continue
-        fi
+        case "${deployment}" in
+            cortx-server-*) IMAGE="${RGW_IMAGE}" ;;
+            cortx-data-*|cortx-client-*) IMAGE="${DATA_IMAGE}" ;;
+            cortx-control|cortx-ha) IMAGE="${CONTROL_IMAGE}" ;;
+            *) 
+                printf "NO MATCH FOR %s.  Skipping upgrade of image." "${deployment}"
+                continue
+                ;;
+        esac
         printf "Updating deployment %s to use image %s\n" "${deployment}" "${IMAGE}"
         kubectl set image --namespace="${NAMESPACE}" deployment "${deployment}" "*=${IMAGE}"
     done <<< "${cortx_deployments}"
