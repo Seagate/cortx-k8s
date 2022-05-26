@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# TODO: add support for statefulset 
-# once deployments are replaced with statefulset in k8s .
-
 trap 'handle_error "$?" "${BASH_COMMAND:-?}" "${FUNCNAME[0]:-main}(${BASH_SOURCE[0]:-?}:${LINENO:-?})"' ERR
 handle_error() {
   printf "%s Unexpected error caught -- %s %s\n    at %s\n" "${RED-}✘${CLEAR-}" "$2" "${RED-}↩ $1${CLEAR-}" "$3" >&2
@@ -18,7 +15,6 @@ TIMEDELAY="30"
 readonly SCRIPT
 readonly DIR
 readonly SCRIPT_NAME
-readonly PIDFILE
 
 if [[ -t 1 ]]; then
     RED=$(tput setaf 1 || true)
@@ -37,22 +33,23 @@ readonly GREEN
 readonly CYAN
 readonly CLEAR
 
-# Use a PID file to prevent concurrent upgrades.
-if [[ -s ${PIDFILE} ]]; then
-   echo "An upgrade is already in progress (PID $(< "${PIDFILE}")). If this is incorrect, remove file ${PIDFILE} and try again."
-   exit 1
-fi
-printf "%s" $$ > "${PIDFILE}"
+PIDFILE=/tmp/upgrade.sh.pid
+UPGRADE_DATA_TEMPLATE="./upgrade-data-template.yaml"
+UPGRADE_DATA="./upgrade-data.yaml"
 
 function usage() {
     cat << EOF
 
 Usage:
-    ${SCRIPT_NAME} -i IMAGE [-s SOLUTION_CONFIG_FILE]
+    ${SCRIPT_NAME} [prepare | start | suspend | resume | status] [-p POD_TYPE] [-c COLD_UPGRADE] [-s SOLUTION_CONFIG_FILE]
     ${SCRIPT_NAME} -h
 
 Options:
     -h              Prints help information.
+    start           initiates upgrade on CORTX cluster.
+    suspend         suspend current SW upgrade process.
+    resume          resume sw upgrade process.
+    status          check the status of current SW upgrade process 
     -p <POD_TYPE>   REQUIRED. { data | control | ha | server | all }
     -s <FILE>       The cluster solution configuration file. Can
                     also be set with the CORTX_SOLUTION_CONFIG_FILE
@@ -76,17 +73,130 @@ function validate_upgrade_images() {
     fi
 }
 
-function print_header() {
-    printf "########################################################\n"
-    printf "# Upgrade %s \n" "$1"
-    printf "########################################################\n"
+function fetch_solution_images() {
+    printf "Using solution config file '%s'\n" "${SOLUTION_FILE}"
+    # Fetch Upgrade Images from solution.yaml and validate them
+    cortxcontrol_image=$(parse_solution 'solution.images.cortxcontrol' | cut -f2 -d'>')
+    validate_upgrade_images "${cortxcontrol_image}"
+    cortxha_image=$(parse_solution 'solution.images.cortxha' | cut -f2 -d'>')
+    validate_upgrade_images "${cortxha_image}"
+    cortxdata_image=$(parse_solution 'solution.images.cortxdata' | cut -f2 -d'>')
+    validate_upgrade_images "${cortxdata_image}"
+    cortxserver_image=$(parse_solution 'solution.images.cortxserver' | cut -f2 -d'>')
+    validate_upgrade_images "${cortxserver_image}"
 }
 
-function validate_cortx_pods_status() {
+function Validate_upgrade_status() {
+    status=true
+    while IFS= read -r deployment; do
+        deployment_name=${deployment}
+        upgrade_status=$(yq '.cortx.deployments."'${deployment_name}'".status' ${UPGRADE_DATA})
+        if [[ "$upgrade_status" != "Done" ]]; then
+            status=false
+            break
+        else
+            continue
+        fi
+    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep 'cortx')"
+    if $status
+    then
+        yq e '.cortx.status='\"Done\"'' -i "$UPGRADE_DATA"
+    fi
+
+}
+
+function cold_upgrade() {
+
+    fetch_solution_images
+    # Shutdown all CORTX Pods
+    "${DIR}/shutdown-cortx-cloud.sh" "${SOLUTION_FILE}"
+
+    cortx_deployments="$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep 'cortx')"
+    if [[ -z ${cortx_deployments} ]]; then
+        printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
+    else
+        while IFS= read -r deployment; do
+            upgrade_image="$(fetch_upgrade_image "${deployment_name}")"
+            kubectl set image deployment "${deployment_name}" *="${upgrade_image}";
+            kubectl set env deployment/"${deployment_name}" UPGRADE_MODE="COLD"
+        done <<< "${cortx_deployments}"
+        printf "\n"
+    fi
+
+    # Start all CORTX Pods
+    "${DIR}/start-cortx-cloud.sh" "${SOLUTION_FILE}"
+}
+
+function rolling_upgrade() {
+    if [[ "${PROCESS}" == "start" ]]; then
+            if [[ -z "${POD_TYPE}" ]]; then
+                printf "\nERROR: Required option POD_TYPE is missing.\n"
+                usage
+                exit 1
+            fi
+    fi
+    case "${PROCESS}" in
+        start )
+            fetch_solution_images
+            if [[ "${POD_TYPE}" == "all" ]]; then
+                POD_TYPE="cortx"
+            fi
+            start_upgrade "${POD_TYPE}"
+            ;;
+        suspend )
+            suspend_upgrade
+            ;;
+        resume )
+            fetch_upgrade_images
+            resume_upgrade
+            ;;
+        status )
+            status_upgrade
+            ;;
+        * )
+            echo -e "Invalid argument provided : $1"
+            usage
+            exit 1
+            ;;
+    esac
+}
+
+function fetch_upgrade_image() {
+    deployment_name="$1"
+    if [[ $deployment_name == *"control"* ]]; then
+        echo "$cortxcontrol_image"
+    elif [[ $deployment_name == *"ha"* ]]; then
+        echo "$cortxha_image"
+    elif [[ $deployment_name == *"server"* ]]; then
+        echo "$cortxserver_image"
+    elif [[ $deployment_name == *"data"* ]]; then
+        echo "$cortxdata_image"
+    fi
+}
+
+function prepare_upgrade_data() {
+    cp "${UPGRADE_DATA_TEMPLATE}" "${UPGRADE_DATA}"
+    deployments=""
+    while IFS= read -r deployment; do
+        deployment_name=${deployment}
+        if [ "$deployments" == "" ]
+            then
+            deployments=" "$'\n'"${deployment_name}:"$'\n'"  status: default"$'\n'"  version: null"
+            else
+            deployments="$deployments"$'\n'"${deployment_name}:"$'\n'"  status: default"$'\n'"  version: null"
+        fi
+    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep 'cortx')"
+    ./parse_scripts/yaml_insert_block.sh "$UPGRADE_DATA" "$deployments" 4 "cortx.deployments"
+    yq e ".cortx.type=\"$1\"" -i "$UPGRADE_DATA"
+    yq e '.cortx.status='\"Default\"'' -i "$UPGRADE_DATA"
+}
+
+function Wait_for_deployment_to_be_ready() {
     pods_ready=true
-    cortx_pods="$(kubectl get pods --namespace="${NAMESPACE}" | { grep "${cortx_pod_filter}" || true; })"
+    cortx_pods="$(kubectl get pods --namespace="${NAMESPACE}" | { grep "${1}" || true; })"
     if [[ -z ${cortx_pods} ]]; then
-        printf "  no CORTX Pods were found, proceeding with image upgrade anyways\n"
+        printf "  no CORTX Pods were found\n"
+        exit 1
     else
         while IFS= read -r line; do
             IFS=" " read -r -a pod_info <<< "${line}"
@@ -96,7 +206,7 @@ function validate_cortx_pods_status() {
             ready_count="${ready_counts[0]}"
             total_count="${ready_counts[1]}"
             if [[ -n ${pod_name} ]]; then
-                if [[ ${pod_status} != "Running" ]]; then
+                if [[ ${pod_status} != "Running" && ${pod_status} != "Terminating" ]]; then
                     printf "  %s %s -> status is %s\n" "${RED}✘${CLEAR}" "${pod_name}" "${pod_status}"
                     pods_ready=false
                 elif (( ready_count != total_count )); then
@@ -111,170 +221,160 @@ function validate_cortx_pods_status() {
     printf "\n"
 
     if [[ ${pods_ready} == false ]]; then
-        printf "pod readiness check failed. Ensure all pods are in a healthy state, or manually shutdown the cluster, and try again.\n"
+        yq e '.cortx.deployments."'${deployment_name}'".status= '\"Failed\"'' -i "${UPGRADE_DATA}"
+        printf "pod readiness check failed. Ensure "${deployment_name}" is in a healthy state, or manually shutdown the cluster, and try again.\n"
         exit 1
     fi
 }
 
-function silent_kill()
-{
-    kill "$1"
-    wait "$1" 2> /dev/null
+function compare_versions() {
+    current_version=$1
+    upgrade_version=$2
+    if [[ $current_version == $upgrade_version ]]; then
+        echo "true"
+    else
+        echo "false"
+    fi
 }
 
-function wait_for_all_pods_available()
-{
-    TIMEOUT=$1
-    shift
-    DEPL_STR=$1
-    shift
-    START=${SECONDS}
-    (while true; do sleep 1; echo -n "."; done)&
-    DOTPID=$!
-    # expand var now, not later
-    # shellcheck disable=SC2064
-    trap "silent_kill ${DOTPID}" 0
+function initiate_upgrade() {
+    # Mark Cortx Upgrade as in progress in upgrade-data.yaml
+    yq e '.cortx.status='\"In-Progress\"'' -i "$UPGRADE_DATA"
 
-    # Initial wait
-    FAIL=0
-    sleep "${TIMEDELAY}";
-    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
-        # Secondary wait
-        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" "$@"; then
-            # Still timed out.  This is a failure
-            FAIL=1
+    # starts Upgrade on all cortx deployments by fetching their names from upgrade-data.yaml
+    while IFS= read -r deployment; do
+        deployment_name=${deployment}
+        upgrade_status=$(yq '.cortx.deployments."'${deployment_name}'".status' ${UPGRADE_DATA})
+        current_version=$(yq '.cortx.deployments."'${deployment_name}'".version' ${UPGRADE_DATA})
+        upgrade_image="$(fetch_upgrade_image "${deployment_name}")"
+        upgrade_version=$(docker run "${upgrade_image}" cat /opt/seagate/cortx/RELEASE.INFO | grep VERSION | awk '{print $2}' | tr -d '"')
+        check_version=$(compare_versions "${current_version}" "${upgrade_version}")
+        echo $check_version
+        if [[ "$upgrade_status" == "Done" && "$check_version" == "true" ]]; then
+            echo "."
+        else
+            printf "\nStarting Upgrade for %s\n" "${deployment_name}"
+
+            yq e '.cortx.deployments."'${deployment_name}'".status= '\"In-Progress\"'' -i "${UPGRADE_DATA}"
+            kubectl rollout pause deployment "${deployment_name}"
+            kubectl set image deployment "${deployment_name}" *="${upgrade_image}";
+            kubectl set env deployment/"${deployment_name}" UPGRADE_MODE="ROLLING"
+            kubectl rollout resume deployment "${deployment_name}"
+            yq e '.cortx.deployments."'${deployment_name}'".status= '\"Done\"'' -i "${UPGRADE_DATA}"
+            yq e '.cortx.deployments."'${deployment_name}'".version= '\"${upgrade_version}\"'' -i "${UPGRADE_DATA}"
+            sleep "${TIMEDELAY}"
+            Wait_for_deployment_to_be_ready "${deployment_name}"
+
+            printf "\nUpgrade Successful for %s\n" "${deployment_name}"
         fi
-    fi
+    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep "$1")"
+}
 
-    silent_kill ${DOTPID}
-    trap - 0
-    ELAPSED=$((SECONDS - START))
-    echo
-    if [[ ${FAIL} -eq 0 ]]; then
-        echo "Deployment ${DEPL_STR} available after ${ELAPSED} seconds"
+function start_upgrade() {
+    # Use a PID file to prevent concurrent upgrades.
+    if [[ -s ${PIDFILE} ]]; then
+       echo "An upgrade is already in progress (PID $(< "${PIDFILE}")). If this is incorrect, remove file "${PIDFILE}" and try again."
+       exit 1
+    fi
+    printf "%s" $$ > "${PIDFILE}"
+
+    # Create Upgrade-data.yaml file to have all deployments and their upgrade status with respect to each delpoyment If not already present.
+    if [[ -s "${UPGRADE_DATA}" ]]; then
+        upgrade_status=$(yq '.cortx.status' ${UPGRADE_DATA})
+        if [[ "$upgrade_status" == "Done" ]]; then
+            rm -f "${UPGRADE_DATA}"
+            # Create Upgrade-data.yaml file to have all deployments and their upgrade status with respect to each delpoyment.
+            prepare_upgrade_data $1
+            initiate_upgrade $1
+        else
+            # start Upgrade
+            initiate_upgrade $1
+        fi
     else
-        echo "Deployment ${DEPL_STR} timed out after ${ELAPSED} seconds"
+        echo "upgrade calling"
+        prepare_upgrade_data $1
+        # start Upgrade
+        initiate_upgrade $1
     fi
-    echo
-    return ${FAIL}
+
+    # Delete PID file if after upgrade is successful
+    rm -f "${PIDFILE}"
 }
 
-function cold_upgrade() {
-    # Shutdown all CORTX Pods
-    "${DIR}/shutdown-cortx-cloud.sh" "${SOLUTION_FILE}"
-    
-    update_cortx_pod "${control_pod}" "${cortxcontrol_image}"
-    update_cortx_pod "${ha_pod}" "${cortxha_image}"
-    upgrade_cortx_deployments 'cortx-data-' "${cortxdata_image}"
-    upgrade_cortx_deployments 'cortx-server-' "${cortxserver_image}"
-
-    cortx_deployments="$(kubectl get deployments --namespace="${NAMESPACE}" --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | { grep "${cortx_deployment_filter}" || true; })"
-    if [[ -z ${cortx_deployments} ]]; then
-        printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
+function suspend_upgrade() {
+    if [[ -s ${PIDFILE} ]]; then
+        upgrade_pid="$(cat "${PIDFILE}")"
+       # Delete PID file if Upgrade suspended
+        rm -f "${PIDFILE}"
     else
-        while IFS= read -r deployment; do
-            kubectl patch deployment "${deployment}" --type json -p='[{"op": "add", "path": "/spec/template/spec/initContainers/0/env/-", "value": {"name": "UPGRADE_MODE", "value": "COLD"}}]';
-        done <<< "${cortx_deployments}"
-        printf "\n"
-    fi
-
-    # Start all CORTX Pods
-    "${DIR}/start-cortx-cloud.sh" "${SOLUTION_FILE}"
-}
-
-function pause_cortx_pod() {
-    pod_name="$1"
-    kubectl rollout pause deployment "${pod_name}";
-}
-
-function update_cortx_pod() {
-    pod_name="$1"
-    upgrade_image="$2"
-    kubectl set image deployment "${pod_name}" "*=${upgrade_image}";
-    #remove any env variable i.e. UPGRADE_MODE
-    kubectl patch deployment "${pod_name}" --type json -p='[{"op": "remove", "path": "/spec/template/spec/initContainers/0/env/1"}]';
-}
-
-function resume_cortx_pod() {
-    pod_name="$1"
-    kubectl rollout resume deployment "${pod_name}";
-    sleep "${TIMEDELAY}";
-    printf "########################################################\n"
-    printf "# Upgrade Sccessful for %s \n" "${pod_name}"
-    printf "#######################################################\n\n"
-}
-
-function upgrade_cortx_deployments() {
-    pod_filter="$1"
-    upgrade_image="$2"
-    while IFS= read -r line; do
-        IFS=" " read -r -a deployments <<< "${line}"
-        print_header "${deployments[0]}"
-        upgrade_pod "${deployments[0]}" "${upgrade_image}"
-    done <<< "$(kubectl get deployments |grep "${pod_filter}")"
-}
-
-function upgrade_pod() { 
-    pod_name=$1
-    upgrade_image=$2
-    pause_cortx_pod "${pod_name}"
-    update_cortx_pod "${pod_name}" "${upgrade_image}"
-    resume_cortx_pod "${pod_name}" 
-}
-
-function rolling_upgrade() {
-    case "${POD_TYPE}" in
-    control )
-        print_header "${control_pod}"
-        upgrade_pod "${control_pod}" "${cortxcontrol_image}"
-        ;;
-    ha )
-        print_header "${ha_pod}"
-        upgrade_pod "${ha_pod}" "${cortxha_image}"
-        ;;
-    data )
-        upgrade_cortx_deployments 'cortx-data-' "${cortxdata_image}"
-        ;;
-    server )
-        upgrade_cortx_deployments 'cortx-server-' "${cortxserver_image}"
-        ;;
-    all )
-        print_header "${control_pod}"
-        upgrade_pod "${control_pod}" "${cortxcontrol_image}"
-        print_header "${ha_pod}"
-        upgrade_pod "${ha_pod}" "${cortxha_image}"
-        upgrade_cortx_deployments 'cortx-data-' "${cortxdata_image}"
-        upgrade_cortx_deployments 'cortx-server-' "${cortxserver_image}"
-        ;;
-    * )
-        echo -e "Invalid argument provided"
-        usage
+        echo "Upgrade Process Not found on the system, Suspend cannot be performed.."
         exit 1
-        ;;
-    esac
+    fi
+    yq e '.cortx.status='\"Suspended\"'' -i "$UPGRADE_DATA"
+    printf "Upgrade suspended\n"
+    kill -TSTP $upgrade_pid
 }
 
-POD_TYPE=
-UPGRADE_TYPE="Rolling"
-SOLUTION_FILE="${CORTX_SOLUTION_CONFIG_FILE:-solution.yaml}"
+function resume_upgrade() {
+    # Use a PID file to prevent concurrent resume process.
+    if [[ -s ${PIDFILE} ]]; then
+       echo "An upgrade is already in progress (PID $(< "${PIDFILE}")). If this is incorrect, remove file "${PIDFILE}" and try again."
+       exit 1
+    else
+        printf "%s" $$ > "${PIDFILE}"
+    fi
 
+    # Resume Upgrade process by fetching left replicas from upgrade-data.yaml for each deployment
+    POD_TYPE="$(yq '.cortx.type' "$UPGRADE_DATA")"
+    initiate_upgrade $POD_TYPE
+
+    # Delete PID file if after upgrade is successful
+    rm -f "${PIDFILE}"
+}
+
+function status_upgrade() {
+    if [[ -s ${UPGRADE_DATA} ]]; then
+       upgrade_status=$(yq '.cortx.status' ${UPGRADE_DATA})
+    else
+        printf "Error: While fetching Upgrade status, upgrade-data.yaml not found\n"
+        exit 1
+    fi
+    if [[ upgrade_status == "Done" ]];then
+        printf "Upgrade has been performed on all nodes\n"
+    else
+        printf "Upgrade is in %s state" "${upgrade_status}"
+    fi
+}
+
+PROCESS="start"
+UPGRADE_TYPE="Rolling"
+POD_TYPE=
+SOLUTION_FILE="${CORTX_SOLUTION_CONFIG_FILE:-solution.yaml}"
+readonly SOLUTION_FILE
 while [ $# -gt 0 ];  do
     case $1 in
-    -h )
-        printf "%s\n" "${SCRIPT_NAME}"
-        usage
-        exit 0
+    start )
+        PROCESS="start"
+        ;;
+    suspend )
+        PROCESS="suspend"
+        ;;
+    resume )
+        PROCESS="resume"
+        ;;
+    status )
+        PROCESS="status"
         ;;
     -p )
         shift 1
         POD_TYPE=$1
         ;;
+    -cold )
+        UPGRADE_TYPE="Cold"
+        ;;
     -s )
         shift 1
         SOLUTION_FILE=$1
-        ;;
-    -cold )
-        UPGRADE_TYPE="Cold"
         ;;
     * )
         echo -e "Invalid argument provided : $1"
@@ -284,9 +384,6 @@ while [ $# -gt 0 ];  do
     esac
     shift 1
 done
-
-readonly POD_TYPE
-readonly SOLUTION_FILE
 
 if [[ -z "${SOLUTION_FILE}" ]]; then
     printf "\nERROR: Required option SOLUTION_CONFIG_FILE is missing.\n"
@@ -305,62 +402,19 @@ if [[ -z "${NAMESPACE}" ]]; then
     exit 1
 fi
 
-printf "Using solution config file '%s'\n" "${SOLUTION_FILE}"
-# Fetch Upgrade Images from solution.yaml and validate them
-cortxcontrol_image=$(parse_solution 'solution.images.cortxcontrol' | cut -f2 -d'>')
-validate_upgrade_images "${cortxcontrol_image}"
-cortxha_image=$(parse_solution 'solution.images.cortxha' | cut -f2 -d'>')
-validate_upgrade_images "${cortxha_image}"
-cortxdata_image=$(parse_solution 'solution.images.cortxdata' | cut -f2 -d'>')
-validate_upgrade_images "${cortxdata_image}"
-cortxserver_image=$(parse_solution 'solution.images.cortxserver' | cut -f2 -d'>')
-validate_upgrade_images "${cortxserver_image}"
-
-readonly cortx_pod_filter="cortx-control-\|cortx-data-\|cortx-ha-\|cortx-server-\|cortx-client-"
-readonly cortx_deployment_filter="cortx-control\|cortx-data-\|cortx-ha\|cortx-server-\|cortx-client-"
-readonly control_pod="cortx-control"
-readonly ha_pod="cortx-ha"
-
 case "${UPGRADE_TYPE}" in
     Cold )
         cold_upgrade
         ;;
     Rolling )
-        # Validate if POD Type has been mentioned for rolling upgrade
-        if [[ -z "${POD_TYPE}" ]]; then
-            printf "\nERROR: Required option POD_TYPE is missing.\n"
-            usage
-            exit 1
-        fi
-
-        # Validate if All CORTX Pods are running before initiating upgrade
-        printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
-        validate_cortx_pods_status
         rolling_upgrade
         ;;
     * )
-        echo -e "Invalid argument provided : $1"
+        echo -e "Invalid Upgrade_type provided : $1"
         usage
         exit 1
         ;;
 esac
 
-cortx_deployments=()
-# Wait for all CORTX Pods to be ready
-while IFS= read -r line; do
-    IFS=" " read -r -a deployments <<< "${line}"
-    cortx_deployments+=("deployment/${deployments[0]}")
-done < <(kubectl get deployments --namespace="${NAMESPACE}" | grep "${cortx_deployment_filter}")
-sleep "${TIMEDELAY}";
-printf "\nWait for CORTX Pods to be ready"
-if ! wait_for_all_pods_available 300s "CORTX PODs" "${cortx_deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-fi
-
-# Validate if All CORTX Pods are running After upgrade is successful
-printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
-validate_cortx_pods_status
-
-# Delete PID file once upgrade is successful
-rm -f "${PIDFILE}"
+# Validate upgrade status to remove PID & upgrade-data.yaml file.
+Validate_upgrade_status
