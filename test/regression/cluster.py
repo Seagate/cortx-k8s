@@ -94,8 +94,12 @@ class Cluster:
                 if image == 'cortxserver':
                     if 'cortx_rgw' in cortx_ver:
                         images[image] = cortx_ver['cortx_rgw']
-                elif image.startswith('cortx'):
-                    images[image] = cortx_ver['cortx_all']
+                elif image in ('cortxcontrol', 'cortxha'):
+                    if 'cortx_control' in cortx_ver:
+                        images[image] = cortx_ver['cortx_control']
+                elif image in ('cortxdata', 'cortxclient'):
+                    if 'cortx_data' in cortx_ver:
+                        images[image] = cortx_ver['cortx_data']
 
     def _set_secrets(self, solution):
         secrets = self.cluster_data.get('secrets')

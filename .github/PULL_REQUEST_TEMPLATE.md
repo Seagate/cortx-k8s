@@ -45,8 +45,9 @@ internal issue (Jira), please reference the CORTX-NNNNN issue number.
 If this change requires specific versions of CORTX that are newer than the currently referenced
 images, please list those images and link them to the public CORTX packages page.
 
-- cortx-all images are published at https://github.com/Seagate/cortx/pkgs/container/cortx-all
+- cortx-data images are published at https://github.com/Seagate/cortx/pkgs/container/cortx-data
 - cortx-rgw images are published at https://github.com/Seagate/cortx/pkgs/container/cortx-rgw
+- cortx-control images are published at https://github.com/Seagate/cortx/pkgs/container/cortx-control
 
 The referenced images are always defined in the images section of the solution.example.yaml file. If
 updated images are required, the example solution YAML file should be updated in this change.
@@ -58,8 +59,9 @@ or indicate that.
 -->
 This change requires the following images:
 
-- `cortx-all:<version>`
+- `cortx-data:<version>`
 - `cortx-rgw:<version>`
+- `cortx-control:<version>`
 
 ## How was this tested?
 <!--

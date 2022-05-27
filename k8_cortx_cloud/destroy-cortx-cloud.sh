@@ -129,9 +129,6 @@ function deleteCortxClient()
 
 function deleteCortxHa()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX HA                                      #\n"
-    printf "########################################################\n"
     uninstallHelmChart "cortx-ha-${namespace}" "${namespace}"
 }
 
@@ -157,9 +154,6 @@ function deleteCortxData()
 
 function deleteCortxControl()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX Control                                 #\n"
-    printf "########################################################\n"
     uninstallHelmChart "cortx-control-${namespace}" "${namespace}"
 }
 
@@ -185,21 +179,6 @@ function deleteCortxLocalBlockStorage()
     printf "# Delete CORTX Local Block Storage                     #\n"
     printf "########################################################\n"
     uninstallHelmChart "cortx-data-blk-data-${namespace}" "${namespace}"
-}
-
-function deleteCortxPVs()
-{
-    printf "########################################################\n"
-    printf "# Delete CORTX Persistent Volumes                      #\n"
-    printf "########################################################\n"
-    local -r pv_filter="^${namespace}/cortx-data-fs-local-pvc|^${namespace}/cortx-control-fs-local-pvc"
-    while IFS= read -r persistent_volume; do
-        printf "Removing %s\n" "${persistent_volume}"
-        if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-            kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
-        fi
-        kubectl delete pv "${persistent_volume}"
-    done < <(kubectl get pv --no-headers | grep -E "${pv_filter}" | cut -f1 -d" ")
 }
 
 function deleteCortxConfigmap()
@@ -313,22 +292,8 @@ function delete3rdPartyPVCs()
             kubectl patch pvc --namespace "${namespace}" "${volume_claim}" \
                       -p '{"metadata":{"finalizers":null}}'
         fi
-        kubectl delete pvc --namespace "${namespace}" "${volume_claim}"
+        kubectl delete pvc --namespace "${namespace}" "${volume_claim}" --ignore-not-found
     done < <(kubectl get pvc --no-headers --namespace="${namespace}" | grep -E "${pvc_filter}" | cut -f1 -d " ")
-}
-
-function delete3rdPartyPVs()
-{
-    printf "########################################################\n"
-    printf "# Delete Persistent Volumes                            #\n"
-    printf "########################################################\n"
-    while IFS= read -r persistent_volume; do
-        printf "Removing %s\n" "${persistent_volume}"
-        if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
-            kubectl patch pv "${persistent_volume}" -p '{"metadata":{"finalizers":null}}'
-        fi
-        kubectl delete pv "${persistent_volume}"
-    done < <(kubectl get pv --no-headers | grep -E "${pvc_filter}" | cut -f1 -d " ")
 }
 
 function deleteKubernetesPrereqs()
@@ -390,6 +355,5 @@ uninstallHelmChart cortx "${namespace}"
 # Clean up
 #############################################################
 delete3rdPartyPVCs
-delete3rdPartyPVs
 deleteKubernetesPrereqs
 deleteNodeDataFiles
