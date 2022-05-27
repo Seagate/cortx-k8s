@@ -60,8 +60,8 @@ SSH_FLAGS='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ~/.ssh
 ## 3 CORTX Installation
 
 For the CORTX installation, you can either:
-1. Use container images hosted on the [repository](https://github.com/Seagate/cortx/pkgs/container/cortx-all)
-2. Generate the cortx-all container image yourself, following the guidelines [here](https://github.com/Seagate/cortx/tree/main/doc/community-build/docker/cortx-all).
+1. Use container images hosted on the [repository](https://github.com/Seagate/cortx/pkgs/container/cortx-data)
+2. Generate the cortx-data, cortx-rgw, and cortx-control container images yourself, following the guidelines [here](https://github.com/Seagate/cortx/tree/main/doc/community-build/docker/cortx-all).
    You'll also need to push the container to a publicly accessible repository.
 
 CORTX deployment framework can be configured through a single file `cortx-k8s/k8_cortx_cloud/solution.yaml`.

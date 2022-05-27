@@ -11,17 +11,20 @@
 # (relative to cwd)
 generated_solution: /tmp/mysolution.yaml
 
-# Version of cortx-all to use
+# Version of cortx-data/-rgw/-control
 # If omitted then the version specified in the
 # default solution.example.yaml file is used
-#cortx_ver:  2.0.0-latest-custom-ci
+#cortx_ver:
+#  cortx_data: ghcr.io/seagate/cortx-data:2.0.0-790
+#  cortx_rgw: ghcr.io/seagate/cortx-rgw:2.0.0-790
+#  cortx_control: ghcr.io/seagate/cortx-control:2.0.0-790
 #
 
 #secrets:
 #  name: cortx-secret
 #  content:
-#    s3_auth_admin_secret: Test@123
-#    csm_mgmt_admin_secret: Test@123
+#    s3_auth_admin_secret: Password@123
+#    csm_mgmt_admin_secret: Password@123
 
 
 #nodePorts:
