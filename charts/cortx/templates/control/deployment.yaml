@@ -45,7 +45,7 @@ spec:
             secretName: {{ .Values.configmap.cortxSecretName }}
       initContainers:
       {{- if .Values.consul.enabled }}
-      - name: wait-for-available-consul
+      - name: wait-for-consul
         image: {{ .Values.cortxcontrol.image }}
         imagePullPolicy: IfNotPresent
         command:
@@ -53,14 +53,17 @@ spec:
         args:
           - -ec
           - |
-            until curl http://{{ include "cortx.fullname" . }}-consul-server:8500/v1/status/leader 2>/dev/null | grep -E '".+"'; do
-              echo "Waiting for Consul"
-              sleep 5
+            until curl $CONSUL_SERVICE/v1/status/leader 2>/dev/null | grep -E '".+"'; do
+                echo "Waiting for Consul"
+                sleep 5
             done
             echo "Consul is available"
+        env:
+          - name: CONSUL_SERVICE
+            value: {{ printf "http://%s-kafka:8500" (include "cortx.fullname" .) }}
       {{- end  }}
       {{- if .Values.kafka.enabled }}
-      - name: wait-for-available-kafka
+      - name: wait-for-kafka
         {{- with .Values.kafka.image }}
         image: {{ printf "%s/%s:%s" .registry .repository .tag }}
         {{- end }}
@@ -70,18 +73,29 @@ spec:
         args:
           - -ec
           - |
-            /opt/bitnami/kafka/bin/kafka-topics.sh \
+            echo "Attempting to write a Kafka topic"
+            until /opt/bitnami/kafka/bin/kafka-topics.sh \
                 --bootstrap-server ${KAFKA_SERVICE} \
                 --create \
                 --if-not-exists \
                 --topic "${POD_NAME}" \
                 --replication-factor {{ .Values.kafka.replicaCount }} \
-                --partitions {{ .Values.kafka.numPartitions }}
+                --partitions {{ .Values.kafka.numPartitions }}; do
+                echo "trying again"
+                sleep 5
+            done
+            echo "Succesfully wrote a Kafka topic"
             {{- if .Values.kafka.deleteTopicEnable }}
-            /opt/bitnami/kafka/bin/kafka-topics.sh \
+            echo "Attempting to delete the Kafka topic"
+            until /opt/bitnami/kafka/bin/kafka-topics.sh \
                 --bootstrap-server ${KAFKA_SERVICE} \
                 --delete \
-                --topic "${POD_NAME}"
+                --if-exists \
+                --topic "${POD_NAME}"; do
+                echo "trying again"
+                sleep 5
+            done
+            echo "Successfully deleted the Kafka topic"
             {{- end }}
             echo "Kafka is available"
         env:
