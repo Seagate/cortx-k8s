@@ -60,7 +60,7 @@ spec:
             echo "Consul is available"
         env:
           - name: CONSUL_SERVICE
-            value: {{ printf "http://%s-kafka:8500" (include "cortx.fullname" .) }}
+            value: {{ printf "http://%s-consul-server:8500" (include "cortx.fullname" .) }}
       {{- end  }}
       {{- if .Values.kafka.enabled }}
       - name: wait-for-kafka
