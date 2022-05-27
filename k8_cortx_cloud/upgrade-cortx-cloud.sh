@@ -250,7 +250,7 @@ function initiate_upgrade() {
         upgrade_version=$(docker run "${upgrade_image}" cat /opt/seagate/cortx/RELEASE.INFO | grep VERSION | awk '{print $2}' | tr -d '"')
         check_version=$(compare_versions "${current_version}" "${upgrade_version}")
         if [[ "${upgrade_status}" == "Done" && "${check_version}" == "true" ]]; then
-            echo "."
+            echo "Deployment ${deployment_name} is already upgrade to version ${upgrade_version}"
         else
             printf "\nStarting Upgrade for %s\n" "${deployment_name}"
 
