@@ -190,34 +190,6 @@ configmap:
           memory: 2Gi
           cpu: 2000m
 
-  # cortxHA allows configuring CORTX HA settings
-  cortxHa:
-    enabled: true
-    fault_tolerance:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 1Gi
-          cpu: 500m
-    health_monitor:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 1Gi
-          cpu: 500m
-    k8s_monitor:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 1Gi
-          cpu: 500m
-
   # cortxHare allows configuring CORTX HARE settings
   cortxHare:
     haxDataEndpoints: []
@@ -333,6 +305,47 @@ cortxcontrol:
         https: 8081
       nodePorts:
         https: ""
+  cfgmap:
+    mountpath: /etc/cortx/solution
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+  machineid:
+    mountpath: /etc/cortx/solution/node
+    value: ""
+  localpathpvc:
+    mountpath: /etc/cortx
+    requeststoragesize: 1Gi
+
+##
+## Imported values from cortx-ha Helm Chart. These will be changed.
+##
+cortxha:
+  enabled: true
+  image: ghcr.io/seagate/centos:7
+  fault_tolerance:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+  health_monitor:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+  k8s_monitor:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
   cfgmap:
     mountpath: /etc/cortx/solution
   sslcfgmap:

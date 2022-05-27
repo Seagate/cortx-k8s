@@ -281,6 +281,10 @@ aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 ls
 
 ### Tested by:
 
+This document was tested on the following version: [v0.6.0](https://github.com/Seagate/cortx-k8s/releases/tag/v0.6.0)
+
+May 20, 2022: Patrick Hession (patrick.hession@seagate.com) using CentOS 7.9 on Red Hat CloudForms.
+
 This document was tested on the following version: [v0.0.22](https://github.com/Seagate/cortx-k8s/releases/tag/v0.0.22)
 
 Mar 12, 2022: Bo Wei (bo.b.wei@seagate.com) using CentOS 7.9 on Red Hat CloudForms.

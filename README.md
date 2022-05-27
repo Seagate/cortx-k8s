@@ -148,7 +148,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
    - Update all passwords. The `csm-secret` should include one special character in cortx-secret.
 
-   - Update the images section with cortx-all image tag desired to be used.
+   - Update the images section with cortx-data, cortx-rgw, cortx-control image tags desired to be used.
      - Each specific release of the CORTX on Kubernetes code will point to a specific predefined container image.
      - This can be overridden as desired.
 
@@ -184,7 +184,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 2. Run the upgrade script to patch the CORTX on Kubernetes Deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments, and then re-start the Pods.
 
    ```bash
-   TARGET_IMAGE="ghcr.io/seagate/cortx-all:2.0.0-641-custom-ci"
+   TARGET_IMAGE="ghcr.io/seagate/cortx-data:2.0.0-790"
    ./upgrade-cortx-cloud.sh -s solution.yaml -i $TARGET_IMAGE
    ```
 
@@ -267,16 +267,16 @@ This section contains the CORTX and third-party images used to deploy CORTX on K
 
 | Name                     | Description                                                                            | Default Value           |
 | ------------------------ | -------------------------------------------------------------------------------------- | ----------------------- |
-| `images.cortxcontrol`    | Image registry, repository, & tag for the CORTX Control components                     | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
-| `images.cortxdata`       | Image registry, repository, & tag for the CORTX Data components                        | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
-| `images.cortxserver`     | Image registry, repository, & tag for the CORTX Server components                      | `ghcr.io/seagate/cortx-rgw:2.0.0-{VERSION}` |
-| `images.cortxha`         | Image registry, repository, & tag for the CORTX HA components                          | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
-| `images.cortxclient`     | Image registry, repository, & tag for the CORTX Client components                      | `ghcr.io/seagate/cortx-all:2.0.0-{VERSION}` |
-| `images.consul`          | Image registry, repository, & tag for the Consul required service                      | `ghcr.io/seagate/consul:1.11.4`             |
-| `images.kafka`           | Image registry, repository, & tag for the Kafka required service                       | `ghcr.io/seagate/kafka:3.0.0-debian-10-r97`  |
-| `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service                   | `ghcr.io/seagate/zookeeper:3.8.0-debian-10-r9` |
+| `images.cortxcontrol`    | Image registry, repository, & tag for the CORTX Control components                     | `ghcr.io/seagate/cortx-control:2.0.0-{VERSION}`  |
+| `images.cortxdata`       | Image registry, repository, & tag for the CORTX Data components                        | `ghcr.io/seagate/cortx-data:2.0.0-{VERSION}`     |
+| `images.cortxserver`     | Image registry, repository, & tag for the CORTX Server components                      | `ghcr.io/seagate/cortx-rgw:2.0.0-{VERSION}`      |
+| `images.cortxha`         | Image registry, repository, & tag for the CORTX HA components                          | `ghcr.io/seagate/cortx-control:2.0.0-{VERSION}`  |
+| `images.cortxclient`     | Image registry, repository, & tag for the CORTX Client components                      | `ghcr.io/seagate/cortx-data:2.0.0-{VERSION}`     |
+| `images.consul`          | Image registry, repository, & tag for the Consul required service                      | `ghcr.io/seagate/consul:1.11.4`                  |
+| `images.kafka`           | Image registry, repository, & tag for the Kafka required service                       | `ghcr.io/seagate/kafka:3.0.0-debian-10-r97`      |
+| `images.zookeeper`       | Image registry, repository, & tag for the Zookeeper required service                   | `ghcr.io/seagate/zookeeper:3.8.0-debian-10-r9`   |
 | `images.rancher`         | Image registry, repository, & tag for the Rancher Local Path Provisioner container     | `ghcr.io/seagate/local-path-provisioner:v0.0.20` |
-| `images.busybox`         | Image registry, repository, & tag for the utility busybox container                    | `ghcr.io/seagate/busybox:latest`            |
+| `images.busybox`         | Image registry, repository, & tag for the utility busybox container                    | `ghcr.io/seagate/busybox:latest`                 |
 
 ### Common parameters
 
