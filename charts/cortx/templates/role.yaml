@@ -6,9 +6,20 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{- include "cortx.labels" . | nindent 4 }}
 rules:
-- apiGroups: ['policy']
-  resources: ['podsecuritypolicies']
-  verbs:     ['use']
-  resourceNames:
-    - {{ include "cortx.fullname" . }}
+  - apiGroups:
+      - policy
+    resources:
+      - podsecuritypolicies
+    verbs:
+      - use
+    resourceNames:
+      - {{ include "cortx.fullname" . }}
+  - apiGroups:
+      - apps
+    resources:
+      - statefulsets
+    verbs:
+      - get
+      - list
+      - watch
 {{- end }}

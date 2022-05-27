@@ -7,15 +7,23 @@ metadata:
   labels: {{- include "cortx.labels" . | nindent 4 }}
     app.kubernetes.io/component: ha
 rules:
-- apiGroups:
-    - ""
-  resources:
-    - pods
-    - nodes
-  verbs:
-    - get
-    - list
-    - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - statefulsets
+    verbs:
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -24,9 +32,9 @@ metadata:
   labels: {{- include "cortx.labels" . | nindent 4 }}
     app.kubernetes.io/component: ha
 subjects:
-- kind: ServiceAccount
-  name: {{ include "cortx.ha.fullname" . }}-monitor
-  namespace: {{ .Release.Namespace }}
+  - kind: ServiceAccount
+    name: {{ include "cortx.ha.fullname" . }}-monitor
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: {{ include "cortx.ha.fullname" . }}-node-list

@@ -356,3 +356,6 @@ cortxha:
   localpathpvc:
     mountpath: /etc/cortx
     requeststoragesize: 1Gi
+
+waitForBackends:
+  enabled: true

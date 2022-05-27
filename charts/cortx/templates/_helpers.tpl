@@ -24,6 +24,28 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+Create a default fully qualified app name for Consul subchart
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+*/}}
+{{- define "cortx.consul.fullname" -}}
+{{/*
+{{- include "common.names.dependency.fullname" (dict "chartName" "kafka" "chartValues" .Values.kafka "context" $) -}}
+*/}}
+{{- printf "%s-consul" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name for Kafka subchart
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+*/}}
+{{- define "cortx.kafka.fullname" -}}
+{{/*
+{{- include "common.names.dependency.fullname" (dict "chartName" "kafka" "chartValues" .Values.kafka "context" $) -}}
+*/}}
+{{- printf "%s-kafka" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "cortx.chart" -}}

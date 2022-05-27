@@ -22,6 +22,7 @@ spec:
     spec:
       hostname: {{ include "cortx.control.fullname" . }}
       serviceAccountName: {{ include "cortx.serviceAccountName" . }}
+      automountServiceAccountToken: true
       volumes:
         - name: cortx-configuration
           configMap:
@@ -43,114 +44,133 @@ spec:
         - name: {{ .Values.configmap.cortxSecretName }}
           secret:
             secretName: {{ .Values.configmap.cortxSecretName }}
+        {{- if .Values.waitForBackends.enabled }}
+        - name: scripts
+          configMap:
+            name: {{ include "cortx.configmapName" . }}-scripts
+            defaultMode: 0755
+        {{- end }}
       initContainers:
-      {{- if .Values.consul.enabled }}
-      - name: wait-for-consul
-        image: {{ .Values.cortxcontrol.image }}
-        imagePullPolicy: IfNotPresent
-        command:
-          - /bin/sh
-        args:
-          - -ec
-          - |
-            until curl $CONSUL_SERVICE/v1/status/leader 2>/dev/null | grep -E '".+"'; do
-                echo "Waiting for Consul"
-                sleep 5
-            done
-            echo "Consul is available"
-        env:
-          - name: CONSUL_SERVICE
-            value: {{ printf "http://%s-consul-server:8500" (include "cortx.fullname" .) }}
-      {{- end  }}
-      {{- if .Values.kafka.enabled }}
-      - name: wait-for-kafka
-        {{- with .Values.kafka.image }}
-        image: {{ printf "%s/%s:%s" .registry .repository .tag }}
+        {{- if .Values.waitForBackends.enabled }}
+        - name: wait-for-backends
+          image: docker.io/bitnami/kubectl:1.24.0-debian-10-r6
+          imagePullPolicy: IfNotPresent
+          command:
+            - /scripts/wait-for-backends.sh
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts/wait-for-backends.sh
+              subPath: wait-for-backends.sh
         {{- end }}
-        imagePullPolicy: IfNotPresent
-        command:
-          - /bin/sh
-        args:
-          - -ec
-          - |
-            echo "Attempting to write a Kafka topic"
-            until /opt/bitnami/kafka/bin/kafka-topics.sh \
-                --bootstrap-server ${KAFKA_SERVICE} \
-                --create \
-                --if-not-exists \
-                --topic "${POD_NAME}" \
-                --replication-factor {{ .Values.kafka.replicaCount }} \
-                --partitions {{ .Values.kafka.numPartitions }}; do
-                echo "trying again"
-                sleep 5
-            done
-            echo "Succesfully wrote a Kafka topic"
-            {{- if .Values.kafka.deleteTopicEnable }}
-            echo "Attempting to delete the Kafka topic"
-            until /opt/bitnami/kafka/bin/kafka-topics.sh \
-                --bootstrap-server ${KAFKA_SERVICE} \
-                --delete \
-                --if-exists \
-                --topic "${POD_NAME}"; do
-                echo "trying again"
-                sleep 5
-            done
-            echo "Successfully deleted the Kafka topic"
-            {{- end }}
-            echo "Kafka is available"
-        env:
-          - name: KAFKA_SERVICE
-            value: {{ printf "%s-kafka:%d" (include "cortx.fullname" .) (.Values.kafka.service.ports.client | int64) }}
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-      {{- end  }}
-      - name: cortx-setup
-        image: {{ .Values.cortxcontrol.image }}
-        imagePullPolicy: IfNotPresent
-        command:
-          - /bin/sh
-        {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
-        args:
-          - -c
-          - sleep $(shuf -i 5-10 -n 1)s
-        {{- else }}
-        args:
-          - -c
-          {{- if .Values.cortxcontrol.machineid.value }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+        {{- if .Values.consul.enabled }}
+        - name: wait-for-consul
+          image: {{ .Values.cortxcontrol.image }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+          args:
+            - -ec
+            - |
+              until curl $CONSUL_SERVICE/v1/status/leader 2>/dev/null | grep -E '".+"'; do
+                  echo "Waiting for Consul"
+                  sleep 5
+              done
+              echo "Consul is available"
+          env:
+            - name: CONSUL_SERVICE
+              value: {{ printf "http://%s-consul-server:8500" (include "cortx.fullname" .) }}
+        {{- end  }}
+        {{- if .Values.kafka.enabled }}
+        - name: wait-for-kafka
+          {{- with .Values.kafka.image }}
+          image: {{ printf "%s/%s:%s" .registry .repository .tag }}
+          {{- end }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+          args:
+            - -ec
+            - |
+              echo "Attempting to write a Kafka topic"
+              until /opt/bitnami/kafka/bin/kafka-topics.sh \
+                  --bootstrap-server ${KAFKA_SERVICE} \
+                  --create \
+                  --if-not-exists \
+                  --topic "${POD_NAME}" \
+                  --replication-factor {{ .Values.kafka.replicaCount }} \
+                  --partitions {{ .Values.kafka.numPartitions }}; do
+                  echo "trying again"
+                  sleep 5
+              done
+              echo "Succesfully wrote a Kafka topic"
+              {{- if .Values.kafka.deleteTopicEnable }}
+              echo "Attempting to delete the Kafka topic"
+              until /opt/bitnami/kafka/bin/kafka-topics.sh \
+                  --bootstrap-server ${KAFKA_SERVICE} \
+                  --delete \
+                  --if-exists \
+                  --topic "${POD_NAME}"; do
+                  echo "trying again"
+                  sleep 5
+              done
+              echo "Successfully deleted the Kafka topic"
+              {{- end }}
+              echo "Kafka is available"
+          env:
+            - name: KAFKA_SERVICE
+              value: {{ printf "%s-kafka:%d" (include "cortx.fullname" .) (.Values.kafka.service.ports.client | int64) }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+        {{- end  }}
+        - name: cortx-setup
+          image: {{ .Values.cortxcontrol.image }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+          {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
+          args:
+            - -c
+            - sleep $(shuf -i 5-10 -n 1)s
           {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+          args:
+            - -c
+            {{- if .Values.cortxcontrol.machineid.value }}
+            - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+            {{- else }}
+            - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+            {{- end }}
           {{- end }}
-        {{- end }}
-        volumeMounts:
-          - name: cortx-configuration
-            mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
-          - name: cortx-ssl-cert
-            mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
-          {{- if .Values.cortxcontrol.machineid.value }}
-          - name: machine-id
-            mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
-          {{- end }}
-          - name: local-path-pv
-            mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
-          - name: {{ .Values.configmap.cortxSecretName }}
-            mountPath: /etc/cortx/solution/secret
-            readOnly: true
-        env:
-          - name: MACHINE_ID
-            value: {{ printf "%s" .Values.cortxcontrol.machineid.value | quote }}
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-        ports:
-        - containerPort: 5050
+          volumeMounts:
+            - name: cortx-configuration
+              mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+            - name: cortx-ssl-cert
+              mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
+            {{- if .Values.cortxcontrol.machineid.value }}
+            - name: machine-id
+              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
+            {{- end }}
+            - name: local-path-pv
+              mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+            - name: {{ .Values.configmap.cortxSecretName }}
+              mountPath: /etc/cortx/solution/secret
+              readOnly: true
+          env:
+            - name: MACHINE_ID
+              value: {{ printf "%s" .Values.cortxcontrol.machineid.value | quote }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: CORTX_PROVISIONER_DEBUG_LEVEL
+              value: "DEBUG"
+          ports:
+          - containerPort: 5050
       containers:
         - name: cortx-csm-agent
           image: {{ .Values.cortxcontrol.image }}
