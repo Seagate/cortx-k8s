@@ -65,7 +65,7 @@ function parse_solution() {
 
 function validate_upgrade_images() {
     image="$1"
-    if docker pull "${image}" > /dev/null; then
+    if docker pull ${image} > /dev/null; then
         echo "Image ${image} downloaded successfully"
     else
         echo "Error: Download Image ${image} failed, Please Provide Valid image"
@@ -97,7 +97,7 @@ function Validate_upgrade_status() {
         else
             continue
         fi
-    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep 'cortx')"
+    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" --namespace="${NAMESPACE}"  | grep 'cortx')"
     if ${status}
     then
         yq e '.cortx.status='\"Done\"'' -i "${UPGRADE_DATA}"
@@ -111,14 +111,14 @@ function cold_upgrade() {
     # Shutdown all CORTX Pods
     "${DIR}/shutdown-cortx-cloud.sh" "${SOLUTION_FILE}"
 
-    cortx_deployments="$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep 'cortx')"
+    cortx_deployments="$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" --namespace="${NAMESPACE}" | grep 'cortx')"
     if [[ -z ${cortx_deployments} ]]; then
         printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
     else
         while IFS= read -r deployment; do
             upgrade_image="$(fetch_upgrade_image "${deployment}")"
-            kubectl set image deployment "${deployment}" *="${upgrade_image}";
-            kubectl set env deployment/"${deployment}" UPGRADE_MODE="COLD"
+            kubectl set image deployment "${deployment}" *="${upgrade_image}" --namespace="${NAMESPACE}";
+            kubectl set env deployment/"${deployment}" UPGRADE_MODE="COLD" --namespace="${NAMESPACE}"
         done <<< "${cortx_deployments}"
         printf "\n"
     fi
@@ -147,7 +147,6 @@ function rolling_upgrade() {
             suspend_upgrade
             ;;
         resume )
-            fetch_solution_images
             resume_upgrade
             ;;
         status )
@@ -185,7 +184,7 @@ function prepare_upgrade_data() {
             else
             deployments="${deployments}"$'\n'"${deployment_name}:"$'\n'"  status: default"$'\n'"  version: null"
         fi
-    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep 'cortx')"
+    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" --namespace="${NAMESPACE}" | grep 'cortx')"
     ./parse_scripts/yaml_insert_block.sh "${UPGRADE_DATA}" "${deployments}" 4 "cortx.deployments"
     yq e ".cortx.type=\"$1\"" -i "${UPGRADE_DATA}"
     yq e '.cortx.status='\"Default\"'' -i "${UPGRADE_DATA}"
@@ -205,6 +204,7 @@ function Wait_for_deployment_to_be_ready() {
             pod_status="${pod_info[2]}"
             ready_count="${ready_counts[0]}"
             total_count="${ready_counts[1]}"
+            sleep 20;
             if [[ -n ${pod_name} ]]; then
                 if [[ ${pod_status} != "Running" && ${pod_status} != "Terminating" ]]; then
                     printf "  %s %s -> status is %s\n" "${RED}✘${CLEAR}" "${pod_name}" "${pod_status}"
@@ -255,10 +255,10 @@ function initiate_upgrade() {
             printf "\nStarting Upgrade for %s\n" "${deployment_name}"
 
             yq e '.cortx.deployments."'${deployment_name}'".status= '\"In-Progress\"'' -i "${UPGRADE_DATA}"
-            kubectl rollout pause deployment "${deployment_name}"
-            kubectl set image deployment "${deployment_name}" *="${upgrade_image}";
-            kubectl set env deployment/"${deployment_name}" UPGRADE_MODE="ROLLING"
-            kubectl rollout resume deployment "${deployment_name}"
+            kubectl rollout pause deployment "${deployment_name}" --namespace="${NAMESPACE}";
+            kubectl set image deployment "${deployment_name}" *="${upgrade_image}" --namespace="${NAMESPACE}";
+            kubectl set env deployment/"${deployment_name}" UPGRADE_MODE="ROLLING" --namespace="${NAMESPACE}";
+            kubectl rollout resume deployment "${deployment_name}" --namespace="${NAMESPACE}";
             yq e '.cortx.deployments."'${deployment_name}'".status= '\"Done\"'' -i "${UPGRADE_DATA}"
             yq e '.cortx.deployments."'${deployment_name}'".version= '\"${upgrade_version}\"'' -i "${UPGRADE_DATA}"
             sleep "${TIMEDELAY}"
@@ -266,7 +266,7 @@ function initiate_upgrade() {
 
             printf "\nUpgrade Successful for %s\n" "${deployment_name}"
         fi
-    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | grep "$1")"
+    done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" --namespace="${NAMESPACE}" | grep "$1")"
 }
 
 function start_upgrade() {
@@ -322,7 +322,7 @@ function resume_upgrade() {
     else
         printf "%s" $$ > "${PIDFILE}"
     fi
-
+    fetch_solution_images
     # Resume Upgrade process by fetching left replicas from upgrade-data.yaml for each deployment
     POD_TYPE="$(yq '.cortx.type' "${UPGRADE_DATA}")"
     initiate_upgrade "${POD_TYPE}"
