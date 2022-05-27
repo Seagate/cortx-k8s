@@ -73,6 +73,7 @@ spec:
             /opt/bitnami/kafka/bin/kafka-topics.sh \
                 --bootstrap-server ${KAFKA_SERVICE} \
                 --create \
+                --if-not-exists \
                 --topic "${POD_NAME}" \
                 --replication-factor {{ .Values.kafka.replicaCount }} \
                 --partitions {{ .Values.kafka.numPartitions }}
