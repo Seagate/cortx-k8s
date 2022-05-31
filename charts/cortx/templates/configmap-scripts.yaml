@@ -1,3 +1,4 @@
+{{- if .Values.waitForBackends.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -21,7 +22,6 @@ data:
         local -i return_code=0
 
         echo "Waiting for statefulset ${statefulset} to be successfully rolled out..."
-        #kubectl rollout status --namespace "$namespace" statefulset "$statefulset" >/dev/null 2>&1 || return_code=$?
         kubectl rollout status --namespace "$namespace" statefulset "$statefulset" || return_code=$?
         echo "Rollout exit code: '${return_code}'"
         return $return_code
@@ -29,6 +29,7 @@ data:
     {{- if .Values.consul.enabled }}
     k8s_wait_for_statefulset {{ $releaseNamespace }} {{ $consulFullname }}-server
     {{- end }}
-    {{- if .Values.consul.enabled }}
+    {{- if .Values.kafka.enabled }}
     k8s_wait_for_statefulset {{ $releaseNamespace }} {{ $kafkaFullname }}
     {{- end }}
+{{- end }}

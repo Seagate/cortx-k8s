@@ -53,7 +53,7 @@ spec:
       initContainers:
         {{- if .Values.waitForBackends.enabled }}
         - name: wait-for-backends
-          image: docker.io/bitnami/kubectl:1.24.0-debian-10-r6
+          image: {{ include "cortx.waitForBackends.image" . }}
           imagePullPolicy: IfNotPresent
           command:
             - /scripts/wait-for-backends.sh
@@ -82,9 +82,7 @@ spec:
         {{- end  }}
         {{- if .Values.kafka.enabled }}
         - name: wait-for-kafka
-          {{- with .Values.kafka.image }}
-          image: {{ printf "%s/%s:%s" .registry .repository .tag }}
-          {{- end }}
+          image: {{ include "cortx.kafka.image" . }}
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh

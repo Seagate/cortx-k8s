@@ -190,4 +190,4 @@ helm uninstall cortx
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and `create` is true, a name is generated using the fullname template |
-| waitForBackends.enabled | bool | `true` |  |
+| waitForBackends.enabled | bool | `true` | Wait for backend services (Consul and Kafka) to be started before creating CORTX resources |

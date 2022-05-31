@@ -110,3 +110,17 @@ Return the name of the HA component
 {{- define "cortx.ha.fullname" -}}
 {{- printf "%s-ha" (include "cortx.fullname" .) -}}
 {{- end -}}
+
+{{/*
+Return the wait-for-backends image name
+*/}}
+{{- define "cortx.waitForBackends.image" -}}
+{{- printf "%s/%s:%s" .Values.waitForBackends.image.registry .Values.waitForBackends.image.repository .Values.waitForBackends.image.tag -}}
+{{- end -}}
+
+{{/*
+Return the  Kafka image name
+*/}}
+{{- define "cortx.kafka.image" -}}
+{{- printf "%s/%s:%s" .Values.kafka.image.registry .Values.kafka.image.repository .Values.kafka.image.tag -}}
+{{- end -}}

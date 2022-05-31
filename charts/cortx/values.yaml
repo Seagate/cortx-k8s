@@ -81,6 +81,14 @@ externalKafka:
   adminUser: admin
   adminSecretName: kafka_admin_secret
 
+waitForBackends:
+  # -- Wait for backend services (Consul and Kafka) to be started before creating CORTX resources
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/kubectl
+    tag: 1.24.0-debian-10-r6
+
 ##
 ## Imported values from the cortx-configmap Helm Chart. These will be changed.
 ##
@@ -356,6 +364,3 @@ cortxha:
   localpathpvc:
     mountpath: /etc/cortx
     requeststoragesize: 1Gi
-
-waitForBackends:
-  enabled: true
