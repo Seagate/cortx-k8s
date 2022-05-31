@@ -341,16 +341,17 @@ This section contains information about all the worker nodes used to deploy CORT
 
 The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
 
-### Overriding Helm Install  / Wait Timeouts
+### Overriding Cluster Install Wait Timeouts
 
-There is a "wait" after each of the cortx helm charts are deployed.  This wait is guarded by a timeout.  If needed, these timeout values can be overridden by environment variables.
+After the CORTX Kubernetes resources are created, the deployment script will wait for those resources to finish installing and reach a ready state. This wait is guarded by a set of timeout values which can be overridden using environment variables. The values are duration strings, such as `"30s"` or `"10m"`.
 
-| Environment Variable           | Default Value |
-| ------------------------------ | ------------- |
-| `CORTX_DEPLOY_CONTROL_TIMEOUT` | `300s`        |
-| `CORTX_DEPLOY_DATA_TIMEOUT`    | `300s`        |
-| `CORTX_DEPLOY_SERVER_TIMEOUT`  | `300s`        |
-| `CORTX_DEPLOY_HA_TIMEOUT`      | `120s`        |
+| Environment Variable           | Description        | Default Value |
+| ------------------------------ | ------------------ | ------------- |
+| `CORTX_DEPLOY_CLIENT_TIMEOUT`  | Client Deployment  | `5m` (5 min)  |
+| `CORTX_DEPLOY_CONTROL_TIMEOUT` | Control Deployment | `5m` (5 min)  |
+| `CORTX_DEPLOY_DATA_TIMEOUT`    | Data Deployment    | `5m` (5 min)  |
+| `CORTX_DEPLOY_HA_TIMEOUT`      | HA Deployment      | `2m` (2 min)  |
+| `CORTX_DEPLOY_SERVER_TIMEOUT`  | Server Deployment  | `5m` (5 min)  |
 
 ### Crash-looping InitContainers
 
