@@ -190,4 +190,9 @@ helm uninstall cortx
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and `create` is true, a name is generated using the fullname template |
+| waitForBackends.consulWaitForLeader | bool | `true` | Wait for Consul to be ready by checking for a leader. This is configured independently of `waitForBackends.enabled`. |
 | waitForBackends.enabled | bool | `true` | Wait for backend services (Consul and Kafka) to be started before creating CORTX resources |
+| waitForBackends.image.registry | string | `"docker.io"` |  |
+| waitForBackends.image.repository | string | `"bitnami/kubectl"` |  |
+| waitForBackends.image.tag | string | `"1.24.0-debian-10-r6"` |  |
+| waitForBackends.kafkaWaitForTopic | bool | `true` | Wait for Kafka to be ready by writing and deleting a per-Pod topic. This is configured independently of `waitForBackends.enabled`. |

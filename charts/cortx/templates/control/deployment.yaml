@@ -62,7 +62,7 @@ spec:
               mountPath: /scripts/wait-for-backends.sh
               subPath: wait-for-backends.sh
         {{- end }}
-        {{- if .Values.consul.enabled }}
+        {{- if and .Values.consul.enabled .Values.waitForBackends.consulWaitForLeader }}
         - name: wait-for-consul
           image: {{ .Values.cortxcontrol.image }}
           imagePullPolicy: IfNotPresent
@@ -80,7 +80,7 @@ spec:
             - name: CONSUL_SERVICE
               value: {{ printf "http://%s-consul-server:8500" (include "cortx.fullname" .) }}
         {{- end  }}
-        {{- if .Values.kafka.enabled }}
+        {{- if and .Values.kafka.enabled .Values.waitForBackends.kafkaWaitForTopic }}
         - name: wait-for-kafka
           image: {{ include "cortx.kafka.image" . }}
           imagePullPolicy: IfNotPresent
