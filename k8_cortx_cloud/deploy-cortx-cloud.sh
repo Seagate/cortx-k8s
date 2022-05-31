@@ -119,7 +119,10 @@ buildValues() {
     # Initialize
     yq --null-input "
         (.global.storageClass, .consul.server.storageClass) = \"${storage_class}\"
-        | .configmap.cortxSecretName = \"${cortx_secret_name}\"" > "${values_file}"
+        | (.cortxcontrol.localpathpvc.mountpath, .cortxha.localpathpvc.mountpath) = \"${local_storage}\"
+        | .configmap.cortxSecretName = \"${cortx_secret_name}\"
+        | .cortxcontrol.machineid.value = \"$(cat "${cfgmap_path}/auto-gen-control-${namespace}/id")\"
+        | .cortxha.machineid.value = \"$(cat "${cfgmap_path}/auto-gen-ha-${namespace}/id")\""  > "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -192,7 +195,7 @@ buildValues() {
     if [[ ${deployment_type} == "data-only" ]]; then
         yq -i "(
             .configmap.cortxRgw.enabled,
-            .configmap.cortxHa.enabled,
+            .cortxha.enabled,
             .cortxcontrol.enabled) = false" "${values_file}"
     fi
 
@@ -265,18 +268,11 @@ buildValues() {
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.configmap;
             .cortxControl.agent.resources           = $from.solution.common.resource_allocation.control.agent.resources
-            | .cortxHa.fault_tolerance.resources    = $from.solution.common.resource_allocation.ha.fault_tolerance.resources
-            | .cortxHa.health_monitor.resources     = $from.solution.common.resource_allocation.ha.health_monitor.resources
-            | .cortxHa.k8s_monitor.resources        = $from.solution.common.resource_allocation.ha.k8s_monitor.resources
             | .cortxHare.hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
             | .cortxMotr.motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
             | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources
             | .cortxRgw.rgw.resources               = $from.solution.common.resource_allocation.server.rgw.resources)
         | $to' "${values_file}" "${solution_yaml}"
-
-    #
-    # Values from previous cortx-platform Helm Chart
-    #
 
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
     ## in the same chart as Namespace-scoped objects.
@@ -332,10 +328,6 @@ buildValues() {
             | .agent.resources.limits.cpu      = $from.solution.common.resource_allocation.control.agent.resources.limits.cpu)
         | $to' "${values_file}" "${solution_yaml}"
 
-    yq -i "
-        .cortxcontrol.localpathpvc.mountpath = \"${local_storage}\"
-        | .cortxcontrol.machineid.value = \"$(cat "${cfgmap_path}/auto-gen-control-${namespace}/id")\"" "${values_file}"
-
     local control_service_nodeports_https
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
@@ -370,6 +362,15 @@ buildValues() {
             | .configmap.cortxHare.haxServerEndpoints += [\"tcp://${pod_fqdn}:22001\"]" "${values_file}"
 
     done
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.cortxha;
+            .image                         = $from.solution.images.cortxha
+            | .fault_tolerance.resources   = $from.solution.common.resource_allocation.ha.fault_tolerance.resources
+            | .health_monitor.resources    = $from.solution.common.resource_allocation.ha.health_monitor.resources
+            | .k8s_monitor.resources       = $from.solution.common.resource_allocation.ha.k8s_monitor.resources)
+        | $to' "${values_file}" "${solution_yaml}"
 
     set +e
 }
@@ -827,10 +828,7 @@ function deployCortxSecrets()
 
     global_cortx_secret_name="${cortx_secret_name}"
     data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
-    ha_secret_path="./cortx-cloud-helm-pkg/cortx-ha/secret-info.txt"
-
     printf "%s" "${cortx_secret_name}" > ${data_secret_path}
-    printf "%s" "${cortx_secret_name}" > ${ha_secret_path}
 
     if [[ ${num_motr_client} -gt 0 ]]; then
         client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
@@ -1008,48 +1006,6 @@ function deployCortxServer()
     printf "\n\n"
 }
 
-function deployCortxHa()
-{
-    if [[ ${deployment_type} == "data-only" ]]; then
-        return
-    fi
-
-    printf "########################################################\n"
-    printf "# Deploy CORTX HA                                       \n"
-    printf "########################################################\n"
-    helm install "cortx-ha-${namespace}" cortx-cloud-helm-pkg/cortx-ha \
-        --set cortxha.image="$(parseSolution 'solution.images.cortxha' | cut -f2 -d'>')" \
-        --set cortxha.sslcfgmap.name=cortx-ssl-cert \
-        --set cortxha.sslcfgmap.volmountname="ssl-config001" \
-        --set cortxha.sslcfgmap.mountpath="/etc/cortx/solution/ssl" \
-        --set cortxha.machineid.value="$(cat "${cfgmap_path}/auto-gen-ha-${namespace}/id")" \
-        --set cortxha.localpathpvc.name="cortx-ha-fs-local-pvc-${namespace}" \
-        --set cortxha.localpathpvc.mountpath="${local_storage}" \
-        --set cortxha.fault_tolerance.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.ha.fault_tolerance.resources.requests.memory')" \
-        --set cortxha.fault_tolerance.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.ha.fault_tolerance.resources.requests.cpu')" \
-        --set cortxha.fault_tolerance.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.ha.fault_tolerance.resources.limits.memory')" \
-        --set cortxha.fault_tolerance.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.ha.fault_tolerance.resources.limits.cpu')" \
-        --set cortxha.health_monitor.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.ha.health_monitor.resources.requests.memory')" \
-        --set cortxha.health_monitor.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.ha.health_monitor.resources.requests.cpu')" \
-        --set cortxha.health_monitor.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.ha.health_monitor.resources.limits.memory')" \
-        --set cortxha.health_monitor.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.ha.health_monitor.resources.limits.cpu')" \
-        --set cortxha.k8s_monitor.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.ha.k8s_monitor.resources.requests.memory')" \
-        --set cortxha.k8s_monitor.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.ha.k8s_monitor.resources.requests.cpu')" \
-        --set cortxha.k8s_monitor.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.ha.k8s_monitor.resources.limits.memory')" \
-        --set cortxha.k8s_monitor.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.ha.k8s_monitor.resources.limits.cpu')" \
-        -n "${namespace}" \
-        || exit $?
-
-    printf "\nWait for CORTX HA to be ready"
-    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_HA_TIMEOUT:-120s}" \
-                                        "CORTX HA" "${namespace}" \
-                                        deployment/cortx-ha; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
-    printf "\n\n"
-}
-
 function deployCortxClient()
 {
     printf "########################################################\n"
@@ -1166,7 +1122,6 @@ deployCortx
 waitForThirdParty
 deployCortxData
 deployCortxServer
-deployCortxHa
 if [[ ${num_motr_client} -gt 0 ]]; then
     deployCortxClient
 fi

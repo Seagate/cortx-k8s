@@ -157,20 +157,40 @@ cortx_deployments="$(kubectl get deployments,statefulset --namespace="${NAMESPAC
 if [[ -z ${cortx_deployments} ]]; then
     printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
 else
-    RGW_IMAGE="${UPGRADE_IMAGE/cortx-all/cortx-rgw}"
+    RGW_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-rgw:}"
+    DATA_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-data:}"
+    CONTROL_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-control:}"
+
     printf "Updating CORTX Deployments to use:\n"
-    printf "   %s\n" "${UPGRADE_IMAGE}"
     printf "   %s\n" "${RGW_IMAGE}"
+    printf "   %s\n" "${DATA_IMAGE}"
+    printf "   %s\n" "${CONTROL_IMAGE}"
+    printf "\n"
+
     k8s_controller="deployment"
     while IFS= read -r deployment; do
-        if [[ "${deployment}" == "cortx-server"* ]]; then
+        case "${deployment}" in
+        cortx-server-*) 
             IMAGE="${RGW_IMAGE}"
             k8s_controller="statefulset"
-        else
-            IMAGE="${UPGRADE_IMAGE}"
+            ;;
+        cortx-data-*|cortx-client-*)
+            IMAGE="${DATA_IMAGE}"
             k8s_controller="deployment"
-        fi
+            ;;
+        cortx-control|cortx-ha)
+            IMAGE="${CONTROL_IMAGE}"
+            k8s_controller="deployment"
+            ;;
+        *) 
+            printf "NO MATCH FOR %s.  Skipping upgrade of image.\n" "${deployment}"
+            continue
+            ;;
+        esac
+
+        printf "Updating CORTX component %s to use image %s\n" "${deployment}" "${IMAGE}"
         kubectl set image --namespace="${NAMESPACE}" ${k8s_controller} "${deployment}" "*=${IMAGE}"
+
     done <<< "${cortx_deployments}"
     printf "\n"
 fi
