@@ -91,10 +91,10 @@ waitForBackends:
 
   # -- Wait for Consul to be ready by checking for a leader.
   # This is configured independently of `waitForBackends.enabled`.
-  consulWaitForLeader: true
+  consulLeader: true
   # -- Wait for Kafka to be ready by writing and deleting a per-Pod topic.
   # This is configured independently of `waitForBackends.enabled`.
-  kafkaWaitForTopic: true
+  kafkaTopic: true
 
 ##
 ## Imported values from the cortx-configmap Helm Chart. These will be changed.
