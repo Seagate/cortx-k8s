@@ -577,7 +577,6 @@ function deployCortx()
         -f ${values_file} \
         --namespace "${namespace}" \
         --create-namespace \
-        --wait \
         || exit $?
 
     # Restarting Consul at this time causes havoc. Disabling this for now until
@@ -781,40 +780,32 @@ function silentKill()
 
 function waitForAllDeploymentsAvailable()
 {
-    TIMEOUT=$1
+    local TIMEOUT=$1
     shift
-    DEPL_STR=$1
+    local DEPL_STR=$1
     shift
-    NAMESPACE=$1
+    local NAMESPACE=$1
     shift
-
-    START=${SECONDS}
-    (while true; do sleep 1; echo -n "."; done)&
-    DOTPID=$!
-    # expand var now, not later
-    # shellcheck disable=SC2064
-    trap "silentKill ${DOTPID}" 0
 
     # Initial wait
-    FAIL=0
-    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
+    local -i FAIL=0
+    local -i START=${SECONDS}
+    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@" &> /dev/null; then
         # Secondary wait
-        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
+        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@" &>/dev/null; then
             # Still timed out.  This is a failure
             FAIL=1
         fi
     fi
+    local -i ELAPSED=$((SECONDS - START))
 
-    silentKill ${DOTPID}
-    trap - 0
-    ELAPSED=$((SECONDS - START))
     echo
     if [[ ${FAIL} -eq 0 ]]; then
         echo "Deployment ${DEPL_STR} available after ${ELAPSED} seconds"
     else
-        echo "Deployment ${DEPL_STR} timed out after ${ELAPSED} seconds"
+        echo "ERROR: Deployment ${DEPL_STR} timed out after ${ELAPSED} seconds"
     fi
-    echo
+
     return ${FAIL}
 }
 
@@ -862,23 +853,7 @@ function deployCortxData()
             -n "${namespace}" \
             || exit $?
     done
-
-    # Wait for all cortx-data deployments to be ready
-    printf "\nWait for CORTX Data to be ready"
-    local deployments=()
-    for i in "${!node_selector_list[@]}"; do
-        deployments+=("deployment/cortx-data-${node_name_list[i]}")
-    done
-    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
-                                        "CORTX Data" "${namespace}" \
-                                        "${deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
-
-    printf "\n\n"
 }
-
 
 function deployCortxServer()
 {
@@ -934,21 +909,6 @@ function deployCortxServer()
             --namespace "${namespace}" \
             || exit $?
     done
-
-    printf "\nWait for CORTX Server to be ready"
-    # Wait for all cortx-data deployments to be ready
-    local deployments=()
-    for i in "${!node_selector_list[@]}"; do
-        deployments+=("deployment/cortx-server-${node_name_list[i]}")
-    done
-    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-300s}" \
-                                        "CORTX Server" "${namespace}" \
-                                        "${deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
-
-    printf "\n\n"
 }
 
 function deployCortxClient()
@@ -980,31 +940,6 @@ function deployCortxClient()
             -n "${namespace}" \
             || exit $?
     done
-
-    printf "\nWait for CORTX Client to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "${line}"
-            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'%s' pod deployment did not complete. Exit early.\n" "${pod_status[0]}"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')"
-
-        if [[ ${num_nodes} -eq ${count} ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
 }
 
 function cleanup()
@@ -1015,6 +950,81 @@ function cleanup()
 
     # Delete left-over machine IDs and any other auto-gen data
     rm -rf "${cfgmap_path}"
+}
+
+function waitForClusterReady()
+{
+    printf "\nWaiting for all CORTX Deployments to become Ready."
+    (while true; do sleep 1; echo -n "."; done) &
+    local -i DOTPID=$!
+    # expand var now, not later
+    # shellcheck disable=SC2064
+    trap "silentKill ${DOTPID}" 0
+
+    local pids=()
+
+    (
+        waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CONTROL_TIMEOUT:-5m}" \
+                                        "CORTX Control" "${namespace}" \
+                                        deployment/cortx-control
+    ) &
+    pids+=($!)
+
+    (
+        waitForAllDeploymentsAvailable "${CORTX_DEPLOY_HA_TIMEOUT:-2m}" \
+                                        "CORTX HA" "${namespace}" \
+                                        deployment/cortx-ha
+    ) &
+    pids+=($!)
+
+    (
+        local deployments=()
+        for node in "${node_name_list[@]}"; do
+            deployments+=("deployment/cortx-data-${node}")
+        done
+        waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-5m}" \
+                                       "CORTX Data" "${namespace}" \
+                                       "${deployments[@]}"
+    ) &
+    pids+=($!)
+
+    (
+        deployments=()
+        for node in "${node_name_list[@]}"; do
+            deployments+=("deployment/cortx-server-${node}")
+        done
+        waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-5m}" \
+                                       "CORTX Server" "${namespace}" \
+                                       "${deployments[@]}"
+    ) &
+    pids+=($!)
+
+    if [[ ${num_motr_client} -gt 0 ]]; then
+        (
+            deployments=()
+            for node in "${node_name_list[@]}"; do
+                deployments+=("deployment/cortx-client-${node}")
+            done
+            if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CLIENT_TIMEOUT:-5m}" \
+                                                "CORTX Client" "${namespace}" \
+                                                "${deployments[@]}"; then
+                rc=1
+            fi
+        ) &
+        pids+=($!)
+    fi
+
+    local rc=0
+    for pid in "${pids[@]}"; do
+        if ! wait "${pid}"; then
+            rc=1
+        fi
+    done
+
+    silentKill ${DOTPID}
+    trap - 0
+
+    return ${rc}
 }
 
 # Extract storage provisioner path from the "solution.yaml" file
@@ -1072,6 +1082,11 @@ if [[ ${num_motr_client} -gt 0 ]]; then
 fi
 cleanup
 
+result="The CORTX cluster installation is complete."
+if ! waitForClusterReady; then
+    result="!!! ERROR: The CORTX cluster installation failed. There was a timeout waiting for one or more deployments."
+fi
+
 # Note: It is not ideal that some of these values are hard-coded here.
 #       The data comes from the helm charts and so there is no feasible
 #       way of getting the values otherwise.
@@ -1080,13 +1095,9 @@ data_service_default_user="$(extractBlock 'solution.common.s3.default_iam_users.
 control_service_name="cortx-control-loadbal-svc"  # hard coded in script above installing help or cortx-control
 control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templates/_config.tpl
 
-echo "
------------------------------------------------------------
-
-The CORTX cluster installation is complete."
-
+service_info=''
 if [[ ${deployment_type} != "data-only" ]]; then
-    echo "
+    service_info="
 The S3 data service is accessible through the ${data_service_name} service.
    Default IAM access key: ${data_service_default_user}
    Default IAM secret key is accessible via:
@@ -1097,7 +1108,15 @@ The CORTX control service is accessible through the ${control_service_name} serv
    Default control username: ${control_service_default_user}
    Default control password is accessible via:
        kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
-                  --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+                  --template={{.data.csm_mgmt_admin_secret}} | base64 -d
+"
 fi
 
-printf "\n-----------------------------------------------------------\n"
+cat << EOF
+
+-----------------------------------------------------------
+
+${result}
+${service_info}
+-----------------------------------------------------------
+EOF
