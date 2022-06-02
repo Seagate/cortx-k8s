@@ -1094,6 +1094,8 @@ cat << EOF
 
 -----------------------------------------------------------
 
+Thanks for installing CORTX Community Object Storage!
+
 ** Please wait while CORTX Kubernetes resources are being deployed. **
 EOF
 
@@ -1124,6 +1126,10 @@ cat << EOF
 -----------------------------------------------------------
 
 EOF
+
+if [[ ${CORTX_DEPLOY_NO_WAIT:-false} == true ]]; then
+    exit
+fi
 
 ec=0
 waitForClusterReady || ec=$?

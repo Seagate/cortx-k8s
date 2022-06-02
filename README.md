@@ -343,15 +343,16 @@ The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users
 
 ### Overriding Cluster Install Wait Timeouts
 
-After the CORTX Kubernetes resources are created, the deployment script will wait for those resources to finish installing and reach a ready state. This wait is guarded by a set of timeout values which can be overridden using environment variables. The values are duration strings, such as `"30s"` or `"10m"`.
+After the CORTX Kubernetes resources are created, the deployment script will wait for those resources to finish installing and reach a ready state. This wait is guarded by a set of timeout values which can be overridden using environment variables. The values are duration strings, such as `"30s"` or `"10m"`. The wait can be disabled completely by setting `CORTX_DEPLOY_NO_WAIT` to `true`.
 
-| Environment Variable           | Description        | Default Value |
-| ------------------------------ | ------------------ | ------------- |
-| `CORTX_DEPLOY_CLIENT_TIMEOUT`  | Client Deployment  | `5m` (5 min)  |
-| `CORTX_DEPLOY_CONTROL_TIMEOUT` | Control Deployment | `5m` (5 min)  |
-| `CORTX_DEPLOY_DATA_TIMEOUT`    | Data Deployment    | `5m` (5 min)  |
-| `CORTX_DEPLOY_HA_TIMEOUT`      | HA Deployment      | `2m` (2 min)  |
-| `CORTX_DEPLOY_SERVER_TIMEOUT`  | Server Deployment  | `5m` (5 min)  |
+| Environment Variable           | Description                         | Default Value           |
+| ------------------------------ | ----------------------------------- | ----------------------- |
+| `CORTX_DEPLOY_CLIENT_TIMEOUT`  | Client Deployment timeout duration  | `5m` (5 min)            |
+| `CORTX_DEPLOY_CONTROL_TIMEOUT` | Control Deployment timeout duration | `5m` (5 min)            |
+| `CORTX_DEPLOY_DATA_TIMEOUT`    | Data Deployment timeout duration    | `5m` (5 min)            |
+| `CORTX_DEPLOY_HA_TIMEOUT`      | HA Deployment timeout duration      | `2m` (2 min)            |
+| `CORTX_DEPLOY_SERVER_TIMEOUT`  | Server Deployment timeout duration  | `5m` (5 min)            |
+| `CORTX_DEPLOY_NO_WAIT`         | Disable all waits when `true`       | `false`, wait is enabled |
 
 ### Crash-looping InitContainers
 
