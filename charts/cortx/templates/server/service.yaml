@@ -1,4 +1,3 @@
-{{- if .Values.platform.services.create -}}
 {{- $svc := .Values.platform.services.io -}}
 {{- if gt (int $svc.count) 0 -}}
 {{- $isLB := eq $svc.type "LoadBalancer" -}}
@@ -32,6 +31,5 @@ spec:
       nodePort: {{ add $svc.nodePorts.https $i }}
       {{- end }}
 ---
-{{- end }}
 {{- end }}
 {{- end }}

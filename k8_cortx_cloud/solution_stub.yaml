@@ -39,7 +39,6 @@ solution:
       extra_configuration: ""
     hax:
       protocol: https
-      service_name: cortx-hax-svc
       port_num: 22003
     storage_sets:
       name: storage-set-1
@@ -117,7 +116,7 @@ solution:
               cpu:    250m
             limits:
               memory: 2Gi
-              cpu:    1000m   
+              cpu:    1000m
         confd:
           resources:
             requests:
@@ -139,7 +138,7 @@ solution:
         agent:
           resources:
             requests:
-              memory: 128Mi 
+              memory: 128Mi
               cpu:    250m
             limits:
               memory: 256Mi
