@@ -89,9 +89,6 @@ helm uninstall cortx
 | configmap.cortxHare.haxClientEndpoints | list | `[]` |  |
 | configmap.cortxHare.haxDataEndpoints | list | `[]` |  |
 | configmap.cortxHare.haxServerEndpoints | list | `[]` |  |
-| configmap.cortxHare.haxService.name | string | `"cortx-hax-svc"` |  |
-| configmap.cortxHare.haxService.port | int | `22003` |  |
-| configmap.cortxHare.haxService.protocol | string | `"https"` |  |
 | configmap.cortxIoService.name | string | `"cortx-io-svc-0"` |  |
 | configmap.cortxIoService.ports.http | string | `""` |  |
 | configmap.cortxIoService.ports.https | string | `""` |  |
@@ -153,9 +150,8 @@ helm uninstall cortx
 | platform.podSecurityPolicy.create | bool | `false` |  |
 | platform.rbacRole.create | bool | `true` |  |
 | platform.rbacRoleBinding.create | bool | `true` |  |
-| platform.services.create | bool | `true` |  |
-| platform.services.hax.name | string | `"cortx-hax-svc"` |  |
 | platform.services.hax.port | int | `22003` |  |
+| platform.services.hax.protocol | string | `"https"` |  |
 | platform.services.hax.type | string | `"ClusterIP"` |  |
 | platform.services.io.count | int | `1` |  |
 | platform.services.io.name | string | `"cortx-io-svc"` |  |

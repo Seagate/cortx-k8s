@@ -153,15 +153,6 @@ buildValues() {
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.configmap.cortxHare.haxService;
-            .protocol = $from.solution.common.hax.protocol
-            | .name = $from.solution.common.hax.service_name
-            | .port = $from.solution.common.hax.port_num)
-        | $to' "${values_file}" "${solution_yaml}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.configmap.cortxRgw;
             .authAdmin = $from.solution.common.s3.default_iam_users.auth_admin
             | .authUser = $from.solution.common.s3.default_iam_users.auth_user
@@ -288,12 +279,12 @@ buildValues() {
         createPodSecurityPolicy="false"
     fi
 
-    local hax_service_name
     local hax_service_port
+    local hax_service_protocol
     local s3_service_type
     local s3_service_ports_http
     local s3_service_ports_https
-    hax_service_name=$(getSolutionValue 'solution.common.hax.service_name')
+    hax_service_protocol=$(getSolutionValue 'solution.common.hax.protocol')
     hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
     s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
     s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
@@ -312,7 +303,7 @@ buildValues() {
     yq -i "
         with(.platform; (
             .podSecurityPolicy.create = ${createPodSecurityPolicy}
-            | .services.hax.name = \"${hax_service_name}\"
+            | .services.hax.protocol = \"${hax_service_protocol}\"
             | .services.hax.port = ${hax_service_port}
             | .services.io.type = \"${s3_service_type}\"
             | .services.io.count = ${s3_service_count}
