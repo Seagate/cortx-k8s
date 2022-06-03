@@ -75,14 +75,12 @@ cortx:
   {{- end }}
   hare:
     hax:
-      {{- with .Values.configmap.cortxHare }}
-      {{- $endpoints := concat (list (printf "%s://%s:%d" .haxService.protocol .haxService.name (.haxService.port | int))) .haxDataEndpoints .haxClientEndpoints -}}
-      {{- if $.Values.configmap.cortxRgw.enabled }}
-      {{- $endpoints = concat $endpoints .haxServerEndpoints -}}
+      {{- $endpoints := concat (list (include "cortx.hare.hax.url" .)) .Values.configmap.cortxHare.haxDataEndpoints .Values.configmap.cortxHare.haxClientEndpoints -}}
+      {{- if .Values.configmap.cortxRgw.enabled }}
+      {{- $endpoints = concat $endpoints .Values.configmap.cortxHare.haxServerEndpoints -}}
       {{- end }}
       endpoints:
       {{- toYaml (default (list) $endpoints) | nindent 8 }}
-      {{- end }}
     limits:
       services:
       {{- include "config.yaml.service.limits" (dict "name" "hax" "resources" .Values.configmap.cortxHare.hax.resources) | nindent 6 }}
