@@ -1,35 +1,35 @@
+{{- if .Values.cortxha.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: {{ .Values.cortxha.name }}
-  name: {{ .Values.cortxha.name }}
+  name: {{ include "cortx.ha.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ha
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Values.cortxha.name }}
+      app.kubernetes.io/component: ha
   template:
     metadata:
-      labels:
-        app: {{ .Values.cortxha.name }}
+      labels: {{- include "cortx.labels" . | nindent 8 }}
+        app.kubernetes.io/component: ha
         {{- if .Values.cortxha.machineid.value }}
         cortx.io/machine-id: {{ .Values.cortxha.machineid.value }}
         {{- end }}
-        name: cortx-ha
         cortx.io/service-type: cortx-ha
     spec:
-      hostname: {{ .Values.cortxha.service.headless.name }}
-      serviceAccountName: {{ .Values.cortxha.serviceaccountname }}
+      hostname: {{ include "cortx.ha.fullname" . }}-headless
+      serviceAccountName: {{ include "cortx.ha.fullname" . }}-monitor
       automountServiceAccountToken: true
       volumes:
-        - name: {{ .Values.cortxha.cfgmap.volmountname }}
+        - name: cortx-configuration
           configMap:
-            name: {{ .Values.cortxha.cfgmap.name }}
-        - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+            name: {{ include "cortx.configmapName" . }}
+        - name: cortx-ssl-cert
           configMap:
-            name: {{ .Values.cortxha.sslcfgmap.name }}
+            name: {{ include "cortx.tls.configmapName" . }}
         {{- if .Values.cortxha.machineid.value }}
         - name: machine-id
           downwardAPI:
@@ -40,12 +40,10 @@ spec:
         {{- end }}
         - name: local-path-pv
           persistentVolumeClaim:
-            claimName: {{ .Values.cortxha.localpathpvc.name }}
-        {{- range .Files.Lines .Values.cortxha.secretinfo }}
-        - name: {{ printf "%s" . }}
+            claimName: {{ include "cortx.ha.fullname" . }}
+        - name: {{ .Values.configmap.cortxSecretName }}
           secret:
-            secretName: {{ printf "%s" . }}
-        {{- end }}
+            secretName: {{ .Values.configmap.cortxSecretName }}
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxha.image }}
@@ -66,9 +64,9 @@ spec:
           {{- end }}
         {{- end }}
         volumeMounts:
-          - name: {{ .Values.cortxha.cfgmap.volmountname }}
+          - name: cortx-configuration
             mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
-          - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+          - name: cortx-ssl-cert
             mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
           {{- if .Values.cortxha.machineid.value }}
           - name: machine-id
@@ -76,11 +74,9 @@ spec:
           {{- end }}
           - name: local-path-pv
             mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
-          {{- range .Files.Lines .Values.cortxha.secretinfo }}
-          - name: {{ printf "%s" . }}
+          - name: {{ .Values.configmap.cortxSecretName }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
-          {{- end }}
         env:
           - name: MACHINE_ID
             value: {{ printf "%s" .Values.cortxha.machineid.value | quote }}
@@ -108,9 +104,9 @@ spec:
             - /opt/seagate/cortx/ha/bin/ha_start -s fault_tolerance -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxha.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
-            - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
             {{- if .Values.cortxha.machineid.value }}
             - name: machine-id
@@ -145,9 +141,9 @@ spec:
             - /opt/seagate/cortx/ha/bin/ha_start -s health_monitor -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxha.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
-            - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
             {{- if .Values.cortxha.machineid.value }}
             - name: machine-id
@@ -182,9 +178,9 @@ spec:
             - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxha.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
-            - name: {{ .Values.cortxha.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
             {{- if .Values.cortxha.machineid.value }}
             - name: machine-id
@@ -206,3 +202,4 @@ spec:
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
+{{- end }}

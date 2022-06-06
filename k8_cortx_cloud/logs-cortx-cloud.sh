@@ -16,6 +16,14 @@ function usage() {
   echo "                                     default file path is ${solution_yaml}."
   echo "    -n|--nodename NODENAME: collects logs from pods running only on given node".
   echo "                            collects logs from all the nodes by default."
+  echo "    --duration DURATION : dutaion for which logs should be collected"
+  echo "    --size_limit SIZE : max size limit for support bundle to be generated"
+  echo "    --binlogs True/False : option to collect binary logs"
+  echo "    --coredumps True/False : option to collect core dumps"
+  echo "    --stacktrace True/False : option to collect stack trace"
+  echo "    --all True/False : aggregated option to collect binlogs, coredumps & stacktrace."
+  echo "                       If set to true, It overrides --binlogs, --coredumps"
+  echo "                       & --stacktrace at once."
   exit 1
 }
 
@@ -23,6 +31,13 @@ date=$(date +%F_%H-%M)
 solution_yaml=${1:-"solution.yaml"}
 nodename=""
 pods_found=0
+size_limit="500MB"
+duration="P5D"
+binlogs="False"
+coredumps="False"
+stacktrace="False"
+all="False"
+
 while [[ $# -gt 0 ]]; do
   case $1 in
     -s|--solution-config )
@@ -31,6 +46,21 @@ while [[ $# -gt 0 ]]; do
     -n|--nodename )
       nodename="$2"
       ;;
+    --modules )
+      modules="$2"
+      ;;
+    --duration )  duration=$2
+      ;;
+    --size_limit  )  size_limit=$2
+      ;;
+    --binlogs ) binlogs=$2
+      ;;
+    --coredumps ) coredumps=$2
+      ;;
+    --stacktrace ) stacktrace=$2
+      ;;
+    --all ) all=$2
+      ;;
     * )
       echo "ERROR: Unsupported Option \"$1\"."
       usage
@@ -38,7 +68,6 @@ while [[ $# -gt 0 ]]; do
   esac
   shift 2
 done
-
 if [[ ! -f ${solution_yaml} ]]; then
     echo "ERROR: ${solution_yaml} does not exist"
     exit 1
@@ -103,7 +132,14 @@ function getInnerLogs()
       --cluster_conf_path yaml:///etc/cortx/cluster.conf \
       --location file://${path} \
       --bundle_id "${name}" \
-      --message "${name}"
+      --message "${name}" \
+      --modules "${modules}" \
+      --duration "${duration}" \
+      --size_limit "${size_limit}" \
+      --binlogs "${binlogs}" \
+      --coredumps "${coredumps}" \
+      --stacktrace "${stacktrace}" \
+      --all "${all}"
   kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" "${container_arg[@]}" --namespace="${namespace}"
   tar --append --file "${logs_folder}.tar" "${logs_folder}/${name}"
   kubectl exec "${pod}" "${container_arg[@]}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
