@@ -196,10 +196,6 @@ configmap:
     haxDataEndpoints: []
     haxServerEndpoints: []
     haxClientEndpoints: []
-    haxService:
-      protocol: https
-      name: cortx-hax-svc
-      port: 22003
     hax:
       resources:
         requests:
@@ -268,10 +264,9 @@ platform:
       podNameLabel: cortx-data
 
   services:
-    create: true
     hax:
-      name: cortx-hax-svc
       type: ClusterIP
+      protocol: https
       port: 22003
     io:
       name: cortx-io-svc

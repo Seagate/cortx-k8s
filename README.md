@@ -300,8 +300,7 @@ This section contains common parameters that affect all CORTX components running
 | `common.motr.num_client_inst`                         | TODO       | `0` |
 | `common.motr.start_port_num`                          | TODO       | `29000` |
 | `common.motr.extra_configuration`                     | _(Optional)_ Extra configuration settings to append to the Motr configuration. The value is a multi-line string included verbatim. | `""` |
-| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `https` |
-| `common.hax.service_name`                             | Service name that is used to communicate with HAX components running across Server and Data Pods. | `cortx-hax-svc` |
+| `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `http` |
 | `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
 | `common.external_services.s3.type`                    | Kubernetes Service type for external access to S3 IO                                              | `NodePort` |
 | `common.external_services.s3.count`                   | The number of service instances to create when service type is `LoadBalancer`                     | `1` |

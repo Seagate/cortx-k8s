@@ -25,7 +25,6 @@ solution:
       start_port_num: required
     hax:
       protocol: required
-      service_name: required
       port_num: required
     storage_sets:
       name: required
