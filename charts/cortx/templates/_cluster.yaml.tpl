@@ -80,7 +80,7 @@ cluster:
     {{- range $key, $val := $val.nodes }}
     {{- $shortHost := (split "." $key)._0 -}}
     {{- if and $.Values.configmap.cortxRgw.enabled $val.serverUuid }}
-    {{- $serverName := printf "%s.%s.%s.svc.%s" $key $.Values.configmap.cortxRgw.statefulSetName $.Release.Namespace $.Values.configmap.clusterDomain -}}
+    {{- $serverName := printf "%s.%s.%s.svc.%s" $key $.Values.configmap.cortxRgw.headlessServiceName $.Release.Namespace $.Values.configmap.clusterDomain -}}
     {{- include "storageset.node" (dict "name" $key "hostname" $serverName "id" $val.serverUuid "type" "server_node") | nindent 4 }}
     {{- end }}
     {{- if $val.dataUuid }}

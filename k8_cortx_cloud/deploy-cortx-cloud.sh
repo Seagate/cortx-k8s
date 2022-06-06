@@ -557,13 +557,6 @@ readonly server_instances_per_node
 readonly data_node_count
 readonly total_server_pods
 
-### TODO CORTX-28968 remove below debug statement
-echo ""
-echo "###########################################################################"
-echo "Total Server Pods: ${total_server_pods}"
-echo "###########################################################################"
-echo ""
-
 ##########################################################
 # Begin CORTX on k8s deployment
 ##########################################################
