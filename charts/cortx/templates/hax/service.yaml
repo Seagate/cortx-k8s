@@ -1,8 +1,7 @@
-{{- if .Values.platform.services.create }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cortx.fullname" . }}-hax
+  name: {{ include "cortx.hare.hax.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels: {{ include "cortx.labels" . | nindent 4 }}
 spec:
@@ -12,6 +11,5 @@ spec:
   ports:
     - name: hax-tcp
       protocol: TCP
-      port: {{ .Values.platform.services.hax.port }}
+      port: {{ .Values.platform.services.hax.port | int }}
       targetPort: hax
-{{- end }}
