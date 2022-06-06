@@ -1,5 +1,4 @@
 ### TODO CORTX-28968 Revisit UUID defaults here since we are moving away from UUID entirely...
-### TODO CORTX-28968 Revisit formatting for line 82 and necessary values parameters
 {{- define "storageset.node" -}}
 - name: {{ .name }}
   {{- if eq .type "server_node" }}
@@ -81,7 +80,7 @@ cluster:
     {{- range $key, $val := $val.nodes }}
     {{- $shortHost := (split "." $key)._0 -}}
     {{- if and $.Values.configmap.cortxRgw.enabled $val.serverUuid }}
-    {{- $serverName := printf "%s.cortx-server.%s.svc.cluster.local" $key $.Release.Namespace -}}
+    {{- $serverName := printf "%s.%s.%s.svc.%s" $key $.Values.configmap.cortxRgw.statefulSetName $.Release.Namespace $.Values.configmap.clusterDomain -}}
     {{- include "storageset.node" (dict "name" $key "hostname" $serverName "id" $val.serverUuid "type" "server_node") | nindent 4 }}
     {{- end }}
     {{- if $val.dataUuid }}

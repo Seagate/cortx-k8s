@@ -324,19 +324,14 @@ buildValues() {
     [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
 
-    ### TODO CORTX-28968
+    ### TODO CORTX-28968 
     local count=0
     for (( count=0; count<${total_server_pods}; count++ )); do
         # Build out FQDN of server pods 
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
         local pod_name="${cortxserver_server_pod_prefix}-${count}"
         local pod_fqdn="${pod_name}.${cortxserver_service_headless_name}.${namespace}.svc.${cluster_domain}"
-        ### TODO CORTX-28968 Observe switch below based on setting of Pod hostname
-        ### Must match with setting in config-map/_cluster.tpl:84 as well ($serverName)
-        # Use below when hostname of pod is only short name
         local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
-        # Use below when hostname of pod is fqdn
-        # local md5hash=$(echo -n "${pod_fqdn}" | md5sum | awk '{print $1}')
         ### Per https://github.com/Seagate/cortx-prvsnr/pull/6366/files#diff-143c717074b09aed81d7a3fd89a90e273676caf9d68a8d0053f506182188d780R87
         ### cortx-k8s should generate a list item with the following information:
         ### - name: should be able to be pod short name
@@ -537,25 +532,24 @@ cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
 ##########################################################
 # Extract & establish required cluster-wide constants
-### TODO CORTX-28968 Define these elements as reasonable defaults in eventual values.yaml
 ##########################################################
 
 global_cortx_secret_name=""
 
-###TODO CORTX-28968 This can be replaced with yq query
-cortxserver_service_headless_name="cortx-server"
+## This is currently required as part of CORTX-28968 et al for cross-Chart synchronization. 
+## Once Helm Charts are unified, these will become defaulted values.yaml properties.
+default_values_file="../charts/cortx/values.yaml"
+
+cortxserver_service_headless_name=$(yq ".configmap.cortxRgw.headlessServiceName" "${default_values_file}")
 readonly cortxserver_service_headless_name
 
-###TODO CORTX-28968 This can be replaced with yq query
-cortxserver_server_pod_prefix="cortx-server"
+cortxserver_server_pod_prefix=$(yq ".configmap.cortxRgw.statefulSetName" "${default_values_file}")
 readonly cortxserver_server_pod_prefix
 
-###TODO CORTX-28968 This can be replaced with yq query
-cluster_domain="cluster.local"
+cluster_domain=$(yq ".configmap.clusterDomain" "${default_values_file}")
 readonly cluster_domain
 
-###TODO CORTX-28968 This can be replaced with yq query
-server_instances_per_node="$(getSolutionValue 'solution.common.s3.instances_per_node')"
+server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
 data_node_count=${#node_name_list[@]}
 total_server_pods=$(( data_node_count * server_instances_per_node ))
 
@@ -922,9 +916,6 @@ function deployCortxData()
     # Wait for all cortx-data deployments to be ready
     printf "\nWait for CORTX Data to be ready"
     ### TODO CORTX-28968 revisit for clarity once implemented
-    ### Cannot pass list of items to `rollout status`; it only works on a single item
-    ### However, these independent waits can most likely be removed.
-    ### Investigate further.
     #local deployments=()
     #for i in "${!node_selector_list[@]}"; do
     #    deployments+=("deployment/cortx-data-${node_name_list[i]}")
