@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 trap 'handle_error "$?" "${BASH_COMMAND:-?}" "${FUNCNAME[0]:-main}(${BASH_SOURCE[0]:-?}:${LINENO:-?})"' ERR
+trap "./upgrade-cortx-cloud.sh suspend" SIGINT SIGTERM
 handle_error() {
   printf "%s Unexpected error caught -- %s %s\n    at %s\n" "${RED-}✘${CLEAR-}" "$2" "${RED-}↩ $1${CLEAR-}" "$3" >&2
   exit "$1"
