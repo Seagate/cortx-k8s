@@ -62,7 +62,7 @@ kafka:
   transactionStateLogMinIsr: 2
 
   initContainers:
-  - name: zookeeper-watcher
+  - name: wait-for-zookeeper
     image: ghcr.io/seagate/busybox:latest
     command: ['sh', '-c', 'until echo "ruok" | timeout 30 nc -w 30 cortx-zookeeper 2181 | grep imok; do sleep 1; done']
 
