@@ -907,16 +907,14 @@ function deployCortxData()
 
     # Wait for all cortx-data deployments to be ready
     printf "\nWait for CORTX Data to be ready"
-    local deployments=()
     for i in "${!node_selector_list[@]}"; do
-        deployments+=("deployment/cortx-data-${node_name_list[i]}")
-    done
-    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
+        if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
                                         "CORTX Data" "${namespace}" \
-                                        "${deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
+                                        "deployment/cortx-data-${node_name_list[i]}"; then
+            echo "Failed.  Exiting script."
+            exit 1
+        fi
+    done
 
     printf "\n\n"
 }

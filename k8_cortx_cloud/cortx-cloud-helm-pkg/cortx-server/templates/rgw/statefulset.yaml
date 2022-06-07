@@ -35,8 +35,6 @@ spec:
         - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxserver.sslcfgmap.name }}
-        - name: machine-id
-          emptyDir: {}
         - name: {{ .Values.cortxserver.secretname }}
           secret:
             secretName: {{ .Values.cortxserver.secretname }}
