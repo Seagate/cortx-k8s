@@ -61,6 +61,11 @@ kafka:
   # -- Overridden min.insync.replicas config for the transaction topic
   transactionStateLogMinIsr: 2
 
+  initContainers:
+  - name: zookeeper-watcher
+    image: ghcr.io/seagate/busybox:latest
+    command: ['sh', '-c', 'until echo "ruok" | timeout 30 nc -w 30 cortx-zookeeper 2181 | grep imok; do sleep 1; done']
+
   # ZooKeeper chart configuration
   # ref: https://github.com/bitnami/charts/blob/master/bitnami/zookeeper/values.yaml
   zookeeper:
