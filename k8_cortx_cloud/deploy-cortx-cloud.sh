@@ -906,10 +906,10 @@ function deployCortxData()
     done
 
     # Wait for all cortx-data deployments to be ready
-    printf "\nWait for CORTX Data to be ready"
+    printf "\nWait for CORTX Data to be ready\n"
     for i in "${!node_selector_list[@]}"; do
         if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
-                                        "CORTX Data" "${namespace}" \
+                                        "CORTX Data (${node_name_list[i]})" "${namespace}" \
                                         "deployment/cortx-data-${node_name_list[i]}"; then
             echo "Failed.  Exiting script."
             exit 1
