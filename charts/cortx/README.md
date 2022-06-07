@@ -60,6 +60,7 @@ helm uninstall cortx
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| configmap.clusterDomain | string | `"cluster.local"` |  |
 | configmap.clusterId | string | `""` |  |
 | configmap.clusterName | string | `"cortx-cluster"` |  |
 | configmap.clusterStorageSets | object | `{}` |  |
@@ -97,11 +98,13 @@ helm uninstall cortx
 | configmap.cortxRgw.authUser | string | `"cortx-user"` |  |
 | configmap.cortxRgw.enabled | bool | `true` |  |
 | configmap.cortxRgw.extraConfiguration | string | `""` |  |
+| configmap.cortxRgw.headlessServiceName | string | `"cortx-server-headless"` |  |
 | configmap.cortxRgw.maxStartTimeout | int | `240` |  |
 | configmap.cortxRgw.rgw.resources.limits.cpu | string | `"2000m"` |  |
 | configmap.cortxRgw.rgw.resources.limits.memory | string | `"2Gi"` |  |
 | configmap.cortxRgw.rgw.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxRgw.rgw.resources.requests.memory | string | `"128Mi"` |  |
+| configmap.cortxRgw.statefulSetName | string | `"cortx-server"` |  |
 | configmap.cortxSecretName | string | `"cortx-secret"` |  |
 | configmap.cortxSecretValues | object | `{}` |  |
 | configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
