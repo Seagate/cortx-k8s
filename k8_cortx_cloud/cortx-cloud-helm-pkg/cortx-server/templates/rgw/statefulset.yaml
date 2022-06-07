@@ -52,9 +52,7 @@ spec:
           - sleep $(shuf -i 5-10 -n 1)s
           {{- else }}
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
-            sleep 10s;
           {{- end }}
-          ### TODO CORTX-28968 Remove sleep from initContainer
         volumeMounts:
           - name: {{ .Values.cortxserver.cfgmap.volmountname }}
             mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}

@@ -323,31 +323,30 @@ buildValues() {
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
-
-    ### TODO CORTX-28968 
+    ## cortx-server Pods, managed by a StatefulSet, have deterministically
+    ## generated metadata. Inject that metadata into the ConfigMap here.
+    ## During Helm Chart unification, this block can be interned into
+    ## Helm logic.
     local count=0
+    local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
     for (( count=0; count<${total_server_pods}; count++ )); do
-        # Build out FQDN of server pods 
+        # Build out FQDN of cortx-server Pods 
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
         local pod_name="${cortxserver_server_pod_prefix}-${count}"
         local pod_fqdn="${pod_name}.${cortxserver_service_headless_name}.${namespace}.svc.${cluster_domain}"
-        #local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
-        ### Per https://github.com/Seagate/cortx-prvsnr/pull/6366/files#diff-143c717074b09aed81d7a3fd89a90e273676caf9d68a8d0053f506182188d780R87
+        
         ### cortx-k8s should generate a list item with the following information:
-        ### - name: should be able to be pod short name
-        ### - hostname: should be fqdn
-        ### - id: we initially write this as FQDN and provisioner stores in gconf as md5 hashed version
-        ### - type: server_node
-        ### Once CORTX-30726 is merged and available, we will no longer have to do any hashing work at the cortx-k8s level
-
-        local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+        ### - name: Pod short name
+        ### - hostname: Pod FQDN
+        ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
+        ### - type: "server_node"
 
         yq -i "
             .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${pod_fqdn}\"
             | .configmap.cortxMotr.rgwEndpoints += [\"tcp://${pod_fqdn}:21001\"]
             | .configmap.cortxHare.haxServerEndpoints += [\"tcp://${pod_fqdn}:22001\"]" "${values_file}"
-
     done
+
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
@@ -908,17 +907,16 @@ function deployCortxData()
 
     # Wait for all cortx-data deployments to be ready
     printf "\nWait for CORTX Data to be ready"
-    ### TODO CORTX-28968 revisit for clarity once implemented
-    #local deployments=()
-    #for i in "${!node_selector_list[@]}"; do
-    #    deployments+=("deployment/cortx-data-${node_name_list[i]}")
-    #done
-    #if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
-    #                                    "CORTX Data" "${namespace}" \
-    #                                    "${deployments[@]}"; then
-    #    echo "Failed.  Exiting script."
-    #    exit 1
-    #fi
+    local deployments=()
+    for i in "${!node_selector_list[@]}"; do
+        deployments+=("deployment/cortx-data-${node_name_list[i]}")
+    done
+    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
+                                        "CORTX Data" "${namespace}" \
+                                        "${deployments[@]}"; then
+        echo "Failed.  Exiting script."
+        exit 1
+    fi
 
     printf "\n\n"
 }
