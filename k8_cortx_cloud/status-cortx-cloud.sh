@@ -441,36 +441,33 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(( num_nodes * 2 ))
+num_pvs_pvcs=$((num_nodes * server_instances_per_node * 2))
 [[ ${data_deployment} == true ]] && num_pvs_pvcs=0
 msg_info "| Checking Storage: Local [PVCs/PVs] |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PVC: %s..." "${status[0]}"
-        if [[ "${status[1]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PVC: %s..." "${status[0]}"
+    if [[ "${status[1]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pvc --namespace="${namespace}" | grep 'cortx-server-fs-local-pvc')
+done < <(kubectl get pvc --namespace="${namespace}" --selector=${server_selector} --no-headers)
+
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "PV: %s..." "${status[5]}"
-        if [[ "${status[4]}" != "Bound" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
+    printf "PV: %s..." "${status[5]}"
+    if [[ "${status[4]}" != "Bound" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
+    else
+        msg_passed
+        count=$((count+1))
     fi
-done < <(kubectl get pv --namespace="${namespace}" | grep 'cortx-server-fs-local-pvc')
+done < <(kubectl get pv --no-headers | grep "${namespace}/data-cortx-server-[0-9]")
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed
