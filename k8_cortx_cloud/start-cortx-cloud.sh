@@ -103,12 +103,10 @@ if [[ ${deployment_type} != "data-only" ]]; then
     printf "# Start CORTX Server                                    \n"
     printf "########################################################\n"
 
-    server_instances_per_node=$(parseSolution 'solution.common.s3.instances_per_node' | cut -f2 -d'>')
-    data_node_count=$(parseSolution 'solution.nodes.node*.name' | grep -o '>' | wc -l)
-    total_server_pods=$(( data_node_count * server_instances_per_node ))
+    server_instances_per_node="$(parseSolution 'solution.common.s3.instances_per_node' | cut -f2 -d'>')"
+    total_server_pods=$(( num_nodes * server_instances_per_node ))
 
     readonly server_instances_per_node
-    readonly data_node_count
     readonly total_server_pods
 
     readonly server_selector="app.kubernetes.io/component=server"
