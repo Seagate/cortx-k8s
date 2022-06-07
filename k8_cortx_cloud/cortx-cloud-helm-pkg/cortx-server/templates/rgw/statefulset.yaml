@@ -2,9 +2,9 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
-    app: {{ .Values.cortxserver.name }}
+    app.kubernetes.io/component: server
     cortx.io/service-type:  {{ .Values.cortxserver.serviceType }}
-  name: {{ .Values.cortxserver.name }}
+  name: cortx-server
   namespace: {{ .Release.Namespace }}
 spec:
   podManagementPolicy: Parallel
@@ -12,14 +12,14 @@ spec:
   replicas: {{ .Values.cortxserver.replicas }}
   selector:
     matchLabels:
-      app: {{ .Values.cortxserver.name }}
+      app.kubernetes.io/component: server
       cortx.io/service-type: cortx-server
       cortx.io/hax-enabled: "true"
       cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
   template:
     metadata:
       labels:
-        app: {{ .Values.cortxserver.name }}
+        app.kubernetes.io/component: server
         ### TODO k8s Label 'name: cortx-server' is deprecated in favor of 'cortx.io/service-type: cortx-server'
         name: cortx-server
         cortx.io/service-type: cortx-server

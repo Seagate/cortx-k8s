@@ -1,6 +1,5 @@
 clusterdomain: cluster.local
 cortxserver:
-  name: cortx-server
   serviceType: cortx-server
   image: ghcr.io/seagate/centos:7
   replicas: 3

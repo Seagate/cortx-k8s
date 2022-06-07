@@ -365,7 +365,7 @@ fi
 alert_msg "######################################################"
 alert_msg "# CORTX Server                                        "
 alert_msg "######################################################"
-server_selector="app=cortx-server,cortx.io/service-type=cortx-server"
+server_selector="app.kubernetes.io/component=server"
 # Check StatefulSet
 expected_count=1
 [[ ${data_deployment} == true ]] && expected_count=0
