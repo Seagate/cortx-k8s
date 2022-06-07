@@ -939,7 +939,6 @@ function deployCortxServer()
         --set cortxserver.replicas="${total_server_pods}" \
         --set cortxserver.service.headless.name="${cortxserver_service_headless_name}" \
         --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
-        --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
         --set cortxserver.localpathpvc.mountpath="${local_storage}" \
         --set cortxserver.hax.port="${hax_port}" \
         --set cortxserver.secretname="${global_cortx_secret_name}" \
