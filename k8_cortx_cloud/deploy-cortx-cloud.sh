@@ -331,7 +331,7 @@ buildValues() {
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
         local pod_name="${cortxserver_server_pod_prefix}-${count}"
         local pod_fqdn="${pod_name}.${cortxserver_service_headless_name}.${namespace}.svc.${cluster_domain}"
-        local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
+        #local md5hash=$(echo -n "${pod_name}" | md5sum | awk '{print $1}')
         ### Per https://github.com/Seagate/cortx-prvsnr/pull/6366/files#diff-143c717074b09aed81d7a3fd89a90e273676caf9d68a8d0053f506182188d780R87
         ### cortx-k8s should generate a list item with the following information:
         ### - name: should be able to be pod short name
@@ -343,7 +343,7 @@ buildValues() {
         local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
 
         yq -i "
-            .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${md5hash}\"
+            .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${pod_fqdn}\"
             | .configmap.cortxMotr.rgwEndpoints += [\"tcp://${pod_fqdn}:21001\"]
             | .configmap.cortxHare.haxServerEndpoints += [\"tcp://${pod_fqdn}:22001\"]" "${values_file}"
 

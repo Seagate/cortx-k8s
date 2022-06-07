@@ -42,9 +42,6 @@ cortxserver:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
     name: cortx-ssl-cert
-  machineid:
-    mountpath: /etc/cortx/solution/node
-    value: ""
   localpathpvc:
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi

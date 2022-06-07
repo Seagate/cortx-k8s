@@ -1,19 +1,3 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Values.cortxserver.service.headless.name }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-    cortx.io/service-type: {{ .Values.cortxserver.serviceType }}
-spec:
-  publishNotReadyAddresses: true
-  clusterIP: None
-  selector:
-    app: {{ .Values.cortxserver.name }}
-    cortx.io/service-type:  {{ .Values.cortxserver.serviceType }}
-    cortx.io/hax-enabled: "true"
-    cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
----    
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -36,7 +20,7 @@ spec:
     metadata:
       labels:
         app: {{ .Values.cortxserver.name }}
-        ### TODO CORTX-28968 k8s Label 'name: cortx-server' is deprecated in favor of 'cortx.io/service-type: cortx-server'
+        ### TODO k8s Label 'name: cortx-server' is deprecated in favor of 'cortx.io/service-type: cortx-server'
         name: cortx-server
         cortx.io/service-type: cortx-server
         cortx.io/hax-enabled: "true"
@@ -67,30 +51,21 @@ spec:
           {{- if eq .Values.cortxserver.image "ghcr.io/seagate/centos:7" }}
           - sleep $(shuf -i 5-10 -n 1)s
           {{- else }}
-          - export HOSTNAME=$(hostname);
-            export MACHINE_ID=$(echo -n ${HOSTNAME} | md5sum | awk '{print $1}');
-            echo "Storing MACHINE_ID of '${MACHINE_ID}' in '${MACHINE_ID_PATH}'.";
-            echo "${MACHINE_ID}" > ${MACHINE_ID_PATH};
-            /opt/seagate/cortx/provisioner/bin/cortx_deploy -n ${MACHINE_ID} -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n ${MACHINE_ID} -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
             sleep 10s;
           {{- end }}
           ### TODO CORTX-28968 Remove sleep from initContainer
-          ### TODO CORTX-28968 The --fqdn flag can be added to the hostname above to get the FQDN of the container
         volumeMounts:
           - name: {{ .Values.cortxserver.cfgmap.volmountname }}
             mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
           - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
             mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
-          - name: machine-id
-            mountPath: {{ .Values.cortxserver.machineid.mountpath }}
           - name: local-path
             mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           - name: {{ .Values.cortxserver.secretname }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
         env:
-          - name: MACHINE_ID_PATH
-            value: "{{ .Values.cortxserver.machineid.mountpath }}/id"
           - name: NODE_NAME
             valueFrom:
               fieldRef:
@@ -119,8 +94,6 @@ spec:
               mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
             - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxserver.machineid.mountpath }}
             - name: local-path
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           env:
@@ -161,8 +134,6 @@ spec:
               mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
             - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxserver.machineid.mountpath }}
             - name: local-path
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           env:
