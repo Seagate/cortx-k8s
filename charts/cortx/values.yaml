@@ -177,7 +177,7 @@ configmap:
     maxStartTimeout: 240
     statefulSetName: cortx-server
     headlessServiceName: cortx-server-headless
-    ##TODO CORTX-28968 Should this include a parameter for instanceCount and then autogenerate endpoints/UUID elements herein
+    # TODO: CORTX-28968 Should this include a parameter for instanceCount and then autogenerate endpoints/UUID elements herein
     # An optional multi-line string that contains extra RGW configuration
     # settings. The string may contain template expressions, and is appended to
     # the end of the computed configuration.

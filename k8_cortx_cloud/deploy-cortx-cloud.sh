@@ -328,13 +328,14 @@ buildValues() {
     ## During Helm Chart unification, this block can be interned into
     ## Helm logic.
     local count=0
-    local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
-    for (( count=0; count<${total_server_pods}; count++ )); do
-        # Build out FQDN of cortx-server Pods 
+    local storage_set_name
+    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+    for (( count=0; count < total_server_pods; count++ )); do
+        # Build out FQDN of cortx-server Pods
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
         local pod_name="${cortxserver_server_pod_prefix}-${count}"
         local pod_fqdn="${pod_name}.${cortxserver_service_headless_name}.${namespace}.svc.${cluster_domain}"
-        
+
         ### cortx-k8s should generate a list item with the following information:
         ### - name: Pod short name
         ### - hostname: Pod FQDN
@@ -535,7 +536,7 @@ cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
 global_cortx_secret_name=""
 
-## This is currently required as part of CORTX-28968 et al for cross-Chart synchronization. 
+## This is currently required as part of CORTX-28968 et al for cross-Chart synchronization.
 ## Once Helm Charts are unified, these will become defaulted values.yaml properties.
 default_values_file="../charts/cortx/values.yaml"
 
@@ -931,28 +932,17 @@ function deployCortxServer()
     printf "########################################################\n"
     local cortxserver_image
     local hax_port
-    local s3_service_type
-    local s3_service_ports_http
-    local s3_service_ports_https
     cortxserver_image=$(getSolutionValue 'solution.images.cortxserver')
-    s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
-    s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
-    s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
     hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
 
     helm install "cortx-server-${namespace}" cortx-cloud-helm-pkg/cortx-server \
         --set cortxserver.image="${cortxserver_image}" \
         --set cortxserver.replicas="${total_server_pods}" \
         --set cortxserver.service.headless.name="${cortxserver_service_headless_name}" \
-        --set cortxserver.service.loadbal.type="${s3_service_type}" \
-        --set cortxserver.service.loadbal.ports.http="${s3_service_ports_http}" \
-        --set cortxserver.service.loadbal.ports.https="${s3_service_ports_https}" \
         --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
-        --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
         --set cortxserver.localpathpvc.mountpath="${local_storage}" \
         --set cortxserver.hax.port="${hax_port}" \
         --set cortxserver.secretname="${global_cortx_secret_name}" \
-        --set cortxserver.serviceaccountname="${serviceAccountName}" \
         --set cortxserver.rgw.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.memory')" \
         --set cortxserver.rgw.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.cpu')" \
         --set cortxserver.rgw.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.memory')" \

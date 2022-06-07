@@ -1,6 +1,5 @@
 clusterdomain: cluster.local
 cortxserver:
-  name: cortx-server
   serviceType: cortx-server
   image: ghcr.io/seagate/centos:7
   replicas: 3
@@ -16,7 +15,7 @@ cortxserver:
         cpu:    2000m
   hax:
     port: 22003
-    resources: 
+    resources:
       requests:
         memory: 128Mi
         cpu:    250m
@@ -28,12 +27,6 @@ cortxserver:
       name: cortx-server-clusterip-svc
     headless:
       name: cortx-server-headless
-    loadbal:
-      name: cortx-server-loadbal-svc
-      type: NodePort
-      ports:
-        http: 80
-        https: 443
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
