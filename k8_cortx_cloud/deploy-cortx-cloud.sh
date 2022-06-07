@@ -328,13 +328,14 @@ buildValues() {
     ## During Helm Chart unification, this block can be interned into
     ## Helm logic.
     local count=0
-    local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
-    for (( count=0; count<${total_server_pods}; count++ )); do
-        # Build out FQDN of cortx-server Pods 
+    local storage_set_name
+    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+    for (( count=0; count < total_server_pods; count++ )); do
+        # Build out FQDN of cortx-server Pods
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
         local pod_name="${cortxserver_server_pod_prefix}-${count}"
         local pod_fqdn="${pod_name}.${cortxserver_service_headless_name}.${namespace}.svc.${cluster_domain}"
-        
+
         ### cortx-k8s should generate a list item with the following information:
         ### - name: Pod short name
         ### - hostname: Pod FQDN
