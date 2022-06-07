@@ -980,32 +980,32 @@ function waitForClusterReady()
     local pids=()
 
     if [[ ${components[control]} == true ]]; then
-        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CONTROL_TIMEOUT:-5m}" deployment/cortx-control) &
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CONTROL_TIMEOUT:-10m}" deployment/cortx-control) &
         pids+=($!)
     fi
 
     if [[ ${components[ha]} == true ]]; then
-        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_HA_TIMEOUT:-2m}" deployment/cortx-ha) &
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_HA_TIMEOUT:-4m}" deployment/cortx-ha) &
         pids+=($!)
     fi
 
     if [[ ${components[data]} == true ]]; then
         for node in "${node_name_list[@]}"; do
-            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-5m}" "deployment/cortx-data-${node}") &
+            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" "deployment/cortx-data-${node}") &
             pids+=($!)
         done
     fi
 
     if [[ ${components[server]} == true ]]; then
         for node in "${node_name_list[@]}"; do
-            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-5m}" "deployment/cortx-server-${node}") &
+            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-10m}" "deployment/cortx-server-${node}") &
             pids+=($!)
         done
     fi
 
     if [[ ${components[client]} == true ]]; then
         for node in "${node_name_list[@]}"; do
-            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CLIENT_TIMEOUT:-5m}" "deployment/cortx-client-${node}") &
+            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CLIENT_TIMEOUT:-10m}" "deployment/cortx-client-${node}") &
             pids+=($!)
         done
     fi
