@@ -51,7 +51,7 @@ spec:
           {{- if eq .Values.cortxserver.image "ghcr.io/seagate/centos:7" }}
           - sleep $(shuf -i 5-10 -n 1)s
           {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n ${MACHINE_ID} -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
             sleep 10s;
           {{- end }}
           ### TODO CORTX-28968 Remove sleep from initContainer
