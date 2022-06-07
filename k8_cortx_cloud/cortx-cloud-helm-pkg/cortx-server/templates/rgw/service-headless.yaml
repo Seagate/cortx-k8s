@@ -4,6 +4,7 @@ metadata:
   name: {{ .Values.cortxserver.service.headless.name }}
   namespace: {{ .Release.Namespace }}
   labels:
+    app: {{ .Values.cortxserver.name }}
     cortx.io/service-type: {{ .Values.cortxserver.serviceType }}
 spec:
   publishNotReadyAddresses: true
