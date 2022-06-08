@@ -1,11 +1,16 @@
+clusterdomain: cluster.local
 cortxdata:
   name: cortx-data
   serviceType: cortx-data
   image: ghcr.io/seagate/centos:7
   replicas: 3
-  nodeselector: node-1
-  mountblkinfo: mnt-blk-info.txt
-  nodelistinfo: node-list-info.txt
+  blockDevicePaths: []
+  nodes: []
+  storageClassName: local-block-storage
+  persistentStorage:
+    volumeMode: Block
+    accessModes:
+    - ReadWriteMany
   secretname: cortx-secret
   serviceaccountname: cortx
   motr:

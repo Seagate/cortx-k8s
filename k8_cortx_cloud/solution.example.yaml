@@ -36,7 +36,6 @@ solution:
       extra_configuration: ""
     motr:
       num_client_inst: 0
-      start_port_num: 29000
       extra_configuration: ""
     hax:
       protocol: https

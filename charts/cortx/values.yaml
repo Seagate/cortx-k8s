@@ -218,6 +218,8 @@ configmap:
     confdEndpoints: []
     iosEndpoints: []
     rgwEndpoints: []
+    statefulSetName: cortx-data
+    headlessServiceName: cortx-data-headless
     # An optional multi-line string that contains extra Motr configuration
     # settings. The string may contain template expressions, and is appended to
     # the end of the computed configuration.
@@ -283,6 +285,10 @@ platform:
       nodePorts:
         http: ""
         https: ""
+  
+  storage:
+    localBlock:
+      storageClassName: "cortx-local-block-storage"
 
 ##
 ## Imported values from cortx-control Helm Chart. These will be changed.

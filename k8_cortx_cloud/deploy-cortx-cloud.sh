@@ -197,12 +197,6 @@ buildValues() {
         | $to' "${values_file}" "${solution_yaml}"
 
     for node in "${node_name_list[@]}"; do
-        yq -i "
-            with(.configmap; (
-                .cortxHare.haxDataEndpoints += [\"tcp://cortx-data-headless-svc-${node}:22001\"]
-                | .cortxMotr.confdEndpoints += [\"tcp://cortx-data-headless-svc-${node}:22002\"]
-                | .cortxMotr.iosEndpoints += [\"tcp://cortx-data-headless-svc-${node}:21001\"]))" "${values_file}"
-
         if ((num_motr_client > 0)); then
             yq -i "
                 .configmap.cortxMotr.clientEndpoints += [\"tcp://cortx-client-headless-svc-${node}:21201\"]
@@ -231,7 +225,7 @@ buildValues() {
 
     for node in "${node_name_list[@]}"; do
         local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-        for type in data client; do
+        for type in client; do
             local id_path="${auto_gen_path}/${type}/id"
             if [[ -f ${id_path} ]]; then
                 yq -i eval-all "
@@ -240,6 +234,34 @@ buildValues() {
                     | \$to" "${values_file}" "${solution_yaml}"
             fi
         done
+    done
+
+    ### TODO CORTX-29859 Update below section data pod similar to 28968 updates for server pods
+    ## cortx-data Pods, managed by a StatefulSet, have deterministically
+    ## generated metadata. Inject that metadata into the ConfigMap here.
+    ## During Helm Chart unification, this block can be interned into
+    ## Helm logic.
+    local count=0
+    local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+    for (( count=0; count < data_node_count; count++ )); do
+        # Build out FQDN of cortx-data Pods
+        # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
+        local pod_name="${cortxdata_data_pod_prefix}-${count}"
+        local pod_fqdn="${pod_name}.${cortxdata_service_headless_name}.${namespace}.svc.${cluster_domain}"
+
+        ### cortx-k8s should generate a list item with the following information:
+        ### - name: Pod short name
+        ### - hostname: Pod FQDN
+        ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
+        ### - type: "server_node"
+
+        ### TODO 29859 Parameterize port names for dynamic Motr endpoint generation
+        yq -i "
+            with(.configmap; (
+            .clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.dataUuid=\"${pod_fqdn}\"
+            | .cortxHare.haxDataEndpoints += [\"tcp://${pod_fqdn}:22001\"]
+            | .cortxMotr.confdEndpoints += [\"tcp://${pod_fqdn}:22002\"]
+            | .cortxMotr.iosEndpoints += [\"tcp://${pod_fqdn}:21001\"]))" "${values_file}"
     done
 
     # Populate the cluster storage volumes
@@ -328,8 +350,7 @@ buildValues() {
     ## During Helm Chart unification, this block can be interned into
     ## Helm logic.
     local count=0
-    local storage_set_name
-    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+    local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
     for (( count=0; count < total_server_pods; count++ )); do
         # Build out FQDN of cortx-server Pods
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
@@ -341,6 +362,8 @@ buildValues() {
         ### - hostname: Pod FQDN
         ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
         ### - type: "server_node"
+
+        ### TODO 29859 Parameterize port names for dynamic Motr endpoint generation (28968 F/UP)
 
         yq -i "
             .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${pod_fqdn}\"
@@ -465,70 +488,19 @@ if [[ ${num_tainted_worker_nodes} -gt 0 || ${num_not_found_nodes} -gt 0 ]]; then
     fi
 fi
 
-# Delete disk & node info files from folders: cortx-data-blk-data, cortx-data
-find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
-find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
-find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
-find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
-
-# Create files consist of drives per node and files consist of drive sizes.
-# These files are used by the helm charts to deploy cortx data. These file
-# will be deleted at the end of this script.
+# Create arrays of node short names and node FQDNs
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
 node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
 count=0
 
-mnt_blk_info_fname="mnt-blk-info.txt"
-node_list_info_fname="node-list-info.txt"
-cortx_blk_data_mnt_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/${mnt_blk_info_fname}
-cortx_blk_data_node_list_info_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data/${node_list_info_fname}
-
-count=0
 for var_val_element in "${parsed_var_val_array[@]}"
 do
     node_name=$(echo "${var_val_element}" | cut -f2 -d'>')
     node_selector_list[count]=${node_name}
     shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
     node_name_list[count]=${shorter_node_name}
-
-    # Get the node var from the tuple
-    node_info_str="${count} ${node_name}"
-    if [[ -s ${cortx_blk_data_node_list_info_path} ]]; then
-        printf "\n" >> "${cortx_blk_data_node_list_info_path}"
-    fi
-    printf "%s" "${node_info_str}" >> "${cortx_blk_data_node_list_info_path}"
-
     count=$((count+1))
 done
-
-# Copy cluster node info file from CORTX local block helm to CORTX data
-cp "${cortx_blk_data_node_list_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
-
-# Get the devices from the solution
-filter="solution.storage.cvg*.devices*.device"
-parsed_dev_output=$(parseSolution "${filter}")
-IFS=';' read -r -a parsed_dev_array <<< "${parsed_dev_output}"
-
-# Get the sizes from the solution
-filter="solution.storage.cvg*.devices*.size"
-parsed_size_output=$(parseSolution "${filter}")
-IFS=';' read -r -a parsed_size_array <<< "${parsed_size_output}"
-
-# Write disk info (device name and size) to files (for cortx local blk storage and cortx data)
-for index in "${!parsed_dev_array[@]}"
-do
-    device=$(echo "${parsed_dev_array[index]}" | cut -f2 -d'>')
-    size=$(echo "${parsed_size_array[index]}" | cut -f2 -d'>')
-    mnt_blk_info="${device} ${size}"
-
-    if [[ -s ${cortx_blk_data_mnt_info_path} ]]; then
-        printf "\n" >> "${cortx_blk_data_mnt_info_path}"
-    fi
-    printf "%s" "${mnt_blk_info}" >> "${cortx_blk_data_mnt_info_path}"
-done
-
-# Copy device info file from CORTX local block helm to CORTX data
-cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
 ##########################################################
 # Extract & establish required cluster-wide constants
@@ -545,6 +517,15 @@ readonly cortxserver_service_headless_name
 
 cortxserver_server_pod_prefix=$(yq ".configmap.cortxRgw.statefulSetName" "${default_values_file}")
 readonly cortxserver_server_pod_prefix
+
+cortxdata_service_headless_name=$(yq ".configmap.cortxMotr.headlessServiceName" "${default_values_file}")
+readonly cortxdata_service_headless_name
+
+cortxdata_data_pod_prefix=$(yq ".configmap.cortxMotr.statefulSetName" "${default_values_file}")
+readonly cortxdata_server_pod_prefix
+
+cortx_localblockstorage_storageclassname=$(yq ".platform.storage.localBlock.storageClassName" "${default_values_file}")
+readonly cortx_localblockstorage_storageclassname
 
 cluster_domain=$(yq ".configmap.clusterDomain" "${default_values_file}")
 readonly cluster_domain
@@ -675,11 +656,24 @@ function deployCortxLocalBlockStorage()
     printf "######################################################\n"
     printf "# Deploy CORTX Local Block Storage                    \n"
     printf "######################################################\n"
+
+    local -r cortx_block_data_values_file=cortx-block-data-values.yaml
+
+    yq --null-input "
+        .cortxblkdata.storageClassName=\"${cortx_localblockstorage_storageclassname}\"
+        "  > "${cortx_block_data_values_file}"
+
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.cortxblkdata;
+            .nodes                             = [$from.solution.nodes.*.name]
+            | .blockDevicePaths                = [$from.solution.storage.*.devices.data.*]
+            | .blockDevicePaths                += [$from.solution.storage.*.devices.metadata])
+        | $to' "${cortx_block_data_values_file}" "${solution_yaml}"
+
     helm install "cortx-data-blk-data-${namespace}" cortx-cloud-helm-pkg/cortx-data-blk-data \
-        --set cortxblkdata.storageclass="cortx-local-blk-storage-${namespace}" \
-        --set cortxblkdata.nodelistinfo="node-list-info.txt" \
-        --set cortxblkdata.mountblkinfo="mnt-blk-info.txt" \
-        --set cortxblkdata.storage.volumemode="Block" \
+        -f ${cortx_block_data_values_file} \
         --namespace "${namespace}" \
         --create-namespace \
         || exit $?
@@ -805,8 +799,6 @@ function deployCortxSecrets()
     fi
 
     global_cortx_secret_name="${cortx_secret_name}"
-    data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
-    printf "%s" "${cortx_secret_name}" > ${data_secret_path}
 
     if [[ ${num_motr_client} -gt 0 ]]; then
         client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
@@ -869,53 +861,56 @@ function deployCortxData()
     cortxdata_image=$(parseSolution 'solution.images.cortxdata')
     cortxdata_image=$(echo "${cortxdata_image}" | cut -f2 -d'>')
 
-    num_nodes=0
-    for i in "${!node_selector_list[@]}"; do
-        num_nodes=$((num_nodes+1))
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
+    ### TODO CORTX-29859 Determine how we want to sub-select nominated nodes for Data Pod scheduling.
+    ### 1. Should we apply the labels through this script?
+    ### 2. Should we required the labels to be applied prior to execution of this script?
+    ### 3. Should we use a nodeSelector that uses the "in"/set operators?
 
-        cortxdata_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[i]}-${namespace}/data/id")
+    local -r cortx_data_values_file=cortx-data-values.yaml
 
-        helm install "cortx-data-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-data \
-            --set cortxdata.name="cortx-data-${node_name}" \
-            --set cortxdata.image="${cortxdata_image}" \
-            --set cortxdata.nodeselector="${node_selector}" \
-            --set cortxdata.service.clusterip.name="cortx-data-clusterip-svc-${node_name}" \
-            --set cortxdata.service.headless.name="cortx-data-headless-svc-${node_name}" \
-            --set cortxdata.cfgmap.volmountname="config001-${node_name}" \
-            --set cortxdata.machineid.value="${cortxdata_machineid}" \
-            --set cortxdata.localpathpvc.name="cortx-data-fs-local-pvc-${node_name}" \
-            --set cortxdata.localpathpvc.mountpath="${local_storage}" \
-            --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
-            --set cortxdata.motr.startportnum="$(extractBlock 'solution.common.motr.start_port_num')" \
-            --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
-            --set cortxdata.motr.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.data.motr.resources.requests.memory')" \
-            --set cortxdata.motr.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.data.motr.resources.requests.cpu')" \
-            --set cortxdata.motr.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.data.motr.resources.limits.memory')" \
-            --set cortxdata.motr.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.data.motr.resources.limits.cpu')" \
-            --set cortxdata.confd.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.requests.memory')" \
-            --set cortxdata.confd.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.requests.cpu')" \
-            --set cortxdata.confd.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.limits.memory')" \
-            --set cortxdata.confd.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.data.confd.resources.limits.cpu')" \
-            --set cortxdata.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.memory')" \
-            --set cortxdata.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.cpu')" \
-            --set cortxdata.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.memory')" \
-            --set cortxdata.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.cpu')" \
-            -n "${namespace}" \
-            || exit $?
-    done
+    yq --null-input "
+        .cortxdata.replicas=\"${data_node_count}\"
+        "  > "${cortx_data_values_file}"
+
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.cortxdata;
+            .nodes                             = [$from.solution.nodes.*.name]
+            | .blockDevicePaths                = [$from.solution.storage.*.devices.data.*]
+            | .blockDevicePaths                += [$from.solution.storage.*.devices.metadata])
+        | $to' "${cortx_data_values_file}" "${solution_yaml}"
+
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.cortxdata;
+             .hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
+            | .motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
+            | .confd.resources            = $from.solution.common.resource_allocation.data.confd.resources)
+        | $to' "${cortx_data_values_file}" "${solution_yaml}"
+
+    helm install "cortx-data-${namespace}" cortx-cloud-helm-pkg/cortx-data \
+        -f ${cortx_data_values_file} \
+        --set cortxdata.image="${cortxdata_image}" \
+        --set cortxdata.storageClassName="${cortx_localblockstorage_storageclassname}" \
+        --set cortxdata.service.headless.name="${cortxdata_service_headless_name}" \
+        --set cortxdata.localpathpvc.mountpath="${local_storage}" \
+        --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
+        --set cortxdata.secretname="${global_cortx_secret_name}" \
+        --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
+        -n "${namespace}" \
+        --debug \
+        || exit $?
 
     # Wait for all cortx-data deployments to be ready
     printf "\nWait for CORTX Data to be ready\n"
-    for i in "${!node_selector_list[@]}"; do
-        if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
-                                        "CORTX Data (${node_name_list[i]})" "${namespace}" \
-                                        "deployment/cortx-data-${node_name_list[i]}"; then
-            echo "Failed.  Exiting script."
-            exit 1
-        fi
-    done
+    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
+                                    "CORTX Data" "${namespace}" \
+                                    "statefulset/cortx-data"; then
+        echo "Failed.  Exiting script."
+        exit 1
+    fi
 
     printf "\n\n"
 }
@@ -939,7 +934,6 @@ function deployCortxServer()
         --set cortxserver.image="${cortxserver_image}" \
         --set cortxserver.replicas="${total_server_pods}" \
         --set cortxserver.service.headless.name="${cortxserver_service_headless_name}" \
-        --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
         --set cortxserver.localpathpvc.mountpath="${local_storage}" \
         --set cortxserver.hax.port="${hax_port}" \
         --set cortxserver.secretname="${global_cortx_secret_name}" \
@@ -1025,6 +1019,8 @@ function deployCortxClient()
 
 function cleanup()
 {
+    # DEPRECATED: These files are no longer used during deploy, but the cleanup step is left behind
+    # to clean up as much as possible going forward.
     # Delete files that contain disk partitions on the worker nodes and the node info
     # and left-over secret data
     find "$(pwd)/cortx-cloud-helm-pkg" -type f \( -name 'mnt-blk-*' -o -name 'node-list-*' -o -name secret-info.txt \) -delete

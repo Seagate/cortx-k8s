@@ -22,7 +22,6 @@ solution:
       instances_per_node: required
     motr:
       num_client_inst: required
-      start_port_num: required
     hax:
       protocol: required
       port_num: required

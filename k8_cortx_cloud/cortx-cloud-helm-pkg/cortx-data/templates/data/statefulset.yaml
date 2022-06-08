@@ -1,3 +1,6 @@
+{{- define "cortx_data.device_path.to_string" }}
+{{- . | lower | trimPrefix "/" | replace "/" "-" }}
+{{- end }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -25,10 +28,6 @@ spec:
         cortx.io/service-type: {{ quote .Values.cortxdata.serviceType }}
         cortx.io/hax-enabled: "true"
         cortx.io/service-domain: "{{ .Values.cortxdata.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
-    ### TODO CORTX-29859 Remove the need of nodeselector and usage of this templating
-    {{- $nodeselector := (.Values.cortxdata.nodeselector) }}
-    {{- $nodeparts := split "." $nodeselector }}
-    {{- $nodename := $nodeparts._0 }}
     spec:
       subdomain: {{ .Values.cortxdata.service.headless.name }}
       serviceAccountName: {{ .Values.cortxdata.serviceaccountname }}
@@ -39,28 +38,6 @@ spec:
         - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
           configMap:
             name: {{ .Values.cortxdata.sslcfgmap.name }}
-        # Loop through the node list info file which contains the following example:
-        # 0 node-1
-        # 1 node-2
-        {{- range $line := .Files.Lines .Values.cortxdata.nodelistinfo }}
-        {{- $parts := split " " . }}
-        {{- $index := $parts._0 }}
-        {{- $parsednodename := $parts._1 }}
-        # Loop through the mounted block info file which contains the following:
-        # /dev/sdc 5Gi
-        # /dev/sdd 5Gi
-        {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
-        {{- $mntblkparts := split " " . }}
-        {{- $localpath := $mntblkparts._0 }}
-        {{- $mountblksize := $mntblkparts._1 }}
-        {{- $disk := (base $localpath) }}
-        {{- if hasPrefix $nodename $parsednodename }}
-        - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
-          persistentVolumeClaim:
-            claimName: {{ printf "cortx-data-%s-pvc-%s" $disk $index }}
-        {{- end }}
-        {{- end }}
-        {{- end }}
         - name: {{ .Values.cortxdata.secretname }}
           secret:
             secretName: {{ .Values.cortxdata.secretname }}
@@ -95,33 +72,16 @@ spec:
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
         {{- end }}
         volumeDevices:
-          # Loop through the node list info file which contains the following example:
-          # 0 node-1
-          # 1 node-2
-          {{- range $line := .Files.Lines .Values.cortxdata.nodelistinfo }}
-          {{- $parts := split " " . }}
-          {{- $index := $parts._0 }}
-          {{- $parsednodename := $parts._1 }}
-          # Loop through the mounted block info file which contains the following:
-          # /dev/sdc 5Gi
-          # /dev/sdd 5Gi
-          {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
-          {{- $mntblkparts := split " " . }}
-          {{- $localpath := $mntblkparts._0 }}
-          {{- $mountblksize := $mntblkparts._1 }}
-          {{- $disk := (base $localpath) }}
-          {{- if hasPrefix $nodename $parsednodename }}
-          - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
-            devicePath: {{ $localpath }}
-          {{- end }}
-          {{- end }}
+          {{- range .Values.cortxdata.blockDevicePaths }}
+          - name: {{ printf "block-%s" ( include "cortx_data.device_path.to_string" .device ) }}
+            devicePath: {{ .device | quote }}
           {{- end }}
         volumeMounts:
           - name: {{ .Values.cortxdata.cfgmap.volmountname }}
             mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
           - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
             mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-          - name: local-path
+          - name: data
             mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           - name: {{ .Values.cortxdata.secretname }}
             mountPath: /etc/cortx/solution/secret
@@ -155,7 +115,7 @@ spec:
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            - name: local-path
+            - name: data
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
           - name: NODE_NAME
@@ -188,33 +148,16 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
-            # Loop through the node list info file which contains the following example:
-            # 0 node-1
-            # 1 node-2
-            {{- range $line := .Files.Lines .Values.cortxdata.nodelistinfo }}
-            {{- $parts := split " " . }}
-            {{- $index := $parts._0 }}
-            {{- $parsednodename := $parts._1 }}
-            # Loop through the mounted block info file which contains the following:
-            # /dev/sdc 5Gi
-            # /dev/sdd 5Gi
-            {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
-            {{- $mntblkparts := split " " . }}
-            {{- $localpath := $mntblkparts._0 }}
-            {{- $mountblksize := $mntblkparts._1 }}
-            {{- $disk := (base $localpath) }}
-            {{- if hasPrefix $nodename $parsednodename }}
-            - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
-              devicePath: {{ $localpath }}
-            {{- end }}
-            {{- end }}
+            {{- range .Values.cortxdata.blockDevicePaths }}
+            - name: {{ printf "block-%s" ( include "cortx_data.device_path.to_string" .device ) }}
+              devicePath: {{ .device | quote }}
             {{- end }}
           volumeMounts:
             - name: {{ .Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
             - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
-            - name: local-path
+            - name: data
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
           env:
           - name: NODE_NAME
@@ -257,33 +200,16 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
-            # Loop through the node list info file which contains the following example:
-            # 0 node-1
-            # 1 node-2
-            {{- range $line := $.Files.Lines $.Values.cortxdata.nodelistinfo }}
-            {{- $parts := split " " . }}
-            {{- $index := $parts._0 }}
-            {{- $parsednodename := $parts._1 }}
-            # Loop through the mounted block info file which contains the following:
-            # /dev/sdc 5Gi
-            # /dev/sdd 5Gi
-            {{- range $mntblkinfoline := $.Files.Lines $.Values.cortxdata.mountblkinfo }}
-            {{- $mntblkparts := split " " . }}
-            {{- $localpath := $mntblkparts._0 }}
-            {{- $mountblksize := $mntblkparts._1 }}
-            {{- $disk := (base $localpath) }}
-            {{- if hasPrefix $nodename $parsednodename }}
-            - name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
-              devicePath: {{ $localpath }}
-            {{- end }}
-            {{- end }}
+            {{- range $.Values.cortxdata.blockDevicePaths }}
+            - name: {{ printf "block-%s" ( include "cortx_data.device_path.to_string" .device ) }}
+              devicePath: {{ .device | quote }}
             {{- end }}
           volumeMounts:
             - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
             - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
               mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
-            - name: local-path
+            - name: data
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
           ports:
           - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
@@ -295,10 +221,24 @@ spec:
         {{- end }}
   volumeClaimTemplates:
   - metadata:
-      name: local-path
+      name: data
     spec:
       accessModes: {{- toYaml .Values.cortxdata.localpathpvc.accessmodes | nindent 6 }}
       storageClassName: {{ .Values.cortxdata.localpathpvc.storageclass }}
       resources:
         requests:
           storage: {{ .Values.cortxdata.localpathpvc.requeststoragesize }}
+  {{- range .Values.cortxdata.blockDevicePaths }}
+  - metadata:
+      name: {{ printf "block-%s" ( include "cortx_data.device_path.to_string" .device ) }}
+    spec:
+      accessModes: {{- toYaml $.Values.cortxdata.persistentStorage.accessModes | nindent 6 }}
+      volumeMode: {{ $.Values.cortxdata.persistentStorage.volumeMode | quote }}
+      storageClassName: {{ $.Values.cortxdata.storageClassName | quote }}
+      resources:
+        requests:
+          storage: {{ .size | quote }}
+      selector:
+        matchLabels:
+          cortx.io/device-path: {{ include "cortx_data.device_path.to_string" .device | quote }}
+  {{- end }}
