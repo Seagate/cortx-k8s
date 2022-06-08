@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cortxserver.service.headless.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: server
+    cortx.io/service-type: {{ .Values.cortxserver.serviceType }}
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None
+  selector:
+    app.kubernetes.io/component: server
+    cortx.io/service-type:  {{ .Values.cortxserver.serviceType }}
+    cortx.io/hax-enabled: "true"
+    cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"

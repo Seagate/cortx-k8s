@@ -91,6 +91,9 @@ configmap:
   # clusterId is the unique ID number of the CORTX cluster
   clusterId: ""
 
+  # clusterDomain is the domain name of the underlying Kubernetes cluster (default is cluster.local)
+  clusterDomain: cluster.local
+
   # clusterStorageVolumes is a Dictionary of container volume groups.
   # e.g:
   # clusterStorageVolumes:
@@ -172,6 +175,9 @@ configmap:
     # and is generally not changed by default.
     authSecret: s3_auth_admin_secret
     maxStartTimeout: 240
+    statefulSetName: cortx-server
+    headlessServiceName: cortx-server-headless
+    # TODO: CORTX-28968 Should this include a parameter for instanceCount and then autogenerate endpoints/UUID elements herein
     # An optional multi-line string that contains extra RGW configuration
     # settings. The string may contain template expressions, and is appended to
     # the end of the computed configuration.
