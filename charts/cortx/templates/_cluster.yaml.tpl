@@ -2,7 +2,7 @@
 {{- define "storageset.node" -}}
 - name: {{ .name }}
   {{- if eq .type "server_node" }}
-  id: {{ default uuidv4 .id | quote }}
+  id: {{ required "A valid id is required for server nodes" .id | quote }}
   hostname: {{ .hostname }}
   {{- else }}
   id: {{ default uuidv4 .id | replace "-" "" | quote }}
