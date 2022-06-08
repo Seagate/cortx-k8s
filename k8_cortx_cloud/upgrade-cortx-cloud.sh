@@ -38,6 +38,9 @@ PIDFILE=/tmp/upgrade.sh.pid
 UPGRADE_DATA_TEMPLATE="./upgrade-data-template.yaml"
 UPGRADE_DATA="./upgrade-data.yaml"
 
+# Compatibility check related constants
+RULES=""
+
 function usage() {
     cat << EOF
 
@@ -47,6 +50,7 @@ Usage:
 
 Options:
     -h              Prints help information.
+    prepare         Performs pre-upgrade checks.
     start           initiates upgrade on CORTX cluster.
     suspend         suspend current SW upgrade process.
     resume          resume sw upgrade process.
@@ -129,7 +133,7 @@ function cold_upgrade() {
 }
 
 function rolling_upgrade() {
-    if [[ "${PROCESS}" == "start" ]]; then
+    if [[ "${PROCESS}" == "start" ]] || [[ "${PROCESS}" == "prepare" ]]; then
             if [[ -z "${POD_TYPE}" ]]; then
                 printf "\nERROR: Required option POD_TYPE is missing.\n"
                 usage
@@ -137,18 +141,26 @@ function rolling_upgrade() {
             fi
     fi
     case "${PROCESS}" in
+        prepare )
+            if [[ "${POD_TYPE}" == "all" ]]; then
+                POD_TYPE="cortx"
+            fi
+            prepare_upgrade "${POD_TYPE}"
+            ;;
         start )
             fetch_solution_images
             if [[ "${POD_TYPE}" == "all" ]]; then
                 POD_TYPE="cortx"
             fi
             start_upgrade "${POD_TYPE}"
+            Validate_upgrade_status
             ;;
         suspend )
             suspend_upgrade
             ;;
         resume )
             resume_upgrade
+            Validate_upgrade_status
             ;;
         status )
             status_upgrade
@@ -270,6 +282,77 @@ function initiate_upgrade() {
     done <<< "$(kubectl get deployments --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" --namespace="${NAMESPACE}" | grep "$1")"
 }
 
+function prepare_upgrade() {
+    POD_TYPE=$1
+    if [[ "$POD_TYPE" == "cortx" ]] || [[ "$POD_TYPE" == "control" ]]; then
+        control_image=$(parse_solution 'solution.images.cortxcontrol' | cut -f2 -d'>')
+        RULES=""
+        get_compatibility_clauses "$control_image"
+        control_nodes=("cortx-control")
+        check_version_compatibility $control_nodes
+    fi
+    if [[ "$POD_TYPE" == "cortx" ]] || [[ "$POD_TYPE" == "data" ]]; then
+        data_image=$(parse_solution 'solution.images.cortxdata' | cut -f2 -d'>')
+        RULES=""
+        get_compatibility_clauses "$data_image"
+        data_nodes=$(kubectl get svc -n "${NAMESPACE}" | grep cortx-data-headless* | awk '{print $1}')
+        check_version_compatibility $data_nodes
+    fi
+    if [[ "$POD_TYPE" == "cortx" ]] || [[ "$POD_TYPE" == "server" ]]; then
+        server_image=$(parse_solution 'solution.images.cortxserver' | cut -f2 -d'>')
+        RULES=""
+        get_compatibility_clauses "$server_image"
+        server_nodes=$(kubectl get svc -n "${NAMESPACE}" | grep cortx-server-headless* | awk '{print $1}')
+        check_version_compatibility $server_nodes
+    fi
+    if [[ "$POD_TYPE" == "cortx" ]] || [[ "$POD_TYPE" == "ha" ]]; then
+        ha_image=$(parse_solution 'solution.images.cortxha' | cut -f2 -d'>')
+        RULES=""
+        get_compatibility_clauses "$ha_image"
+        ha_nodes=$(kubectl get svc -n "${NAMESPACE}" | grep cortx-ha-headless* | awk '{print $1}')
+        check_version_compatibility $ha_nodes
+    fi
+}
+
+function get_compatibility_clauses() {
+    REQUIRES=$(docker inspect --format='{{ index .Config.Labels "org.opencontainers.image.version"}}' $1)
+    IFS=',' read -ra  newarr <<< "$REQUIRES"
+    for val in "${newarr[@]}";
+    do
+      val=${val//[[:blank:]]/}
+      RULES+='"'$val'",'
+    done
+    RULES="{\"requires\":[${RULES%?}]}"
+}
+
+function check_version_compatibility() {
+  echo -e "\n--------------------------------------"
+  while IFS= read -r line; do
+    echo -e "Checking Version Compatibility for $line\n"
+    HOSTNAME=$(hostname)
+    PORT="31169"
+    endpoint="https://${HOSTNAME}:${PORT}/api/v2/version/compatibility/node/${line}"
+    response=$(curl -k -XPOST $endpoint -d ${RULES} -s | jq) 
+    echo "RESPONSE: $response"
+    HTTP_CODE=$(curl -k --write-out "%{http_code}\n" -XPOST $endpoint -d ${RULES} -o output.txt -s) 
+    rm -f "./output.txt"
+    echo "HTTP CODE $HTTP_CODE"
+    if  [ "$HTTP_CODE" = "200" ]; then
+      status=$(jq .compatible <<< $response)
+      if [ "$status" = "true" ]; then
+        echo "$line is compatible for update"
+      else 
+        reason=$(jq .reason <<< $response)
+        echo "$line not compatible because $reason"
+        exit 1
+      fi 
+    else
+      echo $(jq .message <<< $response)
+      exit 1
+    fi
+done <<< "$1"
+}
+
 function start_upgrade() {
     # Use a PID file to prevent concurrent upgrades.
     if [[ -s ${PIDFILE} ]]; then
@@ -353,6 +436,9 @@ SOLUTION_FILE="${CORTX_SOLUTION_CONFIG_FILE:-solution.yaml}"
 readonly SOLUTION_FILE
 while [ $# -gt 0 ];  do
     case $1 in
+    prepare )
+        PROCESS="prepare"
+        ;;
     start )
         PROCESS="start"
         ;;
@@ -408,8 +494,6 @@ case "${UPGRADE_TYPE}" in
         ;;
     Rolling )
         rolling_upgrade
-        # Validate upgrade status to remove PID file.
-        Validate_upgrade_status
         ;;
     * )
         echo "Invalid Upgrade_type provided"
