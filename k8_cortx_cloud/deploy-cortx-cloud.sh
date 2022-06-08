@@ -8,7 +8,6 @@ if ! ./parse_scripts/check_yq.sh; then
 fi
 
 readonly solution_yaml=${1:-'solution.yaml'}
-readonly storage_class='local-path'
 readonly cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 cortx_secret_fields=("kafka_admin_secret"
                      "consul_admin_secret"
@@ -154,8 +153,10 @@ buildValues() {
 
     # Initialize
     yq --null-input "
-        (.global.storageClass, .consul.server.storageClass) = \"${storage_class}\"
-        | (.cortxcontrol.localpathpvc.mountpath, .cortxha.localpathpvc.mountpath) = \"${local_storage}\"
+        (.global.storageClass, .consul.server.storageClass) = \"local-path\"
+        | (.cortxcontrol.localpathpvc.mountpath,
+           .cortxha.localpathpvc.mountpath,
+           .cortxserver.localpathpvc.mountpath) = \"${local_storage}\"
         | .configmap.cortxSecretName = \"${cortx_secret_name}\"" > "${values_file}"
 
     # shellcheck disable=SC2016
@@ -192,7 +193,7 @@ buildValues() {
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.configmap.cortxRgw;
+        | with($to.cortxserver;
             .authAdmin = $from.solution.common.s3.default_iam_users.auth_admin
             | .authUser = $from.solution.common.s3.default_iam_users.auth_user
             | .maxStartTimeout = $from.solution.common.s3.max_start_timeout
@@ -211,14 +212,8 @@ buildValues() {
         | $to.configmap.cortxVersion = ($from.solution.images.cortxdata | capture(".*?/.*:(?P<tag>.*)") | .tag)
         | $to' "${values_file}" "${solution_yaml}"
 
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | $to.configmap.cortxIoService.ports = $from.solution.common.external_services.s3.ports
-        | $to' "${values_file}" "${solution_yaml}"
-
     yq -i "
-        .configmap.cortxRgw.enabled = ${components[server]}
+        .cortxserver.enabled = ${components[server]}
         | .cortxha.enabled = ${components[ha]}
         | .cortxcontrol.enabled = ${components[control]}" "${values_file}"
 
@@ -295,8 +290,7 @@ buildValues() {
             .cortxControl.agent.resources           = $from.solution.common.resource_allocation.control.agent.resources
             | .cortxHare.hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
             | .cortxMotr.motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
-            | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources
-            | .cortxRgw.rgw.resources               = $from.solution.common.resource_allocation.server.rgw.resources)
+            | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
@@ -321,24 +315,23 @@ buildValues() {
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
 
-    [[ ${components[server]} != true ]] && s3_service_count=0
-
     local s3_service_nodeports_http
     local s3_service_nodeports_https
     s3_service_nodeports_http=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.http')
     s3_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.https')
-    [[ -n ${s3_service_nodeports_http} ]] && yq -i ".platform.services.io.nodePorts.http = ${s3_service_nodeports_http}" "${values_file}"
-    [[ -n ${s3_service_nodeports_https} ]] && yq -i ".platform.services.io.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
+    [[ -n ${s3_service_nodeports_http} ]] && yq -i ".cortxserver.service.nodePorts.http = ${s3_service_nodeports_http}" "${values_file}"
+    [[ -n ${s3_service_nodeports_https} ]] && yq -i ".cortxserver.service.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
 
     yq -i "
         with(.platform; (
             .podSecurityPolicy.create = ${createPodSecurityPolicy}
             | .services.hax.protocol = \"${hax_service_protocol}\"
-            | .services.hax.port = ${hax_service_port}
-            | .services.io.type = \"${s3_service_type}\"
-            | .services.io.count = ${s3_service_count}
-            | .services.io.ports.http = ${s3_service_ports_http}
-            | .services.io.ports.https = ${s3_service_ports_https}))" "${values_file}"
+            | .services.hax.port = ${hax_service_port}))
+        | with(.cortxserver.service; (
+            .type = \"${s3_service_type}\"
+            | .count = ${s3_service_count}
+            | .ports.http = ${s3_service_ports_http}
+            | .ports.https = ${s3_service_ports_https}))" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -367,8 +360,8 @@ buildValues() {
     for (( count=0; count < total_server_pods; count++ )); do
         # Build out FQDN of cortx-server Pods
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
-        local pod_name="${cortxserver_server_pod_prefix}-${count}"
-        local pod_fqdn="${pod_name}.${cortxserver_service_headless_name}.${namespace}.svc.${cluster_domain}"
+        local pod_name="cortx-server-${count}"
+        local pod_fqdn="${pod_name}.cortx-server-headless.${namespace}.svc.cluster.local"
 
         ### cortx-k8s should generate a list item with the following information:
         ### - name: Pod short name
@@ -391,6 +384,19 @@ buildValues() {
             | .health_monitor.resources    = $from.solution.common.resource_allocation.ha.health_monitor.resources
             | .k8s_monitor.resources       = $from.solution.common.resource_allocation.ha.k8s_monitor.resources)
         | $to' "${values_file}" "${solution_yaml}"
+
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.cortxserver;
+            .image           = $from.solution.images.cortxserver
+            | .cfgmap.volmountname = "config001"
+            | .hax.port      = $from.solution.common.hax.port_num
+            | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources
+            | .hax.resources = $from.solution.common.resource_allocation.hare.hax.resources)
+        | $to' "${values_file}" "${solution_yaml}"
+
+    yq -i ".cortxserver.replicas = ${total_server_pods}" "${values_file}"
 
     set +eu
 }
@@ -564,21 +570,8 @@ cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 # Extract & establish required cluster-wide constants
 ##########################################################
 
-global_cortx_secret_name=""
-
 ## This is currently required as part of CORTX-28968 et al for cross-Chart synchronization.
 ## Once Helm Charts are unified, these will become defaulted values.yaml properties.
-default_values_file="../charts/cortx/values.yaml"
-
-cortxserver_service_headless_name=$(yq ".configmap.cortxRgw.headlessServiceName" "${default_values_file}")
-readonly cortxserver_service_headless_name
-
-cortxserver_server_pod_prefix=$(yq ".configmap.cortxRgw.statefulSetName" "${default_values_file}")
-readonly cortxserver_server_pod_prefix
-
-cluster_domain=$(yq ".configmap.clusterDomain" "${default_values_file}")
-readonly cluster_domain
-
 server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
 data_node_count=${#node_name_list[@]}
 total_server_pods=$(( data_node_count * server_instances_per_node ))
@@ -612,27 +605,24 @@ function deployRancherProvisioner()
 {
     local image
 
-    if [[ ${storage_class} == "local-path" ]]
-    then
-        printf "Install Rancher Local Path Provisioner"
-        rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
-        # Clean up auto gen Rancher Provisioner folder in case it still exists and was not
-        # clearned up previously by the destroy-cortx-cloud script.
-        rm -rf "${rancher_prov_path}"
-        mkdir -p "${rancher_prov_path}"
-        rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
-        cp "$(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml" "${rancher_prov_file}"
-        image=$(parseSolution 'solution.images.rancher')
-        image=$(echo "${image}" | cut -f2 -d'>')
-        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.image" "${image}"
-        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.host_path" "${storage_prov_path}/local-path-provisioner"
+    printf "Install Rancher Local Path Provisioner"
+    rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
+    # Clean up auto gen Rancher Provisioner folder in case it still exists and was not
+    # clearned up previously by the destroy-cortx-cloud script.
+    rm -rf "${rancher_prov_path}"
+    mkdir -p "${rancher_prov_path}"
+    rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
+    cp "$(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml" "${rancher_prov_file}"
+    image=$(parseSolution 'solution.images.rancher')
+    image=$(echo "${image}" | cut -f2 -d'>')
+    ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.image" "${image}"
+    ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.host_path" "${storage_prov_path}/local-path-provisioner"
 
-        image=$(parseSolution 'solution.images.busybox')
-        image=$(echo "${image}" | cut -f2 -d'>')
-        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.helperPod.image" "${image}"
+    image=$(parseSolution 'solution.images.busybox')
+    image=$(echo "${image}" | cut -f2 -d'>')
+    ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.helperPod.image" "${image}"
 
-        kubectl apply -f "${rancher_prov_file}"
-    fi
+    kubectl apply -f "${rancher_prov_file}"
 }
 
 function deployCortx()
@@ -807,7 +797,6 @@ function deployCortxSecrets()
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
 
-    global_cortx_secret_name="${cortx_secret_name}"
     data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
     printf "%s" "${cortx_secret_name}" > ${data_secret_path}
 
@@ -888,39 +877,6 @@ function deployCortxData()
             -n "${namespace}" \
             || exit $?
     done
-}
-
-function deployCortxServer()
-{
-    [[ ${components[server]} == false ]] && return
-
-    printf "########################################################\n"
-    printf "# Deploy CORTX Server                                   \n"
-    printf "########################################################\n"
-    local cortxserver_image
-    local hax_port
-    cortxserver_image=$(getSolutionValue 'solution.images.cortxserver')
-    hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
-
-    helm install "cortx-server-${namespace}" cortx-cloud-helm-pkg/cortx-server \
-        --set cortxserver.image="${cortxserver_image}" \
-        --set cortxserver.replicas="${total_server_pods}" \
-        --set cortxserver.service.headless.name="${cortxserver_service_headless_name}" \
-        --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
-        --set cortxserver.localpathpvc.mountpath="${local_storage}" \
-        --set cortxserver.hax.port="${hax_port}" \
-        --set cortxserver.secretname="${global_cortx_secret_name}" \
-        --set cortxserver.rgw.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.memory')" \
-        --set cortxserver.rgw.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.cpu')" \
-        --set cortxserver.rgw.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.memory')" \
-        --set cortxserver.rgw.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.cpu')" \
-        --set cortxserver.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.memory')" \
-        --set cortxserver.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.cpu')" \
-        --set cortxserver.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.memory')" \
-        --set cortxserver.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.cpu')" \
-        --namespace "${namespace}" \
-        || exit $?
-
 }
 
 function deployCortxClient()
@@ -1072,14 +1028,13 @@ generateMachineIds
 ##########################################################
 deployCortx
 deployCortxData
-deployCortxServer
 deployCortxClient
 cleanup
 
 # Note: It is not ideal that some of these values are hard-coded here.
 #       The data comes from the helm charts and so there is no feasible
 #       way of getting the values otherwise.
-data_service_name="cortx-io-svc-0"  # present in cortx values.yaml... what to do?
+data_service_name="cortx-server-0"  # present in cortx values.yaml... what to do?
 data_service_default_user="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
 control_service_name="cortx-control-loadbal-svc"  # hard coded in script above installing help or cortx-control
 control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templates/_config.tpl

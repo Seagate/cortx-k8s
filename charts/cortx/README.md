@@ -60,6 +60,7 @@ helm uninstall cortx
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| clusterDomain | string | `"cluster.local"` |  |
 | configmap.clusterDomain | string | `"cluster.local"` |  |
 | configmap.clusterId | string | `""` |  |
 | configmap.clusterName | string | `"cortx-cluster"` |  |
@@ -76,9 +77,6 @@ helm uninstall cortx
 | configmap.cortxHare.haxClientEndpoints | list | `[]` |  |
 | configmap.cortxHare.haxDataEndpoints | list | `[]` |  |
 | configmap.cortxHare.haxServerEndpoints | list | `[]` |  |
-| configmap.cortxIoService.name | string | `"cortx-io-svc-0"` |  |
-| configmap.cortxIoService.ports.http | string | `""` |  |
-| configmap.cortxIoService.ports.https | string | `""` |  |
 | configmap.cortxMotr.clientEndpoints | list | `[]` |  |
 | configmap.cortxMotr.clientInstanceCount | int | `0` |  |
 | configmap.cortxMotr.confd.resources.limits.cpu | string | `"500m"` |  |
@@ -93,18 +91,6 @@ helm uninstall cortx
 | configmap.cortxMotr.motr.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxMotr.motr.resources.requests.memory | string | `"1Gi"` |  |
 | configmap.cortxMotr.rgwEndpoints | list | `[]` |  |
-| configmap.cortxRgw.authAdmin | string | `"cortx-admin"` |  |
-| configmap.cortxRgw.authSecret | string | `"s3_auth_admin_secret"` |  |
-| configmap.cortxRgw.authUser | string | `"cortx-user"` |  |
-| configmap.cortxRgw.enabled | bool | `true` |  |
-| configmap.cortxRgw.extraConfiguration | string | `""` |  |
-| configmap.cortxRgw.headlessServiceName | string | `"cortx-server-headless"` |  |
-| configmap.cortxRgw.maxStartTimeout | int | `240` |  |
-| configmap.cortxRgw.rgw.resources.limits.cpu | string | `"2000m"` |  |
-| configmap.cortxRgw.rgw.resources.limits.memory | string | `"2Gi"` |  |
-| configmap.cortxRgw.rgw.resources.requests.cpu | string | `"250m"` |  |
-| configmap.cortxRgw.rgw.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxRgw.statefulSetName | string | `"cortx-server"` |  |
 | configmap.cortxSecretName | string | `"cortx-secret"` |  |
 | configmap.cortxSecretValues | object | `{}` |  |
 | configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
@@ -151,6 +137,34 @@ helm uninstall cortx
 | cortxha.machineid.mountpath | string | `"/etc/cortx/solution/node"` |  |
 | cortxha.machineid.value | string | `""` |  |
 | cortxha.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
+| cortxserver.authAdmin | string | `"cortx-admin"` |  |
+| cortxserver.authSecret | string | `"s3_auth_admin_secret"` |  |
+| cortxserver.authUser | string | `"cortx-user"` |  |
+| cortxserver.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
+| cortxserver.enabled | bool | `true` |  |
+| cortxserver.extraConfiguration | string | `""` |  |
+| cortxserver.hax.port | int | `22003` |  |
+| cortxserver.hax.resources.limits.cpu | string | `"1000m"` |  |
+| cortxserver.hax.resources.limits.memory | string | `"2Gi"` |  |
+| cortxserver.hax.resources.requests.cpu | string | `"250m"` |  |
+| cortxserver.hax.resources.requests.memory | string | `"128Mi"` |  |
+| cortxserver.image | string | `"ghcr.io/seagate/centos:7"` |  |
+| cortxserver.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
+| cortxserver.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
+| cortxserver.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
+| cortxserver.maxStartTimeout | int | `240` |  |
+| cortxserver.replicas | int | `3` |  |
+| cortxserver.rgw.resources.limits.cpu | string | `"2000m"` |  |
+| cortxserver.rgw.resources.limits.memory | string | `"2Gi"` |  |
+| cortxserver.rgw.resources.requests.cpu | string | `"250m"` |  |
+| cortxserver.rgw.resources.requests.memory | string | `"128Mi"` |  |
+| cortxserver.service.count | int | `1` |  |
+| cortxserver.service.nodePorts.http | string | `""` |  |
+| cortxserver.service.nodePorts.https | string | `""` |  |
+| cortxserver.service.ports.http | int | `80` |  |
+| cortxserver.service.ports.https | int | `443` |  |
+| cortxserver.service.type | string | `"ClusterIP"` |  |
+| cortxserver.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
 | externalConsul.endpoints | list | `[]` |  |
@@ -178,13 +192,6 @@ helm uninstall cortx
 | platform.services.hax.port | int | `22003` |  |
 | platform.services.hax.protocol | string | `"https"` |  |
 | platform.services.hax.type | string | `"ClusterIP"` |  |
-| platform.services.io.count | int | `1` |  |
-| platform.services.io.name | string | `"cortx-io-svc"` |  |
-| platform.services.io.nodePorts.http | string | `""` |  |
-| platform.services.io.nodePorts.https | string | `""` |  |
-| platform.services.io.ports.http | int | `80` |  |
-| platform.services.io.ports.https | int | `443` |  |
-| platform.services.io.type | string | `"ClusterIP"` |  |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |

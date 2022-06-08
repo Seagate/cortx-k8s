@@ -7,6 +7,9 @@ nameOverride: ""
 ## -- A name that will fully override cortx.fullname
 fullnameOverride: ""
 
+## -- Kubernetes Cluster Domain
+clusterDomain: cluster.local
+
 serviceAccount:
   # -- Enable the creation of a ServiceAccount for CORTX pods
   create: true
@@ -141,20 +144,6 @@ configmap:
     log: "/etc/cortx/log"
     config: "/etc/cortx"
 
-  # cortxIoService allows configuring information about the external IO service.
-  # All values must be specified.
-  # e.g.
-  # cortxIoService:
-  #   name: cortx-io-svc-0
-  #   ports:
-  #     http: 80
-  #     https: 443
-  cortxIoService:
-    name: cortx-io-svc-0
-    ports:
-      http: ""
-      https: ""
-
   # cortxControl allows configuring CORTX CSM settings
   cortxControl:
     agent:
@@ -165,36 +154,6 @@ configmap:
         limits:
           memory: 256Mi
           cpu: 500m
-
-  # cortxRgw allows configuring CORTX RGW settings
-  cortxRgw:
-    enabled: true
-    authAdmin: cortx-admin
-    authUser: cortx-user
-    # The below value should match the corresponding key in solution.yaml
-    # and is generally not changed by default.
-    authSecret: s3_auth_admin_secret
-    maxStartTimeout: 240
-    statefulSetName: cortx-server
-    headlessServiceName: cortx-server-headless
-    # TODO: CORTX-28968 Should this include a parameter for instanceCount and then autogenerate endpoints/UUID elements herein
-    # An optional multi-line string that contains extra RGW configuration
-    # settings. The string may contain template expressions, and is appended to
-    # the end of the computed configuration.
-    # e.g.:
-    # extraConfiguration: |
-    #   thread_pool_size: 10
-    #   gc_max_objs: 32
-    #   motr_max_rpc_msg_size: 524288
-    extraConfiguration: ""
-    rgw:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 2Gi
-          cpu: 2000m
 
   # cortxHare allows configuring CORTX HARE settings
   cortxHare:
@@ -273,16 +232,6 @@ platform:
       type: ClusterIP
       protocol: https
       port: 22003
-    io:
-      name: cortx-io-svc
-      type: ClusterIP
-      count: 1
-      ports:
-        http: 80
-        https: 443
-      nodePorts:
-        http: ""
-        https: ""
 
 ##
 ## Imported values from cortx-control Helm Chart. These will be changed.
@@ -357,3 +306,64 @@ cortxha:
   localpathpvc:
     mountpath: /etc/cortx
     requeststoragesize: 1Gi
+
+##
+## Imported values from cortx-server Helm Chart. These will be changed.
+##
+cortxserver:
+  enabled: true
+  image: ghcr.io/seagate/centos:7
+  replicas: 3
+  rgw:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 2000m
+  hax:
+    port: 22003
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  cfgmap:
+    mountpath: /etc/cortx/solution
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+  localpathpvc:
+    mountpath: /etc/cortx
+    requeststoragesize: 1Gi
+    accessmodes:
+      - ReadWriteOnce
+
+  authAdmin: cortx-admin
+  authUser: cortx-user
+  # The below value should match the corresponding key in solution.yaml
+  # and is generally not changed by default.
+  authSecret: s3_auth_admin_secret
+  maxStartTimeout: 240
+  # TODO: CORTX-28968 Should this include a parameter for instanceCount and then autogenerate endpoints/UUID elements herein
+  # An optional multi-line string that contains extra RGW configuration
+  # settings. The string may contain template expressions, and is appended to
+  # the end of the computed configuration.
+  # e.g.:
+  # extraConfiguration: |
+  #   thread_pool_size: 10
+  #   gc_max_objs: 32
+  #   motr_max_rpc_msg_size: 524288
+  extraConfiguration: ""
+
+  service:
+    type: ClusterIP
+    count: 1
+    ports:
+      http: 80
+      https: 443
+    nodePorts:
+      http: ""
+      https: ""

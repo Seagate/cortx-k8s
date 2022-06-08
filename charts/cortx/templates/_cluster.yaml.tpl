@@ -32,7 +32,7 @@ cluster:
         data: {{- toYaml $val.dataDevices | nindent 10 }}
     {{- end }}
     {{- end }}
-  {{- if .Values.configmap.cortxRgw.enabled }}
+  {{- if .Values.cortxserver.enabled }}
   - name: server_node
     components:
     - name: utils
@@ -78,7 +78,7 @@ cluster:
     {{- end }}
     {{- range $key, $val := $val.nodes }}
     {{- $shortHost := (split "." $key)._0 -}}
-    {{- if and $.Values.configmap.cortxRgw.enabled $val.serverUuid }}
+    {{- if and $.Values.cortxserver.enabled $val.serverUuid }}
     {{- include "storageset.node" (dict "name" $key "hostname" $val.serverUuid "id" $val.serverUuid "type" "server_node") | nindent 4 }}
     {{- end }}
     {{- if $val.dataUuid }}
