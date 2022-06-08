@@ -1027,10 +1027,8 @@ function waitForClusterReady()
     fi
 
     if [[ ${components[server]} == true ]]; then
-        for node in "${node_name_list[@]}"; do
-            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-10m}" "deployment/cortx-server-${node}") &
-            pids+=($!)
-        done
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-10m}" statefulset/cortx-server) &
+        pids+=($!)
     fi
 
     if [[ ${components[client]} == true ]]; then
