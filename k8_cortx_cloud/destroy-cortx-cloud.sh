@@ -140,6 +140,7 @@ function deleteCortxServer()
     for node in "${node_name_list[@]}"; do
         uninstallHelmChart "cortx-server-${node}-${namespace}" "${namespace}"
     done
+    uninstallHelmChart "cortx-server-${namespace}" "${namespace}"
 }
 
 function deleteCortxData()
