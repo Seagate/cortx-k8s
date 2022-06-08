@@ -137,6 +137,9 @@ function deleteCortxServer()
     printf "########################################################\n"
     printf "# Delete CORTX Server                                  #\n"
     printf "########################################################\n"
+    for node in "${node_name_list[@]}"; do
+        uninstallHelmChart "cortx-server-${node}-${namespace}" "${namespace}"
+    done
     uninstallHelmChart "cortx-server-${namespace}" "${namespace}"
 }
 
