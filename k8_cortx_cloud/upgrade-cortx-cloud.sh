@@ -330,15 +330,14 @@ function check_version_compatibility() {
   while IFS= read -r line; do
     echo -e "Checking Version Compatibility for ${line}\n"
     HOSTNAME=$(hostname)
-    PORT="31169"
-    endpoint="https://${HOSTNAME}:${PORT}/api/v2/version/compatibility/node/${line}"
-    response="$(curl -k -XPOST ${endpoint} -d ${RULES} -s | jq)"
+    PORT="$(parse_solution 'solution.common.external_services.control.nodePorts.https' | cut -f2 -d'>')"
+    version_compatibility_endpoint="https://${HOSTNAME}:${PORT}/api/v2/version/compatibility/node/${line}"
+    response="$(curl -k -XPOST ${version_compatibility_endpoint} -d ${RULES} -s | jq)"
     echo "RESPONSE: ${response}"
-    HTTP_CODE="$(curl -k --write-out "%{http_code}\n" -XPOST ${endpoint} -d ${RULES} -o output.txt -s)"
-    rm -f "./output.txt"
+    HTTP_CODE="$(curl -k --write-out "%{http_code}\n" -XPOST ${version_compatibility_endpoint} -d ${RULES} -o /dev/null -s)"
     echo "HTTP CODE ${HTTP_CODE}"
     if  [ "${HTTP_CODE}" = "200" ]; then
-      status=$(jq .compatible <<< ${response})
+      status="$(jq .compatible <<< ${response})"
       if [ "${status}" = "true" ]; then
         echo "${line} is compatible for update"
       else 
@@ -347,7 +346,8 @@ function check_version_compatibility() {
         exit 1
       fi 
     else
-      echo $(jq .message <<< ${response})
+      error_message="$(jq .message <<< ${response})"
+      echo $error_message
       exit 1
     fi
 done <<< "$1"
