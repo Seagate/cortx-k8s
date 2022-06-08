@@ -327,11 +327,11 @@ function get_compatibility_clauses() {
 
 function check_version_compatibility() {
   echo -e "\n--------------------------------------"
-  while IFS= read -r line; do
-    echo -e "Checking Version Compatibility for ${line}\n"
+  while IFS= read -r node; do
+    echo -e "Checking Version Compatibility for ${node}\n"
     HOSTNAME=$(hostname)
     PORT="$(parse_solution 'solution.common.external_services.control.nodePorts.https' | cut -f2 -d'>')"
-    version_compatibility_endpoint="https://${HOSTNAME}:${PORT}/api/v2/version/compatibility/node/${line}"
+    version_compatibility_endpoint="https://${HOSTNAME}:${PORT}/api/v2/version/compatibility/node/${node}"
     response="$(curl -k -XPOST ${version_compatibility_endpoint} -d ${RULES} -s | jq)"
     echo "RESPONSE: ${response}"
     HTTP_CODE="$(curl -k --write-out "%{http_code}\n" -XPOST ${version_compatibility_endpoint} -d ${RULES} -o /dev/null -s)"
@@ -339,10 +339,10 @@ function check_version_compatibility() {
     if  [ "${HTTP_CODE}" = "200" ]; then
       status="$(jq .compatible <<< ${response})"
       if [ "${status}" = "true" ]; then
-        echo "${line} is compatible for update"
+        echo "${node} is compatible for update"
       else 
         reason=$(jq .reason <<< ${response})
-        echo "${line} not compatible because ${reason}"
+        echo "${node} not compatible because ${reason}"
         exit 1
       fi 
     else
