@@ -3,11 +3,10 @@
 - name: {{ .name }}
   {{- if eq .type "server_node" }}
   id: {{ required "A valid id is required for server nodes" .id | quote }}
-  hostname: {{ .hostname }}
   {{- else }}
   id: {{ default uuidv4 .id | replace "-" "" | quote }}
-  hostname: {{ .name }}
   {{- end }}
+  hostname: {{ coalesce .hostname .name }}
   type: {{ .type }}
 {{- end -}}
 
