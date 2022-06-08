@@ -29,7 +29,7 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 
 ## Reference Architecture
 
-![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s.jpg)
+![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s-28968.jpg)
 
 CORTX on Kubernetes consists of five primary components:
 
@@ -45,7 +45,7 @@ CORTX on Kubernetes consists of five primary components:
 
 4. CORTX Server Pods
     - These pods maintain the CORTX API and user interfaces
-    - Usually with a cardinality of one pod per CORTX node (but scalable based on system traffic)
+    - Usually with a cardinality of three pods per CORTX node (but scalable based on system traffic)
 
 5. CORTX HA Pods
     - These pods maintain the overall high-availability of the CORTX deployment
@@ -181,7 +181,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 1. Deploy CORTX on Kubernetes according to the [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes) steps above.
 
-2. Run the upgrade script to patch the CORTX on Kubernetes Deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments, and then re-start the Pods.
+2. Run the upgrade script to patch the CORTX on Kubernetes deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments and StatefulSets, and then re-start the Pods.
 
    ```bash
    TARGET_IMAGE="ghcr.io/seagate/cortx-data:2.0.0-790"
@@ -295,6 +295,7 @@ This section contains common parameters that affect all CORTX components running
 | `common.s3.num_inst`                                  | TODO       | `2` |
 | `common.s3.start_port_num`                            | TODO       | `28051` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
+| `common.s3.instances_per_node`                        | This field determines the number of CORTX Server Pods to be deployed per Node specified in the `nodes` section of the solution configuration file. | `3` |
 | `common.s3.extra_configuration`                       | _(Optional)_ Extra configuration settings to append to the RGW configuration. The value is a multi-line string included verbatim.  | `""` |
 | `common.motr.num_client_inst`                         | TODO       | `0` |
 | `common.motr.start_port_num`                          | TODO       | `29000` |

@@ -1,7 +1,12 @@
+### TODO Revisit UUID defaults here since we are moving away from UUID entirely...
 {{- define "storageset.node" -}}
 - name: {{ .name }}
+  {{- if eq .type "server_node" }}
+  id: {{ required "A valid id is required for server nodes" .id | quote }}
+  {{- else }}
   id: {{ default uuidv4 .id | replace "-" "" | quote }}
-  hostname: {{ .name }}
+  {{- end }}
+  hostname: {{ coalesce .hostname .name }}
   type: {{ .type }}
 {{- end -}}
 
@@ -73,12 +78,13 @@ cluster:
     {{- end }}
     {{- range $key, $val := $val.nodes }}
     {{- $shortHost := (split "." $key)._0 -}}
-    {{- if $.Values.configmap.cortxRgw.enabled }}
-    {{- $serverName := printf "cortx-server-headless-svc-%s" $shortHost -}}
-    {{- include "storageset.node" (dict "name" $serverName "id" $val.serverUuid "type" "server_node") | nindent 4 }}
+    {{- if and $.Values.configmap.cortxRgw.enabled $val.serverUuid }}
+    {{- include "storageset.node" (dict "name" $key "hostname" $val.serverUuid "id" $val.serverUuid "type" "server_node") | nindent 4 }}
     {{- end }}
+    {{- if $val.dataUuid }}
     {{- $dataName := printf "cortx-data-headless-svc-%s" $shortHost -}}
     {{- include "storageset.node" (dict "name" $dataName "id" $val.dataUuid "type" "data_node") | nindent 4 }}
+    {{- end }}
     {{- if $val.clientUuid -}}
     {{- $clientName := printf "cortx-client-headless-svc-%s" $shortHost -}}
     {{- include "storageset.node" (dict "name" $clientName "id" $val.clientUuid "type" "client_node") | nindent 4 }}

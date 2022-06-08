@@ -1,8 +1,9 @@
+clusterdomain: cluster.local
 cortxserver:
-  name: cortx-server
+  serviceType: cortx-server
   image: ghcr.io/seagate/centos:7
-  nodeselector: node-1
-  secretinfo: secret-info.txt
+  replicas: 3
+  secretname: cortx-secret
   serviceaccountname: cortx
   rgw:
     resources:
@@ -14,7 +15,7 @@ cortxserver:
         cpu:    2000m
   hax:
     port: 22003
-    resources: 
+    resources:
       requests:
         memory: 128Mi
         cpu:    250m
@@ -25,13 +26,7 @@ cortxserver:
     clusterip:
       name: cortx-server-clusterip-svc
     headless:
-      name: cortx-server-headless-svc
-    loadbal:
-      name: cortx-server-loadbal-svc
-      type: NodePort
-      ports:
-        http: 80
-        https: 443
+      name: cortx-server-headless
   cfgmap:
     mountpath: /etc/cortx/solution
     volmountname: config001
@@ -40,10 +35,9 @@ cortxserver:
     mountpath: /etc/cortx/solution/ssl
     volmountname: ssl-config001
     name: cortx-ssl-cert
-  machineid:
-    mountpath: /etc/cortx/solution/node
-    value: ""
   localpathpvc:
-    name: cortx-fs-server-local-pvc
     mountpath: /etc/cortx # This is the mount path in the container
     requeststoragesize: 1Gi
+    storageclass: local-path
+    accessmodes:
+      - ReadWriteOnce
