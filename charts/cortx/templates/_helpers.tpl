@@ -112,6 +112,20 @@ Return the name of the HA component
 {{- end -}}
 
 {{/*
+Return the name of the Hare hax component
+*/}}
+{{- define "cortx.hare.hax.fullname" -}}
+{{- printf "%s-hax" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Create a URL for the Hare hax HTTP endpoint
+*/}}
+{{- define "cortx.hare.hax.url" -}}
+{{- printf "%s://%s:%d" .Values.platform.services.hax.protocol (include "cortx.hare.hax.fullname" .) (.Values.platform.services.hax.port | int) -}}
+{{- end -}}
+
+{{/*
 Return the wait-for-backends image name
 */}}
 {{- define "cortx.waitForBackends.image" -}}
