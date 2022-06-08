@@ -1,6 +1,6 @@
 # cortx
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-803](https://img.shields.io/badge/AppVersion-2.0.0--803-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-813](https://img.shields.io/badge/AppVersion-2.0.0--813-informational?style=flat-square)
 
 CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 
@@ -60,6 +60,7 @@ helm uninstall cortx
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| configmap.clusterDomain | string | `"cluster.local"` |  |
 | configmap.clusterId | string | `""` |  |
 | configmap.clusterName | string | `"cortx-cluster"` |  |
 | configmap.clusterStorageSets | object | `{}` |  |
@@ -97,11 +98,13 @@ helm uninstall cortx
 | configmap.cortxRgw.authUser | string | `"cortx-user"` |  |
 | configmap.cortxRgw.enabled | bool | `true` |  |
 | configmap.cortxRgw.extraConfiguration | string | `""` |  |
+| configmap.cortxRgw.headlessServiceName | string | `"cortx-server-headless"` |  |
 | configmap.cortxRgw.maxStartTimeout | int | `240` |  |
 | configmap.cortxRgw.rgw.resources.limits.cpu | string | `"2000m"` |  |
 | configmap.cortxRgw.rgw.resources.limits.memory | string | `"2Gi"` |  |
 | configmap.cortxRgw.rgw.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxRgw.rgw.resources.requests.memory | string | `"128Mi"` |  |
+| configmap.cortxRgw.statefulSetName | string | `"cortx-server"` |  |
 | configmap.cortxSecretName | string | `"cortx-secret"` |  |
 | configmap.cortxSecretValues | object | `{}` |  |
 | configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |

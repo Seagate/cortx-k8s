@@ -115,7 +115,7 @@ printf "Using solution config file '%s'\n" "${SOLUTION_FILE}"
 pods_ready=true
 
 readonly cortx_pod_filter="cortx-control-\|cortx-data-\|cortx-ha-\|cortx-server-\|cortx-client-"
-readonly cortx_deployment_filter="cortx-control\|cortx-data-\|cortx-ha\|cortx-server-\|cortx-client-"
+readonly cortx_deployment_filter="cortx-control\|cortx-data-\|cortx-ha\|cortx-server\|cortx-client-"
 
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 
@@ -153,7 +153,7 @@ fi
 # Shutdown all CORTX Pods
 "${DIR}/shutdown-cortx-cloud.sh" "${SOLUTION_FILE}"
 
-cortx_deployments="$(kubectl get deployments --namespace="${NAMESPACE}" --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | { grep "${cortx_deployment_filter}" || true; })"
+cortx_deployments="$(kubectl get deployments,statefulset --namespace="${NAMESPACE}" --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | { grep "${cortx_deployment_filter}" || true; })"
 if [[ -z ${cortx_deployments} ]]; then
     printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
 else
@@ -167,18 +167,30 @@ else
     printf "   %s\n" "${CONTROL_IMAGE}"
     printf "\n"
 
+    k8s_controller="deployment"
     while IFS= read -r deployment; do
         case "${deployment}" in
-            cortx-server-*) IMAGE="${RGW_IMAGE}" ;;
-            cortx-data-*|cortx-client-*) IMAGE="${DATA_IMAGE}" ;;
-            cortx-control|cortx-ha) IMAGE="${CONTROL_IMAGE}" ;;
-            *) 
-                printf "NO MATCH FOR %s.  Skipping upgrade of image.\n" "${deployment}"
-                continue
-                ;;
+        cortx-server-*) 
+            IMAGE="${RGW_IMAGE}"
+            k8s_controller="statefulset"
+            ;;
+        cortx-data-*|cortx-client-*)
+            IMAGE="${DATA_IMAGE}"
+            k8s_controller="deployment"
+            ;;
+        cortx-control|cortx-ha)
+            IMAGE="${CONTROL_IMAGE}"
+            k8s_controller="deployment"
+            ;;
+        *) 
+            printf "NO MATCH FOR %s.  Skipping upgrade of image.\n" "${deployment}"
+            continue
+            ;;
         esac
-        printf "Updating deployment %s to use image %s\n" "${deployment}" "${IMAGE}"
-        kubectl set image --namespace="${NAMESPACE}" deployment "${deployment}" "*=${IMAGE}"
+
+        printf "Updating CORTX component %s to use image %s\n" "${deployment}" "${IMAGE}"
+        kubectl set image --namespace="${NAMESPACE}" ${k8s_controller} "${deployment}" "*=${IMAGE}"
+
     done <<< "${cortx_deployments}"
     printf "\n"
 fi
