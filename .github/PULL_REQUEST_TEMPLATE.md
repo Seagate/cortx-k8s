@@ -50,7 +50,7 @@ images, please list those images and link them to the public CORTX packages page
 - cortx-control images are published at https://github.com/Seagate/cortx/pkgs/container/cortx-control
 
 The referenced images are always defined in the images section of the solution.example.yaml file. If
-updated images are required, the example solution YAML file should be updated in this change.
+updated images are required, the example solution YAML file should be updated in this change. The Helm chart `appVersion` field must also be updated to match the version of the images.
 
 If the currently referenced CORTX container images support this change, you can delete this section
 or indicate that.
@@ -85,6 +85,11 @@ serves as a reminder for what the maintainers will be looking for when reviewing
 - [ ] The change is tested and works locally.
 - [ ] New or changed settings in the solution YAML are documented clearly in the README.md file.
 - [ ] All commits are signed off and are in agreement with the [CORTX Community DCO and CLA policy](https://github.com/Seagate/cortx/blob/main/doc/dco_cla.md).
+
+If this change requires newer CORTX or third party image versions:
+
+- [ ] The `image` fields in [solution.example.yaml](../k8_cortx_cloud/solution.example.yaml) have been updated to use the required versions.
+- [ ] The `appVersion` field of the [Helm chart](../charts/cortx/Chart.yaml) has been updated to use the new CORTX version.
 
 If this change addresses a CORTX Jira issue:
 
