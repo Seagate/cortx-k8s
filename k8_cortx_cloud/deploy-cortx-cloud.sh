@@ -672,30 +672,6 @@ function deployCortx()
     # ##TODO This needs to be maintained during upgrades etc...
 }
 
-function waitForThirdParty()
-{
-    printf "\nWaiting for CORTX 3rd party to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "${line}"
-            IFS="/" read -r ready total <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready}" != "${total}" ]]; then
-                count=$((count+1))
-                break
-            fi
-        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|^cortx-kafka\|^cortx-zookeeper')"
-
-        if [[ ${count} -eq 0 ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-}
-
 ##########################################################
 # CORTX cloud deploy functions
 ##########################################################
@@ -1095,7 +1071,6 @@ generateMachineIds
 # Deploy CORTX cloud
 ##########################################################
 deployCortx
-waitForThirdParty
 deployCortxData
 deployCortxServer
 deployCortxClient
