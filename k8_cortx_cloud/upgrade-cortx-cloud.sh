@@ -322,7 +322,7 @@ function get_compatibility_clauses() {
       val=${val//[[:blank:]]/}
       RULES+='"'${val}'",'
     done
-    RULES={'"requires"':["${RULES%?}"]}
+    RULES='{"requires":['"${RULES%?}"']}'
 }
 
 function check_version_compatibility() {
