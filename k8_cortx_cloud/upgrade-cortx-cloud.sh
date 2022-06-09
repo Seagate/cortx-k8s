@@ -288,41 +288,41 @@ function prepare_upgrade() {
         control_image="$(parse_solution 'solution.images.cortxcontrol' | cut -f2 -d'>')"
         RULES=""
         get_compatibility_clauses "${control_image}"
-        control_nodes=("cortx-control")
+        control_nodes="cortx-control"
         check_version_compatibility "${control_nodes}"
     fi
     if [[ "${POD_TYPE}" == "cortx" ]] || [[ "${POD_TYPE}" == "data" ]]; then
         data_image="$(parse_solution 'solution.images.cortxdata' | cut -f2 -d'>')"
         RULES=""
         get_compatibility_clauses "${data_image}"
-        data_nodes="$(kubectl get svc -n "${NAMESPACE}" | grep "cortx-data-headless*" | awk '{print $1}')"
+        data_nodes="$(kubectl get svc -n "${NAMESPACE}" | grep "cortx-data-headless-svc-*" | awk '{print $1}')"
         check_version_compatibility "${data_nodes}"
     fi
     if [[ "${POD_TYPE}" == "cortx" ]] || [[ "${POD_TYPE}" == "server" ]]; then
         server_image=$(parse_solution 'solution.images.cortxserver' | cut -f2 -d'>')
         RULES=""
         get_compatibility_clauses "${server_image}"
-        server_nodes="$(kubectl get svc -n "${NAMESPACE}" | grep "cortx-server-headless*" | awk '{print $1}')"
+        server_nodes="$(kubectl get svc -n "${NAMESPACE}" | grep "cortx-server-headless-svc-*" | awk '{print $1}')"
         check_version_compatibility "${server_nodes}"
     fi
     if [[ "${POD_TYPE}" == "cortx" ]] || [[ "${POD_TYPE}" == "ha" ]]; then
         ha_image="$(parse_solution 'solution.images.cortxha' | cut -f2 -d'>')"
         RULES=""
         get_compatibility_clauses "${ha_image}"
-        ha_nodes="$(kubectl get svc -n "${NAMESPACE}" | grep "cortx-ha-headless*" | awk '{print $1}')"
+        ha_nodes="$(kubectl get svc -n "${NAMESPACE}" | grep "cortx-ha-headless-svc-*" | awk '{print $1}')"
         check_version_compatibility "${ha_nodes}"
     fi
 }
 
 function get_compatibility_clauses() {
     REQUIRES="$(docker inspect --format='{{ index .Config.Labels "org.opencontainers.image.version"}}' "$1")"
-    IFS=',' read -ra  newarr <<< "$REQUIRES"
+    IFS=',' read -ra  newarr <<< "${REQUIRES}"
     for val in "${newarr[@]}";
     do
       val=${val//[[:blank:]]/}
       RULES+='"'${val}'",'
     done
-    RULES="{\"requires\":[${RULES%?}]}"
+    RULES={'"requires"':["${RULES%?}"]}
 }
 
 function check_version_compatibility() {
@@ -332,20 +332,20 @@ function check_version_compatibility() {
     HOSTNAME=$(hostname)
     PORT="$(parse_solution 'solution.common.external_services.control.nodePorts.https' | cut -f2 -d'>')"
     version_compatibility_endpoint="https://${HOSTNAME}:${PORT}/api/v2/version/compatibility/node/${node}"
-    response="$(curl -k -XPOST ${version_compatibility_endpoint} -d ${RULES} -s | jq)"
-    HTTP_CODE="$(curl -k --write-out "%{http_code}\n" -XPOST ${version_compatibility_endpoint} -d ${RULES} -o /dev/null -s)"
+    response="$(curl -k -XPOST "${version_compatibility_endpoint}" -d "${RULES}" -s | jq)"
+    HTTP_CODE="$(curl -k --write-out '%{http_code}' -XPOST "${version_compatibility_endpoint}" -d "${RULES}" -o '/dev/null' -s)"
     if  [ "${HTTP_CODE}" = "200" ]; then
-      status="$(jq .compatible <<< ${response})"
+      status="$(jq .compatible <<< "${response}")"
       if [ "${status}" = "true" ]; then
         echo "${node} is compatible for update"
       else
-        reason=$(jq .reason <<< ${response})
+        reason="$(jq .reason <<< "${response}")"
         echo "${node} not compatible because ${reason}"
         exit 1
       fi 
     else
-      error_message="$(jq .message <<< ${response})"
-      echo $error_message
+      error_message="$(jq .message <<< "${response}")"
+      echo "${error_message}"
       exit 1
     fi
 done <<< "$1"
