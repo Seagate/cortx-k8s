@@ -886,15 +886,6 @@ function deployCortxData()
         --debug \
         || exit $?
 
-    # Wait for all cortx-data deployments to be ready
-    printf "\nWait for CORTX Data to be ready\n"
-    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
-                                    "CORTX Data" "${namespace}" \
-                                    "statefulset/cortx-data"; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
-
     printf "\n\n"
 }
 
@@ -1005,10 +996,8 @@ function waitForClusterReady()
     fi
 
     if [[ ${components[data]} == true ]]; then
-        for node in "${node_name_list[@]}"; do
-            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" "deployment/cortx-data-${node}") &
-            pids+=($!)
-        done
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" "statefulset/cortx-data") &
+        pids+=($!)
     fi
 
     if [[ ${components[server]} == true ]]; then
