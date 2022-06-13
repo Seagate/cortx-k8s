@@ -1,43 +1,41 @@
+{{- if .Values.cortxserver.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  labels:
-    app.kubernetes.io/component: server
-    cortx.io/service-type:  {{ .Values.cortxserver.serviceType }}
-  name: cortx-server
+  name: {{ include "cortx.server.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
 spec:
   podManagementPolicy: Parallel
-  serviceName: {{ .Values.cortxserver.service.headless.name }}
+  serviceName: {{ include "cortx.server.fullname" . }}-headless
   replicas: {{ .Values.cortxserver.replicas }}
   selector:
-    matchLabels:
+    matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: server
-      cortx.io/service-type: cortx-server
       cortx.io/hax-enabled: "true"
-      cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
+      cortx.io/service-domain: {{ include "cortx.server.serviceDomain" . }}
+      cortx.io/service-type: cortx-server
   template:
     metadata:
-      labels:
+      labels: {{- include "cortx.labels" . | nindent 8 }}
         app.kubernetes.io/component: server
-        ### TODO k8s Label 'name: cortx-server' is deprecated in favor of 'cortx.io/service-type: cortx-server'
-        name: cortx-server
-        cortx.io/service-type: cortx-server
         cortx.io/hax-enabled: "true"
-        cortx.io/service-domain: "{{ .Values.cortxserver.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
+        cortx.io/service-domain: {{ include "cortx.server.serviceDomain" . }}
+        cortx.io/service-type: cortx-server
     spec:
-      subdomain: {{ .Values.cortxserver.service.headless.name }}
-      serviceAccountName: {{ .Values.cortxserver.serviceaccountname }}
+      subdomain: {{ include "cortx.server.fullname" . }}-headless
+      serviceAccountName: {{ include "cortx.serviceAccountName" . }}
       volumes:
-        - name: {{ .Values.cortxserver.cfgmap.volmountname }}
+        - name: cortx-configuration
           configMap:
-            name: {{ .Values.cortxserver.cfgmap.name }}
-        - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
+            name: {{ include "cortx.configmapName" . }}
+        - name: cortx-ssl-cert
           configMap:
-            name: {{ .Values.cortxserver.sslcfgmap.name }}
-        - name: {{ .Values.cortxserver.secretname }}
+            name: {{ include "cortx.tls.configmapName" . }}
+        - name: {{ .Values.configmap.cortxSecretName }}
           secret:
-            secretName: {{ .Values.cortxserver.secretname }}
+            secretName: {{ .Values.configmap.cortxSecretName }}
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxserver.image }}
@@ -52,13 +50,13 @@ spec:
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
         volumeMounts:
-          - name: {{ .Values.cortxserver.cfgmap.volmountname }}
+          - name: cortx-configuration
             mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
-          - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
+          - name: cortx-ssl-cert
             mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
           - name: data
             mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-          - name: {{ .Values.cortxserver.secretname }}
+          - name: {{ .Values.configmap.cortxSecretName }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
         env:
@@ -86,9 +84,9 @@ spec:
             - /opt/seagate/cortx/rgw/bin/rgw_setup start -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxserver.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
-            - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
             - name: data
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
@@ -108,9 +106,7 @@ spec:
           - name: rgw-https
             containerPort: 23001
             protocol: TCP
-          {{- if .Values.cortxserver.rgw.resources }}
           resources: {{- toYaml .Values.cortxserver.rgw.resources | nindent 12 }}
-          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-hax
@@ -126,9 +122,9 @@ spec:
             - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxserver.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
-            - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
             - name: data
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
@@ -155,7 +151,8 @@ spec:
       name: data
     spec:
       accessModes: {{- toYaml .Values.cortxserver.localpathpvc.accessmodes | nindent 6 }}
-      storageClassName: {{ .Values.cortxserver.localpathpvc.storageclass }}
+      storageClassName: local-path
       resources:
         requests:
           storage: {{ .Values.cortxserver.localpathpvc.requeststoragesize }}
+{{- end }}
