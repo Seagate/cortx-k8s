@@ -265,7 +265,6 @@ buildValues() {
         fi
     done
 
-    ### TODO CORTX-29859 Update below section data pod similar to 28968 updates for server pods
     ## cortx-data Pods, managed by a StatefulSet, have deterministically
     ## generated metadata. Inject that metadata into the ConfigMap here.
     ## During Helm Chart unification, this block can be interned into
@@ -284,7 +283,7 @@ buildValues() {
         ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
         ### - type: "server_node"
 
-        ### TODO 29859 Parameterize port names for dynamic Motr endpoint generation
+        ### TODO CORTX-29861 Parameterize port names for dynamic Motr endpoint generation
         yq -i "
             with(.configmap; (
             .clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.dataUuid=\"${pod_fqdn}\"
@@ -390,7 +389,7 @@ buildValues() {
         ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
         ### - type: "server_node"
 
-        ### TODO 29859 Parameterize port names for dynamic Motr endpoint generation (28968 F/UP)
+        ### TODO CORTX-29861 Parameterize port names for dynamic Motr endpoint generation (28968 F/UP)
 
         yq -i "
             .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${pod_fqdn}\"
@@ -550,7 +549,7 @@ cortxdata_service_headless_name=$(yq ".configmap.cortxMotr.headlessServiceName" 
 readonly cortxdata_service_headless_name
 
 cortxdata_data_pod_prefix=$(yq ".configmap.cortxMotr.statefulSetName" "${default_values_file}")
-readonly cortxdata_server_pod_prefix
+readonly cortxdata_data_pod_prefix
 
 cortx_localblockstorage_storageclassname=$(yq ".platform.storage.localBlock.storageClassName" "${default_values_file}")
 readonly cortx_localblockstorage_storageclassname
@@ -839,7 +838,7 @@ function deployCortxData()
     cortxdata_image=$(parseSolution 'solution.images.cortxdata')
     cortxdata_image=$(echo "${cortxdata_image}" | cut -f2 -d'>')
 
-    ### TODO CORTX-29859 Determine how we want to sub-select nominated nodes for Data Pod scheduling.
+    ### TODO CORTX-29861 Determine how we want to sub-select nominated nodes for Data Pod scheduling.
     ### 1. Should we apply the labels through this script?
     ### 2. Should we required the labels to be applied prior to execution of this script?
     ### 3. Should we use a nodeSelector that uses the "in"/set operators?
@@ -878,7 +877,6 @@ function deployCortxData()
         --set cortxdata.secretname="${global_cortx_secret_name}" \
         --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
         -n "${namespace}" \
-        --debug \
         || exit $?
 
     printf "\n\n"

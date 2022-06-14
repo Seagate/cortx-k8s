@@ -1,7 +1,6 @@
 {{- define "cortx_data.device_path.to_string" }}
 {{- . | lower | trimPrefix "/" | replace "/" "-" }}
 {{- end }}
-### TODO CORTX-29859 Decide whether to use $disk or to_string for PV name below
 # Loop through each node in the nodes list array
 {{- range $nodename := .Values.cortxblkdata.nodes }}
 {{- $nodeparts := split "." $nodename }}
