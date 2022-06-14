@@ -253,24 +253,23 @@ buildValues() {
         fi
     done
 
-    for c in client; do
-        if [[ ${components["${c}"]} == true ]]; then
-            for node in "${node_name_list[@]}"; do
-                uuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/${c}/id")
-                yq -i eval-all "
-                    select(fi==0) ref \$to | select(fi==1).solution.common.storage_sets.name as \$name
-                    | \$to.configmap.clusterStorageSets.[\$name].nodes.${node}.${c}Uuid=\"${uuid}\"
-                    | \$to" "${values_file}" "${solution_yaml}"
-            done
-        fi
-    done
+    if [[ ${components["client"]} == true ]]; then
+        for node in "${node_name_list[@]}"; do
+            uuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/client/id")
+            yq -i eval-all "
+                select(fi==0) ref \$to | select(fi==1).solution.common.storage_sets.name as \$name
+                | \$to.configmap.clusterStorageSets.[\$name].nodes.${node}.clientUuid=\"${uuid}\"
+                | \$to" "${values_file}" "${solution_yaml}"
+        done
+    fi
 
     ## cortx-data Pods, managed by a StatefulSet, have deterministically
     ## generated metadata. Inject that metadata into the ConfigMap here.
     ## During Helm Chart unification, this block can be interned into
     ## Helm logic.
-    local count=0
-    local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+    local count
+    local storage_set_name
+    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
     for (( count=0; count < data_node_count; count++ )); do
         # Build out FQDN of cortx-data Pods
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
@@ -375,8 +374,9 @@ buildValues() {
     ## generated metadata. Inject that metadata into the ConfigMap here.
     ## During Helm Chart unification, this block can be interned into
     ## Helm logic.
-    local count=0
-    local storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+    local count
+    local storage_set_name
+    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
     for (( count=0; count < total_server_pods; count++ )); do
         # Build out FQDN of cortx-server Pods
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
