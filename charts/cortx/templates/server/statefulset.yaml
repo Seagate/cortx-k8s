@@ -1,92 +1,65 @@
+{{- if .Values.cortxserver.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  labels:
-    app: {{ .Values.cortxserver.name }}
-  name: {{ .Values.cortxserver.name }}
+  name: {{ include "cortx.server.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
 spec:
-  replicas: 1
+  podManagementPolicy: Parallel
+  serviceName: {{ include "cortx.server.fullname" . }}-headless
+  replicas: {{ .Values.cortxserver.replicas }}
   selector:
-    matchLabels:
-      app: {{ .Values.cortxserver.name }}
+    matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server
+      cortx.io/hax-enabled: "true"
+      cortx.io/service-domain: {{ include "cortx.server.serviceDomain" . }}
+      cortx.io/service-type: cortx-server
   template:
     metadata:
-      labels:
-        app: {{ .Values.cortxserver.name }}
-        name: cortx-server
-        {{- if .Values.cortxserver.machineid.value }}
-        cortx.io/machine-id: {{ .Values.cortxserver.machineid.value }}
-        {{- end }}
-        cortx.io/service-type: cortx-server
+      labels: {{- include "cortx.labels" . | nindent 8 }}
+        app.kubernetes.io/component: server
         cortx.io/hax-enabled: "true"
-    {{- $nodeselector := (.Values.cortxserver.nodeselector) }}
-    {{- $nodeparts := split "." $nodeselector }}
-    {{- $nodename := $nodeparts._0 }}
+        cortx.io/service-domain: {{ include "cortx.server.serviceDomain" . }}
+        cortx.io/service-type: cortx-server
     spec:
-      hostname: {{ .Values.cortxserver.service.headless.name }}
-      serviceAccountName: {{ .Values.cortxserver.serviceaccountname }}
+      subdomain: {{ include "cortx.server.fullname" . }}-headless
+      serviceAccountName: {{ include "cortx.serviceAccountName" . }}
       volumes:
-        - name: {{ .Values.cortxserver.cfgmap.volmountname }}
+        - name: cortx-configuration
           configMap:
-            name: {{ .Values.cortxserver.cfgmap.name }}
-        - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
+            name: {{ include "cortx.configmapName" . }}
+        - name: cortx-ssl-cert
           configMap:
-            name: {{ .Values.cortxserver.sslcfgmap.name }}
-        {{- if .Values.cortxserver.machineid.value }}
-        - name: machine-id
-          downwardAPI:
-            items:
-              - path: "id"
-                fieldRef:
-                  fieldPath: metadata.labels['cortx.io/machine-id']
-        {{- end }}
-        - name: local-path-pv
-          persistentVolumeClaim:
-            claimName: {{ .Values.cortxserver.localpathpvc.name }}
-        {{- range .Files.Lines .Values.cortxserver.secretinfo }}
-        - name: {{ printf "%s" . }}
+            name: {{ include "cortx.tls.configmapName" . }}
+        - name: {{ .Values.configmap.cortxSecretName }}
           secret:
-            secretName: {{ printf "%s" . }}
-        {{- end }}
+            secretName: {{ .Values.configmap.cortxSecretName }}
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxserver.image }}
         imagePullPolicy: IfNotPresent
         command:
           - /bin/sh
-        {{- if eq .Values.cortxserver.image "ghcr.io/seagate/centos:7" }}
         args:
           - -c
+          {{- if eq .Values.cortxserver.image "ghcr.io/seagate/centos:7" }}
           - sleep $(shuf -i 5-10 -n 1)s
-        {{- else }}
-        args:
-          - -c
-          {{- if .Values.cortxserver.machineid.value }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- else }}
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
-        {{- end }}
         volumeMounts:
-          - name: {{ .Values.cortxserver.cfgmap.volmountname }}
+          - name: cortx-configuration
             mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
-          - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
+          - name: cortx-ssl-cert
             mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
-          {{- if .Values.cortxserver.machineid.value }}
-          - name: machine-id
-            mountPath: {{ .Values.cortxserver.machineid.mountpath }}
-          {{- end }}
-          - name: local-path-pv
+          - name: data
             mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
-          {{- range .Files.Lines .Values.cortxserver.secretinfo }}
-          - name: {{ printf "%s" . }}
+          - name: {{ .Values.configmap.cortxSecretName }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
-          {{- end }}
         env:
-          - name: MACHINE_ID
-            value: {{ printf "%s" .Values.cortxserver.machineid.value | quote }}
           - name: NODE_NAME
             valueFrom:
               fieldRef:
@@ -111,15 +84,11 @@ spec:
             - /opt/seagate/cortx/rgw/bin/rgw_setup start -c yaml:///etc/cortx/cluster.conf;
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxserver.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
-            - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
-            {{- if .Values.cortxserver.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxserver.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
+            - name: data
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           env:
           - name: NODE_NAME
@@ -137,9 +106,7 @@ spec:
           - name: rgw-https
             containerPort: 23001
             protocol: TCP
-          {{- if .Values.cortxserver.rgw.resources }}
           resources: {{- toYaml .Values.cortxserver.rgw.resources | nindent 12 }}
-          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-hax
@@ -155,15 +122,11 @@ spec:
             - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf;
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxserver.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxserver.cfgmap.mountpath }}
-            - name: {{ .Values.cortxserver.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxserver.sslcfgmap.mountpath }}
-            {{- if .Values.cortxserver.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxserver.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
+            - name: data
               mountPath: {{ .Values.cortxserver.localpathpvc.mountpath }}
           env:
           - name: NODE_NAME
@@ -183,5 +146,13 @@ spec:
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
-      nodeSelector:
-        kubernetes.io/hostname: {{ .Values.cortxserver.nodeselector }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: {{- toYaml .Values.cortxserver.localpathpvc.accessmodes | nindent 6 }}
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: {{ .Values.cortxserver.localpathpvc.requeststoragesize }}
+{{- end }}

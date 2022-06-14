@@ -29,7 +29,7 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 
 ## Reference Architecture
 
-![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s.jpg)
+![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s-28968.jpg)
 
 CORTX on Kubernetes consists of five primary components:
 
@@ -45,7 +45,7 @@ CORTX on Kubernetes consists of five primary components:
 
 4. CORTX Server Pods
     - These pods maintain the CORTX API and user interfaces
-    - Usually with a cardinality of one pod per CORTX node (but scalable based on system traffic)
+    - Usually with a cardinality of three pods per CORTX node (but scalable based on system traffic)
 
 5. CORTX HA Pods
     - These pods maintain the overall high-availability of the CORTX deployment
@@ -181,7 +181,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 1. Deploy CORTX on Kubernetes according to the [Deploying CORTX on Kubernetes](#deploying-cortx-on-kubernetes) steps above.
 
-2. Run the upgrade script to patch the CORTX on Kubernetes Deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments, and then re-start the Pods.
+2. Run the upgrade script to patch the CORTX on Kubernetes deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments and StatefulSets, and then re-start the Pods.
 
    ```bash
    TARGET_IMAGE="ghcr.io/seagate/cortx-data:2.0.0-790"
@@ -295,6 +295,7 @@ This section contains common parameters that affect all CORTX components running
 | `common.s3.num_inst`                                  | TODO       | `2` |
 | `common.s3.start_port_num`                            | TODO       | `28051` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
+| `common.s3.instances_per_node`                        | This field determines the number of CORTX Server Pods to be deployed per Node specified in the `nodes` section of the solution configuration file. | `3` |
 | `common.s3.extra_configuration`                       | _(Optional)_ Extra configuration settings to append to the RGW configuration. The value is a multi-line string included verbatim.  | `""` |
 | `common.motr.num_client_inst`                         | TODO       | `0` |
 | `common.motr.start_port_num`                          | TODO       | `29000` |
@@ -340,16 +341,18 @@ This section contains information about all the worker nodes used to deploy CORT
 
 The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
 
-### Overriding Helm Install  / Wait Timeouts
+### Overriding Cluster Install Wait Timeouts
 
-There is a "wait" after each of the cortx helm charts are deployed.  This wait is guarded by a timeout.  If needed, these timeout values can be overridden by environment variables.
+After the CORTX Kubernetes resources are created, the deployment script will wait for those resources to finish installing and reach a ready state. This wait is guarded by a set of timeout values which can be overridden using environment variables. The values are duration strings, such as `"30s"` or `"10m"`. The wait can be disabled completely by setting `CORTX_DEPLOY_NO_WAIT` to `true`.
 
-| Environment Variable           | Default Value |
-| ------------------------------ | ------------- |
-| `CORTX_DEPLOY_CONTROL_TIMEOUT` | `300s`        |
-| `CORTX_DEPLOY_DATA_TIMEOUT`    | `300s`        |
-| `CORTX_DEPLOY_SERVER_TIMEOUT`  | `300s`        |
-| `CORTX_DEPLOY_HA_TIMEOUT`      | `120s`        |
+| Environment Variable           | Description                         | Default Value            |
+| ------------------------------ | ----------------------------------- | ------------------------ |
+| `CORTX_DEPLOY_CLIENT_TIMEOUT`  | Client Deployment timeout duration  | `10m` (10 minutes)        |
+| `CORTX_DEPLOY_CONTROL_TIMEOUT` | Control Deployment timeout duration | `10m` (10 minutes)        |
+| `CORTX_DEPLOY_DATA_TIMEOUT`    | Data Deployment timeout duration    | `10m` (10 minutes)        |
+| `CORTX_DEPLOY_HA_TIMEOUT`      | HA Deployment timeout duration      | `4m` (4 minutes)         |
+| `CORTX_DEPLOY_SERVER_TIMEOUT`  | Server Deployment timeout duration  | `10m` (10 minutes)        |
+| `CORTX_DEPLOY_NO_WAIT`         | Disable all waits when `true`       | `false`, wait is enabled |
 
 ### Crash-looping InitContainers
 

@@ -8,7 +8,6 @@ if ! ./parse_scripts/check_yq.sh; then
 fi
 
 readonly solution_yaml=${1:-'solution.yaml'}
-readonly storage_class='local-path'
 readonly cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 cortx_secret_fields=("kafka_admin_secret"
                      "consul_admin_secret"
@@ -17,6 +16,9 @@ cortx_secret_fields=("kafka_admin_secret"
                      "csm_auth_admin_secret"
                      "csm_mgmt_admin_secret")
 readonly cortx_secret_fields
+
+# Enabled/disabled flags for components
+declare -A components
 
 function parseSolution()
 {
@@ -64,6 +66,39 @@ function configurationCheck()
         exit 1
     fi
 
+    # The deployment type determines which components are enabled
+    components=(
+        [client]=true
+        [control]=true
+        [data]=true
+        [ha]=true
+        [server]=true
+    )
+
+    local deployment_type
+    deployment_type=$(getSolutionValue 'solution.deployment_type')
+    case ${deployment_type} in
+        standard)
+            printf "Deployment type: %s\n" "${deployment_type}"
+            ;;
+
+        data-only)
+            printf "Deployment type: %s\n" "${deployment_type}"
+            for c in control ha server; do
+                components["${c}"]=false
+            done
+            ;;
+
+        *)
+            printf "Invalid deployment type '%s'\n" "${deployment_type}"
+            exit 1
+            ;;
+    esac
+
+    ((num_motr_client < 1)) && components[client]=false
+
+    readonly components
+
     # Validate secrets configuration
     secret_name=$(getSolutionValue "solution.secrets.name")
     secret_ext=$(getSolutionValue "solution.secrets.external_secret")
@@ -108,7 +143,7 @@ function configurationCheck()
 }
 
 buildValues() {
-    set -e
+    set -eu
 
     local -r values_file="$1"
 
@@ -118,11 +153,11 @@ buildValues() {
 
     # Initialize
     yq --null-input "
-        (.global.storageClass, .consul.server.storageClass) = \"${storage_class}\"
-        | (.cortxcontrol.localpathpvc.mountpath, .cortxha.localpathpvc.mountpath) = \"${local_storage}\"
-        | .configmap.cortxSecretName = \"${cortx_secret_name}\"
-        | .cortxcontrol.machineid.value = \"$(cat "${cfgmap_path}/auto-gen-control-${namespace}/id")\"
-        | .cortxha.machineid.value = \"$(cat "${cfgmap_path}/auto-gen-ha-${namespace}/id")\""  > "${values_file}"
+        (.global.storageClass, .consul.server.storageClass) = \"local-path\"
+        | (.cortxcontrol.localpathpvc.mountpath,
+           .cortxha.localpathpvc.mountpath,
+           .cortxserver.localpathpvc.mountpath) = \"${local_storage}\"
+        | .configmap.cortxSecretName = \"${cortx_secret_name}\"" > "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -158,7 +193,7 @@ buildValues() {
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.configmap.cortxRgw;
+        | with($to.cortxserver;
             .authAdmin = $from.solution.common.s3.default_iam_users.auth_admin
             | .authUser = $from.solution.common.s3.default_iam_users.auth_user
             | .maxStartTimeout = $from.solution.common.s3.max_start_timeout
@@ -177,18 +212,10 @@ buildValues() {
         | $to.configmap.cortxVersion = ($from.solution.images.cortxdata | capture(".*?/.*:(?P<tag>.*)") | .tag)
         | $to' "${values_file}" "${solution_yaml}"
 
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | $to.configmap.cortxIoService.ports = $from.solution.common.external_services.s3.ports
-        | $to' "${values_file}" "${solution_yaml}"
-
-    if [[ ${deployment_type} == "data-only" ]]; then
-        yq -i "(
-            .configmap.cortxRgw.enabled,
-            .cortxha.enabled,
-            .cortxcontrol.enabled) = false" "${values_file}"
-    fi
+    yq -i "
+        .cortxserver.enabled = ${components[server]}
+        | .cortxha.enabled = ${components[ha]}
+        | .cortxcontrol.enabled = ${components[control]}" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -200,10 +227,8 @@ buildValues() {
         yq -i "
             with(.configmap; (
                 .cortxHare.haxDataEndpoints += [\"tcp://cortx-data-headless-svc-${node}:22001\"]
-                | .cortxHare.haxServerEndpoints += [\"tcp://cortx-server-headless-svc-${node}:22001\"]
                 | .cortxMotr.confdEndpoints += [\"tcp://cortx-data-headless-svc-${node}:22002\"]
-                | .cortxMotr.iosEndpoints += [\"tcp://cortx-data-headless-svc-${node}:21001\"]
-                | .cortxMotr.rgwEndpoints += [\"tcp://cortx-server-headless-svc-${node}:21001\"]))" "${values_file}"
+                | .cortxMotr.iosEndpoints += [\"tcp://cortx-data-headless-svc-${node}:21001\"]))" "${values_file}"
 
         if ((num_motr_client > 0)); then
             yq -i "
@@ -220,28 +245,30 @@ buildValues() {
         | $to.configmap.clusterStorageSets.[$name].durability = $from.solution.common.storage_sets.durability
         | $to' "${values_file}" "${solution_yaml}"
 
+    local uuid
+
     # UUIDs are selectively enabled based on deployment type
-    for type in control ha; do
-        local id_path="${cfgmap_path}/auto-gen-${type}-${namespace}/id"
-        if [[ -f ${id_path} ]]; then
+    for c in control ha; do
+        if [[ ${components["${c}"]} == true ]]; then
+            uuid=$(< "${cfgmap_path}/auto-gen-${c}-${namespace}/id")
+            yq -i ".cortx${c}.machineid.value = \"${uuid}\"" "${values_file}"
             yq -i eval-all "
                 select(fi==0) ref \$to | select(fi==1).solution.common.storage_sets.name as \$name
-                | \$to.configmap.clusterStorageSets.[\$name].${type}Uuid=\"$(< "${id_path}")\"
+                | \$to.configmap.clusterStorageSets.[\$name].${c}Uuid=\"${uuid}\"
                 | \$to" "${values_file}" "${solution_yaml}"
         fi
     done
 
-    for node in "${node_name_list[@]}"; do
-        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-        for type in data server client; do
-            local id_path="${auto_gen_path}/${type}/id"
-            if [[ -f ${id_path} ]]; then
+    for c in data client; do
+        if [[ ${components["${c}"]} == true ]]; then
+            for node in "${node_name_list[@]}"; do
+                uuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/${c}/id")
                 yq -i eval-all "
                     select(fi==0) ref \$to | select(fi==1).solution.common.storage_sets.name as \$name
-                    | \$to.configmap.clusterStorageSets.[\$name].nodes.${node}.${type}Uuid=\"$(< "${id_path}")\"
+                    | \$to.configmap.clusterStorageSets.[\$name].nodes.${node}.${c}Uuid=\"${uuid}\"
                     | \$to" "${values_file}" "${solution_yaml}"
-            fi
-        done
+            done
+        fi
     done
 
     # Populate the cluster storage volumes
@@ -263,8 +290,7 @@ buildValues() {
             .cortxControl.agent.resources           = $from.solution.common.resource_allocation.control.agent.resources
             | .cortxHare.hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
             | .cortxMotr.motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
-            | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources
-            | .cortxRgw.rgw.resources               = $from.solution.common.resource_allocation.server.rgw.resources)
+            | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
@@ -289,24 +315,23 @@ buildValues() {
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
     s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
 
-    [[ ${deployment_type} == "data-only" ]] && s3_service_count=0
-
     local s3_service_nodeports_http
     local s3_service_nodeports_https
     s3_service_nodeports_http=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.http')
     s3_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.https')
-    [[ -n ${s3_service_nodeports_http} ]] && yq -i ".platform.services.io.nodePorts.http = ${s3_service_nodeports_http}" "${values_file}"
-    [[ -n ${s3_service_nodeports_https} ]] && yq -i ".platform.services.io.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
+    [[ -n ${s3_service_nodeports_http} ]] && yq -i ".cortxserver.service.nodePorts.http = ${s3_service_nodeports_http}" "${values_file}"
+    [[ -n ${s3_service_nodeports_https} ]] && yq -i ".cortxserver.service.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
 
     yq -i "
         with(.platform; (
             .podSecurityPolicy.create = ${createPodSecurityPolicy}
             | .services.hax.protocol = \"${hax_service_protocol}\"
-            | .services.hax.port = ${hax_service_port}
-            | .services.io.type = \"${s3_service_type}\"
-            | .services.io.count = ${s3_service_count}
-            | .services.io.ports.http = ${s3_service_ports_http}
-            | .services.io.ports.https = ${s3_service_ports_https}))" "${values_file}"
+            | .services.hax.port = ${hax_service_port}))
+        | with(.cortxserver.service; (
+            .type = \"${s3_service_type}\"
+            | .count = ${s3_service_count}
+            | .ports.http = ${s3_service_ports_http}
+            | .ports.https = ${s3_service_ports_https}))" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -325,6 +350,31 @@ buildValues() {
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
+    ## cortx-server Pods, managed by a StatefulSet, have deterministically
+    ## generated metadata. Inject that metadata into the ConfigMap here.
+    ## During Helm Chart unification, this block can be interned into
+    ## Helm logic.
+    local count=0
+    local storage_set_name
+    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+    for (( count=0; count < total_server_pods; count++ )); do
+        # Build out FQDN of cortx-server Pods
+        # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
+        local pod_name="cortx-server-${count}"
+        local pod_fqdn="${pod_name}.cortx-server-headless.${namespace}.svc.cluster.local"
+
+        ### cortx-k8s should generate a list item with the following information:
+        ### - name: Pod short name
+        ### - hostname: Pod FQDN
+        ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
+        ### - type: "server_node"
+
+        yq -i "
+            .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${pod_fqdn}\"
+            | .configmap.cortxMotr.rgwEndpoints += [\"tcp://${pod_fqdn}:21001\"]
+            | .configmap.cortxHare.haxServerEndpoints += [\"tcp://${pod_fqdn}:22001\"]" "${values_file}"
+    done
+
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
@@ -335,8 +385,23 @@ buildValues() {
             | .k8s_monitor.resources       = $from.solution.common.resource_allocation.ha.k8s_monitor.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
-    set +e
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.cortxserver;
+            .image           = $from.solution.images.cortxserver
+            | .cfgmap.volmountname = "config001"
+            | .hax.port      = $from.solution.common.hax.port_num
+            | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources
+            | .hax.resources = $from.solution.common.resource_allocation.hare.hax.resources)
+        | $to' "${values_file}" "${solution_yaml}"
+
+    yq -i ".cortxserver.replicas = ${total_server_pods}" "${values_file}"
+
+    set +eu
 }
+
+num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 
 # Initial solution.yaml / system state checks
 configurationCheck
@@ -390,12 +455,6 @@ if [[ "${exit_early}" = true ]]; then
     echo "Exit script early."
     exit 1
 fi
-
-deployment_type=$(getSolutionValue 'solution.deployment_type')
-case ${deployment_type} in
-    standard|data-only) printf "Deployment type: %s\n" "${deployment_type}" ;;
-    *)                  printf "Invalid deployment type '%s'\n" "${deployment_type}" ; exit 1 ;;
-esac
 
 printf "\n"
 
@@ -507,6 +566,23 @@ done
 # Copy device info file from CORTX local block helm to CORTX data
 cp "${cortx_blk_data_mnt_info_path}" "$(pwd)/cortx-cloud-helm-pkg/cortx-data"
 
+##########################################################
+# Extract & establish required cluster-wide constants
+##########################################################
+
+## This is currently required as part of CORTX-28968 et al for cross-Chart synchronization.
+## Once Helm Charts are unified, these will become defaulted values.yaml properties.
+server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
+data_node_count=${#node_name_list[@]}
+total_server_pods=$(( data_node_count * server_instances_per_node ))
+
+readonly server_instances_per_node
+readonly data_node_count
+readonly total_server_pods
+
+##########################################################
+# Begin CORTX on k8s deployment
+##########################################################
 
 ##########################################################
 # Deploy CORTX k8s pre-reqs
@@ -529,27 +605,24 @@ function deployRancherProvisioner()
 {
     local image
 
-    if [[ ${storage_class} == "local-path" ]]
-    then
-        printf "Install Rancher Local Path Provisioner"
-        rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
-        # Clean up auto gen Rancher Provisioner folder in case it still exists and was not
-        # clearned up previously by the destroy-cortx-cloud script.
-        rm -rf "${rancher_prov_path}"
-        mkdir -p "${rancher_prov_path}"
-        rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
-        cp "$(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml" "${rancher_prov_file}"
-        image=$(parseSolution 'solution.images.rancher')
-        image=$(echo "${image}" | cut -f2 -d'>')
-        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.image" "${image}"
-        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.host_path" "${storage_prov_path}/local-path-provisioner"
+    printf "Install Rancher Local Path Provisioner"
+    rancher_prov_path="$(pwd)/cortx-cloud-3rd-party-pkg/auto-gen-rancher-provisioner"
+    # Clean up auto gen Rancher Provisioner folder in case it still exists and was not
+    # clearned up previously by the destroy-cortx-cloud script.
+    rm -rf "${rancher_prov_path}"
+    mkdir -p "${rancher_prov_path}"
+    rancher_prov_file="${rancher_prov_path}/local-path-storage.yaml"
+    cp "$(pwd)/cortx-cloud-3rd-party-pkg/templates/local-path-storage-template.yaml" "${rancher_prov_file}"
+    image=$(parseSolution 'solution.images.rancher')
+    image=$(echo "${image}" | cut -f2 -d'>')
+    ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.image" "${image}"
+    ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.host_path" "${storage_prov_path}/local-path-provisioner"
 
-        image=$(parseSolution 'solution.images.busybox')
-        image=$(echo "${image}" | cut -f2 -d'>')
-        ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.helperPod.image" "${image}"
+    image=$(parseSolution 'solution.images.busybox')
+    image=$(echo "${image}" | cut -f2 -d'>')
+    ./parse_scripts/subst.sh "${rancher_prov_file}" "rancher.helperPod.image" "${image}"
 
-        kubectl apply -f "${rancher_prov_file}"
-    fi
+    kubectl apply -f "${rancher_prov_file}"
 }
 
 function deployCortx()
@@ -568,7 +641,6 @@ function deployCortx()
         -f ${values_file} \
         --namespace "${namespace}" \
         --create-namespace \
-        --wait \
         || exit $?
 
     # Restarting Consul at this time causes havoc. Disabling this for now until
@@ -588,30 +660,6 @@ function deployCortx()
     # kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
 
     # ##TODO This needs to be maintained during upgrades etc...
-}
-
-function waitForThirdParty()
-{
-    printf "\nWait for CORTX 3rd party to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "${line}"
-            IFS="/" read -r ready total <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready}" != "${total}" ]]; then
-                count=$((count+1))
-                break
-            fi
-        done <<< "$(kubectl get pods --namespace="${namespace}" --no-headers | grep '^cortx-consul\|^cortx-kafka\|^cortx-zookeeper')"
-
-        if [[ ${count} -eq 0 ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
 }
 
 ##########################################################
@@ -664,19 +712,16 @@ function generateMachineIds()
 
     local id_paths=()
 
-    if [[ ${deployment_type} != "data-only" ]]; then
-        id_paths+=(
-            "${cfgmap_path}/auto-gen-control-${namespace}"
-            "${cfgmap_path}/auto-gen-ha-${namespace}"
-        )
-    fi
+    for c in control ha; do
+        [[ ${components["${c}"]} == true ]] && id_paths+=("${cfgmap_path}/auto-gen-${c}-${namespace}")
+    done
 
-    for node in "${node_name_list[@]}"; do
-        local auto_gen_path="${cfgmap_path}/auto-gen-${node}-${namespace}"
-
-        id_paths+=("${auto_gen_path}/data")
-        [[ ${deployment_type} != "data-only" ]] && id_paths+=("${auto_gen_path}/server")
-        ((num_motr_client > 0)) && id_paths+=("${auto_gen_path}/client")
+    for c in client data; do
+        if [[ ${components["${c}"]} == true ]]; then
+            for node in "${node_name_list[@]}"; do
+                 id_paths+=("${cfgmap_path}/auto-gen-${node}-${namespace}/${c}")
+            done
+        fi
     done
 
     for path in "${id_paths[@]}"; do
@@ -753,10 +798,7 @@ function deployCortxSecrets()
     fi
 
     data_secret_path="./cortx-cloud-helm-pkg/cortx-data/secret-info.txt"
-    server_secret_path="./cortx-cloud-helm-pkg/cortx-server/secret-info.txt"
-
     printf "%s" "${cortx_secret_name}" > ${data_secret_path}
-    printf "%s" "${cortx_secret_name}" > ${server_secret_path}
 
     if [[ ${num_motr_client} -gt 0 ]]; then
         client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
@@ -772,45 +814,27 @@ function silentKill()
 
 function waitForAllDeploymentsAvailable()
 {
-    TIMEOUT=$1
-    shift
-    DEPL_STR=$1
-    shift
-    NAMESPACE=$1
-    shift
+    local timeout=$1
+    local resource=$2
 
-    START=${SECONDS}
-    (while true; do sleep 1; echo -n "."; done)&
-    DOTPID=$!
-    # expand var now, not later
-    # shellcheck disable=SC2064
-    trap "silentKill ${DOTPID}" 0
+    local -i rc=0
+    local -i start=${SECONDS}
+    kubectl rollout status --watch --timeout="${timeout}" --namespace "${namespace}" "${resource}" || rc=$?
+    local -i elapsed=$((SECONDS - start))
 
-    # Initial wait
-    FAIL=0
-    if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
-        # Secondary wait
-        if ! kubectl wait --for=condition=available --timeout="${TIMEOUT}" -n "${NAMESPACE}" "$@"; then
-            # Still timed out.  This is a failure
-            FAIL=1
-        fi
-    fi
-
-    silentKill ${DOTPID}
-    trap - 0
-    ELAPSED=$((SECONDS - START))
-    echo
-    if [[ ${FAIL} -eq 0 ]]; then
-        echo "Deployment ${DEPL_STR} available after ${ELAPSED} seconds"
+    if ((rc == 0)); then
+        echo "Rollout of ${resource} finished after ${elapsed} seconds"
     else
-        echo "Deployment ${DEPL_STR} timed out after ${ELAPSED} seconds"
+        echo "ERROR: Rollout of ${resource} timed out after ${elapsed} seconds"
     fi
-    echo
-    return ${FAIL}
+
+    return ${rc}
 }
 
 function deployCortxData()
 {
+    [[ ${components[data]} == false ]] && return
+
     printf "########################################################\n"
     printf "# Deploy CORTX Data                                     \n"
     printf "########################################################\n"
@@ -853,97 +877,12 @@ function deployCortxData()
             -n "${namespace}" \
             || exit $?
     done
-
-    # Wait for all cortx-data deployments to be ready
-    printf "\nWait for CORTX Data to be ready"
-    local deployments=()
-    for i in "${!node_selector_list[@]}"; do
-        deployments+=("deployment/cortx-data-${node_name_list[i]}")
-    done
-    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-300s}" \
-                                        "CORTX Data" "${namespace}" \
-                                        "${deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
-
-    printf "\n\n"
-}
-
-
-function deployCortxServer()
-{
-    if [[ ${deployment_type} == "data-only" ]]; then
-        return
-    fi
-
-    printf "########################################################\n"
-    printf "# Deploy CORTX Server                                   \n"
-    printf "########################################################\n"
-    local cortxserver_image
-    local hax_port
-    local s3_service_type
-    local s3_service_ports_http
-    local s3_service_ports_https
-    cortxserver_image=$(getSolutionValue 'solution.images.cortxserver')
-    s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
-    s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
-    s3_service_ports_https=$(getSolutionValue 'solution.common.external_services.s3.ports.https')
-    hax_port="$(getSolutionValue 'solution.common.hax.port_num')"
-
-    num_nodes=0
-    for i in "${!node_selector_list[@]}"; do
-        num_nodes=$((num_nodes+1))
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-
-        cortxserver_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[i]}-${namespace}/server/id")
-
-        helm install "cortx-server-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-server \
-            --set cortxserver.name="cortx-server-${node_name}" \
-            --set cortxserver.image="${cortxserver_image}" \
-            --set cortxserver.nodeselector="${node_selector}" \
-            --set cortxserver.service.clusterip.name="cortx-server-clusterip-svc-${node_name}" \
-            --set cortxserver.service.headless.name="cortx-server-headless-svc-${node_name}" \
-            --set cortxserver.service.loadbal.name="cortx-server-loadbal-svc-${node_name}" \
-            --set cortxserver.service.loadbal.type="${s3_service_type}" \
-            --set cortxserver.service.loadbal.ports.http="${s3_service_ports_http}" \
-            --set cortxserver.service.loadbal.ports.https="${s3_service_ports_https}" \
-            --set cortxserver.cfgmap.volmountname="config001-${node_name}" \
-            --set cortxserver.machineid.value="${cortxserver_machineid}" \
-            --set cortxserver.localpathpvc.name="cortx-server-fs-local-pvc-${node_name}" \
-            --set cortxserver.localpathpvc.mountpath="${local_storage}" \
-            --set cortxserver.hax.port="${hax_port}" \
-            --set cortxserver.rgw.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.memory')" \
-            --set cortxserver.rgw.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.requests.cpu')" \
-            --set cortxserver.rgw.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.memory')" \
-            --set cortxserver.rgw.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.server.rgw.resources.limits.cpu')" \
-            --set cortxserver.hax.resources.requests.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.memory')" \
-            --set cortxserver.hax.resources.requests.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.requests.cpu')" \
-            --set cortxserver.hax.resources.limits.memory="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.memory')" \
-            --set cortxserver.hax.resources.limits.cpu="$(extractBlock 'solution.common.resource_allocation.hare.hax.resources.limits.cpu')" \
-            --namespace "${namespace}" \
-            || exit $?
-    done
-
-    printf "\nWait for CORTX Server to be ready"
-    # Wait for all cortx-data deployments to be ready
-    local deployments=()
-    for i in "${!node_selector_list[@]}"; do
-        deployments+=("deployment/cortx-server-${node_name_list[i]}")
-    done
-    if ! waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-300s}" \
-                                        "CORTX Server" "${namespace}" \
-                                        "${deployments[@]}"; then
-        echo "Failed.  Exiting script."
-        exit 1
-    fi
-
-    printf "\n\n"
 }
 
 function deployCortxClient()
 {
+    [[ ${components[client]} == false ]] && return
+
     printf "########################################################\n"
     printf "# Deploy CORTX Client                                   \n"
     printf "########################################################\n"
@@ -971,31 +910,6 @@ function deployCortxClient()
             -n "${namespace}" \
             || exit $?
     done
-
-    printf "\nWait for CORTX Client to be ready"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            IFS=" " read -r -a pod_status <<< "${line}"
-            IFS="/" read -r -a ready_status <<< "${pod_status[1]}"
-            if [[ "${pod_status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                if [[ "${pod_status[2]}" == "Error" || "${pod_status[2]}" == "Init:Error" ]]; then
-                    printf "\n'%s' pod deployment did not complete. Exit early.\n" "${pod_status[0]}"
-                    exit 1
-                fi
-                break
-            fi
-            count=$((count+1))
-        done <<< "$(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')"
-
-        if [[ ${num_nodes} -eq ${count} ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
 }
 
 function cleanup()
@@ -1006,6 +920,66 @@ function cleanup()
 
     # Delete left-over machine IDs and any other auto-gen data
     rm -rf "${cfgmap_path}"
+}
+
+function killBackgroundJobs() {
+    printf "\nCtrl-C was detected, quitting now..."
+    for pid in $(jobs -p); do
+        # A job may quit by the time we try to kill it, so filter out error messages
+        kill -TERM "${pid}" 2>/dev/null
+    done
+    exit 2
+}
+
+function waitForClusterReady()
+{
+    set -u
+
+    printf "Now waiting for all CORTX resources to become available, press Ctrl-C to quit...\n\n"
+
+    trap killBackgroundJobs INT
+
+    local pids=()
+
+    if [[ ${components[control]} == true ]]; then
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CONTROL_TIMEOUT:-10m}" deployment/cortx-control) &
+        pids+=($!)
+    fi
+
+    if [[ ${components[ha]} == true ]]; then
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_HA_TIMEOUT:-4m}" deployment/cortx-ha) &
+        pids+=($!)
+    fi
+
+    if [[ ${components[data]} == true ]]; then
+        for node in "${node_name_list[@]}"; do
+            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" "deployment/cortx-data-${node}") &
+            pids+=($!)
+        done
+    fi
+
+    if [[ ${components[server]} == true ]]; then
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_SERVER_TIMEOUT:-10m}" statefulset/cortx-server) &
+        pids+=($!)
+    fi
+
+    if [[ ${components[client]} == true ]]; then
+        for node in "${node_name_list[@]}"; do
+            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CLIENT_TIMEOUT:-10m}" "deployment/cortx-client-${node}") &
+            pids+=($!)
+        done
+    fi
+
+    local -i rc=0
+    for pid in "${pids[@]}"; do
+        wait "${pid}" || rc=$?
+    done
+
+    trap - INT
+
+    set +u
+
+    return ${rc}
 }
 
 # Extract storage provisioner path from the "solution.yaml" file
@@ -1039,8 +1013,6 @@ for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
     count=$((count+1))
 done
 
-num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
-
 ##########################################################
 # Deploy CORTX cloud pre-requisites
 ##########################################################
@@ -1055,40 +1027,65 @@ generateMachineIds
 # Deploy CORTX cloud
 ##########################################################
 deployCortx
-waitForThirdParty
 deployCortxData
-deployCortxServer
-if [[ ${num_motr_client} -gt 0 ]]; then
-    deployCortxClient
-fi
+deployCortxClient
 cleanup
 
 # Note: It is not ideal that some of these values are hard-coded here.
 #       The data comes from the helm charts and so there is no feasible
 #       way of getting the values otherwise.
-data_service_name="cortx-io-svc-0"  # present in cortx values.yaml... what to do?
+data_service_name="cortx-server-0"  # present in cortx values.yaml... what to do?
 data_service_default_user="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
 control_service_name="cortx-control-loadbal-svc"  # hard coded in script above installing help or cortx-control
 control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templates/_config.tpl
 
-echo "
+cat << EOF
+
 -----------------------------------------------------------
 
-The CORTX cluster installation is complete."
+Thanks for installing CORTX Community Object Storage!
 
-if [[ ${deployment_type} != "data-only" ]]; then
-    echo "
+** Please wait while CORTX Kubernetes resources are being deployed. **
+EOF
+
+if [[ ${components[server]} == true ]]; then
+    cat << EOF
+
 The S3 data service is accessible through the ${data_service_name} service.
    Default IAM access key: ${data_service_default_user}
    Default IAM secret key is accessible via:
-       kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
-                  --template={{.data.s3_auth_admin_secret}} | base64 -d
+      kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
+        --template={{.data.s3_auth_admin_secret}} | base64 -d
+EOF
+fi
+
+if [[ ${components[control]} == true ]]; then
+    cat << EOF
 
 The CORTX control service is accessible through the ${control_service_name} service.
    Default control username: ${control_service_default_user}
    Default control password is accessible via:
-       kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
-                  --template={{.data.csm_mgmt_admin_secret}} | base64 -d"
+      kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
+        --template={{.data.csm_mgmt_admin_secret}} | base64 -d
+EOF
 fi
 
-printf "\n-----------------------------------------------------------\n"
+cat << EOF
+
+-----------------------------------------------------------
+
+EOF
+
+if [[ ${CORTX_DEPLOY_NO_WAIT:-false} == true ]]; then
+    exit
+fi
+
+ec=0
+waitForClusterReady || ec=$?
+
+if ((ec != 0)); then
+    printf "\nERROR: A timeout occurred while waiting for one or more resources during the CORTX cluster installation.\n"
+    exit ${ec}
+fi
+
+printf "\nThe CORTX cluster installation is complete.\n"

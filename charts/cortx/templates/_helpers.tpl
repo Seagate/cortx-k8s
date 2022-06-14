@@ -126,6 +126,20 @@ Create a URL for the Hare hax HTTP endpoint
 {{- end -}}
 
 {{/*
+Return the name of the Server component
+*/}}
+{{- define "cortx.server.fullname" -}}
+{{- printf "%s-server" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Return the name of the Server service domain
+*/}}
+{{- define "cortx.server.serviceDomain" -}}
+{{- printf "%s-headless.%s.svc.%s" (include "cortx.server.fullname" .) .Release.Namespace .Values.clusterDomain -}}
+{{- end -}}
+
+{{/*
 Return the wait-for-backends image name
 */}}
 {{- define "cortx.waitForBackends.image" -}}
@@ -133,7 +147,7 @@ Return the wait-for-backends image name
 {{- end -}}
 
 {{/*
-Return the  Kafka image name
+Return the Kafka image name
 */}}
 {{- define "cortx.kafka.image" -}}
 {{- printf "%s/%s:%s" .Values.kafka.image.registry .Values.kafka.image.repository .Values.kafka.image.tag -}}
