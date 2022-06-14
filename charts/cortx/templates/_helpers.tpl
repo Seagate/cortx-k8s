@@ -102,3 +102,17 @@ Create a URL for the Hare hax HTTP endpoint
 {{- define "cortx.hare.hax.url" -}}
 {{- printf "%s://%s:%d" .Values.platform.services.hax.protocol (include "cortx.hare.hax.fullname" .) (.Values.platform.services.hax.port | int) -}}
 {{- end -}}
+
+{{/*
+Return the name of the Server component
+*/}}
+{{- define "cortx.server.fullname" -}}
+{{- printf "%s-server" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Return the name of the Server service domain
+*/}}
+{{- define "cortx.server.serviceDomain" -}}
+{{- printf "%s-headless.%s.svc.%s" (include "cortx.server.fullname" .) .Release.Namespace .Values.clusterDomain -}}
+{{- end -}}

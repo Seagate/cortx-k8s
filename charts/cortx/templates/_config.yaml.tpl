@@ -44,39 +44,39 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
-  {{- if .Values.configmap.cortxRgw.enabled }}
+  {{- if .Values.cortxserver.enabled }}
   rgw:
-    auth_user: {{ .Values.configmap.cortxRgw.authUser }}
-    auth_admin: {{ .Values.configmap.cortxRgw.authAdmin }}
-    auth_secret: {{ .Values.configmap.cortxRgw.authSecret }}
+    auth_user: {{ .Values.cortxserver.authUser }}
+    auth_admin: {{ .Values.cortxserver.authAdmin }}
+    auth_secret: {{ .Values.cortxserver.authSecret }}
     public:
       endpoints:
-      - http://{{ .Values.configmap.cortxIoService.name }}:{{ .Values.configmap.cortxIoService.ports.http }}
-      - https://{{ .Values.configmap.cortxIoService.name }}:{{ .Values.configmap.cortxIoService.ports.https }}
+      - {{ printf "http://%s-0:%d" (include "cortx.server.fullname" .) (.Values.cortxserver.service.ports.http | int) }}
+      - {{ printf "https://%s-0:%d" (include "cortx.server.fullname" .) (.Values.cortxserver.service.ports.https | int) }}
     service:
       endpoints:
       - http://:22751
       - https://:23001
     io_max_units: 8
-    max_start_timeout: {{ .Values.configmap.cortxRgw.maxStartTimeout | int }}
+    max_start_timeout: {{ .Values.cortxserver.maxStartTimeout | int }}
     service_instances: 1
     limits:
       services:
       - name: rgw
         memory:
-          min: {{ .Values.configmap.cortxRgw.rgw.resources.requests.memory }}
-          max: {{ .Values.configmap.cortxRgw.rgw.resources.limits.memory }}
+          min: {{ .Values.cortxserver.rgw.resources.requests.memory }}
+          max: {{ .Values.cortxserver.rgw.resources.limits.memory }}
         cpu:
-          min: {{ .Values.configmap.cortxRgw.rgw.resources.requests.cpu }}
-          max: {{ .Values.configmap.cortxRgw.rgw.resources.limits.cpu }}
-    {{- if .Values.configmap.cortxRgw.extraConfiguration }}
-    {{- tpl .Values.configmap.cortxRgw.extraConfiguration . | nindent 4 }}
+          min: {{ .Values.cortxserver.rgw.resources.requests.cpu }}
+          max: {{ .Values.cortxserver.rgw.resources.limits.cpu }}
+    {{- if .Values.cortxserver.extraConfiguration }}
+    {{- tpl .Values.cortxserver.extraConfiguration . | nindent 4 }}
     {{- end }}
   {{- end }}
   hare:
     hax:
       {{- $endpoints := concat (list (include "cortx.hare.hax.url" .)) .Values.configmap.cortxHare.haxDataEndpoints .Values.configmap.cortxHare.haxClientEndpoints -}}
-      {{- if .Values.configmap.cortxRgw.enabled }}
+      {{- if .Values.cortxserver.enabled }}
       {{- $endpoints = concat $endpoints .Values.configmap.cortxHare.haxServerEndpoints -}}
       {{- end }}
       endpoints:
@@ -92,7 +92,7 @@ cortx:
     confd:
       endpoints: {{- toYaml .Values.configmap.cortxMotr.confdEndpoints | nindent 6 }}
     clients:
-    {{- if .Values.configmap.cortxRgw.enabled }}
+    {{- if .Values.cortxserver.enabled }}
     - name: rgw_s3
       num_instances: 1  # number of instances *per-pod*
       endpoints: {{- toYaml .Values.configmap.cortxMotr.rgwEndpoints | nindent 8 }}
@@ -112,14 +112,14 @@ cortx:
     {{- end }}
   {{- if .Values.cortxcontrol.enabled }}
   csm:
-    auth_admin: authadmin
-    auth_secret: csm_auth_admin_secret
-    mgmt_admin: cortxadmin
-    mgmt_secret: csm_mgmt_admin_secret
-    email_address: cortx@seagate.com
     agent:
       endpoints:
-      - https://{{ .Values.configmap.cortxIoService.name }}:8081
+      - https://:8081
+    auth_admin: authadmin
+    auth_secret: csm_auth_admin_secret
+    email_address: cortx@seagate.com # Optional
+    mgmt_admin: cortxadmin
+    mgmt_secret: csm_mgmt_admin_secret
     limits:
       services:
       {{- include "config.yaml.service.limits" (dict "name" "agent" "resources" .Values.configmap.cortxControl.agent.resources) | nindent 6 }}
