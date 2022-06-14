@@ -235,6 +235,10 @@ platform:
       protocol: https
       port: 22003
 
+  storage:
+    localBlock:
+      storageClassName: "cortx-local-block-storage"
+
 ##
 ## Imported values from cortx-control Helm Chart. These will be changed.
 ##
