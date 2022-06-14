@@ -85,12 +85,14 @@ helm uninstall cortx
 | configmap.cortxMotr.confd.resources.requests.memory | string | `"128Mi"` |  |
 | configmap.cortxMotr.confdEndpoints | list | `[]` |  |
 | configmap.cortxMotr.extraConfiguration | string | `""` |  |
+| configmap.cortxMotr.headlessServiceName | string | `"cortx-data-headless"` |  |
 | configmap.cortxMotr.iosEndpoints | list | `[]` |  |
 | configmap.cortxMotr.motr.resources.limits.cpu | string | `"1000m"` |  |
 | configmap.cortxMotr.motr.resources.limits.memory | string | `"2Gi"` |  |
 | configmap.cortxMotr.motr.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxMotr.motr.resources.requests.memory | string | `"1Gi"` |  |
 | configmap.cortxMotr.rgwEndpoints | list | `[]` |  |
+| configmap.cortxMotr.statefulSetName | string | `"cortx-data"` |  |
 | configmap.cortxSecretName | string | `"cortx-secret"` |  |
 | configmap.cortxSecretValues | object | `{}` |  |
 | configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
@@ -192,6 +194,7 @@ helm uninstall cortx
 | platform.services.hax.port | int | `22003` |  |
 | platform.services.hax.protocol | string | `"https"` |  |
 | platform.services.hax.type | string | `"ClusterIP"` |  |
+| platform.storage.localBlock.storageClassName | string | `"cortx-local-block-storage"` |  |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
