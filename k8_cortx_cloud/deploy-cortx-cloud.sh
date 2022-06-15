@@ -258,7 +258,7 @@ buildValues() {
             uuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/client/id")
             yq -i eval-all "
                 select(fi==0) ref \$to | select(fi==1).solution.common.storage_sets.name as \$name
-                | \$to.configmap.clusterStorageSets.[\$name].nodes.${node}.Uuid=\"${uuid}\"
+                | \$to.configmap.clusterStorageSets.[\$name].nodes.${node}.clientUuid=\"${uuid}\"
                 | \$to" "${values_file}" "${solution_yaml}"
         done
     fi
