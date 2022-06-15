@@ -48,8 +48,8 @@ printf "########################################################\n"
 
 while IFS= read -r line; do
     IFS=" " read -r -a deployments <<< "${line}"
-    kubectl scale deploy "${deployments[0]}" --replicas 0 --namespace="${namespace}"
-done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-data-')
+    kubectl scale statefulset "${deployments[0]}" --replicas 0 --namespace="${namespace}"
+done < <(kubectl get statefulset --namespace="${namespace}" | grep 'cortx-data')
 
 printf "\nWait for CORTX Data to be shutdown"
 while true; do
