@@ -281,7 +281,7 @@ aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 ls
 
 ### Tested by:
 
-This document was tested on the following version: [v0.6.0](https://github.com/Seagate/cortx-k8s/releases/tag/v0.6.0)
+This document was tested on the following version: [v0.7.0](https://github.com/Seagate/cortx-k8s/releases/tag/v0.7.0)
 
 - Jun 15, 2022: Patrick Hession (patrick.hession@seagate.com) using CentOS 7.9 in VMWare Workstation 16 Pro.
 
