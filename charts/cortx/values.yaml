@@ -157,7 +157,6 @@ configmap:
 
   # cortxHare allows configuring CORTX HARE settings
   cortxHare:
-    haxDataEndpoints: []
     haxServerEndpoints: []
     haxClientEndpoints: []
     hax:
@@ -174,11 +173,7 @@ configmap:
   cortxMotr:
     clientInstanceCount: 0
     clientEndpoints: []
-    confdEndpoints: []
-    iosEndpoints: []
     rgwEndpoints: []
-    statefulSetName: cortx-data
-    headlessServiceName: cortx-data-headless
     # An optional multi-line string that contains extra Motr configuration
     # settings. The string may contain template expressions, and is appended to
     # the end of the computed configuration.
@@ -373,3 +368,52 @@ cortxserver:
     nodePorts:
       http: ""
       https: ""
+
+cortxdata:
+  image: ghcr.io/seagate/centos:7
+  replicas: 3
+  blockDevicePaths: []
+  nodes: []
+  storageClassName: local-block-storage
+  persistentStorage:
+    volumeMode: Block
+    accessModes:
+    - ReadWriteMany
+  motr:
+    startportnum: 29000
+    numiosinst: 1
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  confd:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  hax:
+    port: 22003
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  cfgmap:
+    mountpath: /etc/cortx/solution
+    name: cortx
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+    name: cortx-ssl-cert
+  localpathpvc:
+    mountpath: /etc/cortx
+    requeststoragesize: 1Gi
+    accessmodes:
+      - ReadWriteOnce

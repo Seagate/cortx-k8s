@@ -75,7 +75,7 @@ parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
 # Split parsed output into an array of vars and vals
 IFS=';' read -r -a parsed_var_val_array <<< "${parsed_node_output}"
 
-find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
+[[ -d $(pwd)/cortx-cloud-helm-pkg/cortx-data ]] && find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
 count=0
@@ -86,23 +86,6 @@ do
     shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
     node_name_list[count]=${shorter_node_name}
     count=$((count+1))
-    file_name="mnt-blk-info-${shorter_node_name}.txt"
-    data_file_path=$(pwd)/cortx-cloud-helm-pkg/cortx-data/${file_name}
-
-    # Get the node var from the tuple
-    node=$(echo "${var_val_element}" | cut -f3 -d'.')
-
-    filter="solution.storage.cvg*.devices*.device"
-    parsed_dev_output=$(parseSolution "${filter}")
-    IFS=';' read -r -a parsed_dev_array <<< "${parsed_dev_output}"
-    for dev in "${parsed_dev_array[@]}"
-    do
-        device=$(echo "${dev}" | cut -f2 -d'>')
-        if [[ -s ${data_file_path} ]]; then
-            printf "\n" >> "${data_file_path}"
-        fi
-        printf "%s" "${device}" >> "${data_file_path}"
-    done
 done
 
 function uninstallHelmChart()
@@ -145,34 +128,18 @@ function deleteCortxServer()
 
 function deleteCortxData()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX Data                                    #\n"
-    printf "########################################################\n"
+    # backwards compatibility for cortx-data chart based on Deployments
     for node in "${node_name_list[@]}"; do
         uninstallHelmChart "cortx-data-${node}-${namespace}" "${namespace}"
     done
+
+    # backwards compatibility for cortx-data chart based on StatefulSet
     uninstallHelmChart "cortx-data-${namespace}" "${namespace}"
 }
 
 function deleteCortxControl()
 {
     uninstallHelmChart "cortx-control-${namespace}" "${namespace}"
-}
-
-function waitForCortxPodsToTerminate()
-{
-    local count
-    printf "\nWait for CORTX Pods to terminate"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            count=$(( count + 1 ))
-        done < <(kubectl get pods --namespace="${namespace}" --selector=release!=cortx,app.kubernetes.io/instance!=cortx --no-headers | grep cortx)
-
-        (( count == 0 )) && break || printf "."
-        sleep 1s
-    done
-    printf ". Done.\n\n"
 }
 
 function deleteCortxLocalBlockStorage()
@@ -315,21 +282,12 @@ function deleteNodeDataFiles()
     #################################################################
     # Delete files that contain disk partitions on the worker nodes #
     #################################################################
-    # Split parsed output into an array of vars and vals
-    IFS=';' read -r -a parsed_var_val_array <<< "${parsed_node_output}"
-    # Loop the var val tuple array
-    for var_val_element in "${parsed_var_val_array[@]}"
-    do
-        node_name=$(echo "${var_val_element}" | cut -f2 -d'>')
-        shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
-        file_name="mnt-blk-info-${shorter_node_name}.txt"
-        rm "$(pwd)/cortx-cloud-helm-pkg/cortx-data/${file_name}"
-    done
-
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
+    if [[ -d $(pwd)/cortx-cloud-helm-pkg/cortx-data ]]; then
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
+    fi
 }
 
 #############################################################
@@ -338,9 +296,8 @@ function deleteNodeDataFiles()
 deleteCortxClient
 deleteCortxHa       # deprecated
 deleteCortxServer   # deprecated
-deleteCortxData
+deleteCortxData     # deprecated
 deleteCortxControl  # deprecated
-waitForCortxPodsToTerminate
 deleteSecrets
 deleteCortxLocalBlockStorage
 deleteCortxConfigmap  # deprecated

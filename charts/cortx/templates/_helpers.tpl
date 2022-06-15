@@ -116,3 +116,17 @@ Return the name of the Server service domain
 {{- define "cortx.server.serviceDomain" -}}
 {{- printf "%s-headless.%s.svc.%s" (include "cortx.server.fullname" .) .Release.Namespace .Values.clusterDomain -}}
 {{- end -}}
+
+{{/*
+Return the name of the Data component
+*/}}
+{{- define "cortx.data.fullname" -}}
+{{- printf "%s-data" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Return the name of the Data service domain
+*/}}
+{{- define "cortx.data.serviceDomain" -}}
+{{- printf "%s-headless.%s.svc.%s" (include "cortx.data.fullname" .) .Release.Namespace .Values.clusterDomain -}}
+{{- end -}}

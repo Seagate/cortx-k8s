@@ -1,18 +1,19 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.cortxdata.service.headless.name }}
+  name: {{ include "cortx.data.fullname" . }}-headless
   namespace: {{ .Release.Namespace }}
-  labels:
-    cortx.io/service-type: {{ .Values.cortxdata.serviceType }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: data
 spec:
-  publishNotReadyAddresses: true
+  type: ClusterIP
   clusterIP: None
-  selector:
-    app: {{ .Values.cortxdata.name }}
-    cortx.io/service-type:  {{ .Values.cortxdata.serviceType }}
+  publishNotReadyAddresses: true
+  selector: {{- include "cortx.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: data
     cortx.io/hax-enabled: "true"
-    cortx.io/service-domain: "{{ .Values.cortxdata.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
+    cortx.io/service-domain: {{ include "cortx.data.serviceDomain" . }}
+    cortx.io/service-type: cortx-data
   ### TODO CORTX-29859 - These ports may be superfluous or for documentation only...
   ports:
     - name: cortx-data-motr-hax-tcp

@@ -1,50 +1,47 @@
-{{- define "cortx_data.device_path.to_string" }}
-{{- . | lower | trimPrefix "/" | replace "/" "-" }}
-{{- end }}
+{{- define "cortx.data.devicePathToString" -}}
+{{- . | lower | trimPrefix "/" | replace "/" "-" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  labels:
-    app: {{ quote .Values.cortxdata.name }}
-    cortx.io/service-type:  {{ quote .Values.cortxdata.serviceType }}
-  name: {{ .Values.cortxdata.name }}
+  name: {{ include "cortx.data.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: data
 spec:
   podManagementPolicy: Parallel
-  serviceName: {{ .Values.cortxdata.service.headless.name }}
+  serviceName: {{ include "cortx.data.fullname" . }}-headless
   replicas: {{ .Values.cortxdata.replicas }}
   selector:
-    matchLabels:
-      app: {{ .Values.cortxdata.name }}
-      cortx.io/service-type: {{ quote .Values.cortxdata.serviceType }}
+    matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: data
       cortx.io/hax-enabled: "true"
-      cortx.io/service-domain: "{{ .Values.cortxdata.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
+      cortx.io/service-domain: {{ include "cortx.data.serviceDomain" . }}
+      cortx.io/service-type: cortx-data
   template:
     metadata:
-      labels:
-        app: {{ quote .Values.cortxdata.name }}
-        ### TODO k8s Label 'name: cortx-data' is deprecated in favor of 'cortx.io/service-type: cortx-data'
-        name: cortx-data
-        cortx.io/service-type: {{ quote .Values.cortxdata.serviceType }}
+      labels: {{- include "cortx.labels" . | nindent 8 }}
+        app.kubernetes.io/component: data
         cortx.io/hax-enabled: "true"
-        cortx.io/service-domain: "{{ .Values.cortxdata.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
+        cortx.io/service-domain: {{ include "cortx.data.serviceDomain" . }}
+        cortx.io/service-type: cortx-data
     spec:
-      subdomain: {{ .Values.cortxdata.service.headless.name }}
-      serviceAccountName: {{ .Values.cortxdata.serviceaccountname }}
+      subdomain: {{ include "cortx.data.fullname" . }}-headless
+      serviceAccountName: {{ include "cortx.serviceAccountName" . }}
       volumes:
-        - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+        - name: cortx-configuration
           configMap:
             name: {{ .Values.cortxdata.cfgmap.name }}
-        - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+        - name: cortx-ssl-cert
           configMap:
             name: {{ .Values.cortxdata.sslcfgmap.name }}
-        - name: {{ .Values.cortxdata.secretname }}
+        - name: {{ .Values.configmap.cortxSecretName }}
           secret:
-            secretName: {{ .Values.cortxdata.secretname }}
-        - name: {{ .Values.cortxdata.name }}-node-config
+            secretName: {{ .Values.configmap.cortxSecretName }}
+        - name: node-config
           configMap:
             defaultMode: 0700
-            name: {{ .Values.cortxdata.name }}-node-config
+            name: {{ include "cortx.data.fullname" . }}-node
       initContainers:
       - name: node-config
         image: {{ .Values.cortxdata.image }}
@@ -52,7 +49,7 @@ spec:
         command:
           - /nodeconfig/entrypoint.sh
         volumeMounts:
-        - name: {{ .Values.cortxdata.name }}-node-config
+        - name: node-config
           mountPath: /nodeconfig
           readOnly: true
         securityContext:
@@ -73,17 +70,17 @@ spec:
         {{- end }}
         volumeDevices:
           {{- range .Values.cortxdata.blockDevicePaths }}
-          - name: {{ printf "block-%s" ( include "cortx_data.device_path.to_string" .device ) }}
+          - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
             devicePath: {{ .device | quote }}
           {{- end }}
         volumeMounts:
-          - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+          - name: cortx-configuration
             mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-          - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+          - name: cortx-ssl-cert
             mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
           - name: data
             mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
-          - name: {{ .Values.cortxdata.secretname }}
+          - name: {{ .Values.configmap.cortxSecretName }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
         env:
@@ -111,9 +108,9 @@ spec:
             - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
             - name: data
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
@@ -149,13 +146,13 @@ spec:
           {{- end }}
           volumeDevices:
             {{- range .Values.cortxdata.blockDevicePaths }}
-            - name: {{ printf "block-%s" ( include "cortx_data.device_path.to_string" .device ) }}
+            - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
               devicePath: {{ .device | quote }}
             {{- end }}
           volumeMounts:
-            - name: {{ .Values.cortxdata.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ .Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ .Values.cortxdata.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ .Values.cortxdata.sslcfgmap.mountpath }}
             - name: data
               mountPath: {{ .Values.cortxdata.localpathpvc.mountpath }}
@@ -201,13 +198,13 @@ spec:
           {{- end }}
           volumeDevices:
             {{- range $.Values.cortxdata.blockDevicePaths }}
-            - name: {{ printf "block-%s" ( include "cortx_data.device_path.to_string" .device ) }}
+            - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
               devicePath: {{ .device | quote }}
             {{- end }}
           volumeMounts:
-            - name: {{ $.Values.cortxdata.cfgmap.volmountname }}
+            - name: cortx-configuration
               mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
-            - name: {{ $.Values.cortxdata.sslcfgmap.volmountname }}
+            - name: cortx-ssl-cert
               mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
             - name: data
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
@@ -224,13 +221,13 @@ spec:
       name: data
     spec:
       accessModes: {{- toYaml .Values.cortxdata.localpathpvc.accessmodes | nindent 6 }}
-      storageClassName: {{ .Values.cortxdata.localpathpvc.storageclass }}
+      storageClassName: local-path
       resources:
         requests:
           storage: {{ .Values.cortxdata.localpathpvc.requeststoragesize }}
   {{- range .Values.cortxdata.blockDevicePaths }}
   - metadata:
-      name: {{ printf "block-%s" ( include "cortx_data.device_path.to_string" .device ) }}
+      name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
     spec:
       accessModes: {{- toYaml $.Values.cortxdata.persistentStorage.accessModes | nindent 6 }}
       volumeMode: {{ $.Values.cortxdata.persistentStorage.volumeMode | quote }}
@@ -240,5 +237,5 @@ spec:
           storage: {{ .size | quote }}
       selector:
         matchLabels:
-          cortx.io/device-path: {{ include "cortx_data.device_path.to_string" .device | quote }}
+          cortx.io/device-path: {{ include "cortx.data.devicePathToString" .device | quote }}
   {{- end }}
