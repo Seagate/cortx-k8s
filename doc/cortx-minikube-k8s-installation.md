@@ -283,10 +283,14 @@ aws --no-verify-ssl --endpoint-url http://$DATA_IP:80 s3 ls
 
 This document was tested on the following version: [v0.6.0](https://github.com/Seagate/cortx-k8s/releases/tag/v0.6.0)
 
-May 20, 2022: Patrick Hession (patrick.hession@seagate.com) using CentOS 7.9 on Red Hat CloudForms.
+- Jun 15, 2022: Patrick Hession (patrick.hession@seagate.com) using CentOS 7.9 in VMWare Workstation 16 Pro.
+
+This document was tested on the following version: [v0.6.0](https://github.com/Seagate/cortx-k8s/releases/tag/v0.6.0)
+
+- May 20, 2022: Patrick Hession (patrick.hession@seagate.com) using CentOS 7.9 on Red Hat CloudForms.
 
 This document was tested on the following version: [v0.0.22](https://github.com/Seagate/cortx-k8s/releases/tag/v0.0.22)
 
-Mar 12, 2022: Bo Wei (bo.b.wei@seagate.com) using CentOS 7.9 on Red Hat CloudForms.
+- Mar 12, 2022: Bo Wei (bo.b.wei@seagate.com) using CentOS 7.9 on Red Hat CloudForms.
 
-Feb 23, 2022: Sayed Alfhad Shah(fahadshah2411@gmail.com), Rinku Kothiya(rinku.kothiya@seagate.com) and Rose Wambui(rose.wambui@seagate.com)
+- Feb 23, 2022: Sayed Alfhad Shah(fahadshah2411@gmail.com), Rinku Kothiya(rinku.kothiya@seagate.com) and Rose Wambui(rose.wambui@seagate.com)
