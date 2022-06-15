@@ -186,9 +186,10 @@ fi
 alert_msg "######################################################"
 alert_msg "# CORTX Data                                          "
 alert_msg "######################################################"
-# Check deployments
+# Check StatefulSet
 count=0
-msg_info "| Checking Deployments |"
+expected_count=1
+msg_info "| Checking StatefulSet |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
     IFS="/" read -r -a ready_status <<< "${status[1]}"
@@ -202,9 +203,9 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-data-')
+done < <(kubectl get statefulset --namespace="${namespace}" | grep 'cortx-data')
 
-if [[ ${num_nodes} -eq ${count} ]]; then
+if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
 else
     msg_overall_failed
@@ -238,6 +239,7 @@ fi
 
 # Check services headless
 count=0
+expected_count=1
 msg_info "| Checking Services: Headless |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -251,33 +253,9 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'cortx-data-headless-')
+done < <(kubectl get services --namespace="${namespace}" | grep 'cortx-data-headless')
 
-if [[ ${num_nodes} -eq ${count} ]]; then
-    msg_overall_passed
-else
-    msg_overall_failed
-    failcount=$((failcount+1))
-fi
-
-# Check services cluster IP
-count=0
-msg_info "| Checking Services: Cluster IP |"
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "${line}"
-    if [[ "${status[0]}" != "" ]]; then
-        printf "%s..." "${status[0]}"
-        if [[ "${status[1]}" != "ClusterIP" ]]; then
-            msg_failed
-            failcount=$((failcount+1))
-        else
-            msg_passed
-            count=$((count+1))
-        fi
-    fi
-done < <(kubectl get services --namespace="${namespace}" | grep 'cortx-data-clusterip-')
-
-if [[ ${num_nodes} -eq ${count} ]]; then
+if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
 else
     msg_overall_failed
@@ -300,7 +278,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pvc --namespace="${namespace}" | grep 'cortx-data-fs-local-pvc')
+done < <(kubectl get pvc --namespace="${namespace}" | grep 'data-cortx-data')
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -314,7 +292,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pv --namespace="${namespace}" | grep 'cortx-data-fs-local-pvc')
+done < <(kubectl get pv --namespace="${namespace}" | grep 'data-cortx-data')
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed
@@ -339,7 +317,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pvc --namespace="${namespace}" | grep 'cortx-data-' | grep -v 'cortx-data-fs-local-pvc')
+done < <(kubectl get pvc --namespace="${namespace}" | grep -e 'block-.*-cortx-data-' | grep -v 'cortx-data-fs-local-pvc')
 
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -353,7 +331,7 @@ while IFS= read -r line; do
             count=$((count+1))
         fi
     fi
-done < <(kubectl get pv --namespace="${namespace}" | grep 'cortx-data-' | grep -v 'cortx-data-fs-local-pvc')
+done < <(kubectl get pv --namespace="${namespace}" | grep -e 'block-.*-cortx-data-' | grep -v 'cortx-data-fs-local-pvc')
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed
