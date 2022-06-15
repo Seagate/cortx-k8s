@@ -40,11 +40,6 @@ solution:
     hax:
       protocol: https
       port_num: 22003
-    storage_sets:
-      name: storage-set-1
-      durability:
-        sns: 1+0+0
-        dix: 1+0+0
     external_services:
       s3:
         type: NodePort
@@ -168,35 +163,33 @@ solution:
             limits:
               memory: 1Gi
               cpu:    500m
-  storage:
-    cvg1:
-      name: cvg-01
+  storage_sets:
+  - name: storage-set-1
+    durability:
+      sns: 1+0+0
+      dix: 1+0+0
+    container_group_size: 1
+    nodes:
+    - node-1
+    - node-2
+    - node-3
+    - node-4
+    storage:
+    - name: cvg-01
       type: ios
       devices:
         metadata:
           device: /dev/sdc
           size: 5Gi
         data:
-          d1:
-            device: /dev/sdd
-            size: 5Gi
-    cvg2:
-      name: cvg-02
+        - device: /dev/sdd
+          size: 5Gi
+    - name: cvg-02
       type: ios
       devices:
         metadata:
           device: /dev/sde
           size: 5Gi
         data:
-          d1:
-            device: /dev/sdf
-            size: 5Gi
-  nodes:
-    node1:
-      name: node-1
-    node2:
-      name: node-2
-    node3:
-      name: node-3
-    node4:
-      name: node-4
+        - device: /dev/sdf
+          size: 5Gi
