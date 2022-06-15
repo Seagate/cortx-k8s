@@ -3,6 +3,8 @@
 - name: {{ .name }}
   {{- if eq .type "server_node" }}
   id: {{ required "A valid id is required for server nodes" .id | quote }}
+  {{- else if eq .type "data_node" }}
+  id: {{ required "A valid id is required for data nodes" .id | quote }}
   {{- else }}
   id: {{ default uuidv4 .id | replace "-" "" | quote }}
   {{- end }}
@@ -14,6 +16,7 @@
 cluster:
   name: {{ .Values.configmap.clusterName }}
   id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
+  ### TODO CORTX-29861 Create additional data_node types here based upon StatefulSet names
   node_types:
   - name: data_node
     components:
@@ -82,8 +85,7 @@ cluster:
     {{- include "storageset.node" (dict "name" $key "hostname" $val.serverUuid "id" $val.serverUuid "type" "server_node") | nindent 4 }}
     {{- end }}
     {{- if $val.dataUuid }}
-    {{- $dataName := printf "cortx-data-headless-svc-%s" $shortHost -}}
-    {{- include "storageset.node" (dict "name" $dataName "id" $val.dataUuid "type" "data_node") | nindent 4 }}
+    {{- include "storageset.node" (dict "name" $key "hostname" $val.dataUuid "id" $val.dataUuid "type" "data_node") | nindent 4 }}
     {{- end }}
     {{- if $val.clientUuid -}}
     {{- $clientName := printf "cortx-client-headless-svc-%s" $shortHost -}}

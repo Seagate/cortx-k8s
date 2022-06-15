@@ -1,6 +1,6 @@
 cortxblkdata:
-  storageclass: local-blk-storage
-  nodelistinfo: node-list-info.txt
-  mountblkinfo: mnt-blk-info.txt
+  storageClassName: local-block-storage
+  blockDevicePaths: []
+  nodes: []
   storage:
-    volumemode: Block
+    volumeMode: Block

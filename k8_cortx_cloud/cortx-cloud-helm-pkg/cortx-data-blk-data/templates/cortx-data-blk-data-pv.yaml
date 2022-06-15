@@ -1,30 +1,29 @@
-# Loop through the node list info file which contains the following example:
-# 0 node-1
-# 1 node-2
-{{- range $line := .Files.Lines .Values.cortxblkdata.nodelistinfo }}
-{{- $parts := split " " . }}
-{{- $index := $parts._0 }}
-{{- $nodename := $parts._1 }}
-# Loop through the mounted block info file which contains the following:
-# /dev/sdc 100Gi
-# /dev/sdd 100Gi
-{{- range $mntblkinfoline := $.Files.Lines $.Values.cortxblkdata.mountblkinfo }}
-{{- $mntblkparts := split " " . }}
-{{- $localpath := $mntblkparts._0 }}
-{{- $mountblksize := $mntblkparts._1 }}
+{{- define "cortx_data.device_path.to_string" }}
+{{- . | lower | trimPrefix "/" | replace "/" "-" }}
+{{- end }}
+# Loop through each node in the nodes list array
+{{- range $nodename := .Values.cortxblkdata.nodes }}
+{{- $nodeparts := split "." $nodename }}
+{{- $shortnode := $nodeparts._0 }}
+# Loop through each entry in the block device list which contains the following array:
+# [{"device":"/dev/sdd", "size":"25Gi"}]
+{{- range $deviceiter := $.Values.cortxblkdata.blockDevicePaths }}
+{{- $localpath := $deviceiter.device }}
 {{- $disk := (base $localpath) }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ printf "cortx-data-%s-pv-%s" $disk $index }}
+  name: {{ printf "cortx-data-%s-%s" $shortnode $disk }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    cortx.io/device-path: {{ include "cortx_data.device_path.to_string" $localpath | quote }}
 spec:
   capacity:
-    storage: {{ $mountblksize }}
+    storage: {{ $deviceiter.size }}
   accessModes:
     - ReadWriteMany
-  volumeMode: {{ $.Values.cortxblkdata.storage.volumemode }}
-  storageClassName: {{ $.Values.cortxblkdata.storageclass }}
+  volumeMode: {{ $.Values.cortxblkdata.storage.volumeMode }}
+  storageClassName: {{ $.Values.cortxblkdata.storageClassName }}
   persistentVolumeReclaimPolicy: Retain
   local:
     path: {{ $localpath }}
@@ -36,20 +35,6 @@ spec:
           operator: In
           values:
           - {{ $nodename }}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ printf "cortx-data-%s-pvc-%s" $disk $index }}
-  namespace: {{ $.Release.Namespace }}
-spec:
-  accessModes:
-  - ReadWriteMany
-  volumeMode: {{ $.Values.cortxblkdata.storage.volumemode }}
-  storageClassName: {{ $.Values.cortxblkdata.storageclass }}
-  resources:
-     requests:
-       storage: {{ $mountblksize }}
 ---
 {{- end }}
 {{- end }}

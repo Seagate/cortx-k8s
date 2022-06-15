@@ -1,12 +1,19 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.cortxdata.service.clusterip.name }}
+  name: {{ .Values.cortxdata.service.headless.name }}
   namespace: {{ .Release.Namespace }}
+  labels:
+    cortx.io/service-type: {{ .Values.cortxdata.serviceType }}
 spec:
-  type: {{ .Values.cortxdata.service.clusterip.type }}
+  publishNotReadyAddresses: true
+  clusterIP: None
   selector:
     app: {{ .Values.cortxdata.name }}
+    cortx.io/service-type:  {{ .Values.cortxdata.serviceType }}
+    cortx.io/hax-enabled: "true"
+    cortx.io/service-domain: "{{ .Values.cortxdata.service.headless.name }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterdomain }}"
+  ### TODO CORTX-29859 - These ports may be superfluous or for documentation only...
   ports:
     - name: cortx-data-motr-hax-tcp
       protocol: TCP
@@ -22,14 +29,3 @@ spec:
       port: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
       targetPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
     {{- end }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Values.cortxdata.service.headless.name }}
-  namespace: {{ .Release.Namespace }}
-spec:
-  publishNotReadyAddresses: true
-  clusterIP: None
-  selector:
-    app: {{ .Values.cortxdata.name }}

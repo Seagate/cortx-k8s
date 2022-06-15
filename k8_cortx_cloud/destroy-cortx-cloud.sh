@@ -151,6 +151,7 @@ function deleteCortxData()
     for node in "${node_name_list[@]}"; do
         uninstallHelmChart "cortx-data-${node}-${namespace}" "${namespace}"
     done
+    uninstallHelmChart "cortx-data-${namespace}" "${namespace}"
 }
 
 function deleteCortxControl()
