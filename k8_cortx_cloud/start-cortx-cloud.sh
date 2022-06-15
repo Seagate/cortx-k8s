@@ -62,7 +62,7 @@ fi
 printf "########################################################\n"
 printf "# Start CORTX Data                                      \n"
 printf "########################################################\n"
-kubectl scale statefulset cortx-data --replicas ${num_nodes} --namespace="${namespace}"
+kubectl scale statefulset cortx-data --replicas "${num_nodes}" --namespace="${namespace}"
 
 printf "\nWait for CORTX Data to be ready"
 while true; do
