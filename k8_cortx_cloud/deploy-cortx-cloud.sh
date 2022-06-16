@@ -130,17 +130,11 @@ function configurationCheck()
         fi
     fi
 
-    ### TODO CORTX-29861 Replace with YAML Schema validation
     # Validate the "solution.yaml" file against the "solution_check.yaml" file
-    #while IFS= read -r line; do
-    #    echo "${line}"
-    #    if [[ "${line}" != *"Validate solution file result"* ]]; then
-    #        continue
-    #    fi
-    #    if [[ "${line}" == *"failed"* ]]; then
-    #        exit 1
-    #    fi
-    #done <<< "$(./solution_validation_scripts/solution-validation.sh "${solution_yaml}")"
+    ./solution_validation_scripts/solution-validation.sh "${solution_yaml}"
+    if [[ "$?" != "0" ]]; then
+        exit 1
+    fi
 }
 
 buildValues() {
