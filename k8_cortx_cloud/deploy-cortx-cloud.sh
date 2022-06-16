@@ -397,7 +397,6 @@ buildValues() {
             .replicas = ${data_node_count}
             | .motr.numiosinst = ${#cvg_index_list[@]}
             | .storageClassName = \"${cortx_localblockstorage_storageclassname}\"
-            | .service.headless.name = \"${cortxdata_service_headless_name}\"
             | .localpathpvc.mountpath = \"${local_storage}\")" "${values_file}"
 
     # shellcheck disable=SC2016
@@ -539,8 +538,6 @@ done
 ## This is currently required as part of CORTX-28968 et al for cross-Chart synchronization.
 ## Once Helm Charts are unified, these will become defaulted values.yaml properties.
 default_values_file="../charts/cortx/values.yaml"
-
-readonly cortxdata_service_headless_name=cortx-data-headless
 
 cortx_localblockstorage_storageclassname=$(yq ".platform.storage.localBlock.storageClassName" "${default_values_file}")
 readonly cortx_localblockstorage_storageclassname
