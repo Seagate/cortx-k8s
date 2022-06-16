@@ -81,8 +81,8 @@ cluster:
     {{- include "storageset.node" (dict "name" (printf "%s-headless" (include "cortx.ha.fullname" $root)) "id" $storageSet.haUuid "type" "ha_node") | nindent 4 }}
     {{- end }}
     {{- range $i := until (int $root.Values.cortxdata.replicas) }}
-    {{- $nodeName := (include "cortx.data.fullname" $root) }}
-    {{- $hostName := printf "%s-%d.%s" $nodeName $i (include "cortx.data.serviceDomain" $root) }}
+    {{- $nodeName := printf "%s-%d" (include "cortx.data.fullname" $root) $i }}
+    {{- $hostName := printf "%s.%s" $nodeName (include "cortx.data.serviceDomain" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "data_node") | nindent 4 }}
     {{- end }}
     {{- range $nodeName, $node := $storageSet.nodes }}
