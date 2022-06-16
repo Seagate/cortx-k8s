@@ -631,7 +631,6 @@ function deployCortx()
         -f ${values_file} \
         --namespace "${namespace}" \
         --create-namespace \
-        --debug \
         || exit $?
 
     # Restarting Consul at this time causes havoc. Disabling this for now until

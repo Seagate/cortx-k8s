@@ -348,26 +348,24 @@ function symlinkBlockDevices()
     export CORTX_IMAGE="${cortx_image_yaml#*>}"
 
     # Create comma-separated string from the device paths in solution.yaml
-    filter="solution.storage.cvg*.devices*.device"
-    device_output=$(parseSolution "${solution_yaml}" "${filter}")
-    IFS=';' read -r -a device_array <<< "${device_output}"
-    for device_path in "${device_array[@]}"
-    do
-        device_paths+=("${device_path#*>}")
-    done
     # Template replacement variable
-    DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
+    DEVICE_PATHS=$(yq e '[.solution.storage_sets[0].storage[].devices.metadata.device,
+                    .solution.storage_sets[0].storage[].devices.data[].device]' -o=c ${solution_yaml})
     export DEVICE_PATHS
+    echo ${DEVICE_PATHS}
 
     # Prepare local templated Job definition
     rm -f "${job_file}"
 
     # Iterate over the defined nodes in solution.yaml
-    filter="solution.nodes.node*.name"
-    node_output=$(parseSolution "${solution_yaml}" "${filter}")
-    IFS=';' read -r -a node_array <<< "${node_output}"
+    node_output=$(yq e '.solution.storage_sets[0].nodes' -o=c ${solution_yaml})
+
+    # Split parsed output into an array
+    IFS=',' read -r -a node_array <<< "${node_output}"
+
     for node_element in "${node_array[@]}"
     do
+        echo ${node_element}
         # Template replacement variable
         export NODE_NAME="${node_element#*>}"
         export NODE_SHORT_NAME="${NODE_NAME%%.*}"
