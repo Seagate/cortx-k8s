@@ -303,7 +303,6 @@ buildValues() {
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.configmap;
             .cortxControl.agent.resources           = $from.solution.common.resource_allocation.control.agent.resources
-            | .cortxHare.hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
             | .cortxMotr.motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
             | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
@@ -338,11 +337,7 @@ buildValues() {
     [[ -n ${s3_service_nodeports_https} ]] && yq -i ".cortxserver.service.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
 
     yq -i "
-        with(.platform; (
-            .podSecurityPolicy.create = ${createPodSecurityPolicy}
-            | .services.hax.protocol = \"${hax_service_protocol}\"
-            | .services.hax.port = ${hax_service_port}))
-        | with(.cortxserver.service; (
+        with(.cortxserver.service; (
             .type = \"${s3_service_type}\"
             | .count = ${s3_service_count}
             | .ports.http = ${s3_service_ports_http}
@@ -408,13 +403,10 @@ buildValues() {
         | with($to.cortxserver;
             .image           = $from.solution.images.cortxserver
             | .cfgmap.volmountname = "config001"
-            | .hax.port      = $from.solution.common.hax.port_num
-            | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources
-            | .hax.resources = $from.solution.common.resource_allocation.hare.hax.resources)
+            | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     yq -i ".cortxserver.replicas = ${total_server_pods}" "${values_file}"
-
 
     [[ ${components[data]} == false ]] && return
 
@@ -424,7 +416,8 @@ buildValues() {
     ### 3. Should we use a nodeSelector that uses the "in"/set operators?
 
      yq -i "
-        with(.cortxdata;
+        .hare.hax.ports.http.scheme = \"${hax_service_protocol}\"
+        | with(.cortxdata;
             .replicas = ${data_node_count}
             | .motr.numiosinst = ${#cvg_index_list[@]}
             | .storageClassName = \"${cortx_localblockstorage_storageclassname}\"
@@ -434,15 +427,16 @@ buildValues() {
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.hare.hax;
+            .ports.http.port   = $from.solution.common.hax.port_num
+            | .resources       = $from.solution.common.resource_allocation.hare.hax.resources)
         | with($to.cortxdata;
-            .image              = $from.solution.images.cortxdata
-            | .nodes            = [$from.solution.nodes.*.name]
-            | .blockDevicePaths = [$from.solution.storage.*.devices.data.*]
-            | .blockDevicePaths += [$from.solution.storage.*.devices.metadata]
-            | .hax.port         = $from.solution.common.hax.port_num
-            | .hax.resources    = $from.solution.common.resource_allocation.hare.hax.resources
-            | .motr.resources   = $from.solution.common.resource_allocation.data.motr.resources
-            | .confd.resources  = $from.solution.common.resource_allocation.data.confd.resources)
+            .image                 = $from.solution.images.cortxdata
+            | .nodes               = [$from.solution.nodes.*.name]
+            | .blockDevicePaths    = [$from.solution.storage.*.devices.data.*]
+            | .blockDevicePaths    += [$from.solution.storage.*.devices.metadata]
+            | .motr.resources      = $from.solution.common.resource_allocation.data.motr.resources
+            | .confd.resources     = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     set +eu

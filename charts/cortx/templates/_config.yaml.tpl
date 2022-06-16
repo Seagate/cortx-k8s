@@ -9,13 +9,13 @@
 {{- end -}}
 
 {{- define "config.yaml" -}}
-{{- $dataHostnames := list }}
-{{- range $i := until (int .Values.cortxdata.replicas) }}
-{{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.fullname" $) $i (include "cortx.data.serviceDomain" $)) }}
-{{- end }}
-{{- $dataHaxPort := 22001 }}
-{{- $dataIosPort := 22002 }}
-{{- $dataConfdPort := 21001 }}
+{{- $dataHostnames := list -}}
+{{- range $i := until (int .Values.cortxdata.replicas) -}}
+{{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.fullname" $) $i (include "cortx.data.serviceDomain" $)) -}}
+{{- end -}}
+{{- $dataHaxPort := 22001 -}}
+{{- $dataIosPort := 21001 -}}
+{{- $dataConfdPort := 22002 -}}
 cortx:
   external:
     kafka:
@@ -96,7 +96,7 @@ cortx:
         {{- end }}
     limits:
       services:
-      {{- include "config.yaml.service.limits" (dict "name" "hax" "resources" .Values.configmap.cortxHare.hax.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "hax" "resources" .Values.hare.hax.resources) | nindent 6 }}
   motr:
     interface_family: inet
     transport_type: libfab

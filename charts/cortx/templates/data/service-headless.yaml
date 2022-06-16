@@ -16,10 +16,14 @@ spec:
     cortx.io/service-type: cortx-data
   ### TODO CORTX-29859 - These ports may be superfluous or for documentation only...
   ports:
-    - name: cortx-data-motr-hax-tcp
+    - name: hax-http
       protocol: TCP
-      port: {{ .Values.cortxdata.hax.port }}
-      targetPort: {{ .Values.cortxdata.hax.port }}
+      port: {{ .Values.hare.hax.ports.http.port | int }}
+      targetPort: hax-http
+    - name: hax-tcp
+      protocol: TCP
+      port: 22001
+      targetPort: hax-tcp
     - name: cortx-motr-confd-tcp
       protocol: TCP
       port: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}

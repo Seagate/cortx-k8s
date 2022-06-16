@@ -84,6 +84,29 @@ externalKafka:
   adminUser: admin
   adminSecretName: kafka_admin_secret
 
+# CORTX Hare component configuration
+hare:
+  hax:
+    ports:
+      http:
+        # -- The HTTP scheme used to configure the Hax HTTP endpoint. Valid values are `http` or `https`.
+        scheme: https
+        # -- The port number of the Hax HTTP endpoint.
+        port: 22003
+    resources:
+      # -- Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers.
+      ## Example:
+      ## limits:
+      ##   cpu: 100m
+      ##   memory: 128Mi
+      limits: {}
+      # -- Configure the requested resources for all Hax containers. This applies to all Pods that run Hax containers.
+      ## Example:
+      ## requests:
+      ##   cpu: 100m
+      ##   memory: 128Mi
+      requests: {}
+
 ##
 ## Imported values from the cortx-configmap Helm Chart. These will be changed.
 ##
@@ -159,15 +182,6 @@ configmap:
   cortxHare:
     haxServerEndpoints: []
     haxClientEndpoints: []
-    hax:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 2Gi
-          cpu: 1000m
-
 
   # cortxMotr allows configuring CORTX MOTR settings
   cortxMotr:
@@ -223,12 +237,6 @@ platform:
       podAppLabel: cortx-control-pod
     cortxData:
       podNameLabel: cortx-data
-
-  services:
-    hax:
-      type: ClusterIP
-      protocol: https
-      port: 22003
 
   storage:
     localBlock:
@@ -323,15 +331,6 @@ cortxserver:
       limits:
         memory: 2Gi
         cpu: 2000m
-  hax:
-    port: 22003
-    resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
-      limits:
-        memory: 2Gi
-        cpu: 1000m
   cfgmap:
     mountpath: /etc/cortx/solution
   sslcfgmap:
@@ -397,15 +396,6 @@ cortxdata:
       limits:
         memory: 512Mi
         cpu: 500m
-  hax:
-    port: 22003
-    resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
-      limits:
-        memory: 2Gi
-        cpu: 1000m
   cfgmap:
     mountpath: /etc/cortx/solution
     name: cortx

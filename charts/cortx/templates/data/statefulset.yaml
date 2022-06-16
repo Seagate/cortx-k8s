@@ -92,8 +92,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-        ports:
-        - containerPort: 5050
       containers:
         - name: cortx-hax
           image: {{ .Values.cortxdata.image }}
@@ -124,11 +122,14 @@ spec:
               fieldRef:
                 fieldPath: metadata.name
           ports:
-          - name: hax
-            containerPort: {{ .Values.cortxdata.hax.port }}
+          - name: hax-http
+            containerPort: {{ .Values.hare.hax.ports.http.port | int }}
             protocol: TCP
-          {{- if .Values.cortxdata.hax.resources }}
-          resources: {{- toYaml .Values.cortxdata.hax.resources | nindent 12 }}
+          - name: hax-tcp
+            containerPort: 22001
+            protocol: TCP
+          {{- if .Values.hare.hax.resources }}
+          resources: {{- toYaml .Values.hare.hax.resources | nindent 12 }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

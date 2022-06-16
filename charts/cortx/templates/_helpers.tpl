@@ -100,7 +100,7 @@ Return the name of the Hare hax component
 Create a URL for the Hare hax HTTP endpoint
 */}}
 {{- define "cortx.hare.hax.url" -}}
-{{- printf "%s://%s:%d" .Values.platform.services.hax.protocol (include "cortx.hare.hax.fullname" .) (.Values.platform.services.hax.port | int) -}}
+{{- printf "%s://%s:%d" .Values.hare.hax.ports.http.scheme (include "cortx.hare.hax.fullname" $) (int .Values.hare.hax.ports.http.port) -}}
 {{- end -}}
 
 {{/*

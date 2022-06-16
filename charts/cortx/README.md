@@ -70,10 +70,6 @@ helm uninstall cortx
 | configmap.cortxControl.agent.resources.limits.memory | string | `"256Mi"` |  |
 | configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxControl.agent.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxHare.hax.resources.limits.cpu | string | `"1000m"` |  |
-| configmap.cortxHare.hax.resources.limits.memory | string | `"2Gi"` |  |
-| configmap.cortxHare.hax.resources.requests.cpu | string | `"250m"` |  |
-| configmap.cortxHare.hax.resources.requests.memory | string | `"128Mi"` |  |
 | configmap.cortxHare.haxClientEndpoints | list | `[]` |  |
 | configmap.cortxHare.haxServerEndpoints | list | `[]` |  |
 | configmap.cortxMotr.clientEndpoints | list | `[]` |  |
@@ -121,11 +117,6 @@ helm uninstall cortx
 | cortxdata.confd.resources.limits.memory | string | `"512Mi"` |  |
 | cortxdata.confd.resources.requests.cpu | string | `"250m"` |  |
 | cortxdata.confd.resources.requests.memory | string | `"128Mi"` |  |
-| cortxdata.hax.port | int | `22003` |  |
-| cortxdata.hax.resources.limits.cpu | string | `"1000m"` |  |
-| cortxdata.hax.resources.limits.memory | string | `"2Gi"` |  |
-| cortxdata.hax.resources.requests.cpu | string | `"250m"` |  |
-| cortxdata.hax.resources.requests.memory | string | `"128Mi"` |  |
 | cortxdata.image | string | `"ghcr.io/seagate/centos:7"` |  |
 | cortxdata.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
 | cortxdata.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
@@ -169,11 +160,6 @@ helm uninstall cortx
 | cortxserver.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxserver.enabled | bool | `true` |  |
 | cortxserver.extraConfiguration | string | `""` |  |
-| cortxserver.hax.port | int | `22003` |  |
-| cortxserver.hax.resources.limits.cpu | string | `"1000m"` |  |
-| cortxserver.hax.resources.limits.memory | string | `"2Gi"` |  |
-| cortxserver.hax.resources.requests.cpu | string | `"250m"` |  |
-| cortxserver.hax.resources.requests.memory | string | `"128Mi"` |  |
 | cortxserver.image | string | `"ghcr.io/seagate/centos:7"` |  |
 | cortxserver.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
 | cortxserver.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
@@ -198,6 +184,10 @@ helm uninstall cortx
 | externalKafka.adminUser | string | `"admin"` |  |
 | externalKafka.endpoints | list | `[]` |  |
 | fullnameOverride | string | `""` |  |
+| hare.hax.ports.http.port | int | `22003` | The port number of the Hax HTTP endpoint. |
+| hare.hax.ports.http.scheme | string | `"https"` | The HTTP scheme used to configure the Hax HTTP endpoint. Valid values are `http` or `https`. |
+| hare.hax.resources.limits | object | `{}` | Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers. |
+| hare.hax.resources.requests | object | `{}` | Configure the requested resources for all Hax containers. This applies to all Pods that run Hax containers. |
 | kafka.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Kafka containers |
 | kafka.deleteTopicEnable | bool | `true` | Enable topic deletion |
 | kafka.enabled | bool | `true` | Enable installation of the Kafka chart |
@@ -215,9 +205,6 @@ helm uninstall cortx
 | platform.podSecurityPolicy.create | bool | `false` |  |
 | platform.rbacRole.create | bool | `true` |  |
 | platform.rbacRoleBinding.create | bool | `true` |  |
-| platform.services.hax.port | int | `22003` |  |
-| platform.services.hax.protocol | string | `"https"` |  |
-| platform.services.hax.type | string | `"ClusterIP"` |  |
 | platform.storage.localBlock.storageClassName | string | `"cortx-local-block-storage"` |  |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
