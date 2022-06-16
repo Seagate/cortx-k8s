@@ -263,29 +263,6 @@ buildValues() {
         done
     fi
 
-    ## cortx-data Pods, managed by a StatefulSet, have deterministically
-    ## generated metadata. Inject that metadata into the ConfigMap here.
-    ## During Helm Chart unification, this block can be interned into
-    ## Helm logic.
-    local count
-    local storage_set_name
-    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
-    for (( count=0; count < data_node_count; count++ )); do
-        # Build out FQDN of cortx-data Pods
-        # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
-        local pod_name="${cortxdata_data_pod_prefix}-${count}"
-        local pod_fqdn="${pod_name}.${cortxdata_service_headless_name}.${namespace}.svc.${cluster_domain}"
-
-        ### cortx-k8s should generate a list item with the following information:
-        ### - name: Pod short name
-        ### - hostname: Pod FQDN
-        ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
-        ### - type: "server_node"
-
-        ### TODO CORTX-29861 Parameterize port names for dynamic Motr endpoint generation
-        yq -i ".configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.dataUuid=\"${pod_fqdn}\"" "${values_file}"
-    done
-
     # Populate the cluster storage volumes
     for cvg_index in "${cvg_index_list[@]}"; do
         cvg_path="solution.storage.${cvg_index}"
