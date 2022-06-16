@@ -16,6 +16,7 @@ cortx_secret_fields=("kafka_admin_secret"
                      "csm_auth_admin_secret"
                      "csm_mgmt_admin_secret")
 readonly cortx_secret_fields
+readonly cortx_localblockstorage_storageclassname="cortx-local-block-storage"
 
 # Enabled/disabled flags for components
 declare -A components
@@ -220,7 +221,7 @@ buildValues() {
     for node in "${node_name_list[@]}"; do
         if ((num_motr_client > 0)); then
             yq -i "
-                .configmap.cortxMotr.clientEndpoints += [\"tcp://cortx-client-headless-svc-${node}:21201\"]
+                .configmap.cortxMotr.clientEndpoints += [\"tcp://cortx-client-headless-svc-${node}:21501\"]
                 | .configmap.cortxHare.haxClientEndpoints += [\"tcp://cortx-client-headless-svc-${node}:22001\"]" "${values_file}"
         fi
     done
@@ -332,32 +333,11 @@ buildValues() {
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
-    ## cortx-server Pods, managed by a StatefulSet, have deterministically
-    ## generated metadata. Inject that metadata into the ConfigMap here.
-    ## During Helm Chart unification, this block can be interned into
-    ## Helm logic.
-    local count
-    local storage_set_name
-    storage_set_name=$(yq ".solution.storage_sets[0].name" "${solution_yaml}")
-    for (( count=0; count < total_server_pods; count++ )); do
-        # Build out FQDN of cortx-server Pods
-        # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
-        local pod_name="cortx-server-${count}"
-        local pod_fqdn="${pod_name}.cortx-server-headless.${namespace}.svc.cluster.local"
-
-        ### cortx-k8s should generate a list item with the following information:
-        ### - name: Pod short name
-        ### - hostname: Pod FQDN
-        ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
-        ### - type: "server_node"
-
-        ### TODO CORTX-29861 Parameterize port names for dynamic Motr endpoint generation (28968 F/UP)
-
-        yq -i "
-            .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${pod_fqdn}\"
-            | .configmap.cortxMotr.rgwEndpoints += [\"tcp://${pod_fqdn}:21001\"]
-            | .configmap.cortxHare.haxServerEndpoints += [\"tcp://${pod_fqdn}:22001\"]" "${values_file}"
-    done
+    local data_node_count=${#node_name_list[@]}
+    local server_instances_per_node
+    local total_server_pods
+    server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
+    total_server_pods=$(( data_node_count * server_instances_per_node ))
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -527,25 +507,6 @@ do
     count=$((count+1))
 done
 ### TODO CORTX-29861 [/end] Revisit for best way to parse this YAML section with new schema references
-
-##########################################################
-# Extract & establish required cluster-wide constants
-##########################################################
-
-## This is currently required as part of CORTX-28968 et al for cross-Chart synchronization.
-## Once Helm Charts are unified, these will become defaulted values.yaml properties.
-default_values_file="../charts/cortx/values.yaml"
-
-cortx_localblockstorage_storageclassname=$(yq ".platform.storage.localBlock.storageClassName" "${default_values_file}")
-readonly cortx_localblockstorage_storageclassname
-
-server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
-data_node_count=$(yq ".solution.storage_sets[0].nodes | length" "${solution_yaml}")
-total_server_pods=$(( data_node_count * server_instances_per_node ))
-
-readonly server_instances_per_node
-readonly data_node_count
-readonly total_server_pods
 
 ##########################################################
 # Begin CORTX on k8s deployment

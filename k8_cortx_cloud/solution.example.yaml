@@ -53,7 +53,7 @@ solution:
       control:
         type: NodePort
         ports:
-          https: 8081
+          https: 23256
         nodePorts:
           https: null
     resource_allocation:

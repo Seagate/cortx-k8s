@@ -176,14 +176,12 @@ configmap:
 
   # cortxHare allows configuring CORTX HARE settings
   cortxHare:
-    haxServerEndpoints: []
     haxClientEndpoints: []
 
   # cortxMotr allows configuring CORTX MOTR settings
   cortxMotr:
     clientInstanceCount: 0
     clientEndpoints: []
-    rgwEndpoints: []
     # An optional multi-line string that contains extra Motr configuration
     # settings. The string may contain template expressions, and is appended to
     # the end of the computed configuration.
@@ -234,10 +232,6 @@ platform:
     cortxData:
       podNameLabel: cortx-data
 
-  storage:
-    localBlock:
-      storageClassName: "cortx-local-block-storage"
-
 ##
 ## Imported values from cortx-control Helm Chart. These will be changed.
 ##
@@ -257,7 +251,7 @@ cortxcontrol:
       enabled: true
       type: NodePort
       ports:
-        https: 8081
+        https: 23256
       nodePorts:
         https: ""
   cfgmap:
