@@ -317,13 +317,11 @@ buildValues() {
         createPodSecurityPolicy="false"
     fi
 
-    local hax_service_port
     local hax_service_protocol
     local s3_service_type
     local s3_service_ports_http
     local s3_service_ports_https
     hax_service_protocol=$(getSolutionValue 'solution.common.hax.protocol')
-    hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
     s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
     s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
@@ -337,7 +335,8 @@ buildValues() {
     [[ -n ${s3_service_nodeports_https} ]] && yq -i ".cortxserver.service.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
 
     yq -i "
-        with(.cortxserver.service; (
+        .platform.podSecurityPolicy.create = ${createPodSecurityPolicy}
+        | with(.cortxserver.service; (
             .type = \"${s3_service_type}\"
             | .count = ${s3_service_count}
             | .ports.http = ${s3_service_ports_http}
