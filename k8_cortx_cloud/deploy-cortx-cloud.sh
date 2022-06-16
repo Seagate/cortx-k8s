@@ -540,14 +540,10 @@ done
 ## Once Helm Charts are unified, these will become defaulted values.yaml properties.
 default_values_file="../charts/cortx/values.yaml"
 
-readonly cortxdata_data_pod_prefix=cortx-data
 readonly cortxdata_service_headless_name=cortx-data-headless
 
 cortx_localblockstorage_storageclassname=$(yq ".platform.storage.localBlock.storageClassName" "${default_values_file}")
 readonly cortx_localblockstorage_storageclassname
-
-cluster_domain=$(yq ".configmap.clusterDomain" "${default_values_file}")
-readonly cluster_domain
 
 server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
 data_node_count=${#node_name_list[@]}
