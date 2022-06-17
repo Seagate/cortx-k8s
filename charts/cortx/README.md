@@ -70,12 +70,7 @@ helm uninstall cortx
 | configmap.cortxControl.agent.resources.limits.memory | string | `"256Mi"` |  |
 | configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxControl.agent.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxHare.hax.resources.limits.cpu | string | `"1000m"` |  |
-| configmap.cortxHare.hax.resources.limits.memory | string | `"2Gi"` |  |
-| configmap.cortxHare.hax.resources.requests.cpu | string | `"250m"` |  |
-| configmap.cortxHare.hax.resources.requests.memory | string | `"128Mi"` |  |
 | configmap.cortxHare.haxClientEndpoints | list | `[]` |  |
-| configmap.cortxHare.haxDataEndpoints | list | `[]` |  |
 | configmap.cortxHare.haxServerEndpoints | list | `[]` |  |
 | configmap.cortxMotr.clientEndpoints | list | `[]` |  |
 | configmap.cortxMotr.clientInstanceCount | int | `0` |  |
@@ -83,16 +78,12 @@ helm uninstall cortx
 | configmap.cortxMotr.confd.resources.limits.memory | string | `"512Mi"` |  |
 | configmap.cortxMotr.confd.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxMotr.confd.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxMotr.confdEndpoints | list | `[]` |  |
 | configmap.cortxMotr.extraConfiguration | string | `""` |  |
-| configmap.cortxMotr.headlessServiceName | string | `"cortx-data-headless"` |  |
-| configmap.cortxMotr.iosEndpoints | list | `[]` |  |
 | configmap.cortxMotr.motr.resources.limits.cpu | string | `"1000m"` |  |
 | configmap.cortxMotr.motr.resources.limits.memory | string | `"2Gi"` |  |
 | configmap.cortxMotr.motr.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxMotr.motr.resources.requests.memory | string | `"1Gi"` |  |
 | configmap.cortxMotr.rgwEndpoints | list | `[]` |  |
-| configmap.cortxMotr.statefulSetName | string | `"cortx-data"` |  |
 | configmap.cortxSecretName | string | `"cortx-secret"` |  |
 | configmap.cortxSecretValues | object | `{}` |  |
 | configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
@@ -119,6 +110,30 @@ helm uninstall cortx
 | cortxcontrol.service.loadbal.ports.https | int | `8081` |  |
 | cortxcontrol.service.loadbal.type | string | `"NodePort"` |  |
 | cortxcontrol.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
+| cortxdata.blockDevicePaths | list | `[]` |  |
+| cortxdata.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
+| cortxdata.cfgmap.name | string | `"cortx"` |  |
+| cortxdata.confd.resources.limits.cpu | string | `"500m"` |  |
+| cortxdata.confd.resources.limits.memory | string | `"512Mi"` |  |
+| cortxdata.confd.resources.requests.cpu | string | `"250m"` |  |
+| cortxdata.confd.resources.requests.memory | string | `"128Mi"` |  |
+| cortxdata.image | string | `"ghcr.io/seagate/centos:7"` |  |
+| cortxdata.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
+| cortxdata.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
+| cortxdata.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
+| cortxdata.motr.numiosinst | int | `1` |  |
+| cortxdata.motr.resources.limits.cpu | string | `"1000m"` |  |
+| cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
+| cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |
+| cortxdata.motr.resources.requests.memory | string | `"1Gi"` |  |
+| cortxdata.motr.startportnum | int | `29000` |  |
+| cortxdata.nodes | list | `[]` |  |
+| cortxdata.persistentStorage.accessModes[0] | string | `"ReadWriteMany"` |  |
+| cortxdata.persistentStorage.volumeMode | string | `"Block"` |  |
+| cortxdata.replicas | int | `3` |  |
+| cortxdata.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
+| cortxdata.sslcfgmap.name | string | `"cortx-ssl-cert"` |  |
+| cortxdata.storageClassName | string | `"local-block-storage"` |  |
 | cortxha.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxha.enabled | bool | `true` |  |
 | cortxha.fault_tolerance.resources.limits.cpu | string | `"500m"` |  |
@@ -145,11 +160,6 @@ helm uninstall cortx
 | cortxserver.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxserver.enabled | bool | `true` |  |
 | cortxserver.extraConfiguration | string | `""` |  |
-| cortxserver.hax.port | int | `22003` |  |
-| cortxserver.hax.resources.limits.cpu | string | `"1000m"` |  |
-| cortxserver.hax.resources.limits.memory | string | `"2Gi"` |  |
-| cortxserver.hax.resources.requests.cpu | string | `"250m"` |  |
-| cortxserver.hax.resources.requests.memory | string | `"128Mi"` |  |
 | cortxserver.image | string | `"ghcr.io/seagate/centos:7"` |  |
 | cortxserver.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
 | cortxserver.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
@@ -174,6 +184,10 @@ helm uninstall cortx
 | externalKafka.adminUser | string | `"admin"` |  |
 | externalKafka.endpoints | list | `[]` |  |
 | fullnameOverride | string | `""` |  |
+| hare.hax.ports.http.port | int | `22003` | The port number of the Hax HTTP endpoint. |
+| hare.hax.ports.http.protocol | string | `"https"` | The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`. |
+| hare.hax.resources.limits | object | `{"cpu":"1000m","memory":"2Gi"}` | Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers. |
+| hare.hax.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | Configure the requested resources for all Hax containers. This applies to all Pods that run Hax containers. |
 | kafka.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Kafka containers |
 | kafka.deleteTopicEnable | bool | `true` | Enable topic deletion |
 | kafka.enabled | bool | `true` | Enable installation of the Kafka chart |
@@ -191,9 +205,6 @@ helm uninstall cortx
 | platform.podSecurityPolicy.create | bool | `false` |  |
 | platform.rbacRole.create | bool | `true` |  |
 | platform.rbacRoleBinding.create | bool | `true` |  |
-| platform.services.hax.port | int | `22003` |  |
-| platform.services.hax.protocol | string | `"https"` |  |
-| platform.services.hax.type | string | `"ClusterIP"` |  |
 | platform.storage.localBlock.storageClassName | string | `"cortx-local-block-storage"` |  |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |

@@ -100,7 +100,7 @@ Return the name of the Hare hax component
 Create a URL for the Hare hax HTTP endpoint
 */}}
 {{- define "cortx.hare.hax.url" -}}
-{{- printf "%s://%s:%d" .Values.platform.services.hax.protocol (include "cortx.hare.hax.fullname" .) (.Values.platform.services.hax.port | int) -}}
+{{- printf "%s://%s:%d" .Values.hare.hax.ports.http.protocol (include "cortx.hare.hax.fullname" $) (int .Values.hare.hax.ports.http.port) -}}
 {{- end -}}
 
 {{/*
@@ -115,4 +115,18 @@ Return the name of the Server service domain
 */}}
 {{- define "cortx.server.serviceDomain" -}}
 {{- printf "%s-headless.%s.svc.%s" (include "cortx.server.fullname" .) .Release.Namespace .Values.clusterDomain -}}
+{{- end -}}
+
+{{/*
+Return the name of the Data component
+*/}}
+{{- define "cortx.data.fullname" -}}
+{{- printf "%s-data" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Return the name of the Data service domain
+*/}}
+{{- define "cortx.data.serviceDomain" -}}
+{{- printf "%s-headless.%s.svc.%s" (include "cortx.data.fullname" .) .Release.Namespace .Values.clusterDomain -}}
 {{- end -}}

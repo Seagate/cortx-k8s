@@ -84,6 +84,25 @@ externalKafka:
   adminUser: admin
   adminSecretName: kafka_admin_secret
 
+# CORTX Hare component configuration
+hare:
+  hax:
+    ports:
+      http:
+        # -- The port number of the Hax HTTP endpoint.
+        port: 22003
+        # -- The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`.
+        protocol: https
+    resources:
+      # -- Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers.
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      # -- Configure the requested resources for all Hax containers. This applies to all Pods that run Hax containers.
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
 ##
 ## Imported values from the cortx-configmap Helm Chart. These will be changed.
 ##
@@ -157,28 +176,14 @@ configmap:
 
   # cortxHare allows configuring CORTX HARE settings
   cortxHare:
-    haxDataEndpoints: []
     haxServerEndpoints: []
     haxClientEndpoints: []
-    hax:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 2Gi
-          cpu: 1000m
-
 
   # cortxMotr allows configuring CORTX MOTR settings
   cortxMotr:
     clientInstanceCount: 0
     clientEndpoints: []
-    confdEndpoints: []
-    iosEndpoints: []
     rgwEndpoints: []
-    statefulSetName: cortx-data
-    headlessServiceName: cortx-data-headless
     # An optional multi-line string that contains extra Motr configuration
     # settings. The string may contain template expressions, and is appended to
     # the end of the computed configuration.
@@ -228,12 +233,6 @@ platform:
       podAppLabel: cortx-control-pod
     cortxData:
       podNameLabel: cortx-data
-
-  services:
-    hax:
-      type: ClusterIP
-      protocol: https
-      port: 22003
 
   storage:
     localBlock:
@@ -328,15 +327,6 @@ cortxserver:
       limits:
         memory: 2Gi
         cpu: 2000m
-  hax:
-    port: 22003
-    resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
-      limits:
-        memory: 2Gi
-        cpu: 1000m
   cfgmap:
     mountpath: /etc/cortx/solution
   sslcfgmap:
@@ -373,3 +363,43 @@ cortxserver:
     nodePorts:
       http: ""
       https: ""
+
+cortxdata:
+  image: ghcr.io/seagate/centos:7
+  replicas: 3
+  blockDevicePaths: []
+  nodes: []
+  storageClassName: local-block-storage
+  persistentStorage:
+    volumeMode: Block
+    accessModes:
+    - ReadWriteMany
+  motr:
+    startportnum: 29000
+    numiosinst: 1
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  confd:
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 250m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  cfgmap:
+    mountpath: /etc/cortx/solution
+    name: cortx
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+    name: cortx-ssl-cert
+  localpathpvc:
+    mountpath: /etc/cortx
+    requeststoragesize: 1Gi
+    accessmodes:
+      - ReadWriteOnce

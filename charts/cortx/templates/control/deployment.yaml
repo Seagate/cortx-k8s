@@ -87,8 +87,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-        ports:
-        - containerPort: 5050
       containers:
         - name: cortx-csm-agent
           image: {{ .Values.cortxcontrol.image }}

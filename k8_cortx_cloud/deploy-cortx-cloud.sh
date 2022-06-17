@@ -263,34 +263,6 @@ buildValues() {
         done
     fi
 
-    ## cortx-data Pods, managed by a StatefulSet, have deterministically
-    ## generated metadata. Inject that metadata into the ConfigMap here.
-    ## During Helm Chart unification, this block can be interned into
-    ## Helm logic.
-    local count
-    local storage_set_name
-    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
-    for (( count=0; count < data_node_count; count++ )); do
-        # Build out FQDN of cortx-data Pods
-        # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
-        local pod_name="${cortxdata_data_pod_prefix}-${count}"
-        local pod_fqdn="${pod_name}.${cortxdata_service_headless_name}.${namespace}.svc.${cluster_domain}"
-
-        ### cortx-k8s should generate a list item with the following information:
-        ### - name: Pod short name
-        ### - hostname: Pod FQDN
-        ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
-        ### - type: "server_node"
-
-        ### TODO CORTX-29861 Parameterize port names for dynamic Motr endpoint generation
-        yq -i "
-            with(.configmap; (
-            .clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.dataUuid=\"${pod_fqdn}\"
-            | .cortxHare.haxDataEndpoints += [\"tcp://${pod_fqdn}:22001\"]
-            | .cortxMotr.confdEndpoints += [\"tcp://${pod_fqdn}:22002\"]
-            | .cortxMotr.iosEndpoints += [\"tcp://${pod_fqdn}:21001\"]))" "${values_file}"
-    done
-
     # Populate the cluster storage volumes
     for cvg_index in "${cvg_index_list[@]}"; do
         cvg_path="solution.storage.${cvg_index}"
@@ -308,7 +280,6 @@ buildValues() {
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.configmap;
             .cortxControl.agent.resources           = $from.solution.common.resource_allocation.control.agent.resources
-            | .cortxHare.hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
             | .cortxMotr.motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
             | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
@@ -323,13 +294,11 @@ buildValues() {
         createPodSecurityPolicy="false"
     fi
 
-    local hax_service_port
     local hax_service_protocol
     local s3_service_type
     local s3_service_ports_http
     local s3_service_ports_https
     hax_service_protocol=$(getSolutionValue 'solution.common.hax.protocol')
-    hax_service_port=$(getSolutionValue 'solution.common.hax.port_num')
     s3_service_type=$(getSolutionValue 'solution.common.external_services.s3.type')
     s3_service_count=$(getSolutionValue 'solution.common.external_services.s3.count')
     s3_service_ports_http=$(getSolutionValue 'solution.common.external_services.s3.ports.http')
@@ -343,10 +312,7 @@ buildValues() {
     [[ -n ${s3_service_nodeports_https} ]] && yq -i ".cortxserver.service.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
 
     yq -i "
-        with(.platform; (
-            .podSecurityPolicy.create = ${createPodSecurityPolicy}
-            | .services.hax.protocol = \"${hax_service_protocol}\"
-            | .services.hax.port = ${hax_service_port}))
+        .platform.podSecurityPolicy.create = ${createPodSecurityPolicy}
         | with(.cortxserver.service; (
             .type = \"${s3_service_type}\"
             | .count = ${s3_service_count}
@@ -413,12 +379,40 @@ buildValues() {
         | with($to.cortxserver;
             .image           = $from.solution.images.cortxserver
             | .cfgmap.volmountname = "config001"
-            | .hax.port      = $from.solution.common.hax.port_num
-            | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources
-            | .hax.resources = $from.solution.common.resource_allocation.hare.hax.resources)
+            | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     yq -i ".cortxserver.replicas = ${total_server_pods}" "${values_file}"
+
+    [[ ${components[data]} == false ]] && return
+
+    ### TODO CORTX-29861 Determine how we want to sub-select nominated nodes for Data Pod scheduling.
+    ### 1. Should we apply the labels through this script?
+    ### 2. Should we required the labels to be applied prior to execution of this script?
+    ### 3. Should we use a nodeSelector that uses the "in"/set operators?
+
+     yq -i "
+        .hare.hax.ports.http.protocol = \"${hax_service_protocol}\"
+        | with(.cortxdata;
+            .replicas = ${data_node_count}
+            | .motr.numiosinst = ${#cvg_index_list[@]}
+            | .storageClassName = \"${cortx_localblockstorage_storageclassname}\"
+            | .localpathpvc.mountpath = \"${local_storage}\")" "${values_file}"
+
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.hare.hax;
+            .ports.http.port   = $from.solution.common.hax.port_num
+            | .resources       = $from.solution.common.resource_allocation.hare.hax.resources)
+        | with($to.cortxdata;
+            .image                 = $from.solution.images.cortxdata
+            | .nodes               = [$from.solution.nodes.*.name]
+            | .blockDevicePaths    = [$from.solution.storage.*.devices.data.*]
+            | .blockDevicePaths    += [$from.solution.storage.*.devices.metadata]
+            | .motr.resources      = $from.solution.common.resource_allocation.data.motr.resources
+            | .confd.resources     = $from.solution.common.resource_allocation.data.confd.resources)
+        | $to' "${values_file}" "${solution_yaml}"
 
     set +eu
 }
@@ -545,17 +539,8 @@ done
 ## Once Helm Charts are unified, these will become defaulted values.yaml properties.
 default_values_file="../charts/cortx/values.yaml"
 
-cortxdata_service_headless_name=$(yq ".configmap.cortxMotr.headlessServiceName" "${default_values_file}")
-readonly cortxdata_service_headless_name
-
-cortxdata_data_pod_prefix=$(yq ".configmap.cortxMotr.statefulSetName" "${default_values_file}")
-readonly cortxdata_data_pod_prefix
-
 cortx_localblockstorage_storageclassname=$(yq ".platform.storage.localBlock.storageClassName" "${default_values_file}")
 readonly cortx_localblockstorage_storageclassname
-
-cluster_domain=$(yq ".configmap.clusterDomain" "${default_values_file}")
-readonly cluster_domain
 
 server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
 data_node_count=${#node_name_list[@]}
@@ -795,8 +780,6 @@ function deployCortxSecrets()
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
 
-    global_cortx_secret_name="${cortx_secret_name}"
-
     if [[ ${num_motr_client} -gt 0 ]]; then
         client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
         printf "%s" "${cortx_secret_name}" > ${client_secret_path}
@@ -826,60 +809,6 @@ function waitForAllDeploymentsAvailable()
     fi
 
     return ${rc}
-}
-
-function deployCortxData()
-{
-    [[ ${components[data]} == false ]] && return
-
-    printf "########################################################\n"
-    printf "# Deploy CORTX Data                                     \n"
-    printf "########################################################\n"
-    cortxdata_image=$(parseSolution 'solution.images.cortxdata')
-    cortxdata_image=$(echo "${cortxdata_image}" | cut -f2 -d'>')
-
-    ### TODO CORTX-29861 Determine how we want to sub-select nominated nodes for Data Pod scheduling.
-    ### 1. Should we apply the labels through this script?
-    ### 2. Should we required the labels to be applied prior to execution of this script?
-    ### 3. Should we use a nodeSelector that uses the "in"/set operators?
-
-    local -r cortx_data_values_file=cortx-data-values.yaml
-
-    yq --null-input "
-        .cortxdata.replicas = ${data_node_count}
-        "  > "${cortx_data_values_file}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.cortxdata;
-            .nodes                             = [$from.solution.nodes.*.name]
-            | .blockDevicePaths                = [$from.solution.storage.*.devices.data.*]
-            | .blockDevicePaths                += [$from.solution.storage.*.devices.metadata])
-        | $to' "${cortx_data_values_file}" "${solution_yaml}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.cortxdata;
-             .hax.resources              = $from.solution.common.resource_allocation.hare.hax.resources
-            | .motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
-            | .confd.resources            = $from.solution.common.resource_allocation.data.confd.resources)
-        | $to' "${cortx_data_values_file}" "${solution_yaml}"
-
-    helm install "cortx-data-${namespace}" cortx-cloud-helm-pkg/cortx-data \
-        -f ${cortx_data_values_file} \
-        --set cortxdata.image="${cortxdata_image}" \
-        --set cortxdata.storageClassName="${cortx_localblockstorage_storageclassname}" \
-        --set cortxdata.service.headless.name="${cortxdata_service_headless_name}" \
-        --set cortxdata.localpathpvc.mountpath="${local_storage}" \
-        --set cortxdata.hax.port="$(extractBlock 'solution.common.hax.port_num')" \
-        --set cortxdata.secretname="${global_cortx_secret_name}" \
-        --set cortxdata.motr.numiosinst=${#cvg_index_list[@]} \
-        -n "${namespace}" \
-        || exit $?
-
-    printf "\n\n"
 }
 
 function deployCortxClient()
@@ -1030,7 +959,6 @@ generateMachineIds
 # Deploy CORTX cloud
 ##########################################################
 deployCortx
-deployCortxData
 deployCortxClient
 cleanup
 

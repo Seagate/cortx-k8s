@@ -88,8 +88,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-        ports:
-        - containerPort: 5050
       containers:
         - name: cortx-ha-fault-tolerance
           image: {{ .Values.cortxha.image }}
