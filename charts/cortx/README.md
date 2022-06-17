@@ -185,9 +185,9 @@ helm uninstall cortx
 | externalKafka.endpoints | list | `[]` |  |
 | fullnameOverride | string | `""` |  |
 | hare.hax.ports.http.port | int | `22003` | The port number of the Hax HTTP endpoint. |
-| hare.hax.ports.http.scheme | string | `"https"` | The HTTP scheme used to configure the Hax HTTP endpoint. Valid values are `http` or `https`. |
-| hare.hax.resources.limits | object | `{}` | Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers. |
-| hare.hax.resources.requests | object | `{}` | Configure the requested resources for all Hax containers. This applies to all Pods that run Hax containers. |
+| hare.hax.ports.http.protocol | string | `"https"` | The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`. |
+| hare.hax.resources.limits | object | `{"cpu":"1000m","memory":"2Gi"}` | Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers. |
+| hare.hax.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | Configure the requested resources for all Hax containers. This applies to all Pods that run Hax containers. |
 | kafka.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Kafka containers |
 | kafka.deleteTopicEnable | bool | `true` | Enable topic deletion |
 | kafka.enabled | bool | `true` | Enable installation of the Kafka chart |
