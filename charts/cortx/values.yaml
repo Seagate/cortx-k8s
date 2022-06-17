@@ -89,23 +89,19 @@ hare:
   hax:
     ports:
       http:
-        # -- The HTTP scheme used to configure the Hax HTTP endpoint. Valid values are `http` or `https`.
-        scheme: https
         # -- The port number of the Hax HTTP endpoint.
         port: 22003
+        # -- The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`.
+        protocol: https
     resources:
       # -- Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers.
-      ## Example:
-      ## limits:
-      ##   cpu: 100m
-      ##   memory: 128Mi
-      limits: {}
+      limits:
+        cpu: 1000m
+        memory: 2Gi
       # -- Configure the requested resources for all Hax containers. This applies to all Pods that run Hax containers.
-      ## Example:
-      ## requests:
-      ##   cpu: 100m
-      ##   memory: 128Mi
-      requests: {}
+      requests:
+        cpu: 250m
+        memory: 128Mi
 
 ##
 ## Imported values from the cortx-configmap Helm Chart. These will be changed.

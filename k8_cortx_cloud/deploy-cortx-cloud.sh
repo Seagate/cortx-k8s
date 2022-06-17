@@ -392,7 +392,7 @@ buildValues() {
     ### 3. Should we use a nodeSelector that uses the "in"/set operators?
 
      yq -i "
-        .hare.hax.ports.http.scheme = \"${hax_service_protocol}\"
+        .hare.hax.ports.http.protocol = \"${hax_service_protocol}\"
         | with(.cortxdata;
             .replicas = ${data_node_count}
             | .motr.numiosinst = ${#cvg_index_list[@]}
