@@ -101,11 +101,11 @@ function tarPodLogs()
     # If there are remaining arguments, these are the list of cortx
     # containers.  For each, get logs.  The call "support_bundle generate"
     # for the first container.
-    for container in $@; do
+    for container in "$@"; do
       # Get logs
       local log_file="${logs_folder}/${log_name}-${container}.logs.txt"
       printf "================= Logs of %s =================\n" "${pod} / ${container}" > "${log_file}"
-      "${log_cmd[@]}" -c ${container} >> "${log_file}"
+      "${log_cmd[@]}" -c "${container}" >> "${log_file}"
     done
 
     # Get support bundle.  Use first container.
