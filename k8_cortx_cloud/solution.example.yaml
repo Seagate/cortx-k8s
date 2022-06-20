@@ -40,11 +40,6 @@ solution:
     hax:
       protocol: https
       port_num: 22003
-    storage_sets:
-      name: storage-set-1
-      durability:
-        sns: 1+0+0
-        dix: 1+0+0
     external_services:
       s3:
         type: NodePort
@@ -168,71 +163,57 @@ solution:
             limits:
               memory: 1Gi
               cpu:    500m
-  storage:
-    cvg1:
-      name: cvg-01
+  storage_sets:
+  - name: storage-set-1
+    durability:
+      sns: 1+0+0
+      dix: 1+0+0
+    container_group_size: 1
+    nodes:
+    - node-1
+    - node-2
+    - node-3
+    - node-4
+    storage:
+    - name: cvg-01
       type: ios
       devices:
         metadata:
           device: /dev/sdc
           size: 5Gi
         data:
-          d1:
-            device: /dev/sdd
-            size: 5Gi
-          d2:
-            device: /dev/sde
-            size: 5Gi
-          d3:
-            device: /dev/sdf
-            size: 5Gi
-          d4:
-            device: /dev/sdg
-            size: 5Gi
-          d5:
-            device: /dev/sdh
-            size: 5Gi
-          d6:
-            device: /dev/sdi
-            size: 5Gi
-          d7:
-            device: /dev/sdj
-            size: 5Gi
-    cvg2:
-      name: cvg-02
+        - device: /dev/sdd
+          size: 5Gi
+        - device: /dev/sde
+          size: 5Gi
+        - device: /dev/sdf
+          size: 5Gi
+        - device: /dev/sdg
+          size: 5Gi
+        - device: /dev/sdh
+          size: 5Gi
+        - device: /dev/sdi
+          size: 5Gi
+        - device: /dev/sdj
+          size: 5Gi
+    - name: cvg-02
       type: ios
       devices:
         metadata:
           device: /dev/sdk
           size: 5Gi
         data:
-          d1:
-            device: /dev/sdl
-            size: 5Gi
-          d2:
-            device: /dev/sdm
-            size: 5Gi
-          d3:
-            device: /dev/sdn
-            size: 5Gi
-          d4:
-            device: /dev/sdo
-            size: 5Gi
-          d5:
-            device: /dev/sdp
-            size: 5Gi
-          d6:
-            device: /dev/sdq
-            size: 5Gi
-          d7:
-            device: /dev/sdr
-            size: 5Gi
-  nodes:
-    node1:
-      name: node-1
-    node2:
-      name: node-2
-    node3:
-      name: node-3
-    node4:
-      name: node-4
+        - device: /dev/sdl
+          size: 5Gi
+        - device: /dev/sdm
+          size: 5Gi
+        - device: /dev/sdn
+          size: 5Gi
+        - device: /dev/sdo
+          size: 5Gi
+        - device: /dev/sdp
+          size: 5Gi
+        - device: /dev/sdq
+          size: 5Gi
+        - device: /dev/sdr
+          size: 5Gi

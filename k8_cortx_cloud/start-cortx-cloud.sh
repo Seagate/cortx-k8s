@@ -18,7 +18,7 @@ function parseSolution()
 
 namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
 deployment_type=$(parseSolution 'solution.deployment_type' | cut -f2 -d'>')
-num_nodes=$(parseSolution 'solution.nodes.node*.name' | grep -o '>' | wc -l)
+num_nodes=$(yq '.solution.storage_sets[0].nodes | length' "${solution_yaml}")
 
 readonly namespace
 readonly deployment_type

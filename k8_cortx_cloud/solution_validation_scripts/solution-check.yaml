@@ -25,11 +25,6 @@ solution:
     hax:
       protocol: required
       port_num: required
-    storage_sets:
-      name: required
-      durability:
-        sns: required
-        dix: required
     external_services:
       s3:
         type: required
@@ -148,18 +143,19 @@ solution:
             limits:
               memory: required
               cpu: required
-  storage:
-    cvg1:
-      name: required
-      type: required
-      devices:
-        metadata:
-          device: required
-          size: required
-        data:
-          d1:
-            device: required
-            size: required
-  nodes:
-    node1:
-      name: required
+  storage_sets:
+    - name: required
+      durability:
+        sns: required
+        dix: required
+      storage:
+        - name: required
+          type: required
+          devices:
+            metadata:
+              device: required
+              size: required
+            data:
+              - device: required
+                size: required
+      nodes: required

@@ -70,23 +70,24 @@ readonly pvc_consul_filter="data-.*-consul-server-"
 readonly pvc_kafka_filter="data-cortx-kafka-|data-kafka-"
 readonly pvc_filter="${pvc_consul_filter}|${pvc_kafka_filter}|zookeeper|openldap-data|cortx|3rd-party"
 
-parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
+### TODO CORTX-29861 Revisit for best way to parse this YAML section with new schema references
+parsed_node_output=$(yq e '.solution.storage_sets[0].nodes' --output-format=csv ${solution_yaml})
 
 # Split parsed output into an array of vars and vals
-IFS=';' read -r -a parsed_var_val_array <<< "${parsed_node_output}"
+IFS=',' read -r -a parsed_node_array <<< "${parsed_node_output}"
 
 [[ -d $(pwd)/cortx-cloud-helm-pkg/cortx-data ]] && find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
 count=0
 # Loop the var val tuple array
-for var_val_element in "${parsed_var_val_array[@]}"
+for node_name in "${parsed_node_array[@]}"
 do
-    node_name=$(echo "${var_val_element}" | cut -f2 -d'>')
     shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
     node_name_list[count]=${shorter_node_name}
     count=$((count+1))
 done
+### TODO CORTX-29861 [/end] Revisit for best way to parse this YAML section with new schema references
 
 function uninstallHelmChart()
 {

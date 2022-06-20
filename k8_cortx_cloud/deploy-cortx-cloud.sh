@@ -131,15 +131,9 @@ function configurationCheck()
     fi
 
     # Validate the "solution.yaml" file against the "solution_check.yaml" file
-    while IFS= read -r line; do
-        echo "${line}"
-        if [[ "${line}" != *"Validate solution file result"* ]]; then
-            continue
-        fi
-        if [[ "${line}" == *"failed"* ]]; then
-            exit 1
-        fi
-    done <<< "$(./solution_validation_scripts/solution-validation.sh "${solution_yaml}")"
+    if ! ./solution_validation_scripts/solution-validation.sh "${solution_yaml}"; then
+        exit 1
+    fi
 }
 
 buildValues() {
@@ -235,9 +229,10 @@ buildValues() {
 
     # shellcheck disable=SC2016
     yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from | $from.solution.common.storage_sets.name as $name
-        | $to.configmap.clusterStorageSets.[$name].durability = $from.solution.common.storage_sets.durability
+        select(fi==0) ref $to | select(fi==1) ref $from | $from.solution.storage_sets[0].name as $name
+        | $to.configmap.clusterStorageSets.[$name].durability = $from.solution.storage_sets[0].durability
         | $to' "${values_file}" "${solution_yaml}"
+
 
     local uuid
 
@@ -247,7 +242,7 @@ buildValues() {
             uuid=$(< "${cfgmap_path}/auto-gen-${c}-${namespace}/id")
             yq -i ".cortx${c}.machineid.value = \"${uuid}\"" "${values_file}"
             yq -i eval-all "
-                select(fi==0) ref \$to | select(fi==1).solution.common.storage_sets.name as \$name
+                select(fi==0) ref \$to | select(fi==1).solution.storage_sets[0].name as \$name
                 | \$to.configmap.clusterStorageSets.[\$name].${c}Uuid=\"${uuid}\"
                 | \$to" "${values_file}" "${solution_yaml}"
         fi
@@ -257,21 +252,22 @@ buildValues() {
         for node in "${node_name_list[@]}"; do
             uuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/client/id")
             yq -i eval-all "
-                select(fi==0) ref \$to | select(fi==1).solution.common.storage_sets.name as \$name
+                select(fi==0) ref \$to | select(fi==1).solution.storage_sets[0].name as \$name
                 | \$to.configmap.clusterStorageSets.[\$name].nodes.${node}.clientUuid=\"${uuid}\"
                 | \$to" "${values_file}" "${solution_yaml}"
         done
     fi
 
     # Populate the cluster storage volumes
-    for cvg_index in "${cvg_index_list[@]}"; do
-        cvg_path="solution.storage.${cvg_index}"
+    num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' "${solution_yaml}")
+    for (( index=0; index < num_cvgs; index++ )); do
+        cvg_path="solution.storage_sets[0].storage[${index}]"
         yq -i eval-all "
             select(fi==0) ref \$to | select(fi==1).${cvg_path} ref \$cvg
             | with(\$to.configmap.clusterStorageVolumes.[\$cvg.name];
                 .type = \$cvg.type
                 | .metadataDevices = [\$cvg.devices.metadata.device]
-                | .dataDevices = [\$cvg.devices.data.d*.device])
+                | .dataDevices = [\$cvg.devices.data[].device])
             | \$to" "${values_file}" "${solution_yaml}"
     done
 
@@ -342,7 +338,7 @@ buildValues() {
     ## Helm logic.
     local count
     local storage_set_name
-    storage_set_name=$(yq ".solution.common.storage_sets.name" "${solution_yaml}")
+    storage_set_name=$(yq ".solution.storage_sets[0].name" "${solution_yaml}")
     for (( count=0; count < total_server_pods; count++ )); do
         # Build out FQDN of cortx-server Pods
         # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
@@ -395,7 +391,7 @@ buildValues() {
         .hare.hax.ports.http.protocol = \"${hax_service_protocol}\"
         | with(.cortxdata;
             .replicas = ${data_node_count}
-            | .motr.numiosinst = ${#cvg_index_list[@]}
+            | .motr.numiosinst = ${num_cvgs}
             | .storageClassName = \"${cortx_localblockstorage_storageclassname}\"
             | .localpathpvc.mountpath = \"${local_storage}\")" "${values_file}"
 
@@ -407,9 +403,9 @@ buildValues() {
             | .resources       = $from.solution.common.resource_allocation.hare.hax.resources)
         | with($to.cortxdata;
             .image                 = $from.solution.images.cortxdata
-            | .nodes               = [$from.solution.nodes.*.name]
-            | .blockDevicePaths    = [$from.solution.storage.*.devices.data.*]
-            | .blockDevicePaths    += [$from.solution.storage.*.devices.metadata]
+            | .nodes               = $from.solution.storage_sets[0].nodes
+            | .blockDevicePaths    = [$from.solution.storage_sets[0].storage[].devices.data[]]
+            | .blockDevicePaths    += [$from.solution.storage_sets[0].storage[].devices.metadata]
             | .motr.resources      = $from.solution.common.resource_allocation.data.motr.resources
             | .confd.resources     = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
@@ -476,10 +472,10 @@ printf "\n"
 
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
-parsed_node_output=$(parseSolution 'solution.nodes.node*.name')
+### TODO CORTX-29861 Revisit for best way to parse this YAML section with new schema references
 
 # Split parsed output into an array of vars and vals
-IFS=';' read -r -a parsed_var_val_array <<< "${parsed_node_output}"
+IFS=',' read -r -a parsed_node_array < <(yq e '.solution.storage_sets[0].nodes' --output-format=csv "${solution_yaml}")
 
 tainted_worker_node_list=[]
 num_tainted_worker_nodes=0
@@ -487,9 +483,8 @@ not_found_node_list=[]
 num_not_found_nodes=0
 # Validate the solution file. Check that nodes listed in the solution file
 # aren't tainted and allow scheduling.
-for parsed_var_val_element in "${parsed_var_val_array[@]}";
+for node_name in "${parsed_node_array[@]}";
 do
-    node_name=$(echo "${parsed_var_val_element}" | cut -f2 -d'>')
     output_get_node=$(kubectl get nodes | grep "${node_name}")
     output=$(kubectl describe nodes "${node_name}" | grep Taints | grep NoSchedule)
     if [[ "${output}" != "" ]]; then
@@ -522,14 +517,16 @@ node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
 node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
 count=0
 
-for var_val_element in "${parsed_var_val_array[@]}"
+for node_name in "${parsed_node_array[@]}"
 do
-    node_name=$(echo "${var_val_element}" | cut -f2 -d'>')
     node_selector_list[count]=${node_name}
+    # node_selector_list is only used in cortx-client related actions now
     shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
     node_name_list[count]=${shorter_node_name}
+    # node_name_list is only used in cortx-client related actions now
     count=$((count+1))
 done
+### TODO CORTX-29861 [/end] Revisit for best way to parse this YAML section with new schema references
 
 ##########################################################
 # Extract & establish required cluster-wide constants
@@ -543,7 +540,7 @@ cortx_localblockstorage_storageclassname=$(yq ".platform.storage.localBlock.stor
 readonly cortx_localblockstorage_storageclassname
 
 server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
-data_node_count=${#node_name_list[@]}
+data_node_count=$(yq ".solution.storage_sets[0].nodes | length" "${solution_yaml}")
 total_server_pods=$(( data_node_count * server_instances_per_node ))
 
 readonly server_instances_per_node
@@ -651,9 +648,9 @@ function deployCortxLocalBlockStorage()
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.cortxblkdata;
-            .nodes                             = [$from.solution.nodes.*.name]
-            | .blockDevicePaths                = [$from.solution.storage.*.devices.data.*]
-            | .blockDevicePaths                += [$from.solution.storage.*.devices.metadata])
+            .nodes                             = $from.solution.storage_sets[0].nodes
+            | .blockDevicePaths                = [$from.solution.storage_sets[0].storage[].devices.data[]]
+            | .blockDevicePaths                += [$from.solution.storage_sets[0].storage[].devices.metadata])
         | $to' "${cortx_block_data_values_file}" "${solution_yaml}"
 
     helm install "cortx-data-blk-data-${namespace}" cortx-cloud-helm-pkg/cortx-data-blk-data \
@@ -699,13 +696,11 @@ function generateMachineIds()
         [[ ${components["${c}"]} == true ]] && id_paths+=("${cfgmap_path}/auto-gen-${c}-${namespace}")
     done
 
-    for c in client data; do
-        if [[ ${components["${c}"]} == true ]]; then
-            for node in "${node_name_list[@]}"; do
-                 id_paths+=("${cfgmap_path}/auto-gen-${node}-${namespace}/${c}")
-            done
-        fi
-    done
+    if [[ ${components["client"]} == true ]]; then
+        for node in "${node_name_list[@]}"; do
+                id_paths+=("${cfgmap_path}/auto-gen-${node}-${namespace}/client")
+        done
+    fi
 
     for path in "${id_paths[@]}"; do
         mkdir -p "${path}"
@@ -932,18 +927,6 @@ fi
 # Get the storage paths to use
 local_storage=$(parseSolution 'solution.common.container_path.local' | cut -f2 -d'>')
 readonly local_storage
-
-cvg_output=$(parseSolution 'solution.storage.cvg*.name')
-IFS=';' read -r -a cvg_var_val_array <<< "${cvg_output}"
-# Build CVG index list (ex: [cvg1, cvg2, cvg3])
-cvg_index_list=[]
-count=0
-for cvg_var_val_element in "${cvg_var_val_array[@]}"; do
-    cvg_filter=$(echo "${cvg_var_val_element}" | cut -f1 -d'>')
-    cvg_index=$(echo "${cvg_filter}" | cut -f3 -d'.')
-    cvg_index_list[${count}]=${cvg_index}
-    count=$((count+1))
-done
 
 ##########################################################
 # Deploy CORTX cloud pre-requisites
