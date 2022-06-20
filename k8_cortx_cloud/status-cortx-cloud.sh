@@ -57,9 +57,9 @@ readonly release_selector="app.kubernetes.io/instance=cortx"
 readonly cortx_selector="${release_selector},app.kubernetes.io/name=cortx"
 
 namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
-num_nodes=$(yq '.solution.storage_sets[0].nodes | length' ${solution_yaml})
+num_nodes=$(yq '.solution.storage_sets[0].nodes | length' "${solution_yaml}")
 num_devices=$(yq '[.solution.storage_sets[0].storage[].devices.metadata.device, 
-                    .solution.storage_sets[0].storage[].devices.data[].device] | length' ${solution_yaml})
+                    .solution.storage_sets[0].storage[].devices.data[].device] | length' "${solution_yaml}")
 
 readonly namespace
 readonly num_nodes

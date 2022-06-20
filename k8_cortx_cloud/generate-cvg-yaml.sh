@@ -232,7 +232,7 @@ if [[ "${#DEVICE_PATHS[@]}" == "0" ]]; then
   error "Parsed DEVICE_PATHS_FILE contents is empty" 1
 fi
 
-cp ${SOLUTION_YAML} ${_YAML_BODY}
+cp "${SOLUTION_YAML}" "${_YAML_BODY}"
 
 yq -i e "del(.solution.storage_sets[0].storage[]) | del(.solution.storage_sets[0].nodes[])" ${_YAML_BODY} 
 

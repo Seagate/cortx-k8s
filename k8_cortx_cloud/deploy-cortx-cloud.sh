@@ -260,7 +260,7 @@ buildValues() {
     fi
 
     # Populate the cluster storage volumes
-    num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' ${solution_yaml})
+    num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' "${solution_yaml}")
     for (( index=0; index < num_cvgs; index++ )); do
         cvg_path="solution.storage_sets[0].storage[${index}]"
         yq -i eval-all "
@@ -474,7 +474,7 @@ printf "\n"
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
 ### TODO CORTX-29861 Revisit for best way to parse this YAML section with new schema references
-parsed_node_output=$(yq e '.solution.storage_sets[0].nodes' -o=c ${solution_yaml})
+parsed_node_output=$(yq e '.solution.storage_sets[0].nodes' -o=c "${solution_yaml}")
 
 # Split parsed output into an array of vars and vals
 IFS=',' read -r -a parsed_node_array <<< "${parsed_node_output}"

@@ -38,11 +38,11 @@ if [[ "${invalid_paths}" != "[]" ]]; then
 fi
 ### CORTX-29861 yq validation replacement [/end]
 
-num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' ${solution_yaml})
-total_num_nodes=$(yq '.solution.storage_sets[0].nodes | length' ${solution_yaml})
+num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' "${solution_yaml}")
+total_num_nodes=$(yq '.solution.storage_sets[0].nodes | length' "${solution_yaml}")
 
-sns_val=$(yq e '.solution.storage_sets[0].durability.sns' ${solution_yaml})
-dix_val=$(yq e '.solution.storage_sets[0].durability.dix' ${solution_yaml})
+sns_val=$(yq e '.solution.storage_sets[0].durability.sns' "${solution_yaml}")
+dix_val=$(yq e '.solution.storage_sets[0].durability.dix' "${solution_yaml}")
 
 # Validate SNS
 sns_total=0
