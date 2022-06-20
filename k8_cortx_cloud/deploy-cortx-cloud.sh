@@ -929,9 +929,6 @@ fi
 local_storage=$(parseSolution 'solution.common.container_path.local' | cut -f2 -d'>')
 readonly local_storage
 
-### TODO CORTX-29861 Revisit for best way to parse this YAML section with new schema references
-### TODO CORTX-29861 [/end] Revisit for best way to parse this YAML section with new schema references
-
 ##########################################################
 # Deploy CORTX cloud pre-requisites
 ##########################################################
