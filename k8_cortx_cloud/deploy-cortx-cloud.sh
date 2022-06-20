@@ -392,7 +392,7 @@ buildValues() {
         .hare.hax.ports.http.protocol = \"${hax_service_protocol}\"
         | with(.cortxdata;
             .replicas = ${data_node_count}
-            | .motr.numiosinst = ${#cvg_index_list[@]}
+            | .motr.numiosinst = ${num_cvgs}
             | .storageClassName = \"${cortx_localblockstorage_storageclassname}\"
             | .localpathpvc.mountpath = \"${local_storage}\")" "${values_file}"
 
@@ -404,9 +404,9 @@ buildValues() {
             | .resources       = $from.solution.common.resource_allocation.hare.hax.resources)
         | with($to.cortxdata;
             .image                 = $from.solution.images.cortxdata
-            | .nodes               = [$from.solution.nodes.*.name]
-            | .blockDevicePaths    = [$from.solution.storage.*.devices.data.*]
-            | .blockDevicePaths    += [$from.solution.storage.*.devices.metadata]
+            | .nodes               = $from.solution.storage_sets[0].nodes
+            | .blockDevicePaths    = [$from.solution.storage_sets[0].storage[].devices.data[]]
+            | .blockDevicePaths    += [$from.solution.storage_sets[0].storage[].devices.metadata]
             | .motr.resources      = $from.solution.common.resource_allocation.data.motr.resources
             | .confd.resources     = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"

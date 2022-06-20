@@ -28,7 +28,7 @@ fi
 
 invalid_paths="$(yq ea '. as $item ireduce({}; . *d $item) | .. | select(. == "required") | path | [join(".")]' ${solution_chk_yaml} ${solution_yaml})"
 
-if [[ "${invalid_paths}" != "" ]]; then
+if [[ "${invalid_paths}" != "[]" ]]; then
     echo "---"
     echo "VALIDATION FAILURE:"
     echo "The following paths are required and currently undefined in ${solution_yaml}:"
