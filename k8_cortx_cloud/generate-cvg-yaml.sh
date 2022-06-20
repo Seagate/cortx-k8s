@@ -234,11 +234,11 @@ fi
 
 cp "${SOLUTION_YAML}" "${_YAML_BODY}"
 
-yq -i e "del(.solution.storage_sets[0].storage[]) | del(.solution.storage_sets[0].nodes[])" ${_YAML_BODY} 
+yq -i "del(.solution.storage_sets[0].storage[]) | del(.solution.storage_sets[0].nodes[])" ${_YAML_BODY}
 
 _DEVICE_OFFSET=0
 
-## Generate CVGs stanza 
+## Generate CVGs stanza
 for ((cvg_instance = 1 ; cvg_instance <= NUM_CVGS ; cvg_instance++)); do
 
     ## Front-pad cvg-name with leading zeroes
@@ -246,22 +246,22 @@ for ((cvg_instance = 1 ; cvg_instance <= NUM_CVGS ; cvg_instance++)); do
     _CVG_NAME="${padding:${#cvg_instance}:${#padding}}${cvg_instance}"
     _CVG_INDEX=$((cvg_instance-1))
 
-    yq -i  e " with(.solution.storage_sets[0].storage[${_CVG_INDEX}] ; (
+    yq -i "with(.solution.storage_sets[0].storage[${_CVG_INDEX}] ; (
             .name = \"cvg-${_CVG_NAME}\"
-            | .type = \"ios\" 
+            | .type = \"ios\"
             | .devices = {} )) " "${_YAML_BODY}"
 
     # Generate metadata drive stanza
-    yq -i  e " with(.solution.storage_sets[0].storage[${_CVG_INDEX}].devices.metadata ; (
+    yq -i "with(.solution.storage_sets[0].storage[${_CVG_INDEX}].devices.metadata ; (
             .device = \"${DEVICE_PATHS[${_DEVICE_OFFSET}]}\"
-            | .size = \"${SIZE_METADATA_DRIVE}\" )) " "${_YAML_BODY}"
+            | .size = \"${SIZE_METADATA_DRIVE}\" ))" "${_YAML_BODY}"
     ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
 
     # Generate data drive stanzas
     for ((data_instance = 0 ; data_instance < NUM_DATA_DRIVES ; data_instance++)); do
-      yq -i  e " with(.solution.storage_sets[0].storage[${_CVG_INDEX}].devices.data[${data_instance}] ; (
+      yq -i "with(.solution.storage_sets[0].storage[${_CVG_INDEX}].devices.data[${data_instance}] ; (
             .device = \"${DEVICE_PATHS[${_DEVICE_OFFSET}]}\"
-            | .size = \"${SIZE_DATA_DRIVE}\" )) " "${_YAML_BODY}"
+            | .size = \"${SIZE_DATA_DRIVE}\" ))" "${_YAML_BODY}"
       ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
     done
 
@@ -269,10 +269,10 @@ done
 
 ## Generate Nodes stanza
 for ((node_instance = 1 ; node_instance <= ${#NODE_LIST[@]} ; node_instance++)); do
-  yq -i e ".solution.storage_sets[0].nodes += \"${NODE_LIST[${node_instance}-1]}\" " ${_YAML_BODY}
+  yq -i ".solution.storage_sets[0].nodes += \"${NODE_LIST[${node_instance}-1]}\" " ${_YAML_BODY}
 done
 
 # Dump to stdout with pretty-printed arrays etc.
-yq -P e "." ${_YAML_BODY}
+yq --prettyPrint e "." ${_YAML_BODY}
 
 rm ${_YAML_BODY}

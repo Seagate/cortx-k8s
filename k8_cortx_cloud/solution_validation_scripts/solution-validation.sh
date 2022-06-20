@@ -42,6 +42,11 @@ fi
 num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' "${solution_yaml}")
 total_num_nodes=$(yq '.solution.storage_sets[0].nodes | length' "${solution_yaml}")
 
+if [[ "${num_cvgs}" -gt "1" ]];
+    echo "WARNING: Only 1 Storage Set is currently supported by CORTX."
+    echo "WARNING: The first Storage Set in the provided solution configuration file will be used and additional Storage Sets will be ignored."
+fi
+
 sns_val=$(yq e '.solution.storage_sets[0].durability.sns' "${solution_yaml}")
 dix_val=$(yq e '.solution.storage_sets[0].durability.dix' "${solution_yaml}")
 

@@ -71,7 +71,7 @@ readonly pvc_kafka_filter="data-cortx-kafka-|data-kafka-"
 readonly pvc_filter="${pvc_consul_filter}|${pvc_kafka_filter}|zookeeper|openldap-data|cortx|3rd-party"
 
 ### TODO CORTX-29861 Revisit for best way to parse this YAML section with new schema references
-parsed_node_output=$(yq e '.solution.storage_sets[0].nodes' -o=c ${solution_yaml})
+parsed_node_output=$(yq e '.solution.storage_sets[0].nodes' --output-format=csv ${solution_yaml})
 
 # Split parsed output into an array of vars and vals
 IFS=',' read -r -a parsed_node_array <<< "${parsed_node_output}"

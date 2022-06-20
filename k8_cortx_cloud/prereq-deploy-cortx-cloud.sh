@@ -348,18 +348,15 @@ function symlinkBlockDevices()
 
     # Create comma-separated string from the device paths in solution.yaml
     # Template replacement variable
-    DEVICE_PATHS=$(yq e '[.solution.storage_sets[0].storage[].devices.metadata.device,
-                    .solution.storage_sets[0].storage[].devices.data[].device]' -o=c "${solution_yaml}")
+    DEVICE_PATHS=$(yq '[.solution.storage_sets[0].storage[].devices.metadata.device,
+                   .solution.storage_sets[0].storage[].devices.data[].device]' --output-format=csv "${solution_yaml}")
     export DEVICE_PATHS
 
     # Prepare local templated Job definition
     rm -f "${job_file}"
 
-    # Iterate over the defined nodes in solution.yaml
-    node_output=$(yq e '.solution.storage_sets[0].nodes' -o=c "${solution_yaml}")
-
-    # Split parsed output into an array
-    IFS=',' read -r -a node_array <<< "${node_output}"
+    # Split defined node information into an array
+    IFS=',' read -r -a node_array < <(yq '.solution.storage_sets[0].nodes' --output-format=csv "${solution_yaml}")
 
     for node_element in "${node_array[@]}"
     do
