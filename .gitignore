@@ -4,3 +4,6 @@ logs-cortx-cloud-*.tar
 # Auto-generated deployment files
 k8_cortx_cloud/cortx-cloud-3rd-party-pkg/auto-gen-*
 k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-*
+
+# Runtime dependent Helm Charts
+charts/cortx/charts
