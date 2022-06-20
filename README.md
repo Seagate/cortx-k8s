@@ -307,9 +307,9 @@ This section contains common parameters that affect all CORTX components running
 | `common.external_services.control.type`               | Kubernetes Service type for external access to CSM Management API                                 | `NodePort` |
 | `common.external_services.control.ports.https`        | Secure (https) service port number for CSM Management API.                                        | `8081` |
 | `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | `null` |
-| `common.resource_allocation.**.storage`               | The desired storage space allocated to PVCs used by that component or sub-component.              | See `solution.yaml` |
-| `common.resource_allocation.**.resources.requests.*`  | CPU & Memory requested for Pods managed by a specific component or sub-component.                 | See `solution.yaml` |
-| `common.resource_allocation.**.resources.limits.*`    | CPU & Memory limits for Pods managed by a specific component or sub-component.                    | See `solution.yaml` |
+| `common.resource_allocation.**.storage`               | The desired storage space allocated to PVCs used by that component or sub-component.              | See `solution.example.yaml` |
+| `common.resource_allocation.**.resources.requests.*`  | CPU & Memory requested for Pods managed by a specific component or sub-component.                 | See `solution.example.yaml` |
+| `common.resource_allocation.**.resources.limits.*`    | CPU & Memory limits for Pods managed by a specific component or sub-component.                    | See `solution.example.yaml` |
 
 ### Storage parameters
 
@@ -320,18 +320,18 @@ The metadata and data drives are defined in this section. All drives must be the
 | Name                     | Description                                                                                      | Default Value           |
 | ------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------- |
 | `storage_sets`           | A list of the storage defined for use by CORTX. At this time, only one storage set is supported. | See `solution.example.yaml`  |
-| `storage_sets[].name`    | The name of the storage set. This is used internally by CORTX to determine available storage.    | `storage-set-1`         |
+| `storage_sets[].name`    | The name of an indvidual storage set.    | `storage-set-1`         |
 | `storage_sets[].durability.sns` | `TBD`                               | `1+0+0` |
 | `storage_sets[].durability.dix` | `TBD`                               | `1+0+0` |
 | `storage_sets[].container_group_size` | This value determines the number of Motr IO containers inside of a single CORTX Data Pod. This value can be tuned for optimal performance based upon different Kubernetes environments. | `1` | 
 | `storage_sets[].nodes`   | The list of Kubernetes worker nodes that CORTX will use to manage data inside the defined storage set. | See `solution.example.yaml` |
-| `storage_sets[].storage` | The list of CVGs (or Cylinder Volume Groups) that CORTX will use to store its data on. At this moment, all nodes mentioned in the parameter above must have all the same metadata and data drives available as mentioned in this parameter. | See `solution.example.yaml` |
+| `storage_sets[].storage` | The list of CVGs (or Cylinder Volume Groups) that CORTX will use to store its data. All nodes defined in the parameter above must have all the same metadata and data drives available as defined in this parameter. | See `solution.example.yaml` |
 | `storage_sets[].storage[].name` | This value is used to identify the specific collection of drives CORTX will use to store data. | `cvg-01` |
 | `storage_sets[].storage[].type` | `TBD` | `ios` |
-| `storage_sets[].storage[].devices` | This list defines the specific drives that CORTX will use to store both object metadata and data on inside this CVG. | See `solution.example.yaml` |
+| `storage_sets[].storage[].devices` | The list of specific block devices CORTX will use to store both object metadata and data on inside this CVG. | See `solution.example.yaml` |
 | `storage_sets[].storage[].devices.metadata.device` | The block device path CORTX will use to store object metadata on for this CVG. | `/dev/sdc` |
 | `storage_sets[].storage[].devices.metadata.size` | The size of the block device CORTX will use to store object metadata on for this CVG. | `5Gi` |
-| `storage_sets[].storage[].devices.data[]` | The list of block devices CORTX will use to store its object data on for this CVG. This list can (and most often will) have multiple devices defined in it. | See `solution.example.yaml` |
+| `storage_sets[].storage[].devices.data[]` | The list of block devices CORTX will use to store its object data on for this CVG. This list can _(and most often will)_ have multiple devices defined in it. | See `solution.example.yaml` |
 | `storage_sets[].storage[].devices.data[].device` | The block device path CORTX will use to store some of its object data on for this CVG. | See `solution.example.yaml` |
 | `storage_sets[].storage[].devices.data[].size` | The size of the block device CORTX will use to store some of its object data on for this CVG. | `5Gi` |
 
