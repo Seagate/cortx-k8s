@@ -39,7 +39,8 @@ if [[ "${invalid_paths}" != "[]" ]]; then
 fi
 ### CORTX-29861 yq validation replacement [/end]
 
-if [[ "$(yq e '.solution.storage_sets | length' ${solution_yaml})" -gt "1" ]]; then
+num_storage_sets=$(yq e '.solution.storage_sets | length' "${solution_yaml}")
+if [[ "${num_storage_sets}" -gt "1" ]]; then
     echo "WARNING: Only 1 Storage Set is currently supported by CORTX."
     echo "WARNING: The first Storage Set in the provided solution configuration file will be used and additional Storage Sets will be ignored."
 fi
