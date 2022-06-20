@@ -83,66 +83,59 @@ printf "######################################################\n"
 printf "# ✍️  Generating logs, namespace: %s, date: %s\n" "${namespace}" "${date}"
 printf "######################################################\n"
 
-function saveLogs()
+
+function tarPodLogs()
 {
   local pod="$1"
-  local container="$2"  # optional
-  local log_cmd=(kubectl logs --namespace="${namespace}" "${pod}")
-  local log_name="${pod}"
+  shift
 
-  printf "\n🔍 Logging pod: %s" "${pod}"
-  if [[ -n ${container} ]]; then
-    printf ", container: %s" "${container}"
-    log_name+="-${container}"
-    log_cmd+=(-c "${container}")
-  fi
-
-  local log_file="${logs_folder}/${log_name}.logs.txt"
-
-  printf "================= Logs of %s =================\n" "${pod}" > "${log_file}"
-  "${log_cmd[@]}" >> "${log_file}"
-
-  tar --append --file "${logs_folder}".tar "${log_file}"
-  rm "${log_file}"
-}
-
-function savePodDetail()
-{
-  local pod="$1"
+  # save pod detail
   local log_file="${logs_folder}/${pod}.detail.txt"
-
   printf "================= Detail of %s =================\n\n" "${pod}" > "${log_file}"
   kubectl describe pod --namespace="${namespace}" "${pod}" >> "${log_file}"
 
-  tar --append --file "${logs_folder}.tar" "${log_file}"
-  rm "${log_file}"
-}
+  local log_cmd=(kubectl logs --namespace="${namespace}" "${pod}")
+  local log_name="${pod}"
 
-function getInnerLogs()
-{
-  local pod="$1"
-  local container_arg=()
-  [[ -n $2 ]] && container_arg+=(--container "$2")
-  local path="/var/cortx/support_bundle"
-  local name="bundle-logs-${pod}-${date}"
+  if (($# > 0)); then
+    # If there are remaining arguments, these are the list of cortx
+    # containers.  For each, get logs.  The call "support_bundle generate"
+    # for the first container.
+    for container in $@; do
+      # Get logs
+      local log_file="${logs_folder}/${log_name}-${container}.logs.txt"
+      printf "================= Logs of %s =================\n" "${pod} / ${container}" > "${log_file}"
+      "${log_cmd[@]}" -c ${container} >> "${log_file}"
+    done
 
-  printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
-  kubectl exec "${pod}" "${container_arg[@]}" --namespace="${namespace}" -- \
-    cortx_support_bundle generate \
-      --cluster_conf_path yaml:///etc/cortx/cluster.conf \
-      --location file://${path} \
-      --bundle_id "${name}" \
-      --message "${name}" \
-      --modules "${modules}" \
-      --duration "${duration}" \
-      --size_limit "${size_limit}" \
-      --binlogs "${binlogs}" \
-      --coredumps "${coredumps}" \
-      --stacktrace "${stacktrace}" \
-      --all "${all}"
-  kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" "${container_arg[@]}" --namespace="${namespace}"
-  tar --append --file "${logs_folder}.tar" "${logs_folder}/${name}"
-  kubectl exec "${pod}" "${container_arg[@]}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
+    # Get support bundle.  Use first container.
+    local path="/var/cortx/support_bundle"
+    local name="bundle-logs-${pod}-${date}"
+    local container=$1
+
+    printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
+    kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- \
+      cortx_support_bundle generate \
+        --cluster_conf_path yaml:///etc/cortx/cluster.conf \
+        --location file://${path} \
+        --bundle_id "${name}" \
+        --message "${name}" \
+        --modules "${modules}" \
+        --duration "${duration}" \
+        --size_limit "${size_limit}" \
+        --binlogs "${binlogs}" \
+        --coredumps "${coredumps}" \
+        --stacktrace "${stacktrace}" \
+        --all "${all}"
+    kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" -c "${container}" --namespace="${namespace}"
+    kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
+
+  else
+    # There are no remaining arguments.  Get logs from defaut container.
+    local log_file="${logs_folder}/${log_name}.logs.txt"
+    printf "================= Logs of %s =================\n" "${pod}" > "${log_file}"
+    "${log_cmd[@]}" >> "${log_file}"
+  fi
 }
 
 while IFS= read -r line; do
@@ -164,21 +157,22 @@ while IFS= read -r line; do
       cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
         containers=$(kubectl get pods "${pod_name}" -n "${namespace}" -o jsonpath="{.spec['containers', 'initContainers'][*].name}")
         IFS=" " read -r -a containers <<< "${containers}"
-        for item in "${containers[@]}";
-        do
-          saveLogs "${pod_name}" "${item}"
-        done
-        savePodDetail "${pod[0]}"
-        getInnerLogs "${pod[0]}" "${containers[0]}"
+        tarPodLogs "${pod_name}" "${containers[@]}" &
         ;;
       *)
-        saveLogs "${pod_name}"
-        savePodDetail "${pod_name}"
+        tarPodLogs "${pod_name}" &
         ;;
     esac
   fi
 
 done <<< "$(kubectl get pods --namespace="${namespace}" || true)"
+
+wait
+
+
+echo "Creating support bundle tar file: ${logs_folder}.tgz"
+
+tar cfz "${logs_folder}.tgz" "${logs_folder}"
 
 if [[ ${nodename} ]] && [[ ${pods_found} == "0" ]]; then
   printf "\n❌ No pods are running on the node: \"%s\".\n" "${nodename}"
