@@ -22,6 +22,7 @@ solution:
       instances_per_node: required
     motr:
       num_client_inst: required
+      container_group_size: required
     hax:
       protocol: required
       port_num: required

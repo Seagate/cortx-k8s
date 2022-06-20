@@ -1,9 +1,10 @@
 ### TODO Revisit UUID defaults here since we are moving away from UUID entirely...
+### TODO CORTX-29861 Update this logic block to account for dynamic Data Pod types more elegantly than supertype
 {{- define "storageset.node" -}}
 - name: {{ .name }}
   {{- if eq .type "server_node" }}
   id: {{ required "A valid id is required for server nodes" .id | quote }}
-  {{- else if eq .type "data_node" }}
+  {{- else if (or (eq .type "data_node") (eq .supertype "data_node")) }}
   id: {{ required "A valid id is required for data nodes" .id | quote }}
   {{- else }}
   id: {{ default uuidv4 .id | replace "-" "" | quote }}
@@ -18,23 +19,33 @@ cluster:
   id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
   ### TODO CORTX-29861 Create additional data_node types here based upon StatefulSet names
   node_types:
-  - name: data_node
+  {{- range $sts_index := until (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) | int) }}
+  - name: {{ printf "%s-%s%02d" (include "cortx.data.fullname" $) $.Values.cortxdata.motr.containerGroupName $sts_index }}
     components:
       - name: utils
       - name: motr
         services:
           - io
       - name: hare
-    {{- with .Values.configmap.clusterStorageVolumes }}
     storage:
-    {{- range $key, $val := . }}
-    - name: {{ $key }}
-      type: {{ $val.type }}
+    {{ range $group_size_iterator := until ($.Values.cortxdata.motr.containerGroupSize|int) }}
+    {{- $cvg_index := (add (mul $sts_index ($.Values.cortxdata.motr.containerGroupSize|int)) $group_size_iterator) -}}
+    {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
+    {{- range $cvg.devices.data -}}
+    - name: {{ $cvg.name }}
+      type: {{ $cvg.type }}
       devices:
-        metadata: {{- toYaml $val.metadataDevices | nindent 10 }}
-        data: {{- toYaml $val.dataDevices | nindent 10 }}
+        {{- if $cvg.devices.metadata }}
+        metadata:
+          - {{ $cvg.devices.metadata.device }}
+        {{ end -}}
+        data:
+        {{- range $cvg.devices.data }}
+          - {{ .device }}
+        {{- end }}
     {{- end }}
     {{- end }}
+  {{- end }}
   {{- if .Values.cortxserver.enabled }}
   - name: server_node
     components:
@@ -80,10 +91,13 @@ cluster:
     {{- if $root.Values.cortxha.enabled }}
     {{- include "storageset.node" (dict "name" (printf "%s-headless" (include "cortx.ha.fullname" $root)) "id" $storageSet.haUuid "type" "ha_node") | nindent 4 }}
     {{- end }}
+    {{- range $sts_index := until (ceil (div (len $root.Values.cortxdata.cvgs) ($root.Values.cortxdata.motr.containerGroupSize|int)) | int) }}
     {{- range $i := until (int $root.Values.cortxdata.replicas) }}
-    {{- $nodeName := printf "%s-%d" (include "cortx.data.fullname" $root) $i }}
+    {{- $nodeGroup := printf "%s-%s%02d" (include "cortx.data.fullname" $root) $.Values.cortxdata.motr.containerGroupName $sts_index }}
+    {{- $nodeName := printf "%s-%d" $nodeGroup $i }}
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.data.serviceDomain" $root) }}
-    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "data_node") | nindent 4 }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" $nodeGroup "supertype" "data_node") | nindent 4 }}
+    {{- end }}
     {{- end }}
     {{- range $nodeName, $node := $storageSet.nodes }}
     {{- if and $root.Values.cortxserver.enabled $node.serverUuid }}

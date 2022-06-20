@@ -391,7 +391,6 @@ buildValues() {
         .hare.hax.ports.http.protocol = \"${hax_service_protocol}\"
         | with(.cortxdata;
             .replicas = ${data_node_count}
-            | .motr.numiosinst = ${num_cvgs}
             | .storageClassName = \"${cortx_localblockstorage_storageclassname}\"
             | .localpathpvc.mountpath = \"${local_storage}\")" "${values_file}"
 
@@ -402,12 +401,14 @@ buildValues() {
             .ports.http.port   = $from.solution.common.hax.port_num
             | .resources       = $from.solution.common.resource_allocation.hare.hax.resources)
         | with($to.cortxdata;
-            .image                 = $from.solution.images.cortxdata
-            | .nodes               = $from.solution.storage_sets[0].nodes
-            | .blockDevicePaths    = [$from.solution.storage_sets[0].storage[].devices.data[]]
-            | .blockDevicePaths    += [$from.solution.storage_sets[0].storage[].devices.metadata]
-            | .motr.resources      = $from.solution.common.resource_allocation.data.motr.resources
-            | .confd.resources     = $from.solution.common.resource_allocation.data.confd.resources)
+            .image                     = $from.solution.images.cortxdata
+            | .nodes                   = $from.solution.storage_sets[0].nodes
+            | .cvgs                    = $from.solution.storage_sets[0].storage
+            | .blockDevicePaths        = [$from.solution.storage_sets[0].storage[].devices.data[]]
+            | .blockDevicePaths        += [$from.solution.storage_sets[0].storage[].devices.metadata]
+            | .motr.containerGroupSize = $from.solution.storage_sets[0].container_group_size
+            | .motr.resources          = $from.solution.common.resource_allocation.data.motr.resources
+            | .confd.resources         = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     set +eu
@@ -881,6 +882,7 @@ function waitForClusterReady()
         pids+=($!)
     fi
 
+    ### TODO CORTX-29861 Needs to be updated for multiple STS
     if [[ ${components[data]} == true ]]; then
         (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" "statefulset/cortx-data") &
         pids+=($!)

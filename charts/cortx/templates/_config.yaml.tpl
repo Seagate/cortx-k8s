@@ -8,11 +8,16 @@
     max: {{ .resources.limits.cpu }}
 {{- end -}}
 
+{{/*
+  TODO CORTX-29861 Revisit this to move name templating to a helper function
+*/}}
 {{- define "config.yaml" -}}
 {{- $dataHostnames := list -}}
-{{- range $i := until (int .Values.cortxdata.replicas) -}}
-{{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.fullname" $) $i (include "cortx.data.serviceDomain" $)) -}}
+{{- range $sts_index := until (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) | int) }}
+{{- range $i := until (int $.Values.cortxdata.replicas) -}}
+{{- $dataHostnames = append $dataHostnames (printf "%s-%s%02d-%d.%s" (include "cortx.data.fullname" $) $.Values.cortxdata.motr.containerGroupName $sts_index $i (include "cortx.data.serviceDomain" $)) -}}
 {{- end -}}
+{{- end }}
 {{- $dataHaxPort := 22001 -}}
 {{- $dataIosPort := 21001 -}}
 {{- $dataConfdPort := 22002 -}}

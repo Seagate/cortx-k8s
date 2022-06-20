@@ -369,6 +369,8 @@ cortxdata:
   replicas: 3
   blockDevicePaths: []
   nodes: []
+  ## TODO CORTX-29861 Document this new values.yaml parameter
+  cvgs: []
   storageClassName: local-block-storage
   persistentStorage:
     volumeMode: Block
@@ -376,7 +378,10 @@ cortxdata:
     - ReadWriteMany
   motr:
     startportnum: 29000
-    numiosinst: 1
+    # -- The number of Motr IO containers per CORTX Data Pod
+    # As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node.
+    containerGroupSize: 1
+    containerGroupName: c
     resources:
       requests:
         memory: 1Gi
