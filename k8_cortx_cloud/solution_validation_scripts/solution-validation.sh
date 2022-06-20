@@ -19,7 +19,7 @@ if [[ ! -f ${solution_yaml} ]]; then
     exit 1
 fi
 
-### CORTX-29861 yq validation replacement [/end]
+### CORTX-29861 yq validation replacement
 ### Test for the generic existence of required elements in solution.yaml
 ### This is done by deeply merging the input solution.yaml as an overlay onto the solution-check.yaml file.
 ### Any keys that have a resultant value of "required" after the merge signify that key is missing in the input solution.yaml file
