@@ -1,13 +1,14 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.cortxdata.name }}-node-config
+  name: {{ include "cortx.data.fullname" . }}-node
+  labels: {{- include "cortx.labels" . | nindent 4 }}
 data:
   entrypoint.sh: |-
     #!/bin/sh
     DESIRED_MAX_MAP_COUNT=30000000
     OBSERVED_MAX_MAP_COUNT=$(sysctl --values vm.max_map_count)
-    
+
     printf "%s\t%s\n" "Desired  'vm.max_map_count'" "${DESIRED_MAX_MAP_COUNT}"
     printf "%s\t%s\n" "Observed 'vm.max_map_count'" "${OBSERVED_MAX_MAP_COUNT}"
 

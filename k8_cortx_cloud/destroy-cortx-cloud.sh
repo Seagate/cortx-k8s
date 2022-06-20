@@ -76,7 +76,7 @@ parsed_node_output=$(yq e '.solution.storage_sets[0].nodes' -o=c ${solution_yaml
 # Split parsed output into an array of vars and vals
 IFS=',' read -r -a parsed_node_array <<< "${parsed_node_output}"
 
-find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
+[[ -d $(pwd)/cortx-cloud-helm-pkg/cortx-data ]] && find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
 
 node_name_list=[] # short version
 count=0
@@ -129,34 +129,18 @@ function deleteCortxServer()
 
 function deleteCortxData()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX Data                                    #\n"
-    printf "########################################################\n"
+    # backwards compatibility for cortx-data chart based on Deployments
     for node in "${node_name_list[@]}"; do
         uninstallHelmChart "cortx-data-${node}-${namespace}" "${namespace}"
     done
+
+    # backwards compatibility for cortx-data chart based on StatefulSet
     uninstallHelmChart "cortx-data-${namespace}" "${namespace}"
 }
 
 function deleteCortxControl()
 {
     uninstallHelmChart "cortx-control-${namespace}" "${namespace}"
-}
-
-function waitForCortxPodsToTerminate()
-{
-    local count
-    printf "\nWait for CORTX Pods to terminate"
-    while true; do
-        count=0
-        while IFS= read -r line; do
-            count=$(( count + 1 ))
-        done < <(kubectl get pods --namespace="${namespace}" --selector=release!=cortx,app.kubernetes.io/instance!=cortx --no-headers | grep cortx)
-
-        (( count == 0 )) && break || printf "."
-        sleep 1s
-    done
-    printf ". Done.\n\n"
 }
 
 function deleteCortxLocalBlockStorage()
@@ -301,8 +285,10 @@ function deleteNodeDataFiles()
     #################################################################
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
     find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
+    if [[ -d $(pwd)/cortx-cloud-helm-pkg/cortx-data ]]; then
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
+    fi
 }
 
 #############################################################
@@ -311,9 +297,8 @@ function deleteNodeDataFiles()
 deleteCortxClient
 deleteCortxHa       # deprecated
 deleteCortxServer   # deprecated
-deleteCortxData
+deleteCortxData     # deprecated
 deleteCortxControl  # deprecated
-waitForCortxPodsToTerminate
 deleteSecrets
 deleteCortxLocalBlockStorage
 deleteCortxConfigmap  # deprecated

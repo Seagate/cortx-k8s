@@ -6,9 +6,16 @@
   cpu:
     min: {{ .resources.requests.cpu }}
     max: {{ .resources.limits.cpu }}
-{{- end }}
+{{- end -}}
 
 {{- define "config.yaml" -}}
+{{- $dataHostnames := list -}}
+{{- range $i := until (int .Values.cortxdata.replicas) -}}
+{{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.fullname" $) $i (include "cortx.data.serviceDomain" $)) -}}
+{{- end -}}
+{{- $dataHaxPort := 22001 -}}
+{{- $dataIosPort := 21001 -}}
+{{- $dataConfdPort := 22002 -}}
 cortx:
   external:
     kafka:
@@ -75,22 +82,34 @@ cortx:
   {{- end }}
   hare:
     hax:
-      {{- $endpoints := concat (list (include "cortx.hare.hax.url" .)) .Values.configmap.cortxHare.haxDataEndpoints .Values.configmap.cortxHare.haxClientEndpoints -}}
+      {{- $endpoints := .Values.configmap.cortxHare.haxClientEndpoints -}}
       {{- if .Values.cortxserver.enabled }}
       {{- $endpoints = concat $endpoints .Values.configmap.cortxHare.haxServerEndpoints -}}
       {{- end }}
       endpoints:
-      {{- toYaml (default (list) $endpoints) | nindent 8 }}
+        - {{ include "cortx.hare.hax.url" . }}
+        {{- range $dataHostnames }}
+        - {{ printf "tcp://%s:%d" . $dataHaxPort }}
+        {{- end }}
+        {{- if $endpoints }}
+        {{- toYaml $endpoints | nindent 8 }}
+        {{- end }}
     limits:
       services:
-      {{- include "config.yaml.service.limits" (dict "name" "hax" "resources" .Values.configmap.cortxHare.hax.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "hax" "resources" .Values.hare.hax.resources) | nindent 6 }}
   motr:
     interface_family: inet
     transport_type: libfab
     ios:
-      endpoints: {{- toYaml .Values.configmap.cortxMotr.iosEndpoints | nindent 6 }}
+      endpoints:
+      {{- range $dataHostnames }}
+      - {{ printf "tcp://%s:%d" . $dataIosPort }}
+      {{- end }}
     confd:
-      endpoints: {{- toYaml .Values.configmap.cortxMotr.confdEndpoints | nindent 6 }}
+      endpoints:
+      {{- range $dataHostnames }}
+      - {{ printf "tcp://%s:%d" . $dataConfdPort }}
+      {{- end }}
     clients:
     {{- if .Values.cortxserver.enabled }}
     - name: rgw_s3

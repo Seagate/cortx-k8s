@@ -5,11 +5,11 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "cortx.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.platform.services.hax.type }}
+  type: ClusterIP
   selector:
     cortx.io/hax-enabled: "true"
   ports:
-    - name: hax-tcp
+    - name: hax-http
       protocol: TCP
-      port: {{ .Values.platform.services.hax.port | int }}
-      targetPort: hax
+      port: {{ .Values.hare.hax.ports.http.port | int }}
+      targetPort: hax-http
