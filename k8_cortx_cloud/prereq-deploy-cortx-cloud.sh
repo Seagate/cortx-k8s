@@ -351,7 +351,6 @@ function symlinkBlockDevices()
     DEVICE_PATHS=$(yq e '[.solution.storage_sets[0].storage[].devices.metadata.device,
                     .solution.storage_sets[0].storage[].devices.data[].device]' -o=c "${solution_yaml}")
     export DEVICE_PATHS
-    echo ${DEVICE_PATHS}
 
     # Prepare local templated Job definition
     rm -f "${job_file}"
@@ -364,7 +363,6 @@ function symlinkBlockDevices()
 
     for node_element in "${node_array[@]}"
     do
-        echo ${node_element}
         # Template replacement variable
         export NODE_NAME="${node_element#*>}"
         export NODE_SHORT_NAME="${NODE_NAME%%.*}"

@@ -131,8 +131,7 @@ function configurationCheck()
     fi
 
     # Validate the "solution.yaml" file against the "solution_check.yaml" file
-    ./solution_validation_scripts/solution-validation.sh "${solution_yaml}"
-    if [[ "$?" != "0" ]]; then
+    if ! ./solution_validation_scripts/solution-validation.sh "${solution_yaml}"; then
         exit 1
     fi
 }

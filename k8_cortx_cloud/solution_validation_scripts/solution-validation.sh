@@ -26,7 +26,8 @@ fi
 ### CAVEAT: This method does not currently account for optional keys or either/or requirements (IE secrets.name OR secrets.content),
 ### which the prior method did not cover either.
 
-invalid_paths="$(yq ea '. as $item ireduce({}; . *d $item) | .. | select(. == "required") | path | [join(".")]' ${solution_chk_yaml} ${solution_yaml})"
+# shellcheck disable=SC2016
+invalid_paths="$(yq ea '. as $item ireduce({}; . *d $item) | .. | select(. == "required") | path | [join(".")]' "${solution_chk_yaml}" "${solution_yaml}")"
 
 if [[ "${invalid_paths}" != "[]" ]]; then
     echo "---"
