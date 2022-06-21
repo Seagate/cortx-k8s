@@ -167,7 +167,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.name
           ports:
-          - name: motr-confd-tcp
+          - name: confd-tcp
             containerPort: {{ include "cortx.data.confdPort" $ | int }}
           {{- if .Values.cortxdata.confd.resources }}
           resources: {{- toYaml .Values.cortxdata.confd.resources | nindent 12 }}
