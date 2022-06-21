@@ -99,10 +99,10 @@ spec:
                 fieldPath: metadata.name
           ports:
           - name: rgw-http
-            containerPort: 22751
+            containerPort: {{ include "cortx.server.rgwHttpPort" . | int }}
             protocol: TCP
           - name: rgw-https
-            containerPort: 23001
+            containerPort: {{ include "cortx.server.rgwHttpsPort" . | int }}
             protocol: TCP
           - name: motr-client
             containerPort: {{ include "cortx.server.motrClientPort" . | int }}

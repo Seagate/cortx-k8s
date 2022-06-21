@@ -65,8 +65,8 @@ cortx:
       - {{ printf "https://%s-0:%d" (include "cortx.server.fullname" .) (.Values.cortxserver.service.ports.https | int) }}
     service:
       endpoints:
-      - http://:22751
-      - https://:23001
+      - {{ printf "http://:%d" (include "cortx.server.rgwHttpPort" . | int) }}
+      - {{ printf "https://:%d" (include "cortx.server.rgwHttpsPort" . | int) }}
     io_max_units: 8
     max_start_timeout: {{ .Values.cortxserver.maxStartTimeout | int }}
     service_instances: 1

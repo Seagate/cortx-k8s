@@ -125,6 +125,20 @@ Return the name of the Server service domain
 {{- end -}}
 
 {{/*
+Return the RGW HTTP endpoint port
+*/}}
+{{- define "cortx.server.rgwHttpPort" -}}
+22751
+{{- end -}}
+
+{{/*
+Return the RGW HTTPS endpoint port
+*/}}
+{{- define "cortx.server.rgwHttpsPort" -}}
+23001
+{{- end -}}
+
+{{/*
 Return the RGW Motr-client endpoint port
 */}}
 {{- define "cortx.server.motrClientPort" -}}
