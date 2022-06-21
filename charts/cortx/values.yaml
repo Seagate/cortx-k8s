@@ -369,7 +369,6 @@ cortxdata:
     accessModes:
     - ReadWriteMany
   motr:
-    startportnum: 29000
     numiosinst: 1
     resources:
       requests:
