@@ -83,6 +83,13 @@ Return the name of the Control component
 {{- end -}}
 
 {{/*
+Return the Control Agent endpoint port
+*/}}
+{{- define "cortx.control.agentPort" -}}
+23256
+{{- end -}}
+
+{{/*
 Return the name of the HA component
 */}}
 {{- define "cortx.ha.fullname" -}}

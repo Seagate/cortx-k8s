@@ -135,7 +135,7 @@ cortx:
   csm:
     agent:
       endpoints:
-      - https://:23256
+      - {{ printf "https://:%d" (include "cortx.control.agentPort" . | int) }}
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
     email_address: cortx@seagate.com # Optional
