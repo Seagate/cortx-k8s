@@ -104,6 +104,13 @@ Create a URL for the Hare hax HTTP endpoint
 {{- end -}}
 
 {{/*
+Return the Hare hax TCP endpoint port
+*/}}
+{{- define "cortx.hare.hax.tcpPort" -}}
+22001
+{{- end -}}
+
+{{/*
 Return the name of the Server component
 */}}
 {{- define "cortx.server.fullname" -}}

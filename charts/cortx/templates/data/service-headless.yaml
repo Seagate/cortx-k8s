@@ -22,7 +22,7 @@ spec:
       targetPort: hax-http
     - name: hax-tcp
       protocol: TCP
-      port: 22001
+      port: {{ include "cortx.hare.hax.tcpPort" . | int }}
       targetPort: hax-tcp
     - name: cortx-motr-confd-tcp
       protocol: TCP

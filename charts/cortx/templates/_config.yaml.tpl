@@ -19,7 +19,6 @@
 {{- $serverHostnames = append $serverHostnames (printf "%s-%d.%s" (include "cortx.server.fullname" $) $i (include "cortx.server.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
-{{- $haxPort := 22001 -}}
 {{- $iosPort := 21002 -}}
 {{- $confdPort := 21001 -}}
 {{- $rgwClientPort := 22501 -}}
@@ -92,7 +91,7 @@ cortx:
       endpoints:
       - {{ include "cortx.hare.hax.url" . }}
       {{- range (concat $dataHostnames $serverHostnames) }}
-      - {{ printf "tcp://%s:%d" . $haxPort }}
+      - {{ printf "tcp://%s:%d" . (include "cortx.hare.hax.tcpPort" $ | int) }}
       {{- end }}
       {{- if .Values.configmap.cortxHare.haxClientEndpoints }}
       {{- toYaml .Values.configmap.cortxHare.haxClientEndpoints | nindent 6 }}
