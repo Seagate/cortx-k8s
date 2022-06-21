@@ -105,7 +105,7 @@ helm uninstall cortx
 | cortxcontrol.machineid.value | string | `""` |  |
 | cortxcontrol.service.loadbal.enabled | bool | `true` |  |
 | cortxcontrol.service.loadbal.nodePorts.https | string | `""` |  |
-| cortxcontrol.service.loadbal.ports.https | int | `23256` |  |
+| cortxcontrol.service.loadbal.ports.https | int | `8081` |  |
 | cortxcontrol.service.loadbal.type | string | `"NodePort"` |  |
 | cortxcontrol.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
 | cortxdata.blockDevicePaths | list | `[]` |  |
@@ -124,7 +124,6 @@ helm uninstall cortx
 | cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
 | cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |
 | cortxdata.motr.resources.requests.memory | string | `"1Gi"` |  |
-| cortxdata.motr.startportnum | int | `29000` |  |
 | cortxdata.nodes | list | `[]` |  |
 | cortxdata.persistentStorage.accessModes[0] | string | `"ReadWriteMany"` |  |
 | cortxdata.persistentStorage.volumeMode | string | `"Block"` |  |
