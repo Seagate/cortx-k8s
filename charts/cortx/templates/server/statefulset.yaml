@@ -104,6 +104,9 @@ spec:
           - name: rgw-https
             containerPort: 23001
             protocol: TCP
+          - name: motr-client
+            containerPort: {{ include "cortx.server.motrClientPort" . | int }}
+            protocol: TCP
           resources: {{- toYaml .Values.cortxserver.rgw.resources | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false

@@ -19,7 +19,6 @@
 {{- $serverHostnames = append $serverHostnames (printf "%s-%d.%s" (include "cortx.server.fullname" $) $i (include "cortx.server.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
-{{- $rgwClientPort := 22501 -}}
 cortx:
   external:
     kafka:
@@ -116,7 +115,7 @@ cortx:
       num_instances: 1  # number of instances *per-pod*
       endpoints:
       {{- range $serverHostnames }}
-      - {{ printf "tcp://%s:%d" . $rgwClientPort }}
+      - {{ printf "tcp://%s:%d" . (include "cortx.server.motrClientPort" $ | int) }}
       {{- end }}
     {{- end }}
     - name: motr_client

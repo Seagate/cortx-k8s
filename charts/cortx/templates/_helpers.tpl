@@ -125,6 +125,13 @@ Return the name of the Server service domain
 {{- end -}}
 
 {{/*
+Return the RGW Motr-client endpoint port
+*/}}
+{{- define "cortx.server.motrClientPort" -}}
+22501
+{{- end -}}
+
+{{/*
 Return the name of the Data component
 */}}
 {{- define "cortx.data.fullname" -}}
