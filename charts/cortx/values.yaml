@@ -251,7 +251,7 @@ cortxcontrol:
       enabled: true
       type: NodePort
       ports:
-        https: 23256
+        https: 8081
       nodePorts:
         https: ""
   cfgmap:
