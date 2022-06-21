@@ -29,7 +29,7 @@ spec:
       port: {{ include "cortx.data.confdPort" $ | int }}
       targetPort: motr-confd-tcp
     {{- range $i := until (.Values.cortxdata.motr.numiosinst | int) }}
-    {{- $portName := printf "motr-ios-%03d-tcp" (add 1 $i) }}
+    {{- $portName := printf "ios-%d-tcp" (add 1 $i) }}
     - name: {{ $portName }}
       protocol: TCP
       port: {{ printf "%d" (add $i (include "cortx.data.iosPort" $) | int) }}
