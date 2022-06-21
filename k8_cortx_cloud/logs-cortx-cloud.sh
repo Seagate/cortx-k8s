@@ -16,7 +16,7 @@ function usage() {
   echo "                                     default file path is ${solution_yaml}."
   echo "    -n|--nodename NODENAME: collects logs from pods running only on given node".
   echo "                            collects logs from all the nodes by default."
-  echo "    --duration DURATION : dutaion for which logs should be collected"
+  echo "    --duration DURATION : duration for which logs should be collected"
   echo "    --size_limit SIZE : max size limit for support bundle to be generated"
   echo "    --binlogs True/False : option to collect binary logs"
   echo "    --coredumps True/False : option to collect core dumps"
