@@ -144,3 +144,10 @@ Return the Motr IOS endpoint port
 {{- define "cortx.data.iosPort" -}}
 21002
 {{- end -}}
+
+{{/*
+Return the Motr confd endpoint port
+*/}}
+{{- define "cortx.data.confdPort" -}}
+21001
+{{- end -}}
