@@ -183,16 +183,17 @@ This upgrade process updates all containers in all CORTX pods to the new specifi
 
 To upgrade a previously deployed CORTX cluster, run the `upgrade-cortx-cloud.sh` script to patch the CORTX on Kubernetes deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments and StatefulSets, and then re-start the Pods.
 
-Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image ghcr.io/seagate/cortx-data:2.0.0-790 is specified, the:
-* ghcr.io/seagate/cortx-data:2.0.0-834 will be applied to the cortx-data containers
-* ghcr.io/seagate/cortx-rgw:2.0.0-834 will be applied to the cortx-server containers
-* ghcr.io/seagate/cortx-control:2.0.0-834 will be applied to the cortx-control and cortx-ha containers
-
-
    ```bash
    TARGET_IMAGE="ghcr.io/seagate/cortx-data:2.0.0-834"
    ./upgrade-cortx-cloud.sh -s solution.yaml -i $TARGET_IMAGE
    ```
+
+Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image ghcr.io/seagate/cortx-data:2.0.0-790 is specified, then:
+
+- ghcr.io/seagate/cortx-data:2.0.0-834 will be applied to the cortx-data containers
+- ghcr.io/seagate/cortx-rgw:2.0.0-834 will be applied to the cortx-server containers
+- ghcr.io/seagate/cortx-control:2.0.0-834 will be applied to the cortx-control and cortx-ha containers
+
 
 To update the image for a specific CORTX deployment or statefulset use `kubectl set image`:
 ```bash
