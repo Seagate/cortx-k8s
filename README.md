@@ -190,7 +190,7 @@ To upgrade a previously deployed CORTX cluster, run the `upgrade-cortx-cloud.sh`
 
 Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image ghcr.io/seagate/cortx-data:2.0.0-834 is specified, then:
 
-- ghcr.io/seagate/cortx-data:2.0.0-834 will be applied to the cortx-data containers
+- ghcr.io/seagate/cortx-data:2.0.0-834 will be applied to the cortx-data and cortx-client containers
 - ghcr.io/seagate/cortx-rgw:2.0.0-834 will be applied to the cortx-server containers
 - ghcr.io/seagate/cortx-control:2.0.0-834 will be applied to the cortx-control and cortx-ha containers
 
