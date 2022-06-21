@@ -28,9 +28,10 @@ spec:
       protocol: TCP
       port: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
       targetPort: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
-    {{- range $i := until (.Values.cortxdata.motr.numiosinst|int) }}
-    - name: {{ printf "cortx-motr-ios-%03d-tcp" (add 1 $i) }}
+    {{- range $i := until (.Values.cortxdata.motr.numiosinst | int) }}
+    {{- $portName := printf "motr-ios-%03d-tcp" (add 1 $i) }}
+    - name: {{ $portName }}
       protocol: TCP
-      port: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
-      targetPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+      port: {{ printf "%d" (add $i (include "cortx.data.iosPort" $) | int) }}
+      targetPort: {{ $portName }}
     {{- end }}

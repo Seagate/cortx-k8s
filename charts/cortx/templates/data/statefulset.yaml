@@ -210,7 +210,8 @@ spec:
             - name: data
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
           ports:
-          - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+          - name: {{ printf "motr-ios-%03d-tcp" (add 1 $i) }}
+            containerPort: {{ printf "%d" (add $i (include "cortx.data.iosPort" $) | int) }}
           {{- if $.Values.cortxdata.motr.resources }}
           resources: {{- toYaml $.Values.cortxdata.motr.resources | nindent 12 }}
           {{- end }}

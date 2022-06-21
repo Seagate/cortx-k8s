@@ -19,7 +19,6 @@
 {{- $serverHostnames = append $serverHostnames (printf "%s-%d.%s" (include "cortx.server.fullname" $) $i (include "cortx.server.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
-{{- $iosPort := 21002 -}}
 {{- $confdPort := 21001 -}}
 {{- $rgwClientPort := 22501 -}}
 cortx:
@@ -105,7 +104,7 @@ cortx:
     ios:
       endpoints:
       {{- range $dataHostnames }}
-      - {{ printf "tcp://%s:%d" . $iosPort }}
+      - {{ printf "tcp://%s:%d" . (include "cortx.data.iosPort" $ | int) }}
       {{- end }}
     confd:
       endpoints:

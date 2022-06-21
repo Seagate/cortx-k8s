@@ -137,3 +137,10 @@ Return the name of the Data service domain
 {{- define "cortx.data.serviceDomain" -}}
 {{- printf "%s-headless.%s.svc.%s" (include "cortx.data.fullname" .) .Release.Namespace .Values.clusterDomain -}}
 {{- end -}}
+
+{{/*
+Return the Motr IOS endpoint port
+*/}}
+{{- define "cortx.data.iosPort" -}}
+21002
+{{- end -}}
