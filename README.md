@@ -188,14 +188,14 @@ To upgrade a previously deployed CORTX cluster, run the `upgrade-cortx-cloud.sh`
    ./upgrade-cortx-cloud.sh -s solution.yaml -i $TARGET_IMAGE
    ```
 
-Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image ghcr.io/seagate/cortx-data:2.0.0-790 is specified, then:
+Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image ghcr.io/seagate/cortx-data:2.0.0-834 is specified, then:
 
 - ghcr.io/seagate/cortx-data:2.0.0-834 will be applied to the cortx-data containers
 - ghcr.io/seagate/cortx-rgw:2.0.0-834 will be applied to the cortx-server containers
 - ghcr.io/seagate/cortx-control:2.0.0-834 will be applied to the cortx-control and cortx-ha containers
 
 
-To update the image for a specific CORTX deployment or statefulset use `kubectl set image`:
+To update the image for a specific CORTX Deployment or StatefulSet use `kubectl set image`:
 ```bash
 # Update image on all containers in a cortx-data statefulset
 kubectl set image --namespace=${NAMESPACE} statefulset cortx-data '*=ghcr.io/seagate/cortx-data:2.0.0-834'
