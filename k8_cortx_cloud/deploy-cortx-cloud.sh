@@ -404,8 +404,6 @@ buildValues() {
             .image                     = $from.solution.images.cortxdata
             | .nodes                   = $from.solution.storage_sets[0].nodes
             | .cvgs                    = $from.solution.storage_sets[0].storage
-            | .blockDevicePaths        = [$from.solution.storage_sets[0].storage[].devices.data[]]
-            | .blockDevicePaths        += [$from.solution.storage_sets[0].storage[].devices.metadata]
             | .motr.containerGroupSize = $from.solution.storage_sets[0].container_group_size
             | .motr.resources          = $from.solution.common.resource_allocation.data.motr.resources
             | .confd.resources         = $from.solution.common.resource_allocation.data.confd.resources)

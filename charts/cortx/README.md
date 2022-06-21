@@ -110,7 +110,6 @@ helm uninstall cortx
 | cortxcontrol.service.loadbal.ports.https | int | `8081` |  |
 | cortxcontrol.service.loadbal.type | string | `"NodePort"` |  |
 | cortxcontrol.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
-| cortxdata.blockDevicePaths | list | `[]` |  |
 | cortxdata.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxdata.cfgmap.name | string | `"cortx"` |  |
 | cortxdata.confd.resources.limits.cpu | string | `"500m"` |  |

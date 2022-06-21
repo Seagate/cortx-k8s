@@ -3,14 +3,13 @@
 {{- end -}}
 {{- /*
 TODO CORTX-29861
-- Updates to serviceName, domain name, & headless service references are required too
 - What are the implications of multiple headless services versus a single headless service (preferred) to manage multiple STS domains?
 - Add a statefulset/nodeType label which is the value of statefulset name
 - Look at moving cvg->group mapping to a helper function and then using a dictionary lookup
 - Update values.yaml structures to reflect solution.yaml refactoring (clusterStorageVolumes under clusterStorageSets)
 - Review naming of STS Group Name versus cluster.yaml type_name etc. (helper function etc)
 - Ports are in need of review for both startingPortNum and what is made available across services
-- Confirm inclusion of .cortxdata.cvgs replaces need for .cortxdata.blockDevicePaths
+- Need to add a helper function to calculate the upper bound of containerGroupSize (ie prevent cGS > num cvgs)
 */ -}}
 {{- range $sts_index := until (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) | int) }}
 apiVersion: apps/v1

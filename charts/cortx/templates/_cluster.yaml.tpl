@@ -28,10 +28,10 @@ cluster:
           - io
       - name: hare
     storage:
-    {{ range $group_size_iterator := until ($.Values.cortxdata.motr.containerGroupSize|int) }}
+    {{- range $group_size_iterator := until ($.Values.cortxdata.motr.containerGroupSize|int) }}
     {{- $cvg_index := (add (mul $sts_index ($.Values.cortxdata.motr.containerGroupSize|int)) $group_size_iterator) -}}
     {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
-    {{- range $cvg.devices.data -}}
+    {{- range $cvg.devices.data }}
     - name: {{ $cvg.name }}
       type: {{ $cvg.type }}
       devices:

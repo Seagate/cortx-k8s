@@ -367,7 +367,6 @@ cortxserver:
 cortxdata:
   image: ghcr.io/seagate/centos:7
   replicas: 3
-  blockDevicePaths: []
   nodes: []
   ## TODO CORTX-29861 Document this new values.yaml parameter
   cvgs: []

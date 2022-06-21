@@ -22,7 +22,6 @@ solution:
       instances_per_node: required
     motr:
       num_client_inst: required
-      container_group_size: required
     hax:
       protocol: required
       port_num: required
@@ -149,6 +148,7 @@ solution:
       durability:
         sns: required
         dix: required
+      container_group_size: required
       storage:
         - name: required
           type: required
