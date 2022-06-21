@@ -474,10 +474,9 @@ printf "\n"
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
 ### TODO CORTX-29861 Revisit for best way to parse this YAML section with new schema references
-parsed_node_output=$(yq e '.solution.storage_sets[0].nodes' -o=c "${solution_yaml}")
 
 # Split parsed output into an array of vars and vals
-IFS=',' read -r -a parsed_node_array <<< "${parsed_node_output}"
+IFS=',' read -r -a parsed_node_array < <(yq e '.solution.storage_sets[0].nodes' --output-format=csv "${solution_yaml}")
 
 tainted_worker_node_list=[]
 num_tainted_worker_nodes=0

@@ -320,10 +320,10 @@ The metadata and data drives are defined in this section. All drives must be the
 | Name                     | Description                                                                                      | Default Value           |
 | ------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------- |
 | `storage_sets`           | A list of the storage defined for use by CORTX. At this time, only one storage set is supported. | See `solution.example.yaml`  |
-| `storage_sets[].name`    | The name of an indvidual storage set.    | `storage-set-1`         |
+| `storage_sets[].name`    | The name of an individual storage set.    | `storage-set-1`         |
 | `storage_sets[].durability.sns` | `TBD`                               | `1+0+0` |
 | `storage_sets[].durability.dix` | `TBD`                               | `1+0+0` |
-| `storage_sets[].container_group_size` | This value determines the number of Motr IO containers inside of a single CORTX Data Pod. This value can be tuned for optimal performance based upon different Kubernetes environments. | `1` | 
+| `storage_sets[].container_group_size` | This value determines the number of Motr IO containers inside of a single CORTX Data Pod. This value can be tuned for optimal performance based upon different Kubernetes environments. | `1` |
 | `storage_sets[].nodes`   | The list of Kubernetes worker nodes that CORTX will use to manage data inside the defined storage set. | See `solution.example.yaml` |
 | `storage_sets[].storage` | The list of CVGs (or Cylinder Volume Groups) that CORTX will use to store its data. All nodes defined in the parameter above must have all the same metadata and data drives available as defined in this parameter. | See `solution.example.yaml` |
 | `storage_sets[].storage[].name` | This value is used to identify the specific collection of drives CORTX will use to store data. | `cvg-01` |

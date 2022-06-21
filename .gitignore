@@ -5,5 +5,5 @@ logs-cortx-cloud-*.tar
 k8_cortx_cloud/cortx-cloud-3rd-party-pkg/auto-gen-*
 k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-*
 
-# Runtime dependent Helm Charts
+# Runtime-dependent Helm Charts
 charts/cortx/charts

@@ -19,7 +19,7 @@ if [[ ! -f ${solution_yaml} ]]; then
     exit 1
 fi
 
-### CORTX-29861 yq validation replacement [/end]
+### CORTX-29861 yq validation replacement
 ### Test for the generic existence of required elements in solution.yaml
 ### This is done by deeply merging the input solution.yaml as an overlay onto the solution-check.yaml file.
 ### Any keys that have a resultant value of "required" after the merge signify that key is missing in the input solution.yaml file
@@ -38,6 +38,12 @@ if [[ "${invalid_paths}" != "[]" ]]; then
     exit 1
 fi
 ### CORTX-29861 yq validation replacement [/end]
+
+num_storage_sets=$(yq e '.solution.storage_sets | length' "${solution_yaml}")
+if [[ "${num_storage_sets}" -gt "1" ]]; then
+    echo "WARNING: Only 1 Storage Set is currently supported by CORTX."
+    echo "WARNING: The first Storage Set in the provided solution configuration file will be used and additional Storage Sets will be ignored."
+fi
 
 num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' "${solution_yaml}")
 total_num_nodes=$(yq '.solution.storage_sets[0].nodes | length' "${solution_yaml}")

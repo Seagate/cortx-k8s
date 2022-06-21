@@ -160,4 +160,3 @@ solution:
               - device: required
                 size: required
       nodes: required
-    
