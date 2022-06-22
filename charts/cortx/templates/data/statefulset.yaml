@@ -38,10 +38,10 @@ spec:
         - name: {{ .Values.configmap.cortxSecretName }}
           secret:
             secretName: {{ .Values.configmap.cortxSecretName }}
-        - name: node-config
+        - name: scripts
           configMap:
             defaultMode: 0700
-            name: {{ include "cortx.data.fullname" . }}-node
+            name: {{ include "cortx.data.fullname" . }}-scripts
       initContainers:
       - name: node-config
         image: {{ .Values.cortxdata.image }}
@@ -49,7 +49,7 @@ spec:
         command:
           - /nodeconfig/entrypoint.sh
         volumeMounts:
-        - name: node-config
+        - name: scripts
           mountPath: /nodeconfig
           readOnly: true
         securityContext:

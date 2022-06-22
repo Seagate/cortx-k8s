@@ -1,0 +1,41 @@
+{{- if .Values.cortxclient.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cortx.client.fullname" . }}-scripts
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+data:
+  motr-env.sh: |-
+    #!/bin/bash
+
+    machine_id="$(< /etc/machine-id)"
+    fid="$(hctl fetch-fids --conf-dir "/etc/cortx/hare/config/${machine_id}" --service motr_client --index $((CLIENT_INDEX-1)) --json | jq -r .fid)"
+    if (( $? != 0 )); then
+        echo "Error running 'hctl fetch-fids'"
+        return
+    fi
+
+    . "/etc/cortx/motr_client/sysconfig/${machine_id}/motr_client-${fid}"
+    export MOTR_PROFILE_FID MOTR_CLIENT_EP MOTR_HA_EP MOTR_PROCESS_FID
+
+    m0shim() {
+        local cmd="$1"
+        shift
+
+        local args=()
+        case "$cmd" in
+            m0cat | m0client | m0cp | m0cp_mt | m0touch | m0trunc)
+                args+=(--local "${MOTR_CLIENT_EP}" --ha "${MOTR_HA_EP}" --profile "${MOTR_PROFILE_FID}" --process "${MOTR_PROCESS_FID}")
+                ;;
+            m0kv)
+                args+=(-l "${MOTR_CLIENT_EP}" -h "${MOTR_HA_EP}" -p "${MOTR_PROFILE_FID}" -f "${MOTR_PROCESS_FID}")
+                ;;
+            *)
+                echo "Unsupported m0 command"
+                return 1
+                ;;
+        esac
+
+        "${cmd}" "${args[@]}" "$@"
+    }
+{{- end }}

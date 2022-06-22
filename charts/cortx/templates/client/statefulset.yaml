@@ -38,6 +38,10 @@ spec:
             secretName: {{ .Values.configmap.cortxSecretName }}
         - name: data
           emptyDir: {}
+        - name: scripts
+          configMap:
+            name: {{ printf "%s-scripts" (include "cortx.client.fullname" .) }}
+            defaultMode: 0755
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxclient.image }}
@@ -131,6 +135,9 @@ spec:
               mountPath: {{ $.Values.cortxclient.sslcfgmap.mountpath }}
             - name: data
               mountPath: {{ $.Values.cortxclient.localpathpvc.mountpath }}
+            - name: scripts
+              mountPath: /scripts/motr-env.sh
+              subPath: motr-env.sh
           env:
             - name: CLIENT_INDEX
               value: {{ printf "%d" (add 1 $i) | quote }}
