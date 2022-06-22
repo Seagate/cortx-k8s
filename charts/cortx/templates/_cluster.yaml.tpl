@@ -85,10 +85,14 @@ cluster:
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.data.serviceDomain" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "data_node") | nindent 4 }}
     {{- end }}
-    {{- range $nodeName, $node := $storageSet.nodes }}
-    {{- if and $root.Values.cortxserver.enabled $node.serverUuid }}
-    {{- include "storageset.node" (dict "name" $nodeName "hostname" $node.serverUuid "id" $node.serverUuid "type" "server_node") | nindent 4 }}
+    {{- if $root.Values.cortxserver.enabled }}
+    {{- range $i := until (int $root.Values.cortxserver.replicas) }}
+    {{- $nodeName := printf "%s-%d" (include "cortx.server.fullname" $root) $i }}
+    {{- $hostName := printf "%s.%s" $nodeName (include "cortx.server.serviceDomain" $root) }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "server_node") | nindent 4 }}
     {{- end }}
+    {{- end }}
+    {{- range $nodeName, $node := $storageSet.nodes }}
     {{- if $node.clientUuid }}
     {{- $clientName := printf "cortx-client-headless-svc-%s" (split "." $nodeName)._0 }}
     {{- include "storageset.node" (dict "name" $clientName "id" $node.clientUuid "type" "client_node") | nindent 4 }}

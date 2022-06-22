@@ -83,6 +83,13 @@ Return the name of the Control component
 {{- end -}}
 
 {{/*
+Return the Control Agent endpoint port
+*/}}
+{{- define "cortx.control.agentPort" -}}
+23256
+{{- end -}}
+
+{{/*
 Return the name of the HA component
 */}}
 {{- define "cortx.ha.fullname" -}}
@@ -104,6 +111,13 @@ Create a URL for the Hare hax HTTP endpoint
 {{- end -}}
 
 {{/*
+Return the Hare hax TCP endpoint port
+*/}}
+{{- define "cortx.hare.hax.tcpPort" -}}
+22001
+{{- end -}}
+
+{{/*
 Return the name of the Server component
 */}}
 {{- define "cortx.server.fullname" -}}
@@ -118,6 +132,27 @@ Return the name of the Server service domain
 {{- end -}}
 
 {{/*
+Return the RGW HTTP endpoint port
+*/}}
+{{- define "cortx.server.rgwHttpPort" -}}
+22751
+{{- end -}}
+
+{{/*
+Return the RGW HTTPS endpoint port
+*/}}
+{{- define "cortx.server.rgwHttpsPort" -}}
+23001
+{{- end -}}
+
+{{/*
+Return the RGW Motr-client endpoint port
+*/}}
+{{- define "cortx.server.motrClientPort" -}}
+22501
+{{- end -}}
+
+{{/*
 Return the name of the Data component
 */}}
 {{- define "cortx.data.fullname" -}}
@@ -129,4 +164,18 @@ Return the name of the Data service domain
 */}}
 {{- define "cortx.data.serviceDomain" -}}
 {{- printf "%s-headless.%s.svc.%s" (include "cortx.data.fullname" .) .Release.Namespace .Values.clusterDomain -}}
+{{- end -}}
+
+{{/*
+Return the Motr IOS endpoint port
+*/}}
+{{- define "cortx.data.iosPort" -}}
+21002
+{{- end -}}
+
+{{/*
+Return the Motr confd endpoint port
+*/}}
+{{- define "cortx.data.confdPort" -}}
+21001
 {{- end -}}

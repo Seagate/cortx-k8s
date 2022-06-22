@@ -13,9 +13,12 @@
 {{- range $i := until (int .Values.cortxdata.replicas) -}}
 {{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.fullname" $) $i (include "cortx.data.serviceDomain" $)) -}}
 {{- end -}}
-{{- $dataHaxPort := 22001 -}}
-{{- $dataIosPort := 21001 -}}
-{{- $dataConfdPort := 22002 -}}
+{{- $serverHostnames := list -}}
+{{- if .Values.cortxserver.enabled -}}
+{{- range $i := until (int .Values.cortxserver.replicas) -}}
+{{- $serverHostnames = append $serverHostnames (printf "%s-%d.%s" (include "cortx.server.fullname" $) $i (include "cortx.server.serviceDomain" $)) -}}
+{{- end -}}
+{{- end -}}
 cortx:
   external:
     kafka:
@@ -62,8 +65,8 @@ cortx:
       - {{ printf "https://%s-0:%d" (include "cortx.server.fullname" .) (.Values.cortxserver.service.ports.https | int) }}
     service:
       endpoints:
-      - http://:22751
-      - https://:23001
+      - {{ printf "http://:%d" (include "cortx.server.rgwHttpPort" . | int) }}
+      - {{ printf "https://:%d" (include "cortx.server.rgwHttpsPort" . | int) }}
     io_max_units: 8
     max_start_timeout: {{ .Values.cortxserver.maxStartTimeout | int }}
     service_instances: 1
@@ -82,18 +85,14 @@ cortx:
   {{- end }}
   hare:
     hax:
-      {{- $endpoints := .Values.configmap.cortxHare.haxClientEndpoints -}}
-      {{- if .Values.cortxserver.enabled }}
-      {{- $endpoints = concat $endpoints .Values.configmap.cortxHare.haxServerEndpoints -}}
-      {{- end }}
       endpoints:
-        - {{ include "cortx.hare.hax.url" . }}
-        {{- range $dataHostnames }}
-        - {{ printf "tcp://%s:%d" . $dataHaxPort }}
-        {{- end }}
-        {{- if $endpoints }}
-        {{- toYaml $endpoints | nindent 8 }}
-        {{- end }}
+      - {{ include "cortx.hare.hax.url" . }}
+      {{- range (concat $dataHostnames $serverHostnames) }}
+      - {{ printf "tcp://%s:%d" . (include "cortx.hare.hax.tcpPort" $ | int) }}
+      {{- end }}
+      {{- if .Values.configmap.cortxHare.haxClientEndpoints }}
+      {{- toYaml .Values.configmap.cortxHare.haxClientEndpoints | nindent 6 }}
+      {{- end }}
     limits:
       services:
       {{- include "config.yaml.service.limits" (dict "name" "hax" "resources" .Values.hare.hax.resources) | nindent 6 }}
@@ -103,25 +102,28 @@ cortx:
     ios:
       endpoints:
       {{- range $dataHostnames }}
-      - {{ printf "tcp://%s:%d" . $dataIosPort }}
+      - {{ printf "tcp://%s:%d" . (include "cortx.data.iosPort" $ | int) }}
       {{- end }}
     confd:
       endpoints:
       {{- range $dataHostnames }}
-      - {{ printf "tcp://%s:%d" . $dataConfdPort }}
+      - {{ printf "tcp://%s:%d" . (include "cortx.data.confdPort" $ | int) }}
       {{- end }}
     clients:
     {{- if .Values.cortxserver.enabled }}
     - name: rgw_s3
       num_instances: 1  # number of instances *per-pod*
-      endpoints: {{- toYaml .Values.configmap.cortxMotr.rgwEndpoints | nindent 8 }}
+      endpoints:
+      {{- range $serverHostnames }}
+      - {{ printf "tcp://%s:%d" . (include "cortx.server.motrClientPort" $ | int) }}
+      {{- end }}
     {{- end }}
     - name: motr_client
       num_instances: {{ .Values.configmap.cortxMotr.clientInstanceCount | int }}
       num_subscriptions: 1
       subscriptions:
       - fdmi
-      endpoints: {{- toYaml .Values.configmap.cortxMotr.clientEndpoints | nindent 8 }}
+      endpoints: {{- toYaml .Values.configmap.cortxMotr.clientEndpoints | nindent 6 }}
     limits:
       services:
       {{- include "config.yaml.service.limits" (dict "name" "ios" "resources" .Values.configmap.cortxMotr.motr.resources) | nindent 6 }}
@@ -133,7 +135,7 @@ cortx:
   csm:
     agent:
       endpoints:
-      - https://:8081
+      - {{ printf "https://:%d" (include "cortx.control.agentPort" . | int) }}
     auth_admin: authadmin
     auth_secret: csm_auth_admin_secret
     email_address: cortx@seagate.com # Optional

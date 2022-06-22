@@ -71,7 +71,6 @@ helm uninstall cortx
 | configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxControl.agent.resources.requests.memory | string | `"128Mi"` |  |
 | configmap.cortxHare.haxClientEndpoints | list | `[]` |  |
-| configmap.cortxHare.haxServerEndpoints | list | `[]` |  |
 | configmap.cortxMotr.clientEndpoints | list | `[]` |  |
 | configmap.cortxMotr.clientInstanceCount | int | `0` |  |
 | configmap.cortxMotr.confd.resources.limits.cpu | string | `"500m"` |  |
@@ -83,7 +82,6 @@ helm uninstall cortx
 | configmap.cortxMotr.motr.resources.limits.memory | string | `"2Gi"` |  |
 | configmap.cortxMotr.motr.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxMotr.motr.resources.requests.memory | string | `"1Gi"` |  |
-| configmap.cortxMotr.rgwEndpoints | list | `[]` |  |
 | configmap.cortxSecretName | string | `"cortx-secret"` |  |
 | configmap.cortxSecretValues | object | `{}` |  |
 | configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
@@ -126,7 +124,6 @@ helm uninstall cortx
 | cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
 | cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |
 | cortxdata.motr.resources.requests.memory | string | `"1Gi"` |  |
-| cortxdata.motr.startportnum | int | `29000` |  |
 | cortxdata.nodes | list | `[]` |  |
 | cortxdata.persistentStorage.accessModes[0] | string | `"ReadWriteMany"` |  |
 | cortxdata.persistentStorage.volumeMode | string | `"Block"` |  |
@@ -205,7 +202,6 @@ helm uninstall cortx
 | platform.podSecurityPolicy.create | bool | `false` |  |
 | platform.rbacRole.create | bool | `true` |  |
 | platform.rbacRoleBinding.create | bool | `true` |  |
-| platform.storage.localBlock.storageClassName | string | `"cortx-local-block-storage"` |  |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |

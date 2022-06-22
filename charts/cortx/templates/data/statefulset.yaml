@@ -126,7 +126,7 @@ spec:
             containerPort: {{ .Values.hare.hax.ports.http.port | int }}
             protocol: TCP
           - name: hax-tcp
-            containerPort: 22001
+            containerPort: {{ include "cortx.hare.hax.tcpPort" . | int }}
             protocol: TCP
           {{- if .Values.hare.hax.resources }}
           resources: {{- toYaml .Values.hare.hax.resources | nindent 12 }}
@@ -167,7 +167,8 @@ spec:
               fieldRef:
                 fieldPath: metadata.name
           ports:
-          - containerPort: {{ printf "%d" (add .Values.cortxdata.motr.numiosinst .Values.cortxdata.motr.startportnum) }}
+          - name: confd-tcp
+            containerPort: {{ include "cortx.data.confdPort" $ | int }}
           {{- if .Values.cortxdata.confd.resources }}
           resources: {{- toYaml .Values.cortxdata.confd.resources | nindent 12 }}
           {{- end }}
@@ -210,7 +211,8 @@ spec:
             - name: data
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
           ports:
-          - containerPort: {{ printf "%d" (add $i $.Values.cortxdata.motr.startportnum) }}
+          - name: {{ printf "ios-%d-tcp" (add 1 $i) }}
+            containerPort: {{ printf "%d" (add $i (include "cortx.data.iosPort" $) | int) }}
           {{- if $.Values.cortxdata.motr.resources }}
           resources: {{- toYaml $.Values.cortxdata.motr.resources | nindent 12 }}
           {{- end }}
