@@ -111,29 +111,25 @@ printf "\n\n"
 printf "All CORTX HA pods have been shutdown"
 printf "\n\n"
 
-num_motr_client=$(parseSolution 'solution.common.motr.num_client_inst' | cut -f2 -d'>')
+printf "########################################################\n"
+printf "# Shutdown CORTX Client                                 \n"
+printf "########################################################\n"
 
-if [[ ${num_motr_client} -gt 0 ]]; then
-    printf "########################################################\n"
-    printf "# Shutdown CORTX Client                                 \n"
-    printf "########################################################\n"
+while IFS= read -r line; do
+    IFS=" " read -r -a statefulsets <<< "${line}"
+    kubectl scale statefulsets "${statefulsets[0]}" --replicas 0 --namespace="${namespace}"
+done < <(kubectl get statefulsets --namespace="${namespace}" | grep 'cortx-client')
 
-    while IFS= read -r line; do
-        IFS=" " read -r -a deployments <<< "${line}"
-        kubectl scale deploy "${deployments[0]}" --replicas 0 --namespace="${namespace}"
-    done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-client-')
-
-    printf "\nWait for CORTX Client to be shutdown"
-    while true; do
-        output=$(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')
-        if [[ "${output}" == "" ]]; then
-            break
-        else
-            printf "."
-        fi
-        sleep 1s
-    done
-    printf "\n\n"
-    printf "All CORTX Client pods have been shutdown"
-    printf "\n\n"
-fi
+printf "\nWait for CORTX Client to be shutdown"
+while true; do
+    output=$(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')
+    if [[ "${output}" == "" ]]; then
+        break
+    else
+        printf "."
+    fi
+    sleep 1s
+done
+printf "\n\n"
+printf "All CORTX Client pods have been shutdown"
+printf "\n\n"

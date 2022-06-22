@@ -70,9 +70,6 @@ helm uninstall cortx
 | configmap.cortxControl.agent.resources.limits.memory | string | `"256Mi"` |  |
 | configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxControl.agent.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxHare.haxClientEndpoints | list | `[]` |  |
-| configmap.cortxMotr.clientEndpoints | list | `[]` |  |
-| configmap.cortxMotr.clientInstanceCount | int | `0` |  |
 | configmap.cortxMotr.confd.resources.limits.cpu | string | `"500m"` |  |
 | configmap.cortxMotr.confd.resources.limits.memory | string | `"512Mi"` |  |
 | configmap.cortxMotr.confd.resources.requests.cpu | string | `"250m"` |  |
@@ -92,6 +89,13 @@ helm uninstall cortx
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
+| cortxclient.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
+| cortxclient.enabled | bool | `false` |  |
+| cortxclient.image | string | `"ghcr.io/seagate/centos:7"` |  |
+| cortxclient.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
+| cortxclient.motr.numclientinst | int | `1` |  |
+| cortxclient.replicas | int | `1` |  |
+| cortxclient.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
 | cortxcontrol.agent.resources.limits.cpu | string | `"500m"` |  |
 | cortxcontrol.agent.resources.limits.memory | string | `"256Mi"` |  |
 | cortxcontrol.agent.resources.requests.cpu | string | `"250m"` |  |

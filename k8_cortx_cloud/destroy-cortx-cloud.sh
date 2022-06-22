@@ -103,9 +103,7 @@ function uninstallHelmChart()
 #############################################################
 function deleteCortxClient()
 {
-    printf "########################################################\n"
-    printf "# Delete CORTX Client                                  #\n"
-    printf "########################################################\n"
+    # backwards compatibility for cortx-server chart based on Deployments
     for node in "${node_name_list[@]}"; do
         uninstallHelmChart "cortx-client-${node}-${namespace}" "${namespace}"
     done
@@ -294,7 +292,7 @@ function deleteNodeDataFiles()
 #############################################################
 # Delete CORTX Cloud resources
 #############################################################
-deleteCortxClient
+deleteCortxClient   # deprecated
 deleteCortxHa       # deprecated
 deleteCortxServer   # deprecated
 deleteCortxData     # deprecated
