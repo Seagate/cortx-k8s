@@ -169,18 +169,13 @@ if [[ ${deployment_type} != "data-only" ]]; then
     printf "\n\n"
 fi
 
-num_motr_client=$(parseSolution 'solution.common.motr.num_client_inst' | cut -f2 -d'>')
-
-if [[ ${num_motr_client} -gt 0 ]]; then
+if kubectl get statefulset cortx-client &> /dev/null; then
     printf "########################################################\n"
     printf "# Start CORTX Client                                    \n"
     printf "########################################################\n"
-    expected_count=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a deployments <<< "${line}"
-        kubectl scale deploy "${deployments[0]}" --replicas 1 --namespace="${namespace}"
-        expected_count=$((expected_count+1))
-    done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-client-')
+
+    replica_count=${num_nodes}
+    kubectl scale statefulset cortx-client --replicas "${replica_count}" --namespace="${namespace}"
 
     printf "\nWait for CORTX Client to be ready"
     while true; do
@@ -198,7 +193,7 @@ if [[ ${num_motr_client} -gt 0 ]]; then
             count=$((count+1))
         done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')
 
-        if [[ ${expected_count} -eq ${count} ]]; then
+        if [[ ${replica_count} -eq ${count} ]]; then
             break
         else
             printf "."

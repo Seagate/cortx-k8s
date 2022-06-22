@@ -174,14 +174,8 @@ configmap:
           memory: 256Mi
           cpu: 500m
 
-  # cortxHare allows configuring CORTX HARE settings
-  cortxHare:
-    haxClientEndpoints: []
-
   # cortxMotr allows configuring CORTX MOTR settings
   cortxMotr:
-    clientInstanceCount: 0
-    clientEndpoints: []
     # An optional multi-line string that contains extra Motr configuration
     # settings. The string may contain template expressions, and is appended to
     # the end of the computed configuration.
@@ -358,6 +352,9 @@ cortxserver:
       http: ""
       https: ""
 
+##
+## Imported values from cortx-data Helm Chart. These will be changed.
+##
 cortxdata:
   image: ghcr.io/seagate/centos:7
   replicas: 3
@@ -396,3 +393,19 @@ cortxdata:
     requeststoragesize: 1Gi
     accessmodes:
       - ReadWriteOnce
+
+##
+## Imported values from cortx-client Helm Chart. These will be changed.
+##
+cortxclient:
+  enabled: false
+  replicas: 1
+  image: ghcr.io/seagate/centos:7
+  motr:
+    numclientinst: 1
+  cfgmap:
+    mountpath: /etc/cortx/solution
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+  localpathpvc:
+    mountpath: /etc/cortx

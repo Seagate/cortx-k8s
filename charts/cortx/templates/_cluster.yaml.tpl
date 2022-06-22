@@ -1,10 +1,12 @@
-### TODO Revisit UUID defaults here since we are moving away from UUID entirely...
+{{- /* TODO Revisit UUID defaults here since we are moving away from UUID entirely... */ -}}
 {{- define "storageset.node" -}}
 - name: {{ .name }}
   {{- if eq .type "server_node" }}
   id: {{ required "A valid id is required for server nodes" .id | quote }}
   {{- else if eq .type "data_node" }}
   id: {{ required "A valid id is required for data nodes" .id | quote }}
+  {{- else if eq .type "client_node" }}
+  id: {{ required "A valid id is required for client nodes" .id | quote }}
   {{- else }}
   id: {{ default uuidv4 .id | replace "-" "" | quote }}
   {{- end }}
@@ -16,7 +18,7 @@
 cluster:
   name: {{ .Values.configmap.clusterName }}
   id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
-  ### TODO CORTX-29861 Create additional data_node types here based upon StatefulSet names
+  {{- /* TODO CORTX-29861 Create additional data_node types here based upon StatefulSet names */}}
   node_types:
   - name: data_node
     components:
@@ -92,11 +94,10 @@ cluster:
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "server_node") | nindent 4 }}
     {{- end }}
     {{- end }}
-    {{- range $nodeName, $node := $storageSet.nodes }}
-    {{- if $node.clientUuid }}
-    {{- $clientName := printf "cortx-client-headless-svc-%s" (split "." $nodeName)._0 }}
-    {{- include "storageset.node" (dict "name" $clientName "id" $node.clientUuid "type" "client_node") | nindent 4 }}
-    {{- end }}
+    {{- range $i := until (int $root.Values.cortxclient.replicas) }}
+    {{- $nodeName := printf "%s-%d" (include "cortx.client.fullname" $root) $i }}
+    {{- $hostName := printf "%s.%s" $nodeName (include "cortx.client.serviceDomain" $root) }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "client_node") | nindent 4 }}
     {{- end }}
   {{- end }}
   {{- end }}

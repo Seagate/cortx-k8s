@@ -214,6 +214,7 @@ fi
 
 # Check pods
 count=0
+expected_count=${num_nodes}
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -228,7 +229,7 @@ while IFS= read -r line; do
     fi
 done < <(kubectl get pods --namespace="${namespace}" --selector=${data_selector} --no-headers)
 
-if [[ ${num_nodes} -eq ${count} ]]; then
+if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
 else
     msg_overall_failed
@@ -249,7 +250,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --no-headers cortx-data-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${data_selector} --no-headers)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -588,126 +589,87 @@ fi
 
 num_motr_client=$(parseSolution 'solution.common.motr.num_client_inst' | cut -f2 -d'>')
 
-if [[ ${num_motr_client} -gt 0 ]]; then
-    #########################################################################################
-    # CORTX Client
-    #########################################################################################
-    alert_msg "######################################################"
-    alert_msg "# CORTX Client                                        "
-    alert_msg "######################################################"
+#########################################################################################
+# CORTX Client
+#########################################################################################
+client_selector="app.kubernetes.io/component=client,${cortx_selector}"
 
-    # Check deployments
-    count=0
-    msg_info "| Checking Deployments |"
-    while IFS= read -r line; do
-        IFS=" " read -r -a status <<< "${line}"
-        IFS="/" read -r -a ready_status <<< "${status[1]}"
-        if [[ "${status[0]}" != "" ]]; then
-            printf "%s..." "${status[0]}"
-            if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                msg_failed
-                failcount=$((failcount+1))
-            else
-                msg_passed
-                count=$((count+1))
-            fi
-        fi
-    done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-client')
+alert_msg "######################################################"
+alert_msg "# CORTX Client                                        "
+alert_msg "######################################################"
 
-    if [[ ${num_nodes} -eq ${count} ]]; then
-        msg_overall_passed
-    else
-        msg_overall_failed
+# Check StatefulSet
+count=0
+expected_count=0
+(( num_motr_client > 0 )) && expected_count=1
+msg_info "| Checking StatefulSet |"
+while IFS= read -r line; do
+    IFS=" " read -r -a status <<< "${line}"
+    IFS="/" read -r -a ready_status <<< "${status[1]}"
+    printf "%s..." "${status[0]}"
+    if [[ "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
         failcount=$((failcount+1))
-    fi
-
-    # Check pods
-    count=0
-    msg_info "| Checking Pods |"
-    while IFS= read -r line; do
-        IFS=" " read -r -a status <<< "${line}"
-        IFS="/" read -r -a ready_status <<< "${status[1]}"
-        if [[ "${status[0]}" != "" ]]; then
-            printf "%s..." "${status[0]}"
-            if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
-                msg_failed
-                failcount=$((failcount+1))
-            else
-                msg_passed
-                count=$((count+1))
-            fi
-        fi
-    done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')
-
-    if [[ ${num_nodes} -eq ${count} ]]; then
-        msg_overall_passed
     else
-        msg_overall_failed
-        failcount=$((failcount+1))
+        msg_passed
+        count=$((count+1))
     fi
+done < <(kubectl get statefulsets --namespace="${namespace}" --selector=${client_selector} --no-headers)
 
-    # Check services headless
-    count=0
-    msg_info "| Checking Services: Headless |"
-    while IFS= read -r line; do
-        IFS=" " read -r -a status <<< "${line}"
-        if [[ "${status[0]}" != "" ]]; then
-            printf "%s..." "${status[0]}"
-            if [[ "${status[1]}" != "ClusterIP" ]]; then
-                msg_failed
-                failcount=$((failcount+1))
-            else
-                msg_passed
-                count=$((count+1))
-            fi
-        fi
-    done < <(kubectl get services --namespace="${namespace}" | grep 'cortx-client-headless-')
+if [[ ${expected_count} -eq ${count} ]]; then
+    msg_overall_passed
+else
+    msg_overall_failed
+    failcount=$((failcount+1))
+fi
 
-    if [[ ${num_nodes} -eq ${count} ]]; then
-        msg_overall_passed
+# Check pods
+count=0
+expected_count=0
+(( num_motr_client > 0 )) && expected_count=${num_nodes}
+msg_info "| Checking Pods |"
+while IFS= read -r line; do
+    IFS=" " read -r -a status <<< "${line}"
+    IFS="/" read -r -a ready_status <<< "${status[1]}"
+    printf "%s..." "${status[0]}"
+    if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
     else
-        msg_overall_failed
-        failcount=$((failcount+1))
+        msg_passed
+        count=$((count+1))
     fi
+done < <(kubectl get pods --namespace="${namespace}" --selector=${client_selector} --no-headers)
 
-    # Check storage local
-    count=0
-    num_pvs_pvcs=$(( num_nodes * 2 ))
-    msg_info "| Checking Storage: Local [PVCs/PVs] |"
-    while IFS= read -r line; do
-        IFS=" " read -r -a status <<< "${line}"
-        if [[ "${status[0]}" != "" ]]; then
-            printf "PVC: %s..." "${status[0]}"
-            if [[ "${status[1]}" != "Bound" ]]; then
-                msg_failed
-                failcount=$((failcount+1))
-            else
-                msg_passed
-                count=$((count+1))
-            fi
-        fi
-    done < <(kubectl get pvc --namespace="${namespace}" | grep 'cortx-client-fs-local-pvc')
+if [[ ${expected_count} -eq ${count} ]]; then
+    msg_overall_passed
+else
+    msg_overall_failed
+    failcount=$((failcount+1))
+fi
 
-    while IFS= read -r line; do
-        IFS=" " read -r -a status <<< "${line}"
-        if [[ "${status[0]}" != "" ]]; then
-            printf "PV: %s..." "${status[5]}"
-            if [[ "${status[4]}" != "Bound" ]]; then
-                msg_failed
-                failcount=$((failcount+1))
-            else
-                msg_passed
-                count=$((count+1))
-            fi
-        fi
-    done < <(kubectl get pv --namespace="${namespace}" | grep 'cortx-client-fs-local-pvc')
-
-    if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
-        msg_overall_passed
+# Check services headless
+count=0
+expected_count=0
+(( num_motr_client > 0 )) && expected_count=1
+msg_info "| Checking Services: Headless |"
+while IFS= read -r line; do
+    IFS=" " read -r -a status <<< "${line}"
+    printf "%s..." "${status[0]}"
+    if [[ "${status[1]}" != "ClusterIP" ]]; then
+        msg_failed
+        failcount=$((failcount+1))
     else
-        msg_overall_failed
-        failcount=$((failcount+1))
+        msg_passed
+        count=$((count+1))
     fi
+done < <(kubectl get services --namespace="${namespace}" --selector=${client_selector} --no-headers)
+
+if [[ ${expected_count} -eq ${count} ]]; then
+    msg_overall_passed
+else
+    msg_overall_failed
+    failcount=$((failcount+1))
 fi
 
 #########################################################################################

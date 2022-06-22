@@ -19,6 +19,12 @@
 {{- $serverHostnames = append $serverHostnames (printf "%s-%d.%s" (include "cortx.server.fullname" $) $i (include "cortx.server.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
+{{- $clientHostnames := list -}}
+{{- if .Values.cortxclient.enabled -}}
+{{- range $i := until (int .Values.cortxclient.replicas) -}}
+{{- $clientHostnames = append $clientHostnames (printf "%s-%d.%s" (include "cortx.client.fullname" $) $i (include "cortx.client.serviceDomain" $)) -}}
+{{- end -}}
+{{- end -}}
 cortx:
   external:
     kafka:
@@ -87,11 +93,8 @@ cortx:
     hax:
       endpoints:
       - {{ include "cortx.hare.hax.url" . }}
-      {{- range (concat $dataHostnames $serverHostnames) }}
+      {{- range (concat $dataHostnames $serverHostnames $clientHostnames) }}
       - {{ printf "tcp://%s:%d" . (include "cortx.hare.hax.tcpPort" $ | int) }}
-      {{- end }}
-      {{- if .Values.configmap.cortxHare.haxClientEndpoints }}
-      {{- toYaml .Values.configmap.cortxHare.haxClientEndpoints | nindent 6 }}
       {{- end }}
     limits:
       services:
@@ -118,12 +121,17 @@ cortx:
       - {{ printf "tcp://%s:%d" . (include "cortx.server.motrClientPort" $ | int) }}
       {{- end }}
     {{- end }}
+    {{- if .Values.cortxclient.enabled }}
     - name: motr_client
-      num_instances: {{ .Values.configmap.cortxMotr.clientInstanceCount | int }}
+      num_instances: {{ .Values.cortxclient.motr.numclientinst | int }}
       num_subscriptions: 1
       subscriptions:
       - fdmi
-      endpoints: {{- toYaml .Values.configmap.cortxMotr.clientEndpoints | nindent 6 }}
+      endpoints:
+      {{- range $clientHostnames }}
+      - {{ printf "tcp://%s:%d" . (include "cortx.client.motrClientPort" $ | int) }}
+      {{- end }}
+    {{- end }}
     limits:
       services:
       {{- include "config.yaml.service.limits" (dict "name" "ios" "resources" .Values.configmap.cortxMotr.motr.resources) | nindent 6 }}

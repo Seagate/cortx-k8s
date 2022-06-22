@@ -146,7 +146,7 @@ Return the RGW HTTPS endpoint port
 {{- end -}}
 
 {{/*
-Return the RGW Motr-client endpoint port
+Return the RGW-Motr-client endpoint port
 */}}
 {{- define "cortx.server.motrClientPort" -}}
 22501
@@ -178,4 +178,25 @@ Return the Motr confd endpoint port
 */}}
 {{- define "cortx.data.confdPort" -}}
 21001
+{{- end -}}
+
+{{/*
+Return the name of the Client component
+*/}}
+{{- define "cortx.client.fullname" -}}
+{{- printf "%s-client" (include "cortx.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Return the name of the Client service domain
+*/}}
+{{- define "cortx.client.serviceDomain" -}}
+{{- printf "%s-headless.%s.svc.%s" (include "cortx.client.fullname" .) .Release.Namespace .Values.clusterDomain -}}
+{{- end -}}
+
+{{/*
+Return the Motr-client endpoint port
+*/}}
+{{- define "cortx.client.motrClientPort" -}}
+21501
 {{- end -}}
