@@ -53,6 +53,11 @@ Usage:
 Options:
     -h              Prints help information.
     -i <IMAGE>      REQUIRED. The name of the container image to upgrade to.
+                    This image may be any of the three CORTX container images
+                    (cortx-data, cortx-rgw, cortx-control).  Specifying any
+                    one of these images will pull all three images of the
+                    same version and apply them to the appropriate
+                    Deployments / StatefulSets. 
     -s <FILE>       The cluster solution configuration file. Can
                     also be set with the CORTX_SOLUTION_CONFIG_FILE
                     environment variable. Defaults to 'solution.yaml'.
