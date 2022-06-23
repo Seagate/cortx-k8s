@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/component: control
 spec:
   type: {{ $svc.type }}
-  selector:
+  selector: {{- include "cortx.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: control
   ports:
     {{- $nodePortAllowed := or (eq $svc.type "NodePort") (eq $svc.type "LoadBalancer") }}
