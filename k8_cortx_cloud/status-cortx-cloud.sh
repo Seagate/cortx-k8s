@@ -402,7 +402,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --no-headers cortx-server-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${server_selector} --no-headers | grep -- -headless)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -427,7 +427,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --no-headers -l ${server_selector} | grep -v ^cortx-server-headless)
+done < <(kubectl get services --namespace="${namespace}" --no-headers -l ${server_selector} | grep -v -- -headless)
 
 if (( count >= expected_count &&  count <= max_count )); then
     msg_overall_passed
@@ -758,7 +758,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep -v cortx-kafka-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep -v -- -kafka-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -781,7 +781,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep cortx-kafka-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep -- -kafka-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -889,7 +889,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep -v cortx-zookeeper-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep -v -- -zookeeper-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -912,7 +912,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep cortx-zookeeper-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep -- -zookeeper-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
