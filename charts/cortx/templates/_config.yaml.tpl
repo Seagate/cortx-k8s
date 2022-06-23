@@ -17,6 +17,7 @@
 {{- range $i := until (int $.Values.cortxdata.replicas) -}}
 {{- $dataHostnames = append $dataHostnames (printf "%s-%s%02d-%d.%s" (include "cortx.data.fullname" $) $.Values.cortxdata.motr.containerGroupName $sts_index $i (include "cortx.data.serviceDomain" $)) -}}
 {{- end -}}
+{{- end -}}
 {{- $serverHostnames := list -}}
 {{- if .Values.cortxserver.enabled -}}
 {{- range $i := until (int .Values.cortxserver.replicas) -}}

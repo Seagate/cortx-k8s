@@ -244,7 +244,7 @@ spec:
             - name: data
               mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
           ports:
-          - name: {{ printf "ios-%d-tcp" (add 1 $i) }}
+          - name: {{ printf "ios-%d-tcp" (add 1 $group_size_iterator) }}
             containerPort: {{ printf "%d" (add $group_size_iterator (include "cortx.data.iosPort" $) | int) }}
           {{- if $.Values.cortxdata.motr.resources }}
           resources: {{- toYaml $.Values.cortxdata.motr.resources | nindent 12 }}
