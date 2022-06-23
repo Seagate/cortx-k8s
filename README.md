@@ -184,32 +184,34 @@ This upgrade process updates all containers in all CORTX pods to the new specifi
 To upgrade a previously deployed CORTX cluster, run the `upgrade-cortx-cloud.sh` script to patch the CORTX on Kubernetes deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments and StatefulSets, and then re-start the Pods.
 
    ```bash
-   TARGET_IMAGE="ghcr.io/seagate/cortx-data:2.0.0-834"
+   TARGET_IMAGE="ghcr.io/seagate/cortx-data:2.0.0-835"
    ./upgrade-cortx-cloud.sh -s solution.yaml -i $TARGET_IMAGE
    ```
 
-Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image ghcr.io/seagate/cortx-data:2.0.0-834 is specified, then:
+Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image `ghcr.io/seagate/cortx-data:2.0.0-835` is specified, then:
 
-- ghcr.io/seagate/cortx-data:2.0.0-834 will be applied to the cortx-data and cortx-client containers
-- ghcr.io/seagate/cortx-rgw:2.0.0-834 will be applied to the cortx-server containers
-- ghcr.io/seagate/cortx-control:2.0.0-834 will be applied to the cortx-control and cortx-ha containers
-
+- `ghcr.io/seagate/cortx-data:2.0.0-835` will be applied to the cortx-data and cortx-client containers
+- `ghcr.io/seagate/cortx-rgw:2.0.0-835` will be applied to the cortx-server containers
+- `ghcr.io/seagate/cortx-control:2.0.0-835` will be applied to the cortx-control and cortx-ha containers
 
 To update the image for a specific CORTX Deployment or StatefulSet use `kubectl set image`:
+
 ```bash
 # Update image on all containers in a cortx-data statefulset
-kubectl set image --namespace=${NAMESPACE} statefulset cortx-data '*=ghcr.io/seagate/cortx-data:2.0.0-834'
+kubectl set image --namespace=${NAMESPACE} statefulset cortx-data '*=ghcr.io/seagate/cortx-data:2.0.0-835'
 
 # Update image on all containers in a cortx-server statefulset
-kubectl set image --namespace=${NAMESPACE} statefulset cortx-server '*=ghcr.io/seagate/cortx-rgw:2.0.0-834'
+kubectl set image --namespace=${NAMESPACE} statefulset cortx-server '*=ghcr.io/seagate/cortx-rgw:2.0.0-835'
 
 # Update image on all containers in a cortx-control deployment
-kubectl set image --namespace=${NAMESPACE} deployment cortx-control '*=ghcr.io/seagate/cortx-control:2.0.0-834'
+kubectl set image --namespace=${NAMESPACE} deployment cortx-control '*=ghcr.io/seagate/cortx-control:2.0.0-835'
 
 # Update image on all containers in a cortx-ha deployment
-kubectl set image --namespace=${NAMESPACE} deployment cortx-ha '*=ghcr.io/seagate/cortx-control:2.0.0-834'
-```
+kubectl set image --namespace=${NAMESPACE} deployment cortx-ha '*=ghcr.io/seagate/cortx-control:2.0.0-835'
 
+# Update image on all containers in a cortx-client statefulset
+kubectl set image --namespace=${NAMESPACE} statefulset cortx-client '*=ghcr.io/seagate/cortx-client:2.0.0-835'
+```
 
 ### Using CORTX on Kubernetes
 
