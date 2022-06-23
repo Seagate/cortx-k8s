@@ -3,15 +3,15 @@
 {{- end -}}
 {{- /*
 TODO CORTX-29861
-- What are the implications of multiple headless services versus a single headless service (preferred) to manage multiple STS domains?
-- Add a statefulset/nodeType label which is the value of statefulset name
-- Look at moving cvg->group mapping to a helper function and then using a dictionary lookup
 - Update values.yaml structures to reflect solution.yaml refactoring (clusterStorageVolumes under clusterStorageSets)
+- Look at moving cvg->group mapping to a helper function and then using a dictionary lookup
 - Review naming of STS Group Name versus cluster.yaml type_name etc. (helper function etc)
+- Add a statefulset/nodeType label which is the value of statefulset name
 - Ports are in need of review for both startingPortNum and what is made available across services
-- Need to add a helper function to calculate the upper bound of containerGroupSize (ie prevent cGS > num cvgs)
 */ -}}
-{{- range $sts_index := until (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) | int) }}
+{{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
+{{- $validatedContainerGroupSize := ( include "cortx.data.validatedContainerGroupSize" .) | int -}}
+{{- range $sts_index := until $statefulSetCount }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -80,8 +80,8 @@ spec:
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
         {{- end }}
         volumeDevices:
-          {{- range $group_size_iterator := until ($.Values.cortxdata.motr.containerGroupSize|int) }}
-          {{- $cvg_index := (add (mul $sts_index ($.Values.cortxdata.motr.containerGroupSize|int)) $group_size_iterator) -}}
+          {{- range $group_size_iterator := until $validatedContainerGroupSize }}
+          {{- $cvg_index := (add (mul $sts_index $validatedContainerGroupSize) $group_size_iterator) -}}
           {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
           {{ if $cvg.devices.metadata }}
           - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
@@ -165,8 +165,8 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
-            {{- range $group_size_iterator := until ($.Values.cortxdata.motr.containerGroupSize|int) }}
-            {{- $cvg_index := (add (mul $sts_index ($.Values.cortxdata.motr.containerGroupSize|int)) $group_size_iterator) -}}
+            {{- range $group_size_iterator := until $validatedContainerGroupSize }}
+            {{- $cvg_index := (add (mul $sts_index $validatedContainerGroupSize) $group_size_iterator) -}}
             {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
             {{ if $cvg.devices.metadata }}
             - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
@@ -201,7 +201,7 @@ spec:
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
-        {{- range $group_size_iterator := until ($.Values.cortxdata.motr.containerGroupSize|int) }}
+        {{- range $group_size_iterator := until $validatedContainerGroupSize }}
         - name: {{ printf "cortx-motr-io-%03d" (add 1 $group_size_iterator) }}
           image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -226,7 +226,7 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
-            {{- $cvg_index := (add (mul $sts_index ($.Values.cortxdata.motr.containerGroupSize|int)) $group_size_iterator) -}}
+            {{- $cvg_index := (add (mul $sts_index ($validatedContainerGroupSize)) $group_size_iterator) -}}
             {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
             {{ if $cvg.devices.metadata }}
             - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
@@ -261,8 +261,8 @@ spec:
       resources:
         requests:
           storage: {{ $.Values.cortxdata.localpathpvc.requeststoragesize }}
-  {{ range $group_size_iterator := until ($.Values.cortxdata.motr.containerGroupSize|int) }}
-  {{- $cvg_index := (add (mul $sts_index ($.Values.cortxdata.motr.containerGroupSize|int)) $group_size_iterator) -}}
+  {{ range $group_size_iterator := until $validatedContainerGroupSize }}
+  {{- $cvg_index := (add (mul $sts_index $validatedContainerGroupSize) $group_size_iterator) -}}
   {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
   {{- if $cvg.devices.metadata -}}
   - metadata:

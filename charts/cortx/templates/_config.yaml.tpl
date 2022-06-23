@@ -13,7 +13,8 @@
 */}}
 {{- define "config.yaml" -}}
 {{- $dataHostnames := list -}}
-{{- range $sts_index := until (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) | int) }}
+{{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
+{{- range $sts_index := until $statefulSetCount }}
 {{- range $i := until (int $.Values.cortxdata.replicas) -}}
 {{- $dataHostnames = append $dataHostnames (printf "%s-%s%02d-%d.%s" (include "cortx.data.fullname" $) $.Values.cortxdata.motr.containerGroupName $sts_index $i (include "cortx.data.serviceDomain" $)) -}}
 {{- end -}}

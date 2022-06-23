@@ -116,19 +116,6 @@ configmap:
   # clusterDomain is the domain name of the underlying Kubernetes cluster (default is cluster.local)
   clusterDomain: cluster.local
 
-  # clusterStorageVolumes is a Dictionary of container volume groups.
-  # e.g:
-  # clusterStorageVolumes:
-  #   cvg-01:
-  #     type: ios
-  #     metadataDevices:
-  #       - /dev/sdc
-  #     dataDevices:
-  #       - /dev/sdd
-  #       - /dev/sde
-  #       - /dev/sdf
-  clusterStorageVolumes: {}
-
   # clusterStorageSets is a Dictionary of storage sets.
   # e.g.:
   # clusterStorageSets:
@@ -360,6 +347,17 @@ cortxdata:
   replicas: 3
   nodes: []
   ## TODO CORTX-29861 Document this new values.yaml parameter
+  # clusterStorageVolumes is a Dictionary of container volume groups.
+  # e.g:
+  # clusterStorageVolumes:
+  #   cvg-01:
+  #     type: ios
+  #     metadataDevices:
+  #       - /dev/sdc
+  #     dataDevices:
+  #       - /dev/sdd
+  #       - /dev/sde
+  #       - /dev/sdf
   cvgs: []
   storageClassName: local-block-storage
   persistentStorage:

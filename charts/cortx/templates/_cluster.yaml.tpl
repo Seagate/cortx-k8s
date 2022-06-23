@@ -21,7 +21,9 @@ cluster:
   id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
   {{- /* TODO CORTX-29861 Create additional data_node types here based upon StatefulSet names */}}
   node_types:
-  {{- range $sts_index := until (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) | int) }}
+  {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
+  {{- $validatedContainerGroupSize := ( include "cortx.data.validatedContainerGroupSize" .) | int -}}
+  {{- range $sts_index := until $statefulSetCount }}
   - name: {{ printf "%s-%s%02d" (include "cortx.data.fullname" $) $.Values.cortxdata.motr.containerGroupName $sts_index }}
     components:
       - name: utils
@@ -30,8 +32,8 @@ cluster:
           - io
       - name: hare
     storage:
-    {{- range $group_size_iterator := until ($.Values.cortxdata.motr.containerGroupSize|int) }}
-    {{- $cvg_index := (add (mul $sts_index ($.Values.cortxdata.motr.containerGroupSize|int)) $group_size_iterator) -}}
+    {{- range $group_size_iterator := until $validatedContainerGroupSize }}
+    {{- $cvg_index := (add (mul $sts_index $validatedContainerGroupSize) $group_size_iterator) -}}
     {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
     {{- range $cvg.devices.data }}
     - name: {{ $cvg.name }}
@@ -93,7 +95,7 @@ cluster:
     {{- if $root.Values.cortxha.enabled }}
     {{- include "storageset.node" (dict "name" (printf "%s-headless" (include "cortx.ha.fullname" $root)) "id" $storageSet.haUuid "type" "ha_node") | nindent 4 }}
     {{- end }}
-    {{- range $sts_index := until (ceil (div (len $root.Values.cortxdata.cvgs) ($root.Values.cortxdata.motr.containerGroupSize|int)) | int) }}
+    {{- range $sts_index := until $statefulSetCount }}
     {{- range $i := until (int $root.Values.cortxdata.replicas) }}
     {{- $nodeGroup := printf "%s-%s%02d" (include "cortx.data.fullname" $root) $.Values.cortxdata.motr.containerGroupName $sts_index }}
     {{- $nodeName := printf "%s-%d" $nodeGroup $i }}

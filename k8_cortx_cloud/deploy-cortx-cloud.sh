@@ -241,19 +241,6 @@ buildValues() {
         fi
     done
 
-    # Populate the cluster storage volumes
-    num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' "${solution_yaml}")
-    for (( index=0; index < num_cvgs; index++ )); do
-        cvg_path="solution.storage_sets[0].storage[${index}]"
-        yq -i eval-all "
-            select(fi==0) ref \$to | select(fi==1).${cvg_path} ref \$cvg
-            | with(\$to.configmap.clusterStorageVolumes.[\$cvg.name];
-                .type = \$cvg.type
-                | .metadataDevices = [\$cvg.devices.metadata.device]
-                | .dataDevices = [\$cvg.devices.data[].device])
-            | \$to" "${values_file}" "${solution_yaml}"
-    done
-
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from

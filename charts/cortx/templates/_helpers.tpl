@@ -181,6 +181,29 @@ Return the Motr confd endpoint port
 {{- end -}}
 
 {{/*
+Return the number of StatefulSets required to fullfil the containerGroupSize to CVG mapping defined by the user
+This is calculated by (Number of CVGs in solution.yaml) / ({}.containerGroupSize).
+If CVGs are defined, the minimum value this should return is 1.
+If CVGs are not defined, this should return 0.
+*/}}
+{{- define "cortx.data.statefulSetCount" -}}
+{{- if eq (len .Values.cortxdata.cvgs) 0 -}}
+0
+{{- else -}}
+{{- printf "%d" (max 1 (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)))) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns the maximally-allowed value for ContainerGroupSize,
+which prevents the containerGroupSize parameter from being larger than the number of CVGs.
+*/}}
+{{- define "cortx.data.validatedContainerGroupSize" -}}
+{{- printf "%d" (min (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) -}}
+{{- end -}}
+
+
+{{/*
 Return the name of the Client component
 */}}
 {{- define "cortx.client.fullname" -}}
