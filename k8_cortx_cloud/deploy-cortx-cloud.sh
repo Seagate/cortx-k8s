@@ -16,6 +16,7 @@ cortx_secret_fields=("kafka_admin_secret"
                      "csm_auth_admin_secret"
                      "csm_mgmt_admin_secret")
 readonly cortx_secret_fields
+readonly cortx_localblockstorage_storageclassname="cortx-local-block-storage"
 
 # Enabled/disabled flags for components
 declare -A components
@@ -148,7 +149,9 @@ buildValues() {
     # Initialize
     yq --null-input "
         (.global.storageClass, .consul.server.storageClass) = \"local-path\"
-        | (.cortxcontrol.localpathpvc.mountpath,
+        | (.cortxclient.localpathpvc.mountpath,
+           .cortxcontrol.localpathpvc.mountpath,
+           .cortxdata.localpathpvc.mountpath,
            .cortxha.localpathpvc.mountpath,
            .cortxserver.localpathpvc.mountpath) = \"${local_storage}\"
         | .configmap.cortxSecretName = \"${cortx_secret_name}\"" > "${values_file}"
@@ -209,7 +212,8 @@ buildValues() {
     yq -i "
         .cortxserver.enabled = ${components[server]}
         | .cortxha.enabled = ${components[ha]}
-        | .cortxcontrol.enabled = ${components[control]}" "${values_file}"
+        | .cortxcontrol.enabled = ${components[control]}
+        | .cortxclient.enabled = ${components[client]}" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -217,22 +221,11 @@ buildValues() {
         | $to.configmap.cortxMotr.extraConfiguration = $from.solution.common.motr.extra_configuration
         | $to' "${values_file}" "${solution_yaml}"
 
-    for node in "${node_name_list[@]}"; do
-        if ((num_motr_client > 0)); then
-            yq -i "
-                .configmap.cortxMotr.clientEndpoints += [\"tcp://cortx-client-headless-svc-${node}:21201\"]
-                | .configmap.cortxHare.haxClientEndpoints += [\"tcp://cortx-client-headless-svc-${node}:22001\"]" "${values_file}"
-        fi
-    done
-
-    ((num_motr_client > 0)) && yq -i ".configmap.cortxMotr.clientInstanceCount = ${num_motr_client}" "${values_file}"
-
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from | $from.solution.storage_sets[0].name as $name
         | $to.configmap.clusterStorageSets.[$name].durability = $from.solution.storage_sets[0].durability
         | $to' "${values_file}" "${solution_yaml}"
-
 
     local uuid
 
@@ -247,16 +240,6 @@ buildValues() {
                 | \$to" "${values_file}" "${solution_yaml}"
         fi
     done
-
-    if [[ ${components["client"]} == true ]]; then
-        for node in "${node_name_list[@]}"; do
-            uuid=$(< "${cfgmap_path}/auto-gen-${node}-${namespace}/client/id")
-            yq -i eval-all "
-                select(fi==0) ref \$to | select(fi==1).solution.storage_sets[0].name as \$name
-                | \$to.configmap.clusterStorageSets.[\$name].nodes.${node}.clientUuid=\"${uuid}\"
-                | \$to" "${values_file}" "${solution_yaml}"
-        done
-    fi
 
     # Populate the cluster storage volumes
     num_cvgs=$(yq e '.solution.storage_sets[0].storage | length' "${solution_yaml}")
@@ -332,32 +315,11 @@ buildValues() {
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
-    ## cortx-server Pods, managed by a StatefulSet, have deterministically
-    ## generated metadata. Inject that metadata into the ConfigMap here.
-    ## During Helm Chart unification, this block can be interned into
-    ## Helm logic.
-    local count
-    local storage_set_name
-    storage_set_name=$(yq ".solution.storage_sets[0].name" "${solution_yaml}")
-    for (( count=0; count < total_server_pods; count++ )); do
-        # Build out FQDN of cortx-server Pods
-        # StatefulSets create pod names of "{statefulset-name}-{index}", with index starting at 0
-        local pod_name="cortx-server-${count}"
-        local pod_fqdn="${pod_name}.cortx-server-headless.${namespace}.svc.cluster.local"
-
-        ### cortx-k8s should generate a list item with the following information:
-        ### - name: Pod short name
-        ### - hostname: Pod FQDN
-        ### - id: Initially write this as FQDN and Provisioner stores in gconf as md5-hashed version
-        ### - type: "server_node"
-
-        ### TODO CORTX-29861 Parameterize port names for dynamic Motr endpoint generation (28968 F/UP)
-
-        yq -i "
-            .configmap.clusterStorageSets.[\"${storage_set_name}\"].nodes.${pod_name}.serverUuid=\"${pod_fqdn}\"
-            | .configmap.cortxMotr.rgwEndpoints += [\"tcp://${pod_fqdn}:21001\"]
-            | .configmap.cortxHare.haxServerEndpoints += [\"tcp://${pod_fqdn}:22001\"]" "${values_file}"
-    done
+    local data_node_count=${#node_name_list[@]}
+    local server_instances_per_node
+    local total_server_pods
+    server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
+    total_server_pods=$(( data_node_count * server_instances_per_node ))
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -380,7 +342,8 @@ buildValues() {
 
     yq -i ".cortxserver.replicas = ${total_server_pods}" "${values_file}"
 
-    [[ ${components[data]} == false ]] && return
+    data_replicas=${data_node_count}
+    [[ ${components[data]} == false ]] && data_replicas=0
 
     ### TODO CORTX-29861 Determine how we want to sub-select nominated nodes for Data Pod scheduling.
     ### 1. Should we apply the labels through this script?
@@ -390,7 +353,7 @@ buildValues() {
      yq -i "
         .hare.hax.ports.http.protocol = \"${hax_service_protocol}\"
         | with(.cortxdata;
-            .replicas = ${data_node_count}
+            .replicas = ${data_replicas}
             | .storageClassName = \"${cortx_localblockstorage_storageclassname}\"
             | .localpathpvc.mountpath = \"${local_storage}\")" "${values_file}"
 
@@ -407,6 +370,20 @@ buildValues() {
             | .motr.containerGroupSize = $from.solution.storage_sets[0].container_group_size
             | .motr.resources          = $from.solution.common.resource_allocation.data.motr.resources
             | .confd.resources         = $from.solution.common.resource_allocation.data.confd.resources)
+        | $to' "${values_file}" "${solution_yaml}"
+
+    client_replicas=${data_node_count}
+    [[ ${components[client]} == false ]] && client_replicas=0
+
+    yq -i "
+        .cortxclient.replicas = ${client_replicas}
+        | .cortxclient.motr.numclientinst = ${num_motr_client}" "${values_file}"
+
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | with($to.cortxclient;
+            .image = $from.solution.images.cortxclient)
         | $to' "${values_file}" "${solution_yaml}"
 
     set +eu
@@ -513,38 +490,16 @@ fi
 
 # Create arrays of node short names and node FQDNs
 node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
-node_selector_list=[] # long version. Ex: ssc-vm-g3-rhev4-1490.colo.seagate.com
 count=0
 
 for node_name in "${parsed_node_array[@]}"
 do
-    node_selector_list[count]=${node_name}
-    # node_selector_list is only used in cortx-client related actions now
     shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
     node_name_list[count]=${shorter_node_name}
-    # node_name_list is only used in cortx-client related actions now
+
     count=$((count+1))
 done
 ### TODO CORTX-29861 [/end] Revisit for best way to parse this YAML section with new schema references
-
-##########################################################
-# Extract & establish required cluster-wide constants
-##########################################################
-
-## This is currently required as part of CORTX-28968 et al for cross-Chart synchronization.
-## Once Helm Charts are unified, these will become defaulted values.yaml properties.
-default_values_file="../charts/cortx/values.yaml"
-
-cortx_localblockstorage_storageclassname=$(yq ".platform.storage.localBlock.storageClassName" "${default_values_file}")
-readonly cortx_localblockstorage_storageclassname
-
-server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
-data_node_count=$(yq ".solution.storage_sets[0].nodes | length" "${solution_yaml}")
-total_server_pods=$(( data_node_count * server_instances_per_node ))
-
-readonly server_instances_per_node
-readonly data_node_count
-readonly total_server_pods
 
 ##########################################################
 # Begin CORTX on k8s deployment
@@ -662,18 +617,7 @@ function deployCortxLocalBlockStorage()
 function deleteStaleAutoGenFolders()
 {
     # Delete all stale auto gen folders
-    for gen in \
-        auto-gen-cfgmap \
-        auto-gen-control \
-        auto-gen-ha \
-        auto-gen-secret \
-        node-info \
-        storage-info; do
-        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/${gen}-${namespace}"
-    done
-    for node_name in "${node_name_list[@]}"; do
-        rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-${node_name}-${namespace}"
-    done
+    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap"
 }
 
 function generateMachineId()
@@ -694,12 +638,6 @@ function generateMachineIds()
     for c in control ha; do
         [[ ${components["${c}"]} == true ]] && id_paths+=("${cfgmap_path}/auto-gen-${c}-${namespace}")
     done
-
-    if [[ ${components["client"]} == true ]]; then
-        for node in "${node_name_list[@]}"; do
-                id_paths+=("${cfgmap_path}/auto-gen-${node}-${namespace}/client")
-        done
-    fi
 
     for path in "${id_paths[@]}"; do
         mkdir -p "${path}"
@@ -773,11 +711,6 @@ function deployCortxSecrets()
         cortx_secret_name="$(getSolutionValue "solution.secrets.external_secret")"
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
-
-    if [[ ${num_motr_client} -gt 0 ]]; then
-        client_secret_path="./cortx-cloud-helm-pkg/cortx-client/secret-info.txt"
-        printf "%s" "${cortx_secret_name}" > ${client_secret_path}
-    fi
 }
 
 function silentKill()
@@ -803,39 +736,6 @@ function waitForAllDeploymentsAvailable()
     fi
 
     return ${rc}
-}
-
-function deployCortxClient()
-{
-    [[ ${components[client]} == false ]] && return
-
-    printf "########################################################\n"
-    printf "# Deploy CORTX Client                                   \n"
-    printf "########################################################\n"
-    cortxclient_image=$(parseSolution 'solution.images.cortxclient')
-    cortxclient_image=$(echo "${cortxclient_image}" | cut -f2 -d'>')
-
-    num_nodes=0
-    for i in "${!node_selector_list[@]}"; do
-        num_nodes=$((num_nodes+1))
-        node_name=${node_name_list[i]}
-        node_selector=${node_selector_list[i]}
-
-        cortxclient_machineid=$(cat "${cfgmap_path}/auto-gen-${node_name_list[i]}-${namespace}/client/id")
-
-        helm install "cortx-client-${node_name}-${namespace}" cortx-cloud-helm-pkg/cortx-client \
-            --set cortxclient.name="cortx-client-${node_name}" \
-            --set cortxclient.image="${cortxclient_image}" \
-            --set cortxclient.nodeselector="${node_selector}" \
-            --set cortxclient.motr.numclientinst="${num_motr_client}" \
-            --set cortxclient.service.headless.name="cortx-client-headless-svc-${node_name}" \
-            --set cortxclient.cfgmap.volmountname="config001-${node_name}" \
-            --set cortxclient.machineid.value="${cortxclient_machineid}" \
-            --set cortxclient.localpathpvc.name="cortx-client-fs-local-pvc-${node_name}" \
-            --set cortxclient.localpathpvc.mountpath="${local_storage}" \
-            -n "${namespace}" \
-            || exit $?
-    done
 }
 
 function cleanup()
@@ -881,7 +781,7 @@ function waitForClusterReady()
 
     ### TODO CORTX-29861 Needs to be updated for multiple STS
     if [[ ${components[data]} == true ]]; then
-        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" "statefulset/cortx-data") &
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" statefulset/cortx-data) &
         pids+=($!)
     fi
 
@@ -891,10 +791,8 @@ function waitForClusterReady()
     fi
 
     if [[ ${components[client]} == true ]]; then
-        for node in "${node_name_list[@]}"; do
-            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CLIENT_TIMEOUT:-10m}" "deployment/cortx-client-${node}") &
-            pids+=($!)
-        done
+        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_CLIENT_TIMEOUT:-10m}" statefulset/cortx-client) &
+        pids+=($!)
     fi
 
     local -i rc=0
@@ -942,7 +840,6 @@ generateMachineIds
 # Deploy CORTX cloud
 ##########################################################
 deployCortx
-deployCortxClient
 cleanup
 
 # Note: It is not ideal that some of these values are hard-coded here.

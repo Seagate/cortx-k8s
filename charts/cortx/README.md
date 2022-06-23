@@ -1,6 +1,6 @@
 # cortx
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-825](https://img.shields.io/badge/AppVersion-2.0.0--825-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-835](https://img.shields.io/badge/AppVersion-2.0.0--835-informational?style=flat-square)
 
 CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 
@@ -70,10 +70,6 @@ helm uninstall cortx
 | configmap.cortxControl.agent.resources.limits.memory | string | `"256Mi"` |  |
 | configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxControl.agent.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxHare.haxClientEndpoints | list | `[]` |  |
-| configmap.cortxHare.haxServerEndpoints | list | `[]` |  |
-| configmap.cortxMotr.clientEndpoints | list | `[]` |  |
-| configmap.cortxMotr.clientInstanceCount | int | `0` |  |
 | configmap.cortxMotr.confd.resources.limits.cpu | string | `"500m"` |  |
 | configmap.cortxMotr.confd.resources.limits.memory | string | `"512Mi"` |  |
 | configmap.cortxMotr.confd.resources.requests.cpu | string | `"250m"` |  |
@@ -83,7 +79,6 @@ helm uninstall cortx
 | configmap.cortxMotr.motr.resources.limits.memory | string | `"2Gi"` |  |
 | configmap.cortxMotr.motr.resources.requests.cpu | string | `"250m"` |  |
 | configmap.cortxMotr.motr.resources.requests.memory | string | `"1Gi"` |  |
-| configmap.cortxMotr.rgwEndpoints | list | `[]` |  |
 | configmap.cortxSecretName | string | `"cortx-secret"` |  |
 | configmap.cortxSecretValues | object | `{}` |  |
 | configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
@@ -94,6 +89,13 @@ helm uninstall cortx
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
+| cortxclient.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
+| cortxclient.enabled | bool | `false` |  |
+| cortxclient.image | string | `"ghcr.io/seagate/centos:7"` |  |
+| cortxclient.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
+| cortxclient.motr.numclientinst | int | `1` |  |
+| cortxclient.replicas | int | `1` |  |
+| cortxclient.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
 | cortxcontrol.agent.resources.limits.cpu | string | `"500m"` |  |
 | cortxcontrol.agent.resources.limits.memory | string | `"256Mi"` |  |
 | cortxcontrol.agent.resources.requests.cpu | string | `"250m"` |  |
@@ -125,7 +127,6 @@ helm uninstall cortx
 | cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
 | cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |
 | cortxdata.motr.resources.requests.memory | string | `"1Gi"` |  |
-| cortxdata.motr.startportnum | int | `29000` |  |
 | cortxdata.nodes | list | `[]` |  |
 | cortxdata.persistentStorage.accessModes[0] | string | `"ReadWriteMany"` |  |
 | cortxdata.persistentStorage.volumeMode | string | `"Block"` |  |
@@ -204,7 +205,6 @@ helm uninstall cortx
 | platform.podSecurityPolicy.create | bool | `false` |  |
 | platform.rbacRole.create | bool | `true` |  |
 | platform.rbacRoleBinding.create | bool | `true` |  |
-| platform.storage.localBlock.storageClassName | string | `"cortx-local-block-storage"` |  |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |

@@ -174,16 +174,8 @@ configmap:
           memory: 256Mi
           cpu: 500m
 
-  # cortxHare allows configuring CORTX HARE settings
-  cortxHare:
-    haxServerEndpoints: []
-    haxClientEndpoints: []
-
   # cortxMotr allows configuring CORTX MOTR settings
   cortxMotr:
-    clientInstanceCount: 0
-    clientEndpoints: []
-    rgwEndpoints: []
     # An optional multi-line string that contains extra Motr configuration
     # settings. The string may contain template expressions, and is appended to
     # the end of the computed configuration.
@@ -233,10 +225,6 @@ platform:
       podAppLabel: cortx-control-pod
     cortxData:
       podNameLabel: cortx-data
-
-  storage:
-    localBlock:
-      storageClassName: "cortx-local-block-storage"
 
 ##
 ## Imported values from cortx-control Helm Chart. These will be changed.
@@ -364,6 +352,9 @@ cortxserver:
       http: ""
       https: ""
 
+##
+## Imported values from cortx-data Helm Chart. These will be changed.
+##
 cortxdata:
   image: ghcr.io/seagate/centos:7
   replicas: 3
@@ -376,7 +367,6 @@ cortxdata:
     accessModes:
     - ReadWriteMany
   motr:
-    startportnum: 29000
     # -- The number of Motr IO containers per CORTX Data Pod
     # As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node.
     containerGroupSize: 1
@@ -407,3 +397,19 @@ cortxdata:
     requeststoragesize: 1Gi
     accessmodes:
       - ReadWriteOnce
+
+##
+## Imported values from cortx-client Helm Chart. These will be changed.
+##
+cortxclient:
+  enabled: false
+  replicas: 1
+  image: ghcr.io/seagate/centos:7
+  motr:
+    numclientinst: 1
+  cfgmap:
+    mountpath: /etc/cortx/solution
+  sslcfgmap:
+    mountpath: /etc/cortx/solution/ssl
+  localpathpvc:
+    mountpath: /etc/cortx

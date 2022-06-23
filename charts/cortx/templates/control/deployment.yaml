@@ -122,7 +122,7 @@ spec:
                 fieldPath: metadata.name
           ports:
             - name: control-https
-              containerPort: 8081
+              containerPort: {{ include "cortx.control.agentPort" . | int }}
               protocol: TCP
           {{- if .Values.cortxcontrol.agent.resources }}
           resources: {{- toYaml .Values.cortxcontrol.agent.resources | nindent 12 }}

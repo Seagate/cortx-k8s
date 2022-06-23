@@ -99,10 +99,13 @@ spec:
                 fieldPath: metadata.name
           ports:
           - name: rgw-http
-            containerPort: 22751
+            containerPort: {{ include "cortx.server.rgwHttpPort" . | int }}
             protocol: TCP
           - name: rgw-https
-            containerPort: 23001
+            containerPort: {{ include "cortx.server.rgwHttpsPort" . | int }}
+            protocol: TCP
+          - name: motr-client
+            containerPort: {{ include "cortx.server.motrClientPort" . | int }}
             protocol: TCP
           resources: {{- toYaml .Values.cortxserver.rgw.resources | nindent 12 }}
           securityContext:
@@ -140,7 +143,7 @@ spec:
             containerPort: {{ .Values.hare.hax.ports.http.port | int }}
             protocol: TCP
           - name: hax-tcp
-            containerPort: 22001
+            containerPort: {{ include "cortx.hare.hax.tcpPort" . | int }}
             protocol: TCP
           {{- if .Values.hare.hax.resources }}
           resources: {{- toYaml .Values.hare.hax.resources | nindent 12 }}
