@@ -116,15 +116,23 @@ fi
 
 printf "Using solution config file '%s'\n" "${SOLUTION_FILE}"
 
+# The deployment script always uses this Chart release name
+readonly release_name="cortx"
+# All CORTX components have this label, based on the Chart release name
+readonly cortx_selector="app.kubernetes.io/name=${release_name}"
+
+cortx_deployments="$(kubectl get deployments,statefulsets --namespace="${NAMESPACE}" --selector="${cortx_selector}" --no-headers)"
+if [[ -z ${cortx_deployments} ]]; then
+    printf "No CORTX Deployments were found so the image upgrade cannot be performed.\n"
+    exit 1
+fi
+
 # Validate if All Pods are running
 pods_ready=true
 
-readonly cortx_pod_filter="cortx-control-\|cortx-data-\|cortx-ha-\|cortx-server-\|cortx-client-"
-readonly cortx_deployment_filter="cortx-control\|cortx-data\|cortx-ha\|cortx-server\|cortx-client"
-
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 
-cortx_pods="$(kubectl get pods --namespace="${NAMESPACE}" | { grep "${cortx_pod_filter}" || true; })"
+cortx_pods="$(kubectl get pods --namespace="${NAMESPACE}" --selector="${cortx_selector}" --no-headers)"
 if [[ -z ${cortx_pods} ]]; then
     printf "  no CORTX Pods were found, proceeding with image upgrade anyways\n"
 else
@@ -158,47 +166,37 @@ fi
 # Shutdown all CORTX Pods
 "${DIR}/shutdown-cortx-cloud.sh" "${SOLUTION_FILE}"
 
-cortx_deployments="$(kubectl get deployments,statefulset --namespace="${NAMESPACE}" --output=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" | { grep "${cortx_deployment_filter}" || true; })"
-if [[ -z ${cortx_deployments} ]]; then
-    printf "No CORTX Deployments were found so the image upgrade cannot be performed. The cluster will be restarted.\n"
-else
-    RGW_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-rgw:}"
-    DATA_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-data:}"
-    CONTROL_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-control:}"
+RGW_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-rgw:}"
+DATA_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-data:}"
+CONTROL_IMAGE="${UPGRADE_IMAGE/cortx-*:/cortx-control:}"
 
-    printf "Updating CORTX Deployments to use:\n"
-    printf "   %s\n" "${RGW_IMAGE}"
-    printf "   %s\n" "${DATA_IMAGE}"
-    printf "   %s\n" "${CONTROL_IMAGE}"
-    printf "\n"
+declare -A components
+components=(
+    [client]="${DATA_IMAGE}"
+    [control]="${CONTROL_IMAGE}"
+    [data]="${DATA_IMAGE}"
+    [ha]="${CONTROL_IMAGE}"
+    [server]="${RGW_IMAGE}"
+)
 
-    k8s_controller="deployment"
-    while IFS= read -r deployment; do
-        case "${deployment}" in
-        cortx-server)
-            IMAGE="${RGW_IMAGE}"
-            k8s_controller="statefulset"
-            ;;
-        cortx-data|cortx-client)
-            IMAGE="${DATA_IMAGE}"
-            k8s_controller="statefulset"
-            ;;
-        cortx-control|cortx-ha)
-            IMAGE="${CONTROL_IMAGE}"
-            k8s_controller="deployment"
-            ;;
-        *)
-            printf "NO MATCH FOR %s.  Skipping upgrade of image.\n" "${deployment}"
-            continue
-            ;;
-        esac
+printf "Current container images:\n"
+kubectl get deployments,statefulset --namespace="${NAMESPACE}" --selector="${cortx_selector}" --output=jsonpath="{range .items[*]}  {.metadata.name} ==> {.spec.template.spec.containers[0].image}{'\n'}{end}{'\n'}"
 
-        printf "Updating CORTX component %s to use image %s\n" "${deployment}" "${IMAGE}"
-        kubectl set image --namespace="${NAMESPACE}" ${k8s_controller} "${deployment}" "*=${IMAGE}"
+printf "Updating CORTX resources to use:\n"
+printf "   %s\n" "${RGW_IMAGE}"
+printf "   %s\n" "${DATA_IMAGE}"
+printf "   %s\n" "${CONTROL_IMAGE}"
+printf "\n"
 
-    done <<< "${cortx_deployments}"
-    printf "\n"
-fi
+printf "Updating container images...\n"
+for component in "${!components[@]}"; do
+    image="${components[${component}]}"
+    component_selector="app.kubernetes.io/component=${component}"
+    kubectl set image deployments,statefulsets --namespace="${NAMESPACE}" --selector="${cortx_selector},${component_selector}" "*=${image}"
+done
+
+printf "\nUpdated container images:\n"
+kubectl get deployments,statefulset --namespace="${NAMESPACE}" --selector="${cortx_selector}" --output=jsonpath="{range .items[*]}  {.metadata.name} ==> {.spec.template.spec.containers[0].image}{'\n'}{end}{'\n'}"
 
 # Start all CORTX Pods
 "${DIR}/start-cortx-cloud.sh" "${SOLUTION_FILE}"
