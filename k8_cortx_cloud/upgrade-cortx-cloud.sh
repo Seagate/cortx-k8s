@@ -57,7 +57,7 @@ Options:
                     (cortx-data, cortx-rgw, cortx-control).  Specifying any
                     one of these images will pull all three images of the
                     same version and apply them to the appropriate
-                    Deployments / StatefulSets. 
+                    Deployments / StatefulSets.
     -s <FILE>       The cluster solution configuration file. Can
                     also be set with the CORTX_SOLUTION_CONFIG_FILE
                     environment variable. Defaults to 'solution.yaml'.
@@ -120,7 +120,7 @@ printf "Using solution config file '%s'\n" "${SOLUTION_FILE}"
 pods_ready=true
 
 readonly cortx_pod_filter="cortx-control-\|cortx-data-\|cortx-ha-\|cortx-server-\|cortx-client-"
-readonly cortx_deployment_filter="cortx-control\|cortx-data-\|cortx-ha\|cortx-server\|cortx-client-"
+readonly cortx_deployment_filter="cortx-control\|cortx-data\|cortx-ha\|cortx-server\|cortx-client"
 
 printf "\n%s\n" "${CYAN-}Checking Pod readiness:${CLEAR-}"
 
@@ -175,19 +175,19 @@ else
     k8s_controller="deployment"
     while IFS= read -r deployment; do
         case "${deployment}" in
-        cortx-server-*) 
+        cortx-server)
             IMAGE="${RGW_IMAGE}"
             k8s_controller="statefulset"
             ;;
-        cortx-data-*|cortx-client-*)
+        cortx-data|cortx-client)
             IMAGE="${DATA_IMAGE}"
-            k8s_controller="deployment"
+            k8s_controller="statefulset"
             ;;
         cortx-control|cortx-ha)
             IMAGE="${CONTROL_IMAGE}"
             k8s_controller="deployment"
             ;;
-        *) 
+        *)
             printf "NO MATCH FOR %s.  Skipping upgrade of image.\n" "${deployment}"
             continue
             ;;
