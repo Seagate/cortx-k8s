@@ -12,7 +12,7 @@ kind: Service
 metadata:
   name: {{ printf "%s-%d" (include "cortx.server.fullname" $root) $i }}
   namespace: {{ $root.Release.Namespace }}
-  labels: {{ include "cortx.labels" $ | nindent 4 }}
+  labels: {{- include "cortx.labels" $ | nindent 4 }}
     app.kubernetes.io/component: server
 spec:
   type: {{ $svc.type }}
@@ -41,8 +41,9 @@ kind: Service
 metadata:
   name: {{ printf "cortx-io-svc-%d" $i | trunc 63 | trimSuffix "-" }}
   namespace: {{ $root.Release.Namespace }}
-  labels:
+  labels: {{- include "cortx.labels" $ | nindent 4 }}
     app.kubernetes.io/component: server
+    cortx.io/deprecated: "true"
 spec:
   type: {{ ternary "LoadBalancer" "ClusterIP" $isLB }}
   selector: {{- include "cortx.selectorLabels" $ | nindent 4 }}

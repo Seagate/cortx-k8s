@@ -846,7 +846,7 @@ cleanup
 #       way of getting the values otherwise.
 data_service_name="cortx-server-0"  # present in cortx values.yaml... what to do?
 data_service_default_user="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
-control_service_name="cortx-control-loadbal-svc"  # hard coded in script above installing help or cortx-control
+control_service_name="cortx-control"  # hard coded in script above installing help or cortx-control
 control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templates/_config.tpl
 
 cat << EOF
