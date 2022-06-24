@@ -65,7 +65,6 @@ helm uninstall cortx
 | configmap.clusterId | string | `""` |  |
 | configmap.clusterName | string | `"cortx-cluster"` |  |
 | configmap.clusterStorageSets | object | `{}` |  |
-| configmap.clusterStorageVolumes | object | `{}` |  |
 | configmap.cortxControl.agent.resources.limits.cpu | string | `"500m"` |  |
 | configmap.cortxControl.agent.resources.limits.memory | string | `"256Mi"` |  |
 | configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
@@ -118,11 +117,13 @@ helm uninstall cortx
 | cortxdata.confd.resources.limits.memory | string | `"512Mi"` |  |
 | cortxdata.confd.resources.requests.cpu | string | `"250m"` |  |
 | cortxdata.confd.resources.requests.memory | string | `"128Mi"` |  |
+| cortxdata.cvgs | list | `[]` |  |
 | cortxdata.image | string | `"ghcr.io/seagate/centos:7"` |  |
 | cortxdata.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
 | cortxdata.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
 | cortxdata.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxdata.motr.numiosinst | int | `1` |  |
+| cortxdata.motr.containerGroupName | string | `"c"` |  |
+| cortxdata.motr.containerGroupSize | int | `1` | The number of Motr IO containers per CORTX Data Pod As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node. |
 | cortxdata.motr.resources.limits.cpu | string | `"1000m"` |  |
 | cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
 | cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |

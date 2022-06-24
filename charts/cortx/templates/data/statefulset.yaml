@@ -3,11 +3,11 @@
 {{- end -}}
 {{- /*
 TODO CORTX-29861
-- Update values.yaml structures to reflect solution.yaml refactoring (clusterStorageVolumes under clusterStorageSets)
+- Update values.yaml structures to reflect solution.yaml refactoring (clusterStorageVolumes/CVGs under clusterStorageSets)
+- Move clusterStorageSets from configmap to cortxdata
 - Look at moving cvg->group mapping to a helper function and then using a dictionary lookup
 - Review naming of STS Group Name versus cluster.yaml type_name etc. (helper function etc)
 - Add a statefulset/nodeType label which is the value of statefulset name
-- Ports are in need of review for both startingPortNum and what is made available across services
 */ -}}
 {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
 {{- $validatedContainerGroupSize := ( include "cortx.data.validatedContainerGroupSize" .) | int -}}
