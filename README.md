@@ -19,7 +19,8 @@
     6. [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
 6. [Solution YAML Overview](#solution-yaml-overview)
 7. [Troubleshooting](#troubleshooting)
-8. [License](#license)
+8. [Glossary](#glossary)
+9. [License](#license)
 
 ## Project Overview
 
@@ -391,6 +392,10 @@ kubectl exec -it cortx-debug -c cortx-setup -- sh
 Once you are done with your debugging session, you can exit the shell session and delete the `cortx-debug` pod.
 
 **_Note:_** This requires a `kubectl` [minimum version of 1.20](https://kubernetes.io/docs/tasks/tools/#kubectl).
+
+## Glossary
+
+For any terms, acronyms, or phrases that are unfamiliar to you as an end-user, please consult the [GLOSSARY](GLOSSARY.md) page for a growing list of definitions and clarifications as needed.
 
 ## License
 
