@@ -127,15 +127,17 @@ else
     failcount=$((failcount+1))
 fi
 
-# Check services load balancer
+readonly exclude_deprecated_selector="cortx.io/deprecated!=true"  # exclude deprecated service
+
+# Check services
 count=0
-msg_info "| Checking Services: cortx-control-loadbal-svc |"
+msg_info "| Checking Services: cortx-control |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
     printf "%s..." "${status[0]}"
     msg_passed
     count=$((count+1))
-done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector} --no-headers)
+done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector},${exclude_deprecated_selector} --no-headers)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -402,7 +404,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --no-headers cortx-server-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${server_selector} --no-headers | grep -- -headless)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -427,9 +429,9 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --no-headers -l ${server_selector} | grep -v ^cortx-server-headless)
+done < <(kubectl get services --namespace="${namespace}" --no-headers --selector ${server_selector},${exclude_deprecated_selector} | grep -v -- -headless)
 
-if (( count >= expected_count &&  count <= max_count )); then
+if (( count >= expected_count && count <= max_count )); then
     msg_overall_passed
 else
     msg_overall_failed
@@ -758,7 +760,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep -v cortx-kafka-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep -v -- -kafka-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -781,7 +783,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep cortx-kafka-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${kafka_selector} --no-headers | grep -- -kafka-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -889,7 +891,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep -v cortx-zookeeper-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep -v -- -zookeeper-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
@@ -912,7 +914,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep cortx-zookeeper-headless)
+done < <(kubectl get services --namespace="${namespace}" --selector=${zookeeper_selector} --no-headers | grep -- -zookeeper-headless)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed

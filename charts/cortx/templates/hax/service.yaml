@@ -3,10 +3,10 @@ kind: Service
 metadata:
   name: {{ include "cortx.hare.hax.fullname" . }}
   namespace: {{ .Release.Namespace }}
-  labels: {{ include "cortx.labels" . | nindent 4 }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
 spec:
   type: ClusterIP
-  selector:
+  selector: {{- include "cortx.selectorLabels" . | nindent 4 }}
     cortx.io/hax-enabled: "true"
   ports:
     - name: hax-http
