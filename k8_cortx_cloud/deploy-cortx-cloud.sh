@@ -302,7 +302,9 @@ buildValues() {
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
-    local data_node_count=${#node_name_list[@]}
+    #local data_node_count=${#node_name_list[@]}
+    local data_node_count
+    data_node_count=$(yq ".solution.storage_sets[0].nodes | length" "${solution_yaml}")
     local server_instances_per_node
     local total_server_pods
     server_instances_per_node=$(yq ".solution.common.s3.instances_per_node" "${solution_yaml}")
@@ -332,9 +334,9 @@ buildValues() {
     data_replicas=${data_node_count}
     [[ ${components[data]} == false ]] && data_replicas=0
 
-    ### TODO CORTX-29861 Determine how we want to sub-select nominated nodes for Data Pod scheduling.
+    ### TODO [FUTURE] Determine how we want to sub-select nominated nodes for Data Pod scheduling.
     ### 1. Should we apply the labels through this script?
-    ### 2. Should we required the labels to be applied prior to execution of this script?
+    ### 2. Should we require the labels to be applied prior to execution of this script?
     ### 3. Should we use a nodeSelector that uses the "in"/set operators?
 
      yq -i "
@@ -435,7 +437,6 @@ printf "\n"
 
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
-### TODO CORTX-29861 Revisit for best way to parse this YAML section with new schema references
 
 # Split parsed output into an array of vars and vals
 IFS=',' read -r -a parsed_node_array < <(yq e '.solution.storage_sets[0].nodes' --output-format=csv "${solution_yaml}")
@@ -474,19 +475,6 @@ if [[ ${num_tainted_worker_nodes} -gt 0 || ${num_not_found_nodes} -gt 0 ]]; then
         done
     fi
 fi
-
-# Create arrays of node short names and node FQDNs
-node_name_list=[] # short version. Ex: ssc-vm-g3-rhev4-1490
-count=0
-
-for node_name in "${parsed_node_array[@]}"
-do
-    shorter_node_name=$(echo "${node_name}" | cut -f1 -d'.')
-    node_name_list[count]=${shorter_node_name}
-
-    count=$((count+1))
-done
-### TODO CORTX-29861 [/end] Revisit for best way to parse this YAML section with new schema references
 
 ##########################################################
 # Begin CORTX on k8s deployment
@@ -766,10 +754,12 @@ function waitForClusterReady()
         pids+=($!)
     fi
 
-    ### TODO CORTX-29861 Needs to be updated for multiple STS
     if [[ ${components[data]} == true ]]; then
-        (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" statefulset/cortx-data) &
-        pids+=($!)
+        ### TODO CORTX-29861 Needs to be updated for multiple STS
+        for statefulset in $(kubectl get statefulset -l app.kubernetes.io/component=data,app.kubernetes.io/instance=cortx --no-headers | awk '{print $1}'); do
+            (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" statefulset/${statefulset}) &
+            pids+=($!)
+        done
     fi
 
     if [[ ${components[server]} == true ]]; then
