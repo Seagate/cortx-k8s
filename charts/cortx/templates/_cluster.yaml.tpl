@@ -1,5 +1,4 @@
 {{- /* TODO Revisit UUID defaults here since we are moving away from UUID entirely... */ -}}
-{{- /* TODO CORTX-29861 Update this logic block to account for dynamic Data Pod types more elegantly than supertype */ -}}
 {{- define "storageset.node" -}}
 - name: {{ .name }}
   {{- if eq .type "server_node" }}
@@ -19,12 +18,14 @@
 cluster:
   name: {{ .Values.configmap.clusterName }}
   id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
-  {{- /* TODO CORTX-29861 Create additional data_node types here based upon StatefulSet names */}}
+  {{- /* TODO CORTX-29861 Create additional data_node types here based upon StatefulSet names. Dependent upon CORTX-32367. */}}
   node_types:
   {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
   {{- $validatedContainerGroupSize := ( include "cortx.data.validatedContainerGroupSize" .) | int -}}
   {{- range $sts_index := until $statefulSetCount }}
-  - name: {{ printf "%s-%s%02d" (include "cortx.data.fullname" $) $.Values.cortxdata.motr.containerGroupName $sts_index }}
+  {{- $startingCvgIndex := (mul $sts_index ($validatedContainerGroupSize|int)) | int }}
+  {{- $endingCvgIndex := (add (mul $sts_index ($validatedContainerGroupSize|int)) ($validatedContainerGroupSize|int)) | int }}
+  - name: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
     components:
       - name: utils
       - name: motr
@@ -32,9 +33,8 @@ cluster:
           - io
       - name: hare
     storage:
-    {{- range $group_size_iterator := until $validatedContainerGroupSize }}
-    {{- $cvg_index := (add (mul $sts_index $validatedContainerGroupSize) $group_size_iterator) -}}
-    {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
+    {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+    {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  }}
     {{- range $cvg.devices.data }}
     - name: {{ $cvg.name }}
       type: {{ $cvg.type }}
@@ -97,7 +97,7 @@ cluster:
     {{- end }}
     {{- range $sts_index := until $statefulSetCount }}
     {{- range $i := until (int $root.Values.cortxdata.replicas) }}
-    {{- $nodeGroup := printf "%s-%s%02d" (include "cortx.data.fullname" $root) $.Values.cortxdata.motr.containerGroupName $sts_index }}
+    {{- $nodeGroup := (include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) ) }}
     {{- $nodeName := printf "%s-%d" $nodeGroup $i }}
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.data.serviceDomain" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" $nodeGroup "supertype" "data_node") | nindent 4 }}

@@ -202,6 +202,23 @@ which prevents the containerGroupSize parameter from being larger than the numbe
 {{- printf "%d" (min (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) -}}
 {{- end -}}
 
+{{/*
+Returns the string used to group CORTX Data StatefulSets.
+NOTE: Until CORTX-32368 is resolved, this needs to be a single character due to FQDN length issues.
+*/}}
+{{- define "cortx.data.groupPrefix" -}}
+g
+{{- end -}}
+
+{{/*
+Returns the fullname of the CORTX Data StatefulSet with group suffix.
+Must be called with input scope of a Dictionary with the following keys and values:
+- .root = $
+- .sts_index = Iterator index of all CORTX Data StatefulSets
+*/}}
+{{- define "cortx.data.groupFullname" -}}
+{{- printf "%s-%s%02d" (include "cortx.data.fullname" .root) (include "cortx.data.groupPrefix" $) .sts_index -}}
+{{- end -}}
 
 {{/*
 Return the name of the Client component

@@ -116,7 +116,7 @@ configmap:
   # clusterDomain is the domain name of the underlying Kubernetes cluster (default is cluster.local)
   clusterDomain: cluster.local
 
-  ### TODO CORTX-29861 validate current structure
+  ### TODO Update this structure similar to solution.yaml, merge with appropriate .cortxdata elements, and convert to a list.
   # clusterStorageSets is a Dictionary of storage sets.
   # e.g.:
   # clusterStorageSets:
@@ -345,11 +345,13 @@ cortxserver:
 cortxdata:
   image: ghcr.io/seagate/centos:7
   replicas: 3
-  ## TODO CORTX-29861 Document this new values.yaml parameter
+  # nodes is an array of Kubernetes worker node names on which CORTX will be deployed.
+  # NOTE: This parameter will eventually merge with .configmap.clusterStorageSets in some form.
   nodes: []
   # cvgs is an array of container volume groups (CVG).
   # A CVG contains a name, type, an optional array of metadata devices, and 
   # an array of data devices.
+  # NOTE: This parameter will eventually merge with .configmap.clusterStorageSets in some form.
   # e.g:
   # cvgs:
   # - name: cvg-01
@@ -370,7 +372,6 @@ cortxdata:
     # -- The number of Motr IO containers per CORTX Data Pod
     # As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node.
     containerGroupSize: 1
-    containerGroupName: c
     resources:
       requests:
         memory: 1Gi
