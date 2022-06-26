@@ -2,6 +2,7 @@
 
 This page will serve as a clearinghouse for all terms, definitions, and acronyms critical to both the understanding of and having success with [CORTX](https://github.com/Seagate/cortx).
 
+## Glossary
 
 ### CORVAULT
 
@@ -47,7 +48,7 @@ Motr is the central storage capability inside of a CORTX cluster. It functions a
 
 ### Node
 
-This term is unfortunately overloaded in the context of CORTX on Kubernetes. It can either mean an underlying Kubernetes worker node (in general) or it can mean any single component or actor working inside of the CORTX cluster (Data Pod, Server Pod, Control Pod, etc.). 
+This term is unfortunately overloaded in the context of CORTX on Kubernetes. It can either mean an underlying Kubernetes worker node (in general) or it can mean any single component working inside of the CORTX cluster (Data Pod, Server Pod, Control Pod, etc.). 
 
 Context is important and required to discern when which is which. Through the https://github.com/Seagate/cortx-k8s repository, care is used to refer to Kubernetes worker nodes as "Nodes" and CORTX nodes running on Kubernetes as "Pods".
 

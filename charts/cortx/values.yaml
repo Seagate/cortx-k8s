@@ -349,7 +349,7 @@ cortxdata:
   # NOTE: This parameter will eventually merge with .configmap.clusterStorageSets in some form.
   nodes: []
   # cvgs is an array of container volume groups (CVG).
-  # A CVG contains a name, type, an optional array of metadata devices, and 
+  # A CVG contains a name, type, an optional array of metadata devices, and
   # an array of data devices.
   # NOTE: This parameter will eventually merge with .configmap.clusterStorageSets in some form.
   # e.g:
