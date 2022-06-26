@@ -755,7 +755,6 @@ function waitForClusterReady()
     fi
 
     if [[ ${components[data]} == true ]]; then
-        ### TODO CORTX-29861 Needs to be updated for multiple STS
         for statefulset in $(kubectl get statefulset -l app.kubernetes.io/component=data,app.kubernetes.io/instance=cortx --no-headers | awk '{print $1}'); do
             (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" statefulset/${statefulset}) &
             pids+=($!)
