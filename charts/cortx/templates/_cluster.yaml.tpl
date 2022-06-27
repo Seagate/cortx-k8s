@@ -18,7 +18,6 @@
 cluster:
   name: {{ .Values.configmap.clusterName }}
   id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
-  {{- /* TODO CORTX-29861 Create additional data_node types here based upon StatefulSet names. Dependent upon CORTX-32367. */}}
   node_types:
   {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
   {{- $validatedContainerGroupSize := ( include "cortx.data.validatedContainerGroupSize" .) | int -}}

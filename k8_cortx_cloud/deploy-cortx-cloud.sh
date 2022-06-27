@@ -302,7 +302,6 @@ buildValues() {
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
     [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
-    #local data_node_count=${#node_name_list[@]}
     local data_node_count
     data_node_count=$(yq ".solution.storage_sets[0].nodes | length" "${solution_yaml}")
     local server_instances_per_node
