@@ -60,10 +60,16 @@ namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
 num_nodes=$(yq '.solution.storage_sets[0].nodes | length' "${solution_yaml}")
 num_devices=$(yq '[.solution.storage_sets[0].storage[].devices.metadata.device,
                    .solution.storage_sets[0].storage[].devices.data[].device] | length' "${solution_yaml}")
+num_cvgs=$(yq '.solution.storage_sets[0].storage | length' "${solution_yaml}")
+container_group_size=$(yq '.solution.storage_sets[0].container_group_size' "${solution_yaml}")
+num_data_sts=$(( (num_cvgs+container_group_size-1) / container_group_size ))
 
 readonly namespace
 readonly num_nodes
 readonly num_devices
+readonly num_cvgs
+readonly container_group_size
+readonly num_data_sts
 
 # The deployment type influences expectations about Pod, etc. counts
 data_deployment=false
@@ -192,7 +198,7 @@ alert_msg "######################################################"
 data_selector="app.kubernetes.io/component=data,${cortx_selector}"
 # Check StatefulSet
 count=0
-expected_count=1
+expected_count=${num_data_sts}
 msg_info "| Checking StatefulSet |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -216,7 +222,7 @@ fi
 
 # Check pods
 count=0
-expected_count=${num_nodes}
+expected_count=$(( num_nodes * num_data_sts))
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"

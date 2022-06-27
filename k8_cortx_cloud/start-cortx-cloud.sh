@@ -62,9 +62,15 @@ fi
 printf "########################################################\n"
 printf "# Start CORTX Data                                      \n"
 printf "########################################################\n"
-kubectl scale statefulset cortx-data --replicas "${num_nodes}" --namespace="${namespace}"
+readonly data_selector="app.kubernetes.io/component=data"
+num_data_sts=0
+for statefulset in $(kubectl get statefulset -l "${data_selector}" --no-headers | awk '{print $1}'); do
+    kubectl scale statefulset "${statefulset}" --replicas "${num_nodes}" --namespace="${namespace}"
+    ((num_data_sts+=1))
+done
 
 printf "\nWait for CORTX Data to be ready"
+expected_count=$((num_nodes * num_data_sts))
 while true; do
     count=0
     while IFS= read -r line; do
@@ -80,7 +86,7 @@ while true; do
         count=$((count+1))
     done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-data-')
 
-    if [[ ${num_nodes} -eq ${count} ]]; then
+    if [[ ${expected_count} -eq ${count} ]]; then
         break
     else
         printf "."
