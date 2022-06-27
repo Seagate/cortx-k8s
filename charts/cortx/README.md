@@ -61,7 +61,7 @@ helm uninstall cortx
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | client.enabled | bool | `false` | Enable installation of Client instances |
-| client.image.pullPolicy | string | `"IfNotPresent"` | Client image pull policy ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images |
+| client.image.pullPolicy | string | `"IfNotPresent"` | Client image pull policy |
 | client.image.registry | string | `"ghcr.io"` | Client image registry |
 | client.image.repository | string | `"seagate/cortx-data"` | Client image name |
 | client.image.tag | string | Chart.AppVersion | Client image tag |
@@ -74,17 +74,17 @@ helm uninstall cortx
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
-| cortxcontrol.agent.resources.limits.cpu | string | `"500m"` |  |
-| cortxcontrol.agent.resources.limits.memory | string | `"256Mi"` |  |
-| cortxcontrol.agent.resources.requests.cpu | string | `"250m"` |  |
-| cortxcontrol.agent.resources.requests.memory | string | `"128Mi"` |  |
-| cortxcontrol.enabled | bool | `true` |  |
-| cortxcontrol.image | string | `"ghcr.io/seagate/centos:7"` |  |
-| cortxcontrol.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxcontrol.service.loadbal.enabled | bool | `true` |  |
-| cortxcontrol.service.loadbal.nodePorts.https | string | `""` |  |
-| cortxcontrol.service.loadbal.ports.https | int | `8081` |  |
-| cortxcontrol.service.loadbal.type | string | `"NodePort"` |  |
+| control.agent.resources.limits | object | `{"cpu":"500m","memory":"256Mi"}` | The resource limits for the Control Agent containers |
+| control.agent.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the Control Agent containers |
+| control.enabled | bool | `true` | Enable installation of Control instances |
+| control.image.pullPolicy | string | `"IfNotPresent"` | Control image pull policy |
+| control.image.registry | string | `"ghcr.io"` | Control image registry |
+| control.image.repository | string | `"seagate/cortx-control"` | Control image name |
+| control.image.tag | string | Chart.AppVersion | Control image tag |
+| control.persistence.size | string | `"1Gi"` | Persistent volume size |
+| control.service.nodePorts.https | string | `""` | Node port for HTTPS for LoadBalancer and NodePort service types |
+| control.service.ports.https | int | `8081` | Control API service HTTPS port |
+| control.service.type | string | `"ClusterIP"` | Kubernetes service type |
 | cortxdata.confd.resources.limits.cpu | string | `"500m"` |  |
 | cortxdata.confd.resources.limits.memory | string | `"512Mi"` |  |
 | cortxdata.confd.resources.requests.cpu | string | `"250m"` |  |

@@ -195,7 +195,7 @@ buildValues() {
     yq -i "
         .cortxserver.enabled = ${components[server]}
         | .cortxha.enabled = ${components[ha]}
-        | .cortxcontrol.enabled = ${components[control]}
+        | .control.enabled = ${components[control]}
         | .client.enabled = ${components[client]}" "${values_file}"
 
     # shellcheck disable=SC2016
@@ -231,10 +231,10 @@ buildValues() {
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.cortxcontrol;
-            .image                             = $from.solution.images.cortxcontrol
-            | .service.loadbal.type            = $from.solution.common.external_services.control.type
-            | .service.loadbal.ports.https     = $from.solution.common.external_services.control.ports.https
+        | with($to.control;
+            .image                             = ($from.solution.images.cortxcontrol | capture("(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)"))
+            | .service.type                    = $from.solution.common.external_services.control.type
+            | .service.ports.https             = $from.solution.common.external_services.control.ports.https
             | .agent.resources.requests.memory = $from.solution.common.resource_allocation.control.agent.resources.requests.memory
             | .agent.resources.requests.cpu    = $from.solution.common.resource_allocation.control.agent.resources.requests.cpu
             | .agent.resources.limits.memory   = $from.solution.common.resource_allocation.control.agent.resources.limits.memory
@@ -243,7 +243,7 @@ buildValues() {
 
     local control_service_nodeports_https
     control_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.control.nodePorts.https')
-    [[ -n ${control_service_nodeports_https} ]] && yq -i ".cortxcontrol.service.loadbal.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
+    [[ -n ${control_service_nodeports_https} ]] && yq -i ".control.service.nodePorts.https = ${control_service_nodeports_https}" "${values_file}"
 
     local data_node_count
     data_node_count=$(yq ".solution.storage_sets[0].nodes | length" "${solution_yaml}")

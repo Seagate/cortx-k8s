@@ -144,7 +144,7 @@ cortx:
     {{- if .Values.cortxdata.motr.extraConfiguration }}
     {{- tpl .Values.cortxdata.motr.extraConfiguration . | nindent 4 }}
     {{- end }}
-  {{- if .Values.cortxcontrol.enabled }}
+  {{- if .Values.control.enabled }}
   csm:
     agent:
       endpoints:
@@ -156,7 +156,7 @@ cortx:
     mgmt_secret: csm_mgmt_admin_secret
     limits:
       services:
-      {{- include "config.yaml.service.limits" (dict "name" "agent" "resources" .Values.cortxcontrol.agent.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "agent" "resources" .Values.control.agent.resources) | nindent 6 }}
   {{- end }}
   {{- if .Values.cortxha.enabled }}
   ha:

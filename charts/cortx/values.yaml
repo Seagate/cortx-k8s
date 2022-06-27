@@ -148,30 +148,56 @@ hare:
 # the exception of client UUIDs, which will not be configured if omitted.
 storageSets: {}
 
-##
-## Imported values from cortx-control Helm Chart. These will be changed.
-##
-cortxcontrol:
+# Deploy CORTX Control instance
+# Control provides APIs to manage the CORTX cluster
+control:
+  # -- Enable installation of Control instances
   enabled: true
-  image: ghcr.io/seagate/centos:7
+
+  # Control image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-control
+  image:
+    # -- Control image registry
+    registry: ghcr.io
+    # -- Control image name
+    repository: seagate/cortx-control
+    # -- Control image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- Control image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent
+
+  # Control Agent resource requests and limits
+  # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  # These values specify the CORTX resource minimum requirements and limits.
+  # The values apply to both container resources and the CORTX internal configuration.
   agent:
     resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
+      # -- The resource limits for the Control Agent containers
       limits:
-        memory: 256Mi
         cpu: 500m
+        memory: 256Mi
+      # -- The resource requests for the Control Agent containers
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+  # Control API service
   service:
-    loadbal:
-      enabled: true
-      type: NodePort
-      ports:
-        https: 8081
-      nodePorts:
-        https: ""
-  localpathpvc:
-    requeststoragesize: 1Gi
+    # -- Kubernetes service type
+    type: ClusterIP
+    ports:
+      # -- Control API service HTTPS port
+      https: 8081
+    nodePorts:
+      # -- Node port for HTTPS for LoadBalancer and NodePort service types
+      https: ""
+
+  # Persistence settings
+  persistence:
+    # -- Persistent volume size
+    size: 1Gi
 
 ##
 ## Imported values from cortx-ha Helm Chart. These will be changed.
@@ -319,6 +345,7 @@ client:
   replicaCount: 1
   # -- Number of Client instances (containers) per replica
   instanceCount: 1
+
   # Client image
   # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-data
   image:
@@ -330,5 +357,5 @@ client:
     # @default -- Chart.AppVersion
     tag: ""
     # -- Client image pull policy
-    # ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
     pullPolicy: IfNotPresent

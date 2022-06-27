@@ -7,6 +7,13 @@ Return a valid CORTX image name from parts
 {{- end -}}
 
 {{/*
+Return the Control image name
+*/}}
+{{- define "cortx.control.image" -}}
+{{ include "cortx.images.image" (dict "image" .Values.control.image "root" .) }}
+{{- end -}}
+
+{{/*
 Return the Client image name
 */}}
 {{- define "cortx.client.image" -}}
