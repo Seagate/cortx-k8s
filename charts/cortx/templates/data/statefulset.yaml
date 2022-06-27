@@ -3,8 +3,8 @@
 {{- end -}}
 
 {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
-{{- $validatedContainerGroupSize := ( include "cortx.data.validatedContainerGroupSize" .) | int -}}
-{{- range $sts_index := until $statefulSetCount }}
+{{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
+{{- range $sts_index := until $statefulSetCount -}}
 {{- $startingCvgIndex := (mul $sts_index ($validatedContainerGroupSize|int)) | int -}}
 {{- $endingCvgIndex := (add (mul $sts_index ($validatedContainerGroupSize|int)) ($validatedContainerGroupSize|int)) | int -}}
 apiVersion: apps/v1
@@ -78,13 +78,13 @@ spec:
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
         {{- end }}
         volumeDevices:
-          {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 -}}
-          {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
-          {{ if $cvg.devices.metadata }}
+          {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+          {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index }}
+          {{- if $cvg.devices.metadata }}
           - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
             devicePath: {{ $cvg.devices.metadata.device | quote }}
-          {{ end }}
-          {{- range $cvg.devices.data -}}
+          {{- end }}
+          {{- range $cvg.devices.data }}
           - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device ) }}
             devicePath: {{ .device | quote }}
           {{- end }}
@@ -162,13 +162,13 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
-            {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 -}}
-            {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
-            {{ if $cvg.devices.metadata }}
+            {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+            {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index }}
+            {{- if $cvg.devices.metadata }}
             - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
               devicePath: {{ $cvg.devices.metadata.device | quote }}
-            {{ end }}
-            {{- range $cvg.devices.data -}}
+            {{- end }}
+            {{- range $cvg.devices.data }}
             - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device ) }}
               devicePath: {{ .device | quote }}
             {{- end }}
@@ -223,12 +223,12 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
-            {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
-            {{ if $cvg.devices.metadata }}
+            {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index }}
+            {{- if $cvg.devices.metadata }}
             - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
               devicePath: {{ $cvg.devices.metadata.device | quote }}
-            {{ end }}
-            {{- range $cvg.devices.data -}}
+            {{- end }}
+            {{- range $cvg.devices.data }}
             - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device ) }}
               devicePath: {{ .device | quote }}
             {{- end }}
@@ -257,9 +257,9 @@ spec:
       resources:
         requests:
           storage: {{ $.Values.cortxdata.localpathpvc.requeststoragesize }}
-  {{ range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-  {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  -}}
-  {{- if $cvg.devices.metadata -}}
+  {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+  {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index }}
+  {{- if $cvg.devices.metadata }}
   - metadata:
       name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
     spec:
@@ -272,8 +272,8 @@ spec:
       selector:
         matchLabels:
           cortx.io/device-path: {{ include "cortx.data.devicePathToString" $cvg.devices.metadata.device | quote }}
-  {{ end -}}
-  {{ range $cvg.devices.data -}}
+  {{- end }}
+  {{- range $cvg.devices.data }}
   - metadata:
       name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
     spec:
@@ -286,7 +286,7 @@ spec:
       selector:
         matchLabels:
           cortx.io/device-path: {{ include "cortx.data.devicePathToString" .device | quote }}
-  {{ end -}}
   {{- end }}
----  
+  {{- end }}
+---
 {{- end }}
