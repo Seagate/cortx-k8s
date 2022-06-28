@@ -11,9 +11,9 @@
 {{- define "config.yaml" -}}
 {{- $dataHostnames := list -}}
 {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
-{{- range $sts_index := until $statefulSetCount }}
+{{- range $stsIndex := until $statefulSetCount }}
 {{- range $i := until (int $.Values.cortxdata.replicas) -}}
-{{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index)) $i (include "cortx.data.serviceDomain" $)) -}}
+{{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex)) $i (include "cortx.data.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
 {{- $serverHostnames := list -}}

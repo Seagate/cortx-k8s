@@ -4,17 +4,17 @@
 
 {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
 {{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
-{{- range $sts_index := until $statefulSetCount -}}
-{{- $startingCvgIndex := (mul $sts_index ($validatedContainerGroupSize | int)) | int -}}
-{{- $endingCvgIndex := (add (mul $sts_index ($validatedContainerGroupSize | int)) ($validatedContainerGroupSize | int)) | int -}}
+{{- range $stsIndex := until $statefulSetCount -}}
+{{- $startingCvgIndex := (mul $stsIndex ($validatedContainerGroupSize | int)) | int -}}
+{{- $endingCvgIndex := (add (mul $stsIndex ($validatedContainerGroupSize | int)) ($validatedContainerGroupSize | int)) | int -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+  name: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
   namespace: {{ $.Release.Namespace }}
   labels: {{- include "cortx.labels" $ | nindent 4 }}
     app.kubernetes.io/component: data
-    cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+    cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
 spec:
   podManagementPolicy: Parallel
   serviceName: {{ include "cortx.data.fullname" $ }}-headless
@@ -25,7 +25,7 @@ spec:
       cortx.io/hax-enabled: "true"
       cortx.io/service-domain: {{ include "cortx.data.serviceDomain" $ }}
       cortx.io/service-type: cortx-data
-      cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+      cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
   template:
     metadata:
       labels: {{- include "cortx.labels" $ | nindent 8 }}
@@ -33,7 +33,7 @@ spec:
         cortx.io/hax-enabled: "true"
         cortx.io/service-domain: {{ include "cortx.data.serviceDomain" $ }}
         cortx.io/service-type: cortx-data
-        cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+        cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
     spec:
       subdomain: {{ include "cortx.data.fullname" $ }}-headless
       serviceAccountName: {{ include "cortx.serviceAccountName" $ }}

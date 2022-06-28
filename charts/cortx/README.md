@@ -122,7 +122,7 @@ helm uninstall cortx
 | cortxdata.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
 | cortxdata.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
 | cortxdata.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxdata.motr.containerGroupSize | int | `1` | The number of Motr IO containers per CORTX Data Pod As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node. |
+| cortxdata.motr.containerGroupSize | int | `1` | The number of Motr IO containers per CORTX Data Pod. As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node. |
 | cortxdata.motr.resources.limits.cpu | string | `"1000m"` |  |
 | cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
 | cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |
