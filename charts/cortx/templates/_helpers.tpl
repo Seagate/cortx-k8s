@@ -217,7 +217,7 @@ Must be called with input scope of a Dictionary with the following keys and valu
 - .stsIndex = Iterator index of all CORTX Data StatefulSets
 */}}
 {{- define "cortx.data.groupFullname" -}}
-{{- printf "%s-%s%02d" (include "cortx.data.fullname" .root) (include "cortx.data.groupPrefix" $) .stsIndex -}}
+{{- printf "%s-%s%d" (include "cortx.data.fullname" .root) (include "cortx.data.groupPrefix" $) .stsIndex -}}
 {{- end -}}
 
 {{/*
