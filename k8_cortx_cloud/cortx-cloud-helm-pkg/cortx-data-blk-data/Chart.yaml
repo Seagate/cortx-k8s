@@ -1,4 +1,0 @@
-apiVersion: v1
-description: CORTX data block data
-name: cortx-data-blk-data
-version: 0.0.1
