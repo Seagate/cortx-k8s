@@ -20,11 +20,11 @@ cluster:
   id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
   node_types:
   {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
-  {{- $validatedContainerGroupSize := ( include "cortx.data.validatedContainerGroupSize" .) | int -}}
-  {{- range $sts_index := until $statefulSetCount }}
-  {{- $startingCvgIndex := (mul $sts_index ($validatedContainerGroupSize|int)) | int }}
-  {{- $endingCvgIndex := (add (mul $sts_index ($validatedContainerGroupSize|int)) ($validatedContainerGroupSize|int)) | int }}
-  - name: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+  {{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
+  {{- range $stsIndex := until $statefulSetCount }}
+  {{- $startingCvgIndex := (mul $stsIndex ($validatedContainerGroupSize | int)) | int }}
+  {{- $endingCvgIndex := (add (mul $stsIndex ($validatedContainerGroupSize | int)) ($validatedContainerGroupSize | int)) | int }}
+  - name: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
     components:
       - name: utils
       - name: motr
@@ -32,15 +32,15 @@ cluster:
           - io
       - name: hare
     storage:
-    {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-    {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  }}
+    {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+    {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
     - name: {{ $cvg.name }}
       type: {{ $cvg.type }}
       devices:
         {{- if $cvg.devices.metadata }}
         metadata:
           - {{ $cvg.devices.metadata.device }}
-        {{ end -}}
+        {{- end }}
         data:
         {{- range $cvg.devices.data }}
           - {{ .device }}
@@ -92,9 +92,9 @@ cluster:
     {{- if $root.Values.cortxha.enabled }}
     {{- include "storageset.node" (dict "name" (printf "%s-headless" (include "cortx.ha.fullname" $root)) "id" $storageSet.haUuid "type" "ha_node") | nindent 4 }}
     {{- end }}
-    {{- range $sts_index := until $statefulSetCount }}
+    {{- range $stsIndex := until $statefulSetCount }}
     {{- range $i := until (int $root.Values.cortxdata.replicas) }}
-    {{- $nodeGroup := (include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) ) }}
+    {{- $nodeGroup := (include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) ) }}
     {{- $nodeName := printf "%s-%d" $nodeGroup $i }}
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.data.serviceDomain" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" $nodeGroup "supertype" "data_node") | nindent 4 }}
