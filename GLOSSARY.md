@@ -4,9 +4,13 @@ This page will serve as a clearinghouse for all terms, definitions, and acronyms
 
 ## Glossary
 
+### Container
+
+Per [Red Hat](https://www.redhat.com/en/topics/containers/whats-a-linux-container), a container, or sometimes referred to as a Linux container, is "a set of 1 or more processes that are isolated from the rest of the system. All the files necessary to run them are provided from a distinct image, meaning Linux containers are portable and consistent as they move from development, to testing, and finally to production."
+
 ### CORVAULT
 
-CORVAULT is the brand name for a specific Seagate hardware product: https://www.seagate.com/products/storage/data-storage-systems/corvault/. CORVAULT generally belongs to a category of storage referred to as RBOD (reliable bunch of disks). Physically, CORVAULT is a large 4U rack enclosure which holds up to 106 devices. By virtue of firmware running inside the enclosure, CORVAULT appears to the upper-layer host (CORTX in our case) as two very large individual disks. Internally, CORVAULT does declustered erasure such that the frequency of "disk" failures seen by the host is very low (albeit when they happen, they are a large failure).
+[CORVAULT](https://www.seagate.com/products/storage/data-storage-systems/corvault/) is the brand name for a specific Seagate storage hardware product. CORVAULT generally belongs to a category of storage referred to as RBOD (reliable bunch of disks). Physically, CORVAULT is a large 4U rack enclosure which holds up to 106 devices. By virtue of firmware running inside the enclosure, CORVAULT appears to the upper-layer host (CORTX in our case) as two very large individual disks. Internally, CORVAULT does declustered erasure such that the frequency of "disk" failures seen by the host is very low (albeit when they happen, they are a large failure).
 
 ### CORTX Control Pods
 
@@ -16,7 +20,7 @@ CORTX Control Pods contain the APIs which are exposed to the end-user in order t
 
 CORTX Data Pods contain the internal APIs which are used to manage the storage and protection of data at the lowest possible level inside of a CORTX cluster.
 
-### CORTX HA (High Availability)
+### CORTX HA (High Availability) Pods
 
 CORTX HA Pods are responsible for monitoring the overall health of the CORTX cluster and notifying components of changes in system status.
 
@@ -50,8 +54,9 @@ This term is unfortunately overloaded in the context of CORTX on Kubernetes. It 
 
 Context is important and required to discern when which is which. Through the https://github.com/Seagate/cortx-k8s repository, care is used to refer to Kubernetes worker nodes as "Nodes" and CORTX nodes running on Kubernetes as "Pods".
 
-### POD
-TODO: Do we need a definition of POD? Or is that K8s 101? If the latter, then can we add, or link to, a basic K8s glossary?
+### Pod
+
+Per the [official Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/pods/), "Pods are the smallest deployable units of computing that you can create and manage in Kubernetes." Inside of a CORTX cluster, all relevant containers that need to be contextually grouped together are deployed as a Pod. 
 
 ### Rados Gateway (RGW)
 
