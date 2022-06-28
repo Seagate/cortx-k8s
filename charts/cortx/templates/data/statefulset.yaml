@@ -4,17 +4,17 @@
 
 {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
 {{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
-{{- range $sts_index := until $statefulSetCount -}}
-{{- $startingCvgIndex := (mul $sts_index ($validatedContainerGroupSize|int)) | int -}}
-{{- $endingCvgIndex := (add (mul $sts_index ($validatedContainerGroupSize|int)) ($validatedContainerGroupSize|int)) | int -}}
+{{- range $stsIndex := until $statefulSetCount -}}
+{{- $startingCvgIndex := (mul $stsIndex ($validatedContainerGroupSize | int)) | int -}}
+{{- $endingCvgIndex := (add (mul $stsIndex ($validatedContainerGroupSize | int)) ($validatedContainerGroupSize | int)) | int -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+  name: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
   namespace: {{ $.Release.Namespace }}
   labels: {{- include "cortx.labels" $ | nindent 4 }}
     app.kubernetes.io/component: data
-    cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+    cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
 spec:
   podManagementPolicy: Parallel
   serviceName: {{ include "cortx.data.fullname" $ }}-headless
@@ -25,7 +25,7 @@ spec:
       cortx.io/hax-enabled: "true"
       cortx.io/service-domain: {{ include "cortx.data.serviceDomain" $ }}
       cortx.io/service-type: cortx-data
-      cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+      cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
   template:
     metadata:
       labels: {{- include "cortx.labels" $ | nindent 8 }}
@@ -33,7 +33,7 @@ spec:
         cortx.io/hax-enabled: "true"
         cortx.io/service-domain: {{ include "cortx.data.serviceDomain" $ }}
         cortx.io/service-type: cortx-data
-        cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "sts_index" $sts_index) }}
+        cortx.io/node-type: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
     spec:
       subdomain: {{ include "cortx.data.fullname" $ }}-headless
       serviceAccountName: {{ include "cortx.serviceAccountName" $ }}
@@ -78,8 +78,8 @@ spec:
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
         {{- end }}
         volumeDevices:
-          {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-          {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index }}
+          {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+          {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
           {{- if $cvg.devices.metadata }}
           - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
             devicePath: {{ $cvg.devices.metadata.device | quote }}
@@ -162,8 +162,8 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
-            {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-            {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index }}
+            {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+            {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
             {{- if $cvg.devices.metadata }}
             - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
               devicePath: {{ $cvg.devices.metadata.device | quote }}
@@ -197,8 +197,8 @@ spec:
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
-        {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-        {{- $ioIndex := (add1 (mod $cvg_index $validatedContainerGroupSize))|int }}
+        {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+        {{- $ioIndex := (add1 (mod $cvgIndex $validatedContainerGroupSize)) | int }}
         - name: {{ printf "cortx-motr-io-%03d" $ioIndex }}
           image: {{ $.Values.cortxdata.image }}
           imagePullPolicy: IfNotPresent
@@ -223,7 +223,7 @@ spec:
             - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeDevices:
-            {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index }}
+            {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
             {{- if $cvg.devices.metadata }}
             - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
               devicePath: {{ $cvg.devices.metadata.device | quote }}
@@ -257,8 +257,8 @@ spec:
       resources:
         requests:
           storage: {{ $.Values.cortxdata.localpathpvc.requeststoragesize }}
-  {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-  {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index }}
+  {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
+  {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
   {{- if $cvg.devices.metadata }}
   - metadata:
       name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}

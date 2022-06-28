@@ -369,7 +369,7 @@ cortxdata:
     accessModes:
     - ReadWriteMany
   motr:
-    # -- The number of Motr IO containers per CORTX Data Pod
+    # -- The number of Motr IO containers per CORTX Data Pod.
     # As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node.
     containerGroupSize: 1
     resources:

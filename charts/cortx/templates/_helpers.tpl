@@ -190,7 +190,7 @@ If CVGs are not defined, this should return 0.
 {{- if eq (len .Values.cortxdata.cvgs) 0 -}}
 0
 {{- else -}}
-{{- printf "%d" (max 1 (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)))) -}}
+{{- printf "%d" (max 1 (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize | int)))) -}}
 {{- end -}}
 {{- end -}}
 
@@ -199,7 +199,7 @@ Returns the maximally-allowed value for ContainerGroupSize,
 which prevents the containerGroupSize parameter from being larger than the number of CVGs.
 */}}
 {{- define "cortx.data.validatedContainerGroupSize" -}}
-{{- printf "%d" (min (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize|int)) -}}
+{{- printf "%d" (min (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize | int)) -}}
 {{- end -}}
 
 {{/*
@@ -214,10 +214,10 @@ g
 Returns the fullname of the CORTX Data StatefulSet with group suffix.
 Must be called with input scope of a Dictionary with the following keys and values:
 - .root = $
-- .sts_index = Iterator index of all CORTX Data StatefulSets
+- .stsIndex = Iterator index of all CORTX Data StatefulSets
 */}}
 {{- define "cortx.data.groupFullname" -}}
-{{- printf "%s-%s%02d" (include "cortx.data.fullname" .root) (include "cortx.data.groupPrefix" $) .sts_index -}}
+{{- printf "%s-%s%02d" (include "cortx.data.fullname" .root) (include "cortx.data.groupPrefix" $) .stsIndex -}}
 {{- end -}}
 
 {{/*
