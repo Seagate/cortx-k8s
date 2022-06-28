@@ -34,7 +34,6 @@ cluster:
     storage:
     {{- range $cvg_index := untilStep $startingCvgIndex $endingCvgIndex 1 }}
     {{- $cvg := index $.Values.cortxdata.cvgs $cvg_index  }}
-    {{- range $cvg.devices.data }}
     - name: {{ $cvg.name }}
       type: {{ $cvg.type }}
       devices:
@@ -46,7 +45,6 @@ cluster:
         {{- range $cvg.devices.data }}
           - {{ .device }}
         {{- end }}
-    {{- end }}
     {{- end }}
   {{- end }}
   {{- if .Values.cortxserver.enabled }}
