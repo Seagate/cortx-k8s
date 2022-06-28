@@ -754,8 +754,7 @@ function waitForClusterReady()
     fi
 
     if [[ ${components[data]} == true ]]; then
-        kubectl get statefulset --selector app.kubernetes.io/component=data,app.kubernetes.io/instance=cortx --no-headers --output custom-columns=NAME:metadata.name \
-          | while read -r statefulset; do
+        for statefulset in $(kubectl get statefulset --selector app.kubernetes.io/component=data,app.kubernetes.io/instance=cortx --no-headers --output custom-columns=NAME:metadata.name); do
             (waitForAllDeploymentsAvailable "${CORTX_DEPLOY_DATA_TIMEOUT:-10m}" "statefulset/${statefulset}") &
             pids+=($!)
         done

@@ -64,8 +64,7 @@ printf "# Start CORTX Data                                      \n"
 printf "########################################################\n"
 readonly data_selector="app.kubernetes.io/component=data,app.kubernetes.io/instance=cortx"
 num_data_sts=0
-kubectl get statefulset --selector "${data_selector}" --no-headers --output custom-columns=NAME:metadata.name \
-  | while read -r statefulset; do
+for statefulset in $(kubectl get statefulset --selector "${data_selector}" --no-headers --output custom-columns=NAME:metadata.name); do
     kubectl scale statefulset "${statefulset}" --replicas "${num_nodes}" --namespace="${namespace}"
     ((num_data_sts+=1))
 done
