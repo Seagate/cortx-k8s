@@ -39,6 +39,17 @@ if [[ "${invalid_paths}" != "[]" ]]; then
 fi
 ### CORTX-29861 yq validation replacement [/end]
 
+### CORTX-29861 Temporary namespace length limitation enforced
+### This can be removed once namespaces of nominal length (20+ characters) have been validated repeatedly.
+observed_namespace_length=$(yq '.solution.namespace | length' "${solution_yaml}")
+maximum_namespace_length=8
+
+if [[ "${observed_namespace_length}" -gt "${maximum_namespace_length}" ]]; then
+    result_str="The maximum length of the targeted Kubernetes namespace is currently limited to ${maximum_namespace_length} characters. The specified namespace in ${solution_yaml} has a length of ${observed_namespace_length} characters."
+    result="failed"
+fi
+### CORTX-29861 Temporary namespace length limitation enforced [/end]
+
 num_storage_sets=$(yq e '.solution.storage_sets | length' "${solution_yaml}")
 if [[ "${num_storage_sets}" -gt "1" ]]; then
     echo "WARNING: Only 1 Storage Set is currently supported by CORTX."
