@@ -14,7 +14,7 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels: {{- include "cortx.labels" $ | nindent 4 }}
     app.kubernetes.io/component: data
-    cortx.io/node-type: {{ include "cortx.data.dataNodeName" $stsIndex }}
+    cortx.io/node-type: {{ include "cortx.data.dataNodeLabel" $stsIndex }}
 spec:
   podManagementPolicy: Parallel
   serviceName: {{ include "cortx.data.fullname" $ }}-headless
@@ -25,7 +25,7 @@ spec:
       cortx.io/hax-enabled: "true"
       cortx.io/service-domain: {{ include "cortx.data.serviceDomain" $ }}
       cortx.io/service-type: cortx-data
-      cortx.io/node-type: {{ include "cortx.data.dataNodeName" $stsIndex }}
+      cortx.io/node-type: {{ include "cortx.data.dataNodeLabel" $stsIndex }}
   template:
     metadata:
       labels: {{- include "cortx.labels" $ | nindent 8 }}
@@ -33,7 +33,7 @@ spec:
         cortx.io/hax-enabled: "true"
         cortx.io/service-domain: {{ include "cortx.data.serviceDomain" $ }}
         cortx.io/service-type: cortx-data
-        cortx.io/node-type: {{ include "cortx.data.dataNodeName" $stsIndex }}
+        cortx.io/node-type: {{ include "cortx.data.dataNodeLabel" $stsIndex }}
     spec:
       subdomain: {{ include "cortx.data.fullname" $ }}-headless
       serviceAccountName: {{ include "cortx.serviceAccountName" $ }}

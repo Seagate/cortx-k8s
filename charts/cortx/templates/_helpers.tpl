@@ -225,14 +225,23 @@ Returns the fully-formatted CORTX node type for a given node that qualifies as a
 Must be called with input scope of set to the appropriate StatefulSet index.
 */}}
 {{- define "cortx.data.dataNodeName" -}}
-{{- printf "%s%d" (include "cortx.data.dataNodePrefix" .) (add1 (. | int)) -}}
+{{- printf "%s/%d" (include "cortx.data.dataNodePrefix" .) (add1 (. | int)) -}}
+{{- end -}}
+
+{{/*
+Returns the fully-formatted CORTX node type for a given node that qualifies as a "data node" for use as a Kubernetes Label.
+See also https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+Must be called with input scope of set to the appropriate StatefulSet index.
+*/}}
+{{- define "cortx.data.dataNodeLabel" -}}
+{{- printf "%s-%d" (include "cortx.data.dataNodePrefix" .) (add1 (. | int)) -}}
 {{- end -}}
 
 {{/*
 Returns the prefix for CORTX node types that qualify as "data nodes".
 */}}
 {{- define "cortx.data.dataNodePrefix" -}}
-data_node/
+data_node
 {{- end -}}
 
 {{/*
