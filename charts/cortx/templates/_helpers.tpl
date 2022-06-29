@@ -225,7 +225,7 @@ Returns the fully-formatted CORTX node type for a given node that qualifies as a
 Must be called with input scope of set to the appropriate StatefulSet index.
 */}}
 {{- define "cortx.data.dataNodeName" -}}
-{{- printf "%s/%d" (include "cortx.data.dataNodePrefix" .) (add1 (. | int)) -}}
+{{- printf "%s/%d" (include "cortx.data.dataNodePrefix" .) (. | int) -}}
 {{- end -}}
 
 {{/*
@@ -234,7 +234,7 @@ See also https://kubernetes.io/docs/concepts/overview/working-with-objects/label
 Must be called with input scope of set to the appropriate StatefulSet index.
 */}}
 {{- define "cortx.data.dataNodeLabel" -}}
-{{- printf "%s-%d" (include "cortx.data.dataNodePrefix" .) (add1 (. | int)) -}}
+{{- printf "%s-%d" (include "cortx.data.dataNodePrefix" .) (. | int) -}}
 {{- end -}}
 
 {{/*
