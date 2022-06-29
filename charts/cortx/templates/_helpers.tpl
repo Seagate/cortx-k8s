@@ -217,7 +217,22 @@ Must be called with input scope of a Dictionary with the following keys and valu
 - .stsIndex = Iterator index of all CORTX Data StatefulSets
 */}}
 {{- define "cortx.data.groupFullname" -}}
-{{- printf "%s-%s%d" (include "cortx.data.fullname" .root) (include "cortx.data.groupPrefix" $) .stsIndex -}}
+{{- printf "%s-%s%d" (include "cortx.data.fullname" .root) (include "cortx.data.groupPrefix" .) .stsIndex -}}
+{{- end -}}
+
+{{/*
+Returns the fully-formatted CORTX node type for a given node that qualifies as a "data node".
+Must be called with input scope of set to the appropriate StatefulSet index.
+*/}}
+{{- define "cortx.data.dataNodeName" -}}
+{{- printf "%s%d" (include "cortx.data.dataNodePrefix" .) (add1 (. | int)) -}}
+{{- end -}}
+
+{{/*
+Returns the prefix for CORTX node types that qualify as "data nodes".
+*/}}
+{{- define "cortx.data.dataNodePrefix" -}}
+data_node/
 {{- end -}}
 
 {{/*

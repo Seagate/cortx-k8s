@@ -3,7 +3,7 @@
 - name: {{ .name }}
   {{- if eq .type "server_node" }}
   id: {{ required "A valid id is required for server nodes" .id | quote }}
-  {{- else if (or (eq .type "data_node") (eq .supertype "data_node")) }}
+  {{- else if hasPrefix (include "cortx.data.dataNodePrefix" .) .type }}
   id: {{ required "A valid id is required for data nodes" .id | quote }}
   {{- else if eq .type "client_node" }}
   id: {{ required "A valid id is required for client nodes" .id | quote }}
@@ -24,7 +24,7 @@ cluster:
   {{- range $stsIndex := until $statefulSetCount }}
   {{- $startingCvgIndex := (mul $stsIndex ($validatedContainerGroupSize | int)) | int }}
   {{- $endingCvgIndex := (add (mul $stsIndex ($validatedContainerGroupSize | int)) ($validatedContainerGroupSize | int)) | int }}
-  - name: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
+  - name: {{ include "cortx.data.dataNodeName" $stsIndex }}
     components:
       - name: utils
       - name: motr
@@ -94,10 +94,10 @@ cluster:
     {{- end }}
     {{- range $stsIndex := until $statefulSetCount }}
     {{- range $i := until (int $root.Values.cortxdata.replicas) }}
-    {{- $nodeGroup := (include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) ) }}
-    {{- $nodeName := printf "%s-%d" $nodeGroup $i }}
+    {{- $nodeType := (include "cortx.data.dataNodeName" $stsIndex) }}
+    {{- $nodeName := printf "%s-%d" (include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex)) $i }}
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.data.serviceDomain" $root) }}
-    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" $nodeGroup "supertype" "data_node") | nindent 4 }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" $nodeType) | nindent 4 }}
     {{- end }}
     {{- end }}
     {{- if $root.Values.cortxserver.enabled }}
