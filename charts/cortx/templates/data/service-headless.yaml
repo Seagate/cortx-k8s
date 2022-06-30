@@ -28,7 +28,7 @@ spec:
       protocol: TCP
       port: {{ include "cortx.data.confdPort" $ | int }}
       targetPort: confd-tcp
-    {{- range $i := until (.Values.cortxdata.motr.numiosinst | int) }}
+    {{- range $i := until (len .Values.cortxdata.cvgs) }}
     {{- $portName := printf "ios-%d-tcp" (add 1 $i) }}
     - name: {{ $portName }}
       protocol: TCP

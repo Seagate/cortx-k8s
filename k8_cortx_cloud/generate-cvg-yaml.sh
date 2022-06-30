@@ -249,7 +249,7 @@ for ((cvg_instance = 1 ; cvg_instance <= NUM_CVGS ; cvg_instance++)); do
     yq -i "with(.solution.storage_sets[0].storage[${_CVG_INDEX}] ; (
             .name = \"cvg-${_CVG_NAME}\"
             | .type = \"ios\"
-            | .devices = {} )) " "${_YAML_BODY}"
+            | .devices = {} ))" "${_YAML_BODY}"
 
     # Generate metadata drive stanza
     yq -i "with(.solution.storage_sets[0].storage[${_CVG_INDEX}].devices.metadata ; (

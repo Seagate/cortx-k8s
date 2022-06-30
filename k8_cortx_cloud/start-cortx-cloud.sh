@@ -62,9 +62,15 @@ fi
 printf "########################################################\n"
 printf "# Start CORTX Data                                      \n"
 printf "########################################################\n"
-kubectl scale statefulset cortx-data --replicas "${num_nodes}" --namespace="${namespace}"
+readonly data_selector="app.kubernetes.io/component=data,app.kubernetes.io/instance=cortx"
+num_data_sts=0
+for statefulset in $(kubectl get statefulset --selector "${data_selector}" --no-headers --output custom-columns=NAME:metadata.name); do
+    kubectl scale statefulset "${statefulset}" --replicas "${num_nodes}" --namespace="${namespace}"
+    ((num_data_sts+=1))
+done
 
 printf "\nWait for CORTX Data to be ready"
+expected_count=$((num_nodes * num_data_sts))
 while true; do
     count=0
     while IFS= read -r line; do
@@ -80,7 +86,7 @@ while true; do
         count=$((count+1))
     done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-data-')
 
-    if [[ ${num_nodes} -eq ${count} ]]; then
+    if [[ ${expected_count} -eq ${count} ]]; then
         break
     else
         printf "."
@@ -102,7 +108,7 @@ if [[ ${deployment_type} != "data-only" ]]; then
     readonly server_instances_per_node
     readonly total_server_pods
 
-    readonly server_selector="app.kubernetes.io/component=server"
+    readonly server_selector="app.kubernetes.io/component=server,app.kubernetes.io/instance=cortx"
     while IFS= read -r line; do
         IFS=" " read -r -a deployments <<< "${line}"
         kubectl scale statefulset "${deployments[0]}" --replicas ${total_server_pods} --namespace="${namespace}"

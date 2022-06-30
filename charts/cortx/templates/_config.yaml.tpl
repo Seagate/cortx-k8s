@@ -10,8 +10,11 @@
 
 {{- define "config.yaml" -}}
 {{- $dataHostnames := list -}}
-{{- range $i := until (int .Values.cortxdata.replicas) -}}
-{{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.fullname" $) $i (include "cortx.data.serviceDomain" $)) -}}
+{{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
+{{- range $stsIndex := until $statefulSetCount }}
+{{- range $i := until (int $.Values.cortxdata.replicas) -}}
+{{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex)) $i (include "cortx.data.serviceDomain" $)) -}}
+{{- end -}}
 {{- end -}}
 {{- $serverHostnames := list -}}
 {{- if .Values.cortxserver.enabled -}}

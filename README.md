@@ -19,7 +19,8 @@
     6. [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
 6. [Solution YAML Overview](#solution-yaml-overview)
 7. [Troubleshooting](#troubleshooting)
-8. [License](#license)
+8. [Glossary](#glossary)
+9. [License](#license)
 
 ## Project Overview
 
@@ -37,19 +38,19 @@ CORTX on Kubernetes consists of five primary components:
 
 2. CORTX Control Pods
     - These pods maintain the CORTX control plane
-    - Usually with a cardinality of one pod per CORTX deployment
+    - There is a default cardinality of one pod per CORTX deployment
 
 3. CORTX Data Pods
     - These pods maintain the CORTX data plane
-    - Usually with a cardinality of one pod per CORTX node
+    - There is a default cardinality of one pod per defined CVG per CORTX node
 
 4. CORTX Server Pods
     - These pods maintain the CORTX API and user interfaces
-    - Usually with a cardinality of three pods per CORTX node (but scalable based on system traffic)
+    - There is a default cardinality of three pods per CORTX node (but scalable based on system traffic)
 
 5. CORTX HA Pods
     - These pods maintain the overall high-availability of the CORTX deployment
-    - Usually with a cardinality of one pod per CORTX deployment
+    - There is a default cardinality of one pod per CORTX deployment
 
 ## CORTX on Kubernetes Prerequisites
 
@@ -142,7 +143,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 3. Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
 
-   - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created.
+   - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created for you. **There is currently a limitation on the maximum length of the namespace to 8 characters.**
 
    - Update the `deployment_type` with the desired deployment mode. See under [Global Parameters](#global-parameters) for more details.
 
@@ -251,7 +252,7 @@ All paths below are prefixed with `solution.` for fully-qualified naming and are
 
 | Name              | Description                                                                                                                  | Default Value |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `namespace`       | The Kubernetes namespace that all CORTX-related resources will be deployed into.
+| `namespace`       | The Kubernetes namespace that all CORTX-related resources will be deployed into. Currently limited to a maximum of 8 characters.
 | `deployment_type` | The type of deployment. This determines which Kubernetes resources are created. Valid values are `standard` and `data-only`. | `standard`    |
 
 ### Secret parameters
@@ -391,6 +392,10 @@ kubectl exec -it cortx-debug -c cortx-setup -- sh
 Once you are done with your debugging session, you can exit the shell session and delete the `cortx-debug` pod.
 
 **_Note:_** This requires a `kubectl` [minimum version of 1.20](https://kubernetes.io/docs/tasks/tools/#kubectl).
+
+## Glossary
+
+For any terms, acronyms, or phrases that are unfamiliar to you as an end-user, please consult the [GLOSSARY](GLOSSARY.md) page for a growing list of definitions and clarifications as needed.
 
 ## License
 

@@ -1,6 +1,6 @@
 # cortx
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-835](https://img.shields.io/badge/AppVersion-2.0.0--835-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-845](https://img.shields.io/badge/AppVersion-2.0.0--845-informational?style=flat-square)
 
 CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 
@@ -65,7 +65,6 @@ helm uninstall cortx
 | configmap.clusterId | string | `""` |  |
 | configmap.clusterName | string | `"cortx-cluster"` |  |
 | configmap.clusterStorageSets | object | `{}` |  |
-| configmap.clusterStorageVolumes | object | `{}` |  |
 | configmap.cortxControl.agent.resources.limits.cpu | string | `"500m"` |  |
 | configmap.cortxControl.agent.resources.limits.memory | string | `"256Mi"` |  |
 | configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
@@ -112,18 +111,18 @@ helm uninstall cortx
 | cortxcontrol.service.loadbal.ports.https | int | `8081` |  |
 | cortxcontrol.service.loadbal.type | string | `"NodePort"` |  |
 | cortxcontrol.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
-| cortxdata.blockDevicePaths | list | `[]` |  |
 | cortxdata.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxdata.cfgmap.name | string | `"cortx"` |  |
 | cortxdata.confd.resources.limits.cpu | string | `"500m"` |  |
 | cortxdata.confd.resources.limits.memory | string | `"512Mi"` |  |
 | cortxdata.confd.resources.requests.cpu | string | `"250m"` |  |
 | cortxdata.confd.resources.requests.memory | string | `"128Mi"` |  |
+| cortxdata.cvgs | list | `[]` |  |
 | cortxdata.image | string | `"ghcr.io/seagate/centos:7"` |  |
 | cortxdata.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
 | cortxdata.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
 | cortxdata.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxdata.motr.numiosinst | int | `1` |  |
+| cortxdata.motr.containerGroupSize | int | `1` | The number of Motr IO containers per CORTX Data Pod. As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node. |
 | cortxdata.motr.resources.limits.cpu | string | `"1000m"` |  |
 | cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
 | cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |

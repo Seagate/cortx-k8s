@@ -148,6 +148,7 @@ solution:
       durability:
         sns: required
         dix: required
+      container_group_size: required
       storage:
         - name: required
           type: required

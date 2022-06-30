@@ -116,19 +116,7 @@ configmap:
   # clusterDomain is the domain name of the underlying Kubernetes cluster (default is cluster.local)
   clusterDomain: cluster.local
 
-  # clusterStorageVolumes is a Dictionary of container volume groups.
-  # e.g:
-  # clusterStorageVolumes:
-  #   cvg-01:
-  #     type: ios
-  #     metadataDevices:
-  #       - /dev/sdc
-  #     dataDevices:
-  #       - /dev/sdd
-  #       - /dev/sde
-  #       - /dev/sdf
-  clusterStorageVolumes: {}
-
+  ### TODO Update this structure similar to solution.yaml, merge with appropriate .cortxdata elements, and convert to a list.
   # clusterStorageSets is a Dictionary of storage sets.
   # e.g.:
   # clusterStorageSets:
@@ -331,7 +319,6 @@ cortxserver:
   # and is generally not changed by default.
   authSecret: s3_auth_admin_secret
   maxStartTimeout: 240
-  # TODO: CORTX-28968 Should this include a parameter for instanceCount and then autogenerate endpoints/UUID elements herein
   # An optional multi-line string that contains extra RGW configuration
   # settings. The string may contain template expressions, and is appended to
   # the end of the computed configuration.
@@ -358,15 +345,33 @@ cortxserver:
 cortxdata:
   image: ghcr.io/seagate/centos:7
   replicas: 3
-  blockDevicePaths: []
+  # nodes is an array of Kubernetes worker node names on which CORTX will be deployed.
+  # NOTE: This parameter will eventually merge with .configmap.clusterStorageSets in some form.
   nodes: []
+  # cvgs is an array of container volume groups (CVG).
+  # A CVG contains a name, type, an optional array of metadata devices, and
+  # an array of data devices.
+  # NOTE: This parameter will eventually merge with .configmap.clusterStorageSets in some form.
+  # e.g:
+  # cvgs:
+  # - name: cvg-01
+  #   type: ios
+  #   metadataDevices:
+  #     - /dev/sdc
+  #   dataDevices:
+  #     - /dev/sdd
+  #     - /dev/sde
+  #     - /dev/sdf
+  cvgs: []
   storageClassName: local-block-storage
   persistentStorage:
     volumeMode: Block
     accessModes:
     - ReadWriteMany
   motr:
-    numiosinst: 1
+    # -- The number of Motr IO containers per CORTX Data Pod.
+    # As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node.
+    containerGroupSize: 1
     resources:
       requests:
         memory: 1Gi

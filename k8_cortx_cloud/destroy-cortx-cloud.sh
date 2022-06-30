@@ -70,7 +70,6 @@ readonly pvc_consul_filter="data-.*-consul-server-"
 readonly pvc_kafka_filter="data-cortx-kafka-|data-kafka-"
 readonly pvc_filter="${pvc_consul_filter}|${pvc_kafka_filter}|zookeeper|openldap-data|cortx|3rd-party"
 
-### TODO CORTX-29861 Revisit for best way to parse this YAML section with new schema references
 parsed_node_output=$(yq e '.solution.storage_sets[0].nodes' --output-format=csv ${solution_yaml})
 
 # Split parsed output into an array of vars and vals
@@ -87,7 +86,6 @@ do
     node_name_list[count]=${shorter_node_name}
     count=$((count+1))
 done
-### TODO CORTX-29861 [/end] Revisit for best way to parse this YAML section with new schema references
 
 function uninstallHelmChart()
 {

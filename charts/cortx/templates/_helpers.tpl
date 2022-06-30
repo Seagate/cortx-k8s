@@ -181,6 +181,70 @@ Return the Motr confd endpoint port
 {{- end -}}
 
 {{/*
+Return the number of StatefulSets required to fullfil the containerGroupSize to CVG mapping defined by the user
+This is calculated by (Number of CVGs in solution.yaml) / ({}.containerGroupSize).
+If CVGs are defined, the minimum value this should return is 1.
+If CVGs are not defined, this should return 0.
+*/}}
+{{- define "cortx.data.statefulSetCount" -}}
+{{- if eq (len .Values.cortxdata.cvgs) 0 -}}
+0
+{{- else -}}
+{{- printf "%d" (max 1 (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize | int)))) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns the maximally-allowed value for ContainerGroupSize,
+which prevents the containerGroupSize parameter from being larger than the number of CVGs.
+*/}}
+{{- define "cortx.data.validatedContainerGroupSize" -}}
+{{- printf "%d" (min (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize | int)) -}}
+{{- end -}}
+
+{{/*
+Returns the string used to group CORTX Data StatefulSets.
+NOTE: Until CORTX-32368 is resolved, this needs to be a single character due to FQDN length issues.
+*/}}
+{{- define "cortx.data.groupPrefix" -}}
+g
+{{- end -}}
+
+{{/*
+Returns the fullname of the CORTX Data StatefulSet with group suffix.
+Must be called with input scope of a Dictionary with the following keys and values:
+- .root = $
+- .stsIndex = Iterator index of all CORTX Data StatefulSets
+*/}}
+{{- define "cortx.data.groupFullname" -}}
+{{- printf "%s-%s%d" (include "cortx.data.fullname" .root) (include "cortx.data.groupPrefix" .) .stsIndex -}}
+{{- end -}}
+
+{{/*
+Returns the fully-formatted CORTX node type for a given node that qualifies as a "data node".
+Must be called with input scope of set to the appropriate StatefulSet index.
+*/}}
+{{- define "cortx.data.dataNodeName" -}}
+{{- printf "%s/%d" (include "cortx.data.dataNodePrefix" .) (. | int) -}}
+{{- end -}}
+
+{{/*
+Returns the fully-formatted CORTX node type for a given node that qualifies as a "data node" for use as a Kubernetes Label.
+See also https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+Must be called with input scope of set to the appropriate StatefulSet index.
+*/}}
+{{- define "cortx.data.dataNodeLabel" -}}
+{{- printf "%s-%d" (include "cortx.data.dataNodePrefix" .) (. | int) -}}
+{{- end -}}
+
+{{/*
+Returns the prefix for CORTX node types that qualify as "data nodes".
+*/}}
+{{- define "cortx.data.dataNodePrefix" -}}
+data_node
+{{- end -}}
+
+{{/*
 Return the name of the Client component
 */}}
 {{- define "cortx.client.fullname" -}}
