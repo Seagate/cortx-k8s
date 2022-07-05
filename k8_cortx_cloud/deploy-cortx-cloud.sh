@@ -203,12 +203,6 @@ buildValues() {
         | $to.configmap.cortxStoragePaths = $from.solution.common.container_path
         | $to' "${values_file}" "${solution_yaml}"
 
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | $to.configmap.cortxVersion = ($from.solution.images.cortxdata | capture(".*?/.*:(?P<tag>.*)") | .tag)
-        | $to' "${values_file}" "${solution_yaml}"
-
     yq -i "
         .cortxserver.enabled = ${components[server]}
         | .cortxha.enabled = ${components[ha]}

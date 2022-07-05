@@ -83,7 +83,6 @@ helm uninstall cortx
 | configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
 | configmap.cortxStoragePaths.local | string | `"/etc/cortx"` |  |
 | configmap.cortxStoragePaths.log | string | `"/etc/cortx/log"` |  |
-| configmap.cortxVersion | string | `"unknown"` |  |
 | consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul client agent containers |
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |

@@ -139,12 +139,6 @@ configmap:
   # the exception of client UUIDs, which will not be configured if omitted.
   clusterStorageSets: {}
 
-  # cortxVersion is a version string representing the CORTX version being
-  # installed
-  # e.g.:
-  # cortxVersion: 2.0.0-624-custom-ci
-  cortxVersion: "unknown"
-
   # cortxStoragePaths allows configuring the location of CORTX filesystem paths
   cortxStoragePaths:
     local: "/etc/cortx"

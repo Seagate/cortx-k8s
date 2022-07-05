@@ -52,7 +52,6 @@ cortx:
   common:
     release:
       name: CORTX
-      version: {{ .Values.configmap.cortxVersion }}
     service:
       admin: admin
       secret: common_admin_secret
