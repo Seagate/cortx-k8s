@@ -1,4 +1,5 @@
 {{- if .Values.cortxha.enabled }}
+{{- $machineId := printf "%s-headless" (include "cortx.ha.fullname" . ) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,9 +16,7 @@ spec:
     metadata:
       labels: {{- include "cortx.labels" . | nindent 8 }}
         app.kubernetes.io/component: ha
-        {{- if .Values.cortxha.machineid.value }}
-        cortx.io/machine-id: {{ .Values.cortxha.machineid.value }}
-        {{- end }}
+        cortx.io/machine-id: {{ $machineId | quote }}
         cortx.io/service-type: cortx-ha
     spec:
       hostname: {{ include "cortx.ha.fullname" . }}-headless
@@ -30,14 +29,12 @@ spec:
         - name: cortx-ssl-cert
           configMap:
             name: {{ include "cortx.tls.configmapName" . }}
-        {{- if .Values.cortxha.machineid.value }}
         - name: machine-id
           downwardAPI:
             items:
               - path: "id"
                 fieldRef:
                   fieldPath: metadata.labels['cortx.io/machine-id']
-        {{- end }}
         - name: data
           persistentVolumeClaim:
             claimName: {{ include "cortx.ha.fullname" . }}
@@ -57,21 +54,15 @@ spec:
         {{- else }}
         args:
           - -c
-          {{- if .Values.cortxha.machineid.value }}
           - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-          {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-          {{- end }}
         {{- end }}
         volumeMounts:
           - name: cortx-configuration
             mountPath: /etc/cortx/solution
           - name: cortx-ssl-cert
             mountPath: /etc/cortx/solution/ssl
-          {{- if .Values.cortxha.machineid.value }}
           - name: machine-id
             mountPath: /etc/cortx/solution/node
-          {{- end }}
           - name: data
             mountPath: /etc/cortx
           - name: {{ .Values.configmap.cortxSecretName }}
@@ -79,7 +70,7 @@ spec:
             readOnly: true
         env:
           - name: MACHINE_ID
-            value: {{ printf "%s" .Values.cortxha.machineid.value | quote }}
+            value: {{ $machineId | quote }}
           - name: NODE_NAME
             valueFrom:
               fieldRef:
@@ -106,10 +97,8 @@ spec:
               mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
               mountPath: /etc/cortx/solution/ssl
-            {{- if .Values.cortxha.machineid.value }}
             - name: machine-id
               mountPath: /etc/cortx/solution/node
-            {{- end }}
             - name: data
               mountPath: /etc/cortx
           env:
@@ -143,10 +132,8 @@ spec:
               mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
               mountPath: /etc/cortx/solution/ssl
-            {{- if .Values.cortxha.machineid.value }}
             - name: machine-id
               mountPath: /etc/cortx/solution/node
-            {{- end }}
             - name: data
               mountPath: /etc/cortx
           env:
@@ -180,10 +167,8 @@ spec:
               mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
               mountPath: /etc/cortx/solution/ssl
-            {{- if .Values.cortxha.machineid.value }}
             - name: machine-id
               mountPath: /etc/cortx/solution/node
-            {{- end }}
             - name: data
               mountPath: /etc/cortx
           env:

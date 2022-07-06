@@ -210,20 +210,6 @@ buildValues() {
         | $to.configmap.clusterStorageSets.[$name].durability = $from.solution.storage_sets[0].durability
         | $to' "${values_file}" "${solution_yaml}"
 
-    local uuid
-
-    # UUIDs are selectively enabled based on deployment type
-    for c in control ha; do
-        if [[ ${components["${c}"]} == true ]]; then
-            uuid=$(< "${cfgmap_path}/auto-gen-${c}-${namespace}/id")
-            yq -i ".cortx${c}.machineid.value = \"${uuid}\"" "${values_file}"
-            yq -i eval-all "
-                select(fi==0) ref \$to | select(fi==1).solution.storage_sets[0].name as \$name
-                | \$to.configmap.clusterStorageSets.[\$name].${c}Uuid=\"${uuid}\"
-                | \$to" "${values_file}" "${solution_yaml}"
-        fi
-    done
-
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
@@ -575,31 +561,6 @@ function deleteStaleAutoGenFolders()
     rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap"
 }
 
-function generateMachineId()
-{
-    local uuid
-    uuid="$(uuidgen --random)"
-    echo "${uuid//-}"
-}
-
-function generateMachineIds()
-{
-    printf "########################################################\n"
-    printf "# Generating CORTX Pod Machine IDs                      \n"
-    printf "########################################################\n"
-
-    local id_paths=()
-
-    for c in control ha; do
-        [[ ${components["${c}"]} == true ]] && id_paths+=("${cfgmap_path}/auto-gen-${c}-${namespace}")
-    done
-
-    for path in "${id_paths[@]}"; do
-        mkdir -p "${path}"
-        generateMachineId > "${path}/id"
-    done
-}
-
 function pwgen()
 {
     # This function generates a random password that is
@@ -786,7 +747,6 @@ deployKubernetesPrereqs
 deployRancherProvisioner
 deployCortxLocalBlockStorage
 deployCortxSecrets
-generateMachineIds
 
 ##########################################################
 # Deploy CORTX cloud
