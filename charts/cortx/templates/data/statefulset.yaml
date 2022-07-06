@@ -40,10 +40,10 @@ spec:
       volumes:
         - name: cortx-configuration
           configMap:
-            name: {{ $.Values.cortxdata.cfgmap.name }}
+            name: {{ include "cortx.configmapName" $ }}
         - name: cortx-ssl-cert
           configMap:
-            name: {{ $.Values.cortxdata.sslcfgmap.name }}
+            name: {{ include "cortx.tls.configmapName" $ }}
         - name: {{ $.Values.configmap.cortxSecretName }}
           secret:
             secretName: {{ $.Values.configmap.cortxSecretName }}
@@ -91,11 +91,11 @@ spec:
           {{- end }}
         volumeMounts:
           - name: cortx-configuration
-            mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+            mountPath: /etc/cortx/solution
           - name: cortx-ssl-cert
-            mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
+            mountPath: /etc/cortx/solution/ssl
           - name: data
-            mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+            mountPath: /etc/cortx
           - name: {{ $.Values.configmap.cortxSecretName }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
@@ -123,11 +123,11 @@ spec:
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
             - name: data
-              mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+              mountPath: /etc/cortx
           env:
           - name: NODE_NAME
             valueFrom:
@@ -175,11 +175,11 @@ spec:
             {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
             - name: data
-              mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+              mountPath: /etc/cortx
           env:
           - name: NODE_NAME
             valueFrom:
@@ -234,11 +234,11 @@ spec:
             {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ $.Values.cortxdata.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ $.Values.cortxdata.sslcfgmap.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
             - name: data
-              mountPath: {{ $.Values.cortxdata.localpathpvc.mountpath }}
+              mountPath: /etc/cortx
           ports:
           - name: {{ printf "ios-%d-tcp" $ioIndex }}
             containerPort: {{ printf "%d" (add $ioIndex (include "cortx.data.iosPort" $) | int) }}

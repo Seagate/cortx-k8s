@@ -12,9 +12,6 @@ solution:
     rancher: required
   common:
     storage_provisioner_path: required
-    container_path:
-      local: required
-      log: required
     s3:
       default_iam_users:
         auth_admin: required
