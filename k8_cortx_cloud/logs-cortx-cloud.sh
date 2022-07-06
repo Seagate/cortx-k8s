@@ -188,7 +188,7 @@ for pid in ${pids}; do
     fi
 done
 
-if [ "${failed}" == "true" ]; then
+if [[ "${failed}" == "true" ]]; then
     echo "Log collection failed.  Exiting."
     exit 1
 fi
