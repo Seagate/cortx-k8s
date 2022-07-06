@@ -313,8 +313,6 @@ This section contains common parameters that affect all CORTX components running
 | Name                                                  | Description                                                     | Default Value       |
 | ----------------------------------------------------- | --------------------------------------------------------------- | ------------------- |
 | `common.storage_provisioner_path`                     | TODO       | `/mnt/fs-local-volume` |
-| `common.container_path.local`                         | TODO       | `/etc/cortx` |
-| `common.container_path.log`                           | TODO       | `/etc/cortx/log` |
 | `common.s3.default_iam_users.auth_admin`              | Username for the default administrative user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `sgiamadmin` |
 | `common.s3.default_iam_users.auth_user`               | Username for the default user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `user_name` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |

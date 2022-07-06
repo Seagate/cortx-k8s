@@ -149,11 +149,6 @@ buildValues() {
     # Initialize
     yq --null-input "
         (.global.storageClass, .consul.server.storageClass) = \"local-path\"
-        | (.cortxclient.localpathpvc.mountpath,
-           .cortxcontrol.localpathpvc.mountpath,
-           .cortxdata.localpathpvc.mountpath,
-           .cortxha.localpathpvc.mountpath,
-           .cortxserver.localpathpvc.mountpath) = \"${local_storage}\"
         | .configmap.cortxSecretName = \"${cortx_secret_name}\"" > "${values_file}"
 
     # shellcheck disable=SC2016
@@ -195,18 +190,6 @@ buildValues() {
             | .authUser = $from.solution.common.s3.default_iam_users.auth_user
             | .maxStartTimeout = $from.solution.common.s3.max_start_timeout
             | .extraConfiguration = $from.solution.common.s3.extra_configuration)
-        | $to' "${values_file}" "${solution_yaml}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | $to.configmap.cortxStoragePaths = $from.solution.common.container_path
-        | $to' "${values_file}" "${solution_yaml}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | $to.configmap.cortxVersion = ($from.solution.images.cortxdata | capture(".*?/.*:(?P<tag>.*)") | .tag)
         | $to' "${values_file}" "${solution_yaml}"
 
     yq -i "
@@ -324,7 +307,6 @@ buildValues() {
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.cortxserver;
             .image           = $from.solution.images.cortxserver
-            | .cfgmap.volmountname = "config001"
             | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
@@ -342,8 +324,7 @@ buildValues() {
         .hare.hax.ports.http.protocol = \"${hax_service_protocol}\"
         | with(.cortxdata;
             .replicas = ${data_replicas}
-            | .storageClassName = \"${cortx_localblockstorage_storageclassname}\"
-            | .localpathpvc.mountpath = \"${local_storage}\")" "${values_file}"
+            | .storageClassName = \"${cortx_localblockstorage_storageclassname}\")" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -796,10 +777,6 @@ num_kafka_replicas=${num_worker_nodes}
 if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
-
-# Get the storage paths to use
-local_storage=$(parseSolution 'solution.common.container_path.local' | cut -f2 -d'>')
-readonly local_storage
 
 ##########################################################
 # Deploy CORTX cloud pre-requisites

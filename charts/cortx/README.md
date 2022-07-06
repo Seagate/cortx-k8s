@@ -80,39 +80,26 @@ helm uninstall cortx
 | configmap.cortxMotr.motr.resources.requests.memory | string | `"1Gi"` |  |
 | configmap.cortxSecretName | string | `"cortx-secret"` |  |
 | configmap.cortxSecretValues | object | `{}` |  |
-| configmap.cortxStoragePaths.config | string | `"/etc/cortx"` |  |
-| configmap.cortxStoragePaths.local | string | `"/etc/cortx"` |  |
-| configmap.cortxStoragePaths.log | string | `"/etc/cortx/log"` |  |
-| configmap.cortxVersion | string | `"unknown"` |  |
 | consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul client agent containers |
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
-| cortxclient.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxclient.enabled | bool | `false` |  |
 | cortxclient.image | string | `"ghcr.io/seagate/centos:7"` |  |
-| cortxclient.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
 | cortxclient.motr.numclientinst | int | `1` |  |
 | cortxclient.replicas | int | `1` |  |
-| cortxclient.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
 | cortxcontrol.agent.resources.limits.cpu | string | `"500m"` |  |
 | cortxcontrol.agent.resources.limits.memory | string | `"256Mi"` |  |
 | cortxcontrol.agent.resources.requests.cpu | string | `"250m"` |  |
 | cortxcontrol.agent.resources.requests.memory | string | `"128Mi"` |  |
-| cortxcontrol.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxcontrol.enabled | bool | `true` |  |
 | cortxcontrol.image | string | `"ghcr.io/seagate/centos:7"` |  |
-| cortxcontrol.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
 | cortxcontrol.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxcontrol.machineid.mountpath | string | `"/etc/cortx/solution/node"` |  |
 | cortxcontrol.machineid.value | string | `""` |  |
 | cortxcontrol.service.loadbal.enabled | bool | `true` |  |
 | cortxcontrol.service.loadbal.nodePorts.https | string | `""` |  |
 | cortxcontrol.service.loadbal.ports.https | int | `8081` |  |
 | cortxcontrol.service.loadbal.type | string | `"NodePort"` |  |
-| cortxcontrol.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
-| cortxdata.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
-| cortxdata.cfgmap.name | string | `"cortx"` |  |
 | cortxdata.confd.resources.limits.cpu | string | `"500m"` |  |
 | cortxdata.confd.resources.limits.memory | string | `"512Mi"` |  |
 | cortxdata.confd.resources.requests.cpu | string | `"250m"` |  |
@@ -120,7 +107,6 @@ helm uninstall cortx
 | cortxdata.cvgs | list | `[]` |  |
 | cortxdata.image | string | `"ghcr.io/seagate/centos:7"` |  |
 | cortxdata.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
-| cortxdata.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
 | cortxdata.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
 | cortxdata.motr.containerGroupSize | int | `1` | The number of Motr IO containers per CORTX Data Pod. As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node. |
 | cortxdata.motr.resources.limits.cpu | string | `"1000m"` |  |
@@ -131,10 +117,7 @@ helm uninstall cortx
 | cortxdata.persistentStorage.accessModes[0] | string | `"ReadWriteMany"` |  |
 | cortxdata.persistentStorage.volumeMode | string | `"Block"` |  |
 | cortxdata.replicas | int | `3` |  |
-| cortxdata.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
-| cortxdata.sslcfgmap.name | string | `"cortx-ssl-cert"` |  |
 | cortxdata.storageClassName | string | `"local-block-storage"` |  |
-| cortxha.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxha.enabled | bool | `true` |  |
 | cortxha.fault_tolerance.resources.limits.cpu | string | `"500m"` |  |
 | cortxha.fault_tolerance.resources.limits.memory | string | `"1Gi"` |  |
@@ -149,20 +132,15 @@ helm uninstall cortx
 | cortxha.k8s_monitor.resources.limits.memory | string | `"1Gi"` |  |
 | cortxha.k8s_monitor.resources.requests.cpu | string | `"250m"` |  |
 | cortxha.k8s_monitor.resources.requests.memory | string | `"128Mi"` |  |
-| cortxha.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
 | cortxha.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxha.machineid.mountpath | string | `"/etc/cortx/solution/node"` |  |
 | cortxha.machineid.value | string | `""` |  |
-| cortxha.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
 | cortxserver.authAdmin | string | `"cortx-admin"` |  |
 | cortxserver.authSecret | string | `"s3_auth_admin_secret"` |  |
 | cortxserver.authUser | string | `"cortx-user"` |  |
-| cortxserver.cfgmap.mountpath | string | `"/etc/cortx/solution"` |  |
 | cortxserver.enabled | bool | `true` |  |
 | cortxserver.extraConfiguration | string | `""` |  |
 | cortxserver.image | string | `"ghcr.io/seagate/centos:7"` |  |
 | cortxserver.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
-| cortxserver.localpathpvc.mountpath | string | `"/etc/cortx"` |  |
 | cortxserver.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
 | cortxserver.maxStartTimeout | int | `240` |  |
 | cortxserver.replicas | int | `3` |  |
@@ -176,7 +154,6 @@ helm uninstall cortx
 | cortxserver.service.ports.http | int | `80` |  |
 | cortxserver.service.ports.https | int | `443` |  |
 | cortxserver.service.type | string | `"ClusterIP"` |  |
-| cortxserver.sslcfgmap.mountpath | string | `"/etc/cortx/solution/ssl"` |  |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
 | externalConsul.endpoints | list | `[]` |  |

@@ -52,11 +52,13 @@ cortx:
   common:
     release:
       name: CORTX
-      version: {{ .Values.configmap.cortxVersion }}
     service:
       admin: admin
       secret: common_admin_secret
-    storage: {{- toYaml .Values.configmap.cortxStoragePaths | nindent 6 }}
+    storage:
+      log: /etc/cortx/log
+      local: /etc/cortx
+      config: /etc/cortx
     security:
       ssl_certificate: /etc/cortx/solution/ssl/s3.seagate.com.pem
       domain_certificate: /etc/cortx/solution/ssl/stx.pem
