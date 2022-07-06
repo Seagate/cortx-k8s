@@ -137,7 +137,6 @@ function tarPodLogs()
         --coredumps "${coredumps}" \
         --stacktrace "${stacktrace}" \
         --all "${all}"
-    echo "DEBUG: returncode = $?"
     kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" -c "${container}" --namespace="${namespace}"
     kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
 
@@ -184,7 +183,7 @@ done <<< "$(kubectl get pods --namespace="${namespace}" || true)"
 # Wait for all processes to finish.  Fail on error.
 failed=false
 for pid in ${pids}; do
-    if ! wait ${pid}; then
+    if ! wait "${pid}"; then
         failed=true
     fi
 done
