@@ -28,12 +28,6 @@ spec:
         - name: cortx-ssl-cert
           configMap:
             name: {{ include "cortx.tls.configmapName" . }}
-        - name: machine-id
-          downwardAPI:
-            items:
-              - path: "id"
-                fieldRef:
-                  fieldPath: metadata.labels['cortx.io/machine-id']
         - name: data
           persistentVolumeClaim:
             claimName: {{ include "cortx.control.fullname" . }}
@@ -60,8 +54,6 @@ spec:
             mountPath: /etc/cortx/solution
           - name: cortx-ssl-cert
             mountPath: /etc/cortx/solution/ssl
-          - name: machine-id
-            mountPath: /etc/cortx/solution/node
           - name: data
             mountPath: /etc/cortx
           - name: {{ .Values.configmap.cortxSecretName }}
@@ -96,8 +88,6 @@ spec:
               mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
               mountPath: /etc/cortx/solution/ssl
-            - name: machine-id
-              mountPath: /etc/cortx/solution/node
             - name: data
               mountPath: /etc/cortx
           env:
