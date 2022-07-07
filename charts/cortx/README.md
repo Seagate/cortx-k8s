@@ -170,6 +170,8 @@ helm uninstall cortx
 | kafka.enabled | bool | `true` | Enable installation of the Kafka chart |
 | kafka.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | kafka.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Kafka pods |
+| kafka.startupProbe.enabled | bool | `true` | Enable startup probe to allow for slow Zookeeper startup |
+| kafka.startupProbe.initialDelaySeconds | int | `10` | Initial delay for startup probe |
 | kafka.transactionStateLogMinIsr | int | `2` | Overridden min.insync.replicas config for the transaction topic |
 | kafka.zookeeper.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Zookeeper containers |
 | kafka.zookeeper.enabled | bool | `true` | Enable installation of the Zookeeper chart |
