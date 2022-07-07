@@ -53,11 +53,11 @@ spec:
         {{- end }}
         volumeMounts:
           - name: cortx-configuration
-            mountPath: {{ .Values.cortxclient.cfgmap.mountpath }}
+            mountPath: /etc/cortx/solution
           - name: cortx-ssl-cert
-            mountPath: {{ .Values.cortxclient.sslcfgmap.mountpath }}
+            mountPath: /etc/cortx/solution/ssl
           - name: data
-            mountPath: {{ .Values.cortxclient.localpathpvc.mountpath }}
+            mountPath: /etc/cortx
           - name: {{ .Values.configmap.cortxSecretName }}
             mountPath: /etc/cortx/solution/secret
             readOnly: true
@@ -85,11 +85,11 @@ spec:
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ .Values.cortxclient.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ .Values.cortxclient.sslcfgmap.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
             - name: data
-              mountPath: {{ .Values.cortxclient.localpathpvc.mountpath }}
+              mountPath: /etc/cortx
           env:
             - name: NODE_NAME
               valueFrom:
@@ -126,11 +126,11 @@ spec:
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ $.Values.cortxclient.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ $.Values.cortxclient.sslcfgmap.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
             - name: data
-              mountPath: {{ $.Values.cortxclient.localpathpvc.mountpath }}
+              mountPath: /etc/cortx
           env:
             - name: CLIENT_INDEX
               value: {{ printf "%d" (add 1 $i) | quote }}

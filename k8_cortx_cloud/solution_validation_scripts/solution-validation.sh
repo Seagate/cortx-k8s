@@ -39,6 +39,12 @@ if [[ "${invalid_paths}" != "[]" ]]; then
 fi
 ### CORTX-29861 yq validation replacement [/end]
 
+# Warn for keys/sections that have been removed and are no longer required
+# shellcheck disable=SC2312
+if [[ $(yq '.solution.common | has("container_path")' "${solution_yaml}") == "true" ]]; then
+    echo "WARNING: section 'solution.common.container_path' has been removed in v0.9.0. Custom container paths are not supported. You can remove it from your solution file."
+fi
+
 ### CORTX-29861 Temporary namespace length limitation enforced
 ### This can be removed once namespaces of nominal length (20+ characters) have been validated repeatedly.
 observed_namespace_length=$(yq '.solution.namespace | length' "${solution_yaml}")

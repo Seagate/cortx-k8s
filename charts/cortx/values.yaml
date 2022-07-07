@@ -63,6 +63,8 @@ kafka:
   deleteTopicEnable: true
   # -- Overridden min.insync.replicas config for the transaction topic
   transactionStateLogMinIsr: 2
+  # -- Extend timeout for successful Zookeeper connection
+  zookeeperConnectionTimeoutMs: 60000
 
   # ZooKeeper chart configuration
   # ref: https://github.com/bitnami/charts/blob/master/bitnami/zookeeper/values.yaml
@@ -138,12 +140,6 @@ configmap:
   # UUIDs are optional and if omitted, will be randomly generated, with
   # the exception of client UUIDs, which will not be configured if omitted.
   clusterStorageSets: {}
-
-  # cortxStoragePaths allows configuring the location of CORTX filesystem paths
-  cortxStoragePaths:
-    local: "/etc/cortx"
-    log: "/etc/cortx/log"
-    config: "/etc/cortx"
 
   # cortxControl allows configuring CORTX CSM settings
   cortxControl:
@@ -230,15 +226,9 @@ cortxcontrol:
         https: 8081
       nodePorts:
         https: ""
-  cfgmap:
-    mountpath: /etc/cortx/solution
-  sslcfgmap:
-    mountpath: /etc/cortx/solution/ssl
   machineid:
-    mountpath: /etc/cortx/solution/node
     value: ""
   localpathpvc:
-    mountpath: /etc/cortx
     requeststoragesize: 1Gi
 
 ##
@@ -271,15 +261,9 @@ cortxha:
       limits:
         memory: 1Gi
         cpu: 500m
-  cfgmap:
-    mountpath: /etc/cortx/solution
-  sslcfgmap:
-    mountpath: /etc/cortx/solution/ssl
   machineid:
-    mountpath: /etc/cortx/solution/node
     value: ""
   localpathpvc:
-    mountpath: /etc/cortx
     requeststoragesize: 1Gi
 
 ##
@@ -297,12 +281,7 @@ cortxserver:
       limits:
         memory: 2Gi
         cpu: 2000m
-  cfgmap:
-    mountpath: /etc/cortx/solution
-  sslcfgmap:
-    mountpath: /etc/cortx/solution/ssl
   localpathpvc:
-    mountpath: /etc/cortx
     requeststoragesize: 1Gi
     accessmodes:
       - ReadWriteOnce
@@ -381,14 +360,7 @@ cortxdata:
       limits:
         memory: 512Mi
         cpu: 500m
-  cfgmap:
-    mountpath: /etc/cortx/solution
-    name: cortx
-  sslcfgmap:
-    mountpath: /etc/cortx/solution/ssl
-    name: cortx-ssl-cert
   localpathpvc:
-    mountpath: /etc/cortx
     requeststoragesize: 1Gi
     accessmodes:
       - ReadWriteOnce
@@ -402,9 +374,3 @@ cortxclient:
   image: ghcr.io/seagate/centos:7
   motr:
     numclientinst: 1
-  cfgmap:
-    mountpath: /etc/cortx/solution
-  sslcfgmap:
-    mountpath: /etc/cortx/solution/ssl
-  localpathpvc:
-    mountpath: /etc/cortx

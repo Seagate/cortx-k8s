@@ -23,9 +23,6 @@ solution:
     busybox: ghcr.io/seagate/busybox:latest
   common:
     storage_provisioner_path: /mnt/fs-local-volume
-    container_path:
-      local: /etc/cortx
-      log: /etc/cortx/log
     s3:
       default_iam_users:
         auth_admin: "sgiamadmin"
