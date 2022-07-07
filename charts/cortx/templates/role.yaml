@@ -1,14 +1,9 @@
-{{- if .Values.platform.rbacRole.create -}}
+{{- if .Values.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ include "cortx.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels: {{- include "cortx.labels" . | nindent 4 }}
-rules:
-- apiGroups: ['policy']
-  resources: ['podsecuritypolicies']
-  verbs:     ['use']
-  resourceNames:
-    - {{ include "cortx.fullname" . }}
+rules: []
 {{- end }}

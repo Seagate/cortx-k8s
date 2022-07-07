@@ -219,16 +219,6 @@ buildValues() {
             | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
-    ## PodSecurityPolicies are Cluster-scoped, so Helm doesn't handle it smoothly
-    ## in the same chart as Namespace-scoped objects.
-    local podSecurityPolicyName="cortx"
-    local createPodSecurityPolicy="true"
-    local output
-    output=$(kubectl get psp --no-headers ${podSecurityPolicyName} 2>/dev/null | wc -l || true)
-    if [[ ${output} == "1" ]]; then
-        createPodSecurityPolicy="false"
-    fi
-
     local hax_service_protocol
     local s3_service_type
     local s3_service_ports_http
@@ -247,8 +237,7 @@ buildValues() {
     [[ -n ${s3_service_nodeports_https} ]] && yq -i ".cortxserver.service.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
 
     yq -i "
-        .platform.podSecurityPolicy.create = ${createPodSecurityPolicy}
-        | with(.cortxserver.service; (
+        with(.cortxserver.service; (
             .type = \"${s3_service_type}\"
             | .count = ${s3_service_count}
             | .ports.http = ${s3_service_ports_http}
