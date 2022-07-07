@@ -1,15 +1,6 @@
-{{- /* TODO Revisit UUID defaults here since we are moving away from UUID entirely... */ -}}
 {{- define "storageset.node" -}}
 - name: {{ .name }}
-  {{- if eq .type "server_node" }}
-  id: {{ required "A valid id is required for server nodes" .id | quote }}
-  {{- else if hasPrefix (include "cortx.data.dataNodePrefix" .) .type }}
-  id: {{ required "A valid id is required for data nodes" .id | quote }}
-  {{- else if eq .type "client_node" }}
-  id: {{ required "A valid id is required for client nodes" .id | quote }}
-  {{- else }}
-  id: {{ default uuidv4 .id | replace "-" "" | quote }}
-  {{- end }}
+  id: {{ required "A storageset node id is required" .id | quote }}
   hostname: {{ coalesce .hostname .name }}
   type: {{ .type }}
 {{- end -}}
@@ -87,10 +78,13 @@ cluster:
       dix: {{ $storageSet.durability.dix | quote }}
     nodes:
     {{- if $root.Values.cortxcontrol.enabled }}
-    {{- include "storageset.node" (dict "name" (include "cortx.control.fullname" $root) "id" $storageSet.controlUuid "type" "control_node") | nindent 4 }}
+    {{- $nodeName := (include "cortx.control.fullname" $root) }}
+    {{- include "storageset.node" (dict "name" $nodeName "id" $nodeName "type" "control_node") | nindent 4 }}
     {{- end }}
     {{- if $root.Values.cortxha.enabled }}
-    {{- include "storageset.node" (dict "name" (printf "%s-headless" (include "cortx.ha.fullname" $root)) "id" $storageSet.haUuid "type" "ha_node") | nindent 4 }}
+    {{- $nodeName := (include "cortx.ha.fullname" $root) }}
+    {{- $hostName := (printf "%s-headless" $nodeName) }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "ha_node") | nindent 4 }}
     {{- end }}
     {{- range $stsIndex := until $statefulSetCount }}
     {{- range $i := until (int $root.Values.cortxdata.replicas) }}
