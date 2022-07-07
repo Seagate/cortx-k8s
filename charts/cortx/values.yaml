@@ -65,6 +65,11 @@ kafka:
   transactionStateLogMinIsr: 2
   # -- Extend timeout for successful Zookeeper connection
   zookeeperConnectionTimeoutMs: 60000
+  startupProbe:
+    # -- Enable startup probe to allow for slow Zookeeper startup
+    enabled: true
+    # -- Initial delay for startup probe
+    initialDelaySeconds: 10
 
   # ZooKeeper chart configuration
   # ref: https://github.com/bitnami/charts/blob/master/bitnami/zookeeper/values.yaml
