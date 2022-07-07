@@ -1,6 +1,6 @@
 # cortx
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-845](https://img.shields.io/badge/AppVersion-2.0.0--845-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-853](https://img.shields.io/badge/AppVersion-2.0.0--853-informational?style=flat-square)
 
 CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 
@@ -175,6 +175,7 @@ helm uninstall cortx
 | kafka.zookeeper.enabled | bool | `true` | Enable installation of the Zookeeper chart |
 | kafka.zookeeper.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | kafka.zookeeper.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Zookeeper pods |
+| kafka.zookeeperConnectionTimeoutMs | int | `60000` | Extend timeout for successful Zookeeper connection |
 | nameOverride | string | `""` |  |
 | platform.networkPolicy.cortxControl.podAppLabel | string | `"cortx-control-pod"` |  |
 | platform.networkPolicy.cortxData.podNameLabel | string | `"cortx-data"` |  |
