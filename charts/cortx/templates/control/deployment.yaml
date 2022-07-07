@@ -1,5 +1,4 @@
 {{- if .Values.cortxcontrol.enabled }}
-{{- $machineId := (include "cortx.control.fullname" .) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,7 +15,7 @@ spec:
     metadata:
       labels: {{- include "cortx.labels" . | nindent 8 }}
         app.kubernetes.io/component: control
-        cortx.io/machine-id: {{ $machineId | quote }}
+        cortx.io/machine-id: {{ include "cortx.control.fullname" . | quote }}
         cortx.io/service-type: cortx-control
     spec:
       hostname: {{ include "cortx.control.fullname" . }}
@@ -47,7 +46,7 @@ spec:
         {{- else }}
         args:
           - -c
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
         {{- end }}
         volumeMounts:
           - name: cortx-configuration
@@ -60,8 +59,6 @@ spec:
             mountPath: /etc/cortx/solution/secret
             readOnly: true
         env:
-          - name: MACHINE_ID
-            value: {{ $machineId | quote }}
           - name: NODE_NAME
             valueFrom:
               fieldRef:
