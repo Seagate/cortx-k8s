@@ -366,7 +366,8 @@ client:
     registry: ghcr.io
     # -- Client image name
     repository: seagate/cortx-data
-    # -- Client image tag. If unset, defaults to the Chart AppVersion.
+    # -- Client image tag
+    # @default -- Chart.AppVersion
     tag: ""
     # -- Client image pull policy
     # ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images

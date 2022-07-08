@@ -64,7 +64,7 @@ helm uninstall cortx
 | client.image.pullPolicy | string | `"IfNotPresent"` | Client image pull policy ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images |
 | client.image.registry | string | `"ghcr.io"` | Client image registry |
 | client.image.repository | string | `"seagate/cortx-data"` | Client image name |
-| client.image.tag | string | `""` | Client image tag. If unset, defaults to the Chart AppVersion. |
+| client.image.tag | string | Chart.AppVersion | Client image tag |
 | client.instanceCount | int | `1` | Number of Client instances (containers) per replica |
 | client.replicaCount | int | `1` | Number of Client replicas |
 | clusterDomain | string | `"cluster.local"` | Kubernetes Cluster Domain |
