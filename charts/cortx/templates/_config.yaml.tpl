@@ -23,8 +23,8 @@
 {{- end -}}
 {{- end -}}
 {{- $clientHostnames := list -}}
-{{- if .Values.cortxclient.enabled -}}
-{{- range $i := until (int .Values.cortxclient.replicas) -}}
+{{- if .Values.client.enabled -}}
+{{- range $i := until (int .Values.client.replicaCount) -}}
 {{- $clientHostnames = append $clientHostnames (printf "%s-%d.%s" (include "cortx.client.fullname" $) $i (include "cortx.client.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
@@ -126,9 +126,9 @@ cortx:
       - {{ printf "tcp://%s:%d" . (include "cortx.server.motrClientPort" $ | int) }}
       {{- end }}
     {{- end }}
-    {{- if .Values.cortxclient.enabled }}
+    {{- if .Values.client.enabled }}
     - name: motr_client
-      num_instances: {{ .Values.cortxclient.motr.numclientinst | int }}
+      num_instances: {{ .Values.client.instanceCount | int }}
       num_subscriptions: 1
       subscriptions:
       - fdmi
