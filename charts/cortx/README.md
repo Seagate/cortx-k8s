@@ -60,7 +60,7 @@ helm uninstall cortx
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| clusterDomain | string | `"cluster.local"` |  |
+| clusterDomain | string | `"cluster.local"` | Kubernetes Cluster Domain |
 | configmap.clusterDomain | string | `"cluster.local"` |  |
 | configmap.clusterId | string | `""` |  |
 | configmap.clusterName | string | `"cortx-cluster"` |  |
@@ -95,7 +95,6 @@ helm uninstall cortx
 | cortxcontrol.enabled | bool | `true` |  |
 | cortxcontrol.image | string | `"ghcr.io/seagate/centos:7"` |  |
 | cortxcontrol.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxcontrol.machineid.value | string | `""` |  |
 | cortxcontrol.service.loadbal.enabled | bool | `true` |  |
 | cortxcontrol.service.loadbal.nodePorts.https | string | `""` |  |
 | cortxcontrol.service.loadbal.ports.https | int | `8081` |  |
@@ -133,7 +132,6 @@ helm uninstall cortx
 | cortxha.k8s_monitor.resources.requests.cpu | string | `"250m"` |  |
 | cortxha.k8s_monitor.resources.requests.memory | string | `"128Mi"` |  |
 | cortxha.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxha.machineid.value | string | `""` |  |
 | cortxserver.authAdmin | string | `"cortx-admin"` |  |
 | cortxserver.authSecret | string | `"s3_auth_admin_secret"` |  |
 | cortxserver.authUser | string | `"cortx-user"` |  |
@@ -160,7 +158,7 @@ helm uninstall cortx
 | externalKafka.adminSecretName | string | `"kafka_admin_secret"` |  |
 | externalKafka.adminUser | string | `"admin"` |  |
 | externalKafka.endpoints | list | `[]` |  |
-| fullnameOverride | string | `""` |  |
+| fullnameOverride | string | `""` | A name that will fully override cortx.fullname |
 | hare.hax.ports.http.port | int | `22003` | The port number of the Hax HTTP endpoint. |
 | hare.hax.ports.http.protocol | string | `"https"` | The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`. |
 | hare.hax.resources.limits | object | `{"cpu":"1000m","memory":"2Gi"}` | Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers. |
@@ -178,13 +176,8 @@ helm uninstall cortx
 | kafka.zookeeper.serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | kafka.zookeeper.serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for Zookeeper pods |
 | kafka.zookeeperConnectionTimeoutMs | int | `60000` | Extend timeout for successful Zookeeper connection |
-| nameOverride | string | `""` |  |
-| platform.networkPolicy.cortxControl.podAppLabel | string | `"cortx-control-pod"` |  |
-| platform.networkPolicy.cortxData.podNameLabel | string | `"cortx-data"` |  |
-| platform.networkPolicy.create | bool | `false` |  |
-| platform.podSecurityPolicy.create | bool | `false` |  |
-| platform.rbacRole.create | bool | `true` |  |
-| platform.rbacRoleBinding.create | bool | `true` |  |
+| nameOverride | string | `""` | A name that will partially override cortx.fullname |
+| rbac.create | bool | `true` | Enable the creation of RBAC resources, Role and RoleBinding, for the CORTX ServiceAccount. |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
