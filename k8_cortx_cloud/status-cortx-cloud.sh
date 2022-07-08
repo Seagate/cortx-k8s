@@ -269,7 +269,7 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(( num_nodes * 2 ))
+num_pvs_pvcs=$(( num_nodes * num_data_sts * 2 ))
 msg_info "| Checking Storage: Local [PVCs/PVs] |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
