@@ -4,4 +4,3 @@ tests:
 testlist:
  - test_deploy_basic
  - test_deploy_basic_default
- - test_deploy_stub

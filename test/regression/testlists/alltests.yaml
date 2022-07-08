@@ -1,13 +1,9 @@
 test_deploy_basic:
   id: TEST-DEPLOY-0001
-  cmd: ./test_deploy.py -c {{ cluster }} -s {{ k8_cloud_dir }}/solution.example.yaml --shutdown
-
-test_deploy_stub:
-  id: TEST-DEPLOY-0002
-  cmd: ./test_deploy.py -c {{ cluster }} -s {{ k8_cloud_dir }}/solution_stub.yaml --shutdown
+  cmd: ./test_deploy.py -s {{ k8_cloud_dir }}/solution.example.yaml -s {{ solution }} -s {{ test_dir }}/namespace.cortx.yaml --shutdown --localfs={{ localfs }}
 
 #Deploy into default namespace
 test_deploy_basic_default:
-  id: TEST-DEPLOY-0003
-  cmd: ./test_deploy.py -c {{ cluster }} -s {{ k8_cloud_dir }}/solution.example.yaml --shutdown --namespace=default
+  id: TEST-DEPLOY-0002
+  cmd: ./test_deploy.py -s {{ k8_cloud_dir }}/solution.example.yaml -s {{ solution }} -s {{ test_dir }}/namespace.default.yaml --shutdown --localfs={{ localfs }}
 
