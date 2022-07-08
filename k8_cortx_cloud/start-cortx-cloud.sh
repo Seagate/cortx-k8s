@@ -64,7 +64,7 @@ printf "# Start CORTX Data                                      \n"
 printf "########################################################\n"
 readonly data_selector="app.kubernetes.io/component=data,app.kubernetes.io/instance=cortx"
 num_data_sts=0
-for statefulset in $(kubectl get statefulset --selector "${data_selector}" --no-headers --output custom-columns=NAME:metadata.name --namespace="${namespace}"); do
+for statefulset in $(kubectl get statefulset --selector "${data_selector}" --no-headers --namespace=${namespace} --output custom-columns=NAME:metadata.name); do
     kubectl scale statefulset "${statefulset}" --replicas "${num_nodes}" --namespace="${namespace}"
     ((num_data_sts+=1))
 done
@@ -175,7 +175,7 @@ if [[ ${deployment_type} != "data-only" ]]; then
     printf "\n\n"
 fi
 
-if kubectl get statefulset cortx-client &> /dev/null; then
+if kubectl get statefulset cortx-client --namespace="${namespace}" &> /dev/null; then
     printf "########################################################\n"
     printf "# Start CORTX Client                                    \n"
     printf "########################################################\n"
