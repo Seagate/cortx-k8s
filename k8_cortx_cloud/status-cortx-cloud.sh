@@ -293,7 +293,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get pv --no-headers | grep "${namespace}/data-cortx-data-[0-9]")
+done < <(kubectl get pv --no-headers | grep "${namespace}/data-cortx-data-g[0-9]\+-[0-9]\+")
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed
