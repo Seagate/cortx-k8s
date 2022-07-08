@@ -33,9 +33,9 @@ spec:
         - name: cortx-ssl-cert
           configMap:
             name: {{ include "cortx.tls.configmapName" . }}
-        - name: {{ .Values.configmap.cortxSecretName }}
+        - name: configuration-secrets
           secret:
-            secretName: {{ .Values.configmap.cortxSecretName }}
+            secretName: {{ include "cortx.secretName" . }}
         - name: data
           emptyDir: {}
       initContainers:
@@ -58,7 +58,7 @@ spec:
             mountPath: /etc/cortx/solution/ssl
           - name: data
             mountPath: /etc/cortx
-          - name: {{ .Values.configmap.cortxSecretName }}
+          - name: configuration-secrets
             mountPath: /etc/cortx/solution/secret
             readOnly: true
         env:

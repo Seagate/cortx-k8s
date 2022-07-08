@@ -76,6 +76,13 @@ Return the CORTX SSL certificate configmap
 {{- end -}}
 
 {{/*
+Return the name of the CORTX secret
+*/}}
+{{- define "cortx.secretName" -}}
+{{- required "A name of a Secret containing the CORTX configuration secrets is required" (tpl .Values.existingSecret .) -}}
+{{- end -}}
+
+{{/*
 Return the name of the Control component
 */}}
 {{- define "cortx.control.fullname" -}}
