@@ -26,6 +26,7 @@ class Cluster:
                   localfs=None, logger=None):
         """
         Represents a CORTX cluster.
+
            Arguments:
                solution_files:
                       Solution.yaml file(s) that specify
@@ -42,14 +43,14 @@ class Cluster:
                       is specified as the first file in the list
                       and is overridden (or "customized") by latter
                       files.
-                      
+
                       The result is a new file generated at the
                       location specified by solution_outfile, or,
                       if that is not specified, then by a filename
                       in /tmp based on the input filenames.
 
                 solution_outfile: Name of the generated solution file.
-                      If multiple solution_files are specified then 
+                      If multiple solution_files are specified then
                       this specifies the name of the generated
                       solution file.  If None, then a filename in
                       /tmp is generated.
@@ -65,7 +66,7 @@ class Cluster:
             logger = Logger()
         self.logger = logger
 
-        if type(solution_files) == str:
+        if instanceof(solution_files, str):
             solution_files = [solution_files]
 
         if len(solution_files) == 1:
@@ -88,7 +89,8 @@ class Cluster:
         self.solution = solution['solution']
 
 
-    def generate_solution_yaml(self, input_files, outfile=None, path='/tmp'):
+    @staticmethod
+    def _generate_solution_yaml(input_files, outfile=None, path='/tmp'):
         if not outfile:
             outfile_parts = []
             for file_ in reversed(input_files):
@@ -99,7 +101,6 @@ class Cluster:
                     file_ = 'solution'
                 outfile_parts.append(file_)
             outfile = os.path.join(path, '.'.join(outfile_parts) + '.yaml')
-        print(f"OUTFILE = {outfile}")
         outf = open(outfile, 'w')
         args = ['yq', 'ea', '. as $item ireduce ({}; . * $item )'] + input_files
         child = subprocess.Popen(args, stdout=outf, stderr=subprocess.PIPE)
