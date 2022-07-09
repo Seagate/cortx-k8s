@@ -74,7 +74,7 @@ class Cluster:
             self.solution_file = solution_files[0]
 
         else:
-            self.solution_file = self.generate_solution_yaml(solution_files, outfile=solution_outfile)
+            self.solution_file = self._generate_solution_yaml(solution_files, outfile=solution_outfile)
             logger.log(f"Generated solution file: {self.solution_file}")
             if not self.solution_file:
                 # There was an error.  Exit.
