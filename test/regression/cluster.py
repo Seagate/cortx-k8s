@@ -24,8 +24,7 @@ class Cluster:
 
     def __init__(self, solution_files, solution_outfile=None,
                   localfs=None, logger=None):
-        """
-        Represents a CORTX cluster.
+        """Represents a CORTX cluster.
 
            Arguments:
                solution_files:
@@ -66,7 +65,7 @@ class Cluster:
             logger = Logger()
         self.logger = logger
 
-        if instanceof(solution_files, str):
+        if isinstance(solution_files, str):
             solution_files = [solution_files]
 
         if len(solution_files) == 1:
