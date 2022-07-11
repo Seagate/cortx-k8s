@@ -101,7 +101,7 @@ cluster:
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "server_node") | nindent 4 }}
     {{- end }}
     {{- end }}
-    {{- range $i := until (int $root.Values.cortxclient.replicas) }}
+    {{- range $i := until (int $root.Values.client.replicaCount) }}
     {{- $nodeName := printf "%s-%d" (include "cortx.client.fullname" $root) $i }}
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.client.serviceDomain" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "client_node") | nindent 4 }}
