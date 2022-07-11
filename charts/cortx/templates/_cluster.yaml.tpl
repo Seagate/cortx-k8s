@@ -7,8 +7,8 @@
 
 {{- define "cluster.yaml" -}}
 cluster:
-  name: {{ .Values.configmap.clusterName }}
-  id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
+  name: {{ default (include "cortx.fullname" .) .Values.clusterName | quote }}
+  id: {{ default uuidv4 .Values.clusterId | quote }}
   node_types:
   {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
   {{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
@@ -69,7 +69,7 @@ cluster:
         - motr_client
     - name: hare
   {{- $root := . }}
-  {{- with .Values.configmap.clusterStorageSets }}
+  {{- with .Values.storageSets }}
   storage_sets:
   {{- range $storageSetName, $storageSet := . }}
   - name: {{ $storageSetName }}

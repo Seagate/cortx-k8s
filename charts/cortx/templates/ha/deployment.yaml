@@ -31,9 +31,9 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: {{ include "cortx.ha.fullname" . }}
-        - name: {{ .Values.configmap.cortxSecretName }}
+        - name: configuration-secrets
           secret:
-            secretName: {{ .Values.configmap.cortxSecretName }}
+            secretName: {{ include "cortx.secretName" . }}
       initContainers:
       - name: cortx-setup
         image: {{ .Values.cortxha.image }}
@@ -56,7 +56,7 @@ spec:
             mountPath: /etc/cortx/solution/ssl
           - name: data
             mountPath: /etc/cortx
-          - name: {{ .Values.configmap.cortxSecretName }}
+          - name: configuration-secrets
             mountPath: /etc/cortx/solution/secret
             readOnly: true
         env:
