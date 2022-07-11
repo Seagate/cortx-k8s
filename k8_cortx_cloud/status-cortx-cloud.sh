@@ -269,7 +269,7 @@ fi
 
 # Check storage local
 count=0
-num_pvs_pvcs=$(( num_nodes * 2 ))
+num_pvs_pvcs=$(( num_nodes * num_data_sts * 2 ))
 msg_info "| Checking Storage: Local [PVCs/PVs] |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -293,7 +293,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get pv --no-headers | grep "${namespace}/data-cortx-data-[0-9]")
+done < <(kubectl get pv --no-headers | grep "${namespace}/data-cortx-data-g[0-9]\+-[0-9]\+")
 
 if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
     msg_overall_passed

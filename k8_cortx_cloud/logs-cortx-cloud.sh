@@ -154,7 +154,7 @@ while IFS= read -r line; do
     pods_found=$((pods_found+1))
 
     case ${pod_name} in
-      cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
+      cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-* | cortx-client-*)
         containers=$(kubectl get pods "${pod_name}" -n "${namespace}" -o jsonpath="{.spec['containers', 'initContainers'][*].name}")
         IFS=" " read -r -a containers <<< "${containers}"
         tarPodLogs "${pod_name}" "${containers[@]}" &
