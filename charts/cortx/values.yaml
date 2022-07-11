@@ -100,7 +100,7 @@ externalKafka:
 clusterName: ""
 
 # -- The unique ID of the CORTX cluster.
-# @default -- Chart Release fullname
+# @default -- A random UUID (v4)
 clusterId: ""
 
 # -- The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail.

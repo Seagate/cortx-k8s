@@ -79,7 +79,8 @@ Return the CORTX SSL certificate configmap
 Return the name of the CORTX secret
 */}}
 {{- define "cortx.secretName" -}}
-{{- required "A name of a Secret containing the CORTX configuration secrets is required" (tpl .Values.existingSecret .) -}}
+{{- $secret := tpl .Values.existingSecret . -}}
+{{- required "A name of a Secret containing the CORTX configuration secrets is required" $secret -}}
 {{- end -}}
 
 {{/*

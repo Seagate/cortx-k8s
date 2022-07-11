@@ -68,7 +68,7 @@ helm uninstall cortx
 | client.instanceCount | int | `1` | Number of Client instances (containers) per replica |
 | client.replicaCount | int | `1` | Number of Client replicas |
 | clusterDomain | string | `"cluster.local"` | Kubernetes Cluster Domain |
-| clusterId | string | Chart Release fullname | The unique ID of the CORTX cluster. |
+| clusterId | string | A random UUID (v4) | The unique ID of the CORTX cluster. |
 | clusterName | string | Chart Release fullname | The name of the CORTX cluster. |
 | consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul client agent containers |
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |

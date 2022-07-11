@@ -8,7 +8,7 @@
 {{- define "cluster.yaml" -}}
 cluster:
   name: {{ default (include "cortx.fullname" .) .Values.clusterName | quote }}
-  id: {{ default (include "cortx.fullname" .) .Values.clusterId | quote }}
+  id: {{ default uuidv4 .Values.clusterId | quote }}
   node_types:
   {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
   {{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
