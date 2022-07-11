@@ -95,6 +95,17 @@ externalKafka:
   adminUser: admin
   adminSecretName: kafka_admin_secret
 
+# -- The name of the CORTX cluster.
+# @default -- Chart Release fullname
+clusterName: ""
+
+# -- The unique ID of the CORTX cluster.
+# @default -- A random UUID (v4)
+clusterId: ""
+
+# -- The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail.
+existingSecret: ""
+
 # CORTX Hare component configuration
 hare:
   hax:
@@ -114,84 +125,28 @@ hare:
         cpu: 250m
         memory: 128Mi
 
-##
-## Imported values from the cortx-configmap Helm Chart. These will be changed.
-##
-configmap:
-  # clusterName is the name of the CORTX cluster
-  clusterName: cortx-cluster
-
-  # clusterId is the unique ID number of the CORTX cluster
-  clusterId: ""
-
-  # clusterDomain is the domain name of the underlying Kubernetes cluster (default is cluster.local)
-  clusterDomain: cluster.local
-
-  ### TODO Update this structure similar to solution.yaml, merge with appropriate .cortxdata elements, and convert to a list.
-  # clusterStorageSets is a Dictionary of storage sets.
-  # e.g.:
-  # clusterStorageSets:
-  #   storage-set-1:
-  #     durability:
-  #       sns: 1+0+0
-  #       dix: 1+0+0
-  #     controlUuid: "bfcb40c12e9f4fa4b924a787886a40b6"
-  #     haUuid: "0789bc5f5f544197a5c204ed5d68ab07"
-  #     nodes:
-  #       ssc-vm-g4-rhev4-0009.colo.seagate.com:
-  #         serverUuid: 50b3871d48fa4032bf27a211b4088df7
-  #         dataUuid: "8466d0079fd44cd38164d8e31f5cd067"
-  #         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
-  #       ssc-vm-g4-rhev4-0010.colo.seagate.com:
-  #         serverUuid: "05ceb17b5cdf47538db1bb89ccc247d2"
-  #         dataUuid: "eb79cc372c7443cbac768db4313cc0e8"
-  #         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
-  # UUIDs are optional and if omitted, will be randomly generated, with
-  # the exception of client UUIDs, which will not be configured if omitted.
-  clusterStorageSets: {}
-
-  # cortxControl allows configuring CORTX CSM settings
-  cortxControl:
-    agent:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 256Mi
-          cpu: 500m
-
-  # cortxMotr allows configuring CORTX MOTR settings
-  cortxMotr:
-    # An optional multi-line string that contains extra Motr configuration
-    # settings. The string may contain template expressions, and is appended to
-    # the end of the computed configuration.
-    # e.g.:
-    # extraConfiguration: |
-    #   md_size: 10
-    #   group_size: 1
-    extraConfiguration: ""
-    motr:
-      resources:
-        requests:
-          memory: 1Gi
-          cpu: 250m
-        limits:
-          memory: 2Gi
-          cpu: 1000m
-    confd:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 512Mi
-          cpu: 500m
-
-  # cortxSecretName is the name of the Secret mounted in CORTX Pods
-  cortxSecretName: "cortx-secret"
-  # cortxSecretValues: is a Dictionary of CORTX secret names and values
-  cortxSecretValues: {}
+### TODO Update this structure similar to solution.yaml, merge with appropriate .cortxdata elements, and convert to a list.
+# storageSets is a Dictionary of storage sets.
+# e.g.:
+# storageSets:
+#   storage-set-1:
+#     durability:
+#       sns: 1+0+0
+#       dix: 1+0+0
+#     controlUuid: "bfcb40c12e9f4fa4b924a787886a40b6"
+#     haUuid: "0789bc5f5f544197a5c204ed5d68ab07"
+#     nodes:
+#       ssc-vm-g4-rhev4-0009.colo.seagate.com:
+#         serverUuid: 50b3871d48fa4032bf27a211b4088df7
+#         dataUuid: "8466d0079fd44cd38164d8e31f5cd067"
+#         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
+#       ssc-vm-g4-rhev4-0010.colo.seagate.com:
+#         serverUuid: "05ceb17b5cdf47538db1bb89ccc247d2"
+#         dataUuid: "eb79cc372c7443cbac768db4313cc0e8"
+#         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
+# UUIDs are optional and if omitted, will be randomly generated, with
+# the exception of client UUIDs, which will not be configured if omitted.
+storageSets: {}
 
 ##
 ## Imported values from cortx-control Helm Chart. These will be changed.
@@ -273,9 +228,6 @@ cortxserver:
 
   authAdmin: cortx-admin
   authUser: cortx-user
-  # The below value should match the corresponding key in solution.yaml
-  # and is generally not changed by default.
-  authSecret: s3_auth_admin_secret
   maxStartTimeout: 240
   # An optional multi-line string that contains extra RGW configuration
   # settings. The string may contain template expressions, and is appended to
@@ -304,12 +256,12 @@ cortxdata:
   image: ghcr.io/seagate/centos:7
   replicas: 3
   # nodes is an array of Kubernetes worker node names on which CORTX will be deployed.
-  # NOTE: This parameter will eventually merge with .configmap.clusterStorageSets in some form.
+  # NOTE: This parameter will eventually merge with .storageSets in some form.
   nodes: []
   # cvgs is an array of container volume groups (CVG).
   # A CVG contains a name, type, an optional array of metadata devices, and
   # an array of data devices.
-  # NOTE: This parameter will eventually merge with .configmap.clusterStorageSets in some form.
+  # NOTE: This parameter will eventually merge with .storageSets in some form.
   # e.g:
   # cvgs:
   # - name: cvg-01
@@ -330,6 +282,14 @@ cortxdata:
     # -- The number of Motr IO containers per CORTX Data Pod.
     # As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node.
     containerGroupSize: 1
+    # An optional multi-line string that contains extra Motr configuration
+    # settings. The string may contain template expressions, and is appended to
+    # the end of the computed configuration.
+    # e.g.:
+    # extraConfiguration: |
+    #   md_size: 10
+    #   group_size: 1
+    extraConfiguration: ""
     resources:
       requests:
         memory: 1Gi
