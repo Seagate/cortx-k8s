@@ -5,8 +5,6 @@ import re
 import subprocess  # nosec
 import sys
 
-import yaml
-
 from checker import Checker
 from cluster import Cluster
 from utils import Logger, StopWatch
@@ -140,30 +138,16 @@ def run_deploy_test(cluster, logger, checker, shutdown=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', dest='cluster')
-    parser.add_argument('-s', dest='solution')
-    parser.add_argument('--namespace', dest='namespace')
+    parser.add_argument('-s', '--solution', action='append', required=True)
+    parser.add_argument('--localfs')
+
     parser.add_argument('--shutdown', action='store_true')
     parser.add_argument('--logdir', dest='logdir', default='.')
     args = parser.parse_args()
 
-    # Update namespace if specified
-    cluster_file = args.cluster
-    if args.namespace:
-        with open(args.cluster) as f:
-            cluster_data = yaml.safe_load(f)
-        cluster_data['namespace'] = args.namespace
-        cluster_file = f'{args.namespace}.' + args.cluster
-        # Note: This creates a new config file that is
-        # note deleted by this test.  I am ok with that.
-        # I prefer this than deleting a file that I might
-        # want to inspect after the test runs.
-        with open(cluster_file, 'w') as f:
-            yaml.dump(cluster_data, f)
-
     logger = Logger()
     checker = Checker(logger)
-    cluster = Cluster(args.solution, cluster_file)
+    cluster = Cluster(args.solution, localfs=args.localfs)
     run_deploy_test(cluster, logger, checker, args.shutdown)
 
     sys.exit(checker.result())
