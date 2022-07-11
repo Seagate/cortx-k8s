@@ -310,12 +310,25 @@ cortxdata:
     accessmodes:
       - ReadWriteOnce
 
-##
-## Imported values from cortx-client Helm Chart. These will be changed.
-##
-cortxclient:
+# Deploy CORTX Motr Client instances
+# Motr Clients are generally a developer tool used for testing purposes
+client:
+  # -- Enable installation of Client instances
   enabled: false
-  replicas: 1
-  image: ghcr.io/seagate/centos:7
-  motr:
-    numclientinst: 1
+  # -- Number of Client replicas
+  replicaCount: 1
+  # -- Number of Client instances (containers) per replica
+  instanceCount: 1
+  # Client image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-data
+  image:
+    # -- Client image registry
+    registry: ghcr.io
+    # -- Client image name
+    repository: seagate/cortx-data
+    # -- Client image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- Client image pull policy
+    # ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent

@@ -1,6 +1,6 @@
 # cortx
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-853](https://img.shields.io/badge/AppVersion-2.0.0--853-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-859](https://img.shields.io/badge/AppVersion-2.0.0--859-informational?style=flat-square)
 
 CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 
@@ -60,6 +60,13 @@ helm uninstall cortx
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| client.enabled | bool | `false` | Enable installation of Client instances |
+| client.image.pullPolicy | string | `"IfNotPresent"` | Client image pull policy ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images |
+| client.image.registry | string | `"ghcr.io"` | Client image registry |
+| client.image.repository | string | `"seagate/cortx-data"` | Client image name |
+| client.image.tag | string | Chart.AppVersion | Client image tag |
+| client.instanceCount | int | `1` | Number of Client instances (containers) per replica |
+| client.replicaCount | int | `1` | Number of Client replicas |
 | clusterDomain | string | `"cluster.local"` | Kubernetes Cluster Domain |
 | clusterId | string | Chart Release fullname | The unique ID of the CORTX cluster. |
 | clusterName | string | Chart Release fullname | The name of the CORTX cluster. |
@@ -67,10 +74,6 @@ helm uninstall cortx
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
-| cortxclient.enabled | bool | `false` |  |
-| cortxclient.image | string | `"ghcr.io/seagate/centos:7"` |  |
-| cortxclient.motr.numclientinst | int | `1` |  |
-| cortxclient.replicas | int | `1` |  |
 | cortxcontrol.agent.resources.limits.cpu | string | `"500m"` |  |
 | cortxcontrol.agent.resources.limits.memory | string | `"256Mi"` |  |
 | cortxcontrol.agent.resources.requests.cpu | string | `"250m"` |  |

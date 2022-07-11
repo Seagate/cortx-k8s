@@ -196,7 +196,7 @@ buildValues() {
         .cortxserver.enabled = ${components[server]}
         | .cortxha.enabled = ${components[ha]}
         | .cortxcontrol.enabled = ${components[control]}
-        | .cortxclient.enabled = ${components[client]}" "${values_file}"
+        | .client.enabled = ${components[client]}" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -306,15 +306,12 @@ buildValues() {
     [[ ${components[client]} == false ]] && client_replicas=0
 
     yq -i "
-        .cortxclient.replicas = ${client_replicas}
-        | .cortxclient.motr.numclientinst = ${num_motr_client}" "${values_file}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.cortxclient;
-            .image = $from.solution.images.cortxclient)
-        | $to' "${values_file}" "${solution_yaml}"
+        .client.replicaCount = ${client_replicas}
+        | .client.instanceCount = ${num_motr_client}
+        | .client.image = (
+            load(\"${solution_yaml}\")
+            | .solution.images.cortxclient
+            | capture(\"(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)\"))" "${values_file}"
 
     set +eu
 }
