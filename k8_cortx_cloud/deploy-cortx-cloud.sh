@@ -149,7 +149,7 @@ buildValues() {
     # Initialize
     yq --null-input "
         (.global.storageClass, .consul.server.storageClass) = \"local-path\"
-        | .configmap.cortxSecretName = \"${cortx_secret_name}\"" > "${values_file}"
+        | .existingSecret = \"${cortx_secret_name}\"" > "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
@@ -196,27 +196,12 @@ buildValues() {
         .cortxserver.enabled = ${components[server]}
         | .cortxha.enabled = ${components[ha]}
         | .cortxcontrol.enabled = ${components[control]}
-        | .cortxclient.enabled = ${components[client]}" "${values_file}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | $to.configmap.cortxMotr.extraConfiguration = $from.solution.common.motr.extra_configuration
-        | $to' "${values_file}" "${solution_yaml}"
+        | .client.enabled = ${components[client]}" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from | $from.solution.storage_sets[0].name as $name
-        | $to.configmap.clusterStorageSets.[$name].durability = $from.solution.storage_sets[0].durability
-        | $to' "${values_file}" "${solution_yaml}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.configmap;
-            .cortxControl.agent.resources           = $from.solution.common.resource_allocation.control.agent.resources
-            | .cortxMotr.motr.resources             = $from.solution.common.resource_allocation.data.motr.resources
-            | .cortxMotr.confd.resources            = $from.solution.common.resource_allocation.data.confd.resources)
+        | $to.storageSets.[$name].durability = $from.solution.storage_sets[0].durability
         | $to' "${values_file}" "${solution_yaml}"
 
     local hax_service_protocol
@@ -312,6 +297,7 @@ buildValues() {
             | .nodes                   = $from.solution.storage_sets[0].nodes
             | .cvgs                    = $from.solution.storage_sets[0].storage
             | .motr.containerGroupSize = $from.solution.storage_sets[0].container_group_size
+            | .motr.extraConfiguration = $from.solution.common.motr.extra_configuration
             | .motr.resources          = $from.solution.common.resource_allocation.data.motr.resources
             | .confd.resources         = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
@@ -320,15 +306,12 @@ buildValues() {
     [[ ${components[client]} == false ]] && client_replicas=0
 
     yq -i "
-        .cortxclient.replicas = ${client_replicas}
-        | .cortxclient.motr.numclientinst = ${num_motr_client}" "${values_file}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.cortxclient;
-            .image = $from.solution.images.cortxclient)
-        | $to' "${values_file}" "${solution_yaml}"
+        .client.replicaCount = ${client_replicas}
+        | .client.instanceCount = ${num_motr_client}
+        | .client.image = (
+            load(\"${solution_yaml}\")
+            | .solution.images.cortxclient
+            | capture(\"(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)\"))" "${values_file}"
 
     set +eu
 }

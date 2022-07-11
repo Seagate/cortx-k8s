@@ -1,6 +1,6 @@
 # cortx
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-853](https://img.shields.io/badge/AppVersion-2.0.0--853-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-859](https://img.shields.io/badge/AppVersion-2.0.0--859-informational?style=flat-square)
 
 CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 
@@ -60,34 +60,20 @@ helm uninstall cortx
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| client.enabled | bool | `false` | Enable installation of Client instances |
+| client.image.pullPolicy | string | `"IfNotPresent"` | Client image pull policy ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images |
+| client.image.registry | string | `"ghcr.io"` | Client image registry |
+| client.image.repository | string | `"seagate/cortx-data"` | Client image name |
+| client.image.tag | string | Chart.AppVersion | Client image tag |
+| client.instanceCount | int | `1` | Number of Client instances (containers) per replica |
+| client.replicaCount | int | `1` | Number of Client replicas |
 | clusterDomain | string | `"cluster.local"` | Kubernetes Cluster Domain |
-| configmap.clusterDomain | string | `"cluster.local"` |  |
-| configmap.clusterId | string | `""` |  |
-| configmap.clusterName | string | `"cortx-cluster"` |  |
-| configmap.clusterStorageSets | object | `{}` |  |
-| configmap.cortxControl.agent.resources.limits.cpu | string | `"500m"` |  |
-| configmap.cortxControl.agent.resources.limits.memory | string | `"256Mi"` |  |
-| configmap.cortxControl.agent.resources.requests.cpu | string | `"250m"` |  |
-| configmap.cortxControl.agent.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxMotr.confd.resources.limits.cpu | string | `"500m"` |  |
-| configmap.cortxMotr.confd.resources.limits.memory | string | `"512Mi"` |  |
-| configmap.cortxMotr.confd.resources.requests.cpu | string | `"250m"` |  |
-| configmap.cortxMotr.confd.resources.requests.memory | string | `"128Mi"` |  |
-| configmap.cortxMotr.extraConfiguration | string | `""` |  |
-| configmap.cortxMotr.motr.resources.limits.cpu | string | `"1000m"` |  |
-| configmap.cortxMotr.motr.resources.limits.memory | string | `"2Gi"` |  |
-| configmap.cortxMotr.motr.resources.requests.cpu | string | `"250m"` |  |
-| configmap.cortxMotr.motr.resources.requests.memory | string | `"1Gi"` |  |
-| configmap.cortxSecretName | string | `"cortx-secret"` |  |
-| configmap.cortxSecretValues | object | `{}` |  |
+| clusterId | string | A random UUID (v4) | The unique ID of the CORTX cluster. |
+| clusterName | string | Chart Release fullname | The name of the CORTX cluster. |
 | consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul client agent containers |
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
-| cortxclient.enabled | bool | `false` |  |
-| cortxclient.image | string | `"ghcr.io/seagate/centos:7"` |  |
-| cortxclient.motr.numclientinst | int | `1` |  |
-| cortxclient.replicas | int | `1` |  |
 | cortxcontrol.agent.resources.limits.cpu | string | `"500m"` |  |
 | cortxcontrol.agent.resources.limits.memory | string | `"256Mi"` |  |
 | cortxcontrol.agent.resources.requests.cpu | string | `"250m"` |  |
@@ -108,6 +94,7 @@ helm uninstall cortx
 | cortxdata.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
 | cortxdata.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
 | cortxdata.motr.containerGroupSize | int | `1` | The number of Motr IO containers per CORTX Data Pod. As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node. |
+| cortxdata.motr.extraConfiguration | string | `""` |  |
 | cortxdata.motr.resources.limits.cpu | string | `"1000m"` |  |
 | cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
 | cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |
@@ -133,7 +120,6 @@ helm uninstall cortx
 | cortxha.k8s_monitor.resources.requests.memory | string | `"128Mi"` |  |
 | cortxha.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
 | cortxserver.authAdmin | string | `"cortx-admin"` |  |
-| cortxserver.authSecret | string | `"s3_auth_admin_secret"` |  |
 | cortxserver.authUser | string | `"cortx-user"` |  |
 | cortxserver.enabled | bool | `true` |  |
 | cortxserver.extraConfiguration | string | `""` |  |
@@ -152,6 +138,7 @@ helm uninstall cortx
 | cortxserver.service.ports.http | int | `80` |  |
 | cortxserver.service.ports.https | int | `443` |  |
 | cortxserver.service.type | string | `"ClusterIP"` |  |
+| existingSecret | string | `""` | The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail. |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
 | externalConsul.endpoints | list | `[]` |  |
@@ -182,3 +169,4 @@ helm uninstall cortx
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and `create` is true, a name is generated using the fullname template |
+| storageSets | object | `{}` |  |

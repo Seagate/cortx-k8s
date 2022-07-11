@@ -23,8 +23,8 @@
 {{- end -}}
 {{- end -}}
 {{- $clientHostnames := list -}}
-{{- if .Values.cortxclient.enabled -}}
-{{- range $i := until (int .Values.cortxclient.replicas) -}}
+{{- if .Values.client.enabled -}}
+{{- range $i := until (int .Values.client.replicaCount) -}}
 {{- $clientHostnames = append $clientHostnames (printf "%s-%d.%s" (include "cortx.client.fullname" $) $i (include "cortx.client.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
@@ -69,7 +69,7 @@ cortx:
   rgw:
     auth_user: {{ .Values.cortxserver.authUser }}
     auth_admin: {{ .Values.cortxserver.authAdmin }}
-    auth_secret: {{ .Values.cortxserver.authSecret }}
+    auth_secret: s3_auth_admin_secret
     public:
       endpoints:
       - {{ printf "http://%s-0:%d" (include "cortx.server.fullname" .) (.Values.cortxserver.service.ports.http | int) }}
@@ -126,9 +126,9 @@ cortx:
       - {{ printf "tcp://%s:%d" . (include "cortx.server.motrClientPort" $ | int) }}
       {{- end }}
     {{- end }}
-    {{- if .Values.cortxclient.enabled }}
+    {{- if .Values.client.enabled }}
     - name: motr_client
-      num_instances: {{ .Values.cortxclient.motr.numclientinst | int }}
+      num_instances: {{ .Values.client.instanceCount | int }}
       num_subscriptions: 1
       subscriptions:
       - fdmi
@@ -139,10 +139,10 @@ cortx:
     {{- end }}
     limits:
       services:
-      {{- include "config.yaml.service.limits" (dict "name" "ios" "resources" .Values.configmap.cortxMotr.motr.resources) | nindent 6 }}
-      {{- include "config.yaml.service.limits" (dict "name" "confd" "resources" .Values.configmap.cortxMotr.confd.resources) | nindent 6 }}
-    {{- if .Values.configmap.cortxMotr.extraConfiguration }}
-    {{- tpl .Values.configmap.cortxMotr.extraConfiguration . | nindent 4 }}
+      {{- include "config.yaml.service.limits" (dict "name" "ios" "resources" .Values.cortxdata.motr.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "confd" "resources" .Values.cortxdata.confd.resources) | nindent 6 }}
+    {{- if .Values.cortxdata.motr.extraConfiguration }}
+    {{- tpl .Values.cortxdata.motr.extraConfiguration . | nindent 4 }}
     {{- end }}
   {{- if .Values.cortxcontrol.enabled }}
   csm:
@@ -156,7 +156,7 @@ cortx:
     mgmt_secret: csm_mgmt_admin_secret
     limits:
       services:
-      {{- include "config.yaml.service.limits" (dict "name" "agent" "resources" .Values.configmap.cortxControl.agent.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "agent" "resources" .Values.cortxcontrol.agent.resources) | nindent 6 }}
   {{- end }}
   {{- if .Values.cortxha.enabled }}
   ha:

@@ -7,8 +7,8 @@
 
 {{- define "cluster.yaml" -}}
 cluster:
-  name: {{ .Values.configmap.clusterName }}
-  id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
+  name: {{ default (include "cortx.fullname" .) .Values.clusterName | quote }}
+  id: {{ default uuidv4 .Values.clusterId | quote }}
   node_types:
   {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
   {{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
@@ -69,7 +69,7 @@ cluster:
         - motr_client
     - name: hare
   {{- $root := . }}
-  {{- with .Values.configmap.clusterStorageSets }}
+  {{- with .Values.storageSets }}
   storage_sets:
   {{- range $storageSetName, $storageSet := . }}
   - name: {{ $storageSetName }}
@@ -101,7 +101,7 @@ cluster:
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "server_node") | nindent 4 }}
     {{- end }}
     {{- end }}
-    {{- range $i := until (int $root.Values.cortxclient.replicas) }}
+    {{- range $i := until (int $root.Values.client.replicaCount) }}
     {{- $nodeName := printf "%s-%d" (include "cortx.client.fullname" $root) $i }}
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.client.serviceDomain" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "client_node") | nindent 4 }}
