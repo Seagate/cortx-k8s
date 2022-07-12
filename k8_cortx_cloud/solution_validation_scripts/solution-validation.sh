@@ -48,7 +48,7 @@ fi
 ### CORTX-29861 Temporary namespace length limitation enforced
 ### This can be removed once namespaces of nominal length (20+ characters) have been validated repeatedly.
 observed_namespace_length=$(yq '.solution.namespace | length' "${solution_yaml}")
-maximum_namespace_length=8
+maximum_namespace_length=20
 
 if [[ "${observed_namespace_length}" -gt "${maximum_namespace_length}" ]]; then
     result_str="The maximum length of the targeted Kubernetes namespace is currently limited to ${maximum_namespace_length} characters. The specified namespace in ${solution_yaml} has a length of ${observed_namespace_length} characters."
