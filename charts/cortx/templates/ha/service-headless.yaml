@@ -1,4 +1,4 @@
-{{- if .Values.cortxha.enabled }}
+{{- if .Values.ha.enabled }}
 apiVersion: v1
 kind: Service
 metadata:

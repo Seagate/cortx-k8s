@@ -55,7 +55,7 @@ cluster:
       services:
       - agent
   {{- end }}
-  {{- if .Values.cortxha.enabled }}
+  {{- if .Values.ha.enabled }}
   - name: ha_node
     components:
     - name: utils
@@ -81,7 +81,7 @@ cluster:
     {{- $nodeName := (include "cortx.control.fullname" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "id" $nodeName "type" "control_node") | nindent 4 }}
     {{- end }}
-    {{- if $root.Values.cortxha.enabled }}
+    {{- if $root.Values.ha.enabled }}
     {{- $nodeName := (include "cortx.ha.fullname" $root) }}
     {{- $hostName := (printf "%s-headless" $nodeName) }}
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "ha_node") | nindent 4 }}
