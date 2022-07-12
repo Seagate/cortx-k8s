@@ -143,7 +143,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 3. Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
 
-   - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created for you. **There is currently a limitation on the maximum length of the namespace to 8 characters.**
+   - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created for you. **There is currently a limitation on the maximum length of the namespace to 20 characters.**
 
    - Update the `deployment_type` with the desired deployment mode. See under [Global Parameters](#global-parameters) for more details.
 
@@ -252,7 +252,7 @@ All paths below are prefixed with `solution.` for fully-qualified naming and are
 
 | Name              | Description                                                                                                                  | Default Value |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `namespace`       | The Kubernetes namespace that all CORTX-related resources will be deployed into. Currently limited to a maximum of 8 characters.
+| `namespace`       | The Kubernetes namespace that all CORTX-related resources will be deployed into. Currently limited to a maximum of 20 characters.
 | `deployment_type` | The type of deployment. This determines which Kubernetes resources are created. Valid values are `standard` and `data-only`. | `standard`    |
 
 ### Secret parameters
