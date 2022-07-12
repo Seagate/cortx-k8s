@@ -38,81 +38,12 @@ spec:
             secretName: {{ include "cortx.secretName" . }}
         - name: data
           emptyDir: {}
-      {{- $image := include "cortx.client.image" . }}
-      {{- $imagePullPolicy := .Values.client.image.pullPolicy }}
       initContainers:
-      - name: cortx-setup
-        image: {{ $image }}
-        imagePullPolicy: {{ $imagePullPolicy | quote }}
-        command:
-          - /bin/sh
-        args:
-          - -c
-        {{- if eq $image "ghcr.io/seagate/centos:7" }}
-          - sleep $(shuf -i 5-10 -n 1)s
-        {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-        {{- end }}
-        volumeMounts:
-          - name: cortx-configuration
-            mountPath: /etc/cortx/solution
-          - name: cortx-ssl-cert
-            mountPath: /etc/cortx/solution/ssl
-          - name: data
-            mountPath: /etc/cortx
-          - name: configuration-secrets
-            mountPath: /etc/cortx/solution/secret
-            readOnly: true
-        env:
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
+        {{- include "cortx.containers.setup" (dict "image" .Values.client.image "root" . ) | nindent 8 }}
       containers:
-        - name: cortx-hax
-          image: {{ $image }}
-          imagePullPolicy: {{ $imagePullPolicy | quote }}
-          {{- if eq $image "ghcr.io/seagate/centos:7" }}
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command:
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
-          {{- end }}
-          volumeMounts:
-            - name: cortx-configuration
-              mountPath: /etc/cortx/solution
-            - name: cortx-ssl-cert
-              mountPath: /etc/cortx/solution/ssl
-            - name: data
-              mountPath: /etc/cortx
-          env:
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-          ports:
-          - name: hax-http
-            containerPort: {{ .Values.hare.hax.ports.http.port | int }}
-            protocol: TCP
-          - name: hax-tcp
-            containerPort: {{ include "cortx.hare.hax.tcpPort" . | int }}
-            protocol: TCP
-          {{- if .Values.hare.hax.resources }}
-          resources: {{- toYaml .Values.hare.hax.resources | nindent 12 }}
-          {{- end }}
-          securityContext:
-            allowPrivilegeEscalation: false
+        {{- include "cortx.containers.hax" (dict "image" .Values.client.image "root" . ) | nindent 8 }}
+        {{- $image := include "cortx.client.image" . }}
+        {{- $imagePullPolicy := .Values.client.image.pullPolicy }}
         {{- range $i := until (.Values.client.instanceCount | int) }}
         - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
           image: {{ $image }}

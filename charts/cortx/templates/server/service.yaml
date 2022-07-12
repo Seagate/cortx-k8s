@@ -1,6 +1,6 @@
-{{- if .Values.cortxserver.enabled }}
-{{- $svc := .Values.cortxserver.service -}}
-{{- $count := ($svc.count | int) -}}
+{{- if .Values.server.enabled }}
+{{- $svc := .Values.server.service -}}
+{{- $count := ($svc.instanceCount | int) -}}
 {{- if gt $count 0 }}
 {{- $isLB := eq $svc.type "LoadBalancer" -}}
 {{- $nodePortAllowed := or (eq $svc.type "NodePort") $isLB -}}

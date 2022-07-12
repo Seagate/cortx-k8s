@@ -185,15 +185,15 @@ buildValues() {
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.cortxserver;
-            .authAdmin = $from.solution.common.s3.default_iam_users.auth_admin
-            | .authUser = $from.solution.common.s3.default_iam_users.auth_user
+        | with($to.server;
+            .auth.adminUser = $from.solution.common.s3.default_iam_users.auth_admin
+            | .auth.adminAccessKey = $from.solution.common.s3.default_iam_users.auth_user
             | .maxStartTimeout = $from.solution.common.s3.max_start_timeout
             | .extraConfiguration = $from.solution.common.s3.extra_configuration)
         | $to' "${values_file}" "${solution_yaml}"
 
     yq -i "
-        .cortxserver.enabled = ${components[server]}
+        .server.enabled = ${components[server]}
         | .cortxha.enabled = ${components[ha]}
         | .control.enabled = ${components[control]}
         | .client.enabled = ${components[client]}" "${values_file}"
@@ -218,13 +218,13 @@ buildValues() {
     local s3_service_nodeports_https
     s3_service_nodeports_http=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.http')
     s3_service_nodeports_https=$(getSolutionValue 'solution.common.external_services.s3.nodePorts.https')
-    [[ -n ${s3_service_nodeports_http} ]] && yq -i ".cortxserver.service.nodePorts.http = ${s3_service_nodeports_http}" "${values_file}"
-    [[ -n ${s3_service_nodeports_https} ]] && yq -i ".cortxserver.service.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
+    [[ -n ${s3_service_nodeports_http} ]] && yq -i ".server.service.nodePorts.http = ${s3_service_nodeports_http}" "${values_file}"
+    [[ -n ${s3_service_nodeports_https} ]] && yq -i ".server.service.nodePorts.https = ${s3_service_nodeports_https}" "${values_file}"
 
     yq -i "
-        with(.cortxserver.service; (
+        with(.server.service; (
             .type = \"${s3_service_type}\"
-            | .count = ${s3_service_count}
+            | .instanceCount = ${s3_service_count}
             | .ports.http = ${s3_service_ports_http}
             | .ports.https = ${s3_service_ports_https}))" "${values_file}"
 
@@ -265,12 +265,12 @@ buildValues() {
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.cortxserver;
-            .image           = $from.solution.images.cortxserver
+        | with($to.server;
+            .image           = ($from.solution.images.cortxserver | capture("(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)"))
             | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
-    yq -i ".cortxserver.replicas = ${total_server_pods}" "${values_file}"
+    yq -i ".server.replicaCount = ${total_server_pods}" "${values_file}"
 
     data_replicas=${data_node_count}
     [[ ${components[data]} == false ]] && data_replicas=0
