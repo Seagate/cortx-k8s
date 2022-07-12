@@ -296,11 +296,12 @@ server:
     accessModes:
       - ReadWriteOnce
 
+  # Authentication settings
   auth:
-    # -- Name of the admin user to create when initializing the cluster
-    adminUser: cortx-admin
-    # -- Access Key of the admin user
-    adminAccessKey: cortx-user
+    # -- Name of the admin user that is created when initializing the cluster
+    adminUser: cortx-user
+    # -- The admin user's Access Key
+    adminAccessKey: cortx-admin
 
   # TODO: can this be removed?
   maxStartTimeout: 240

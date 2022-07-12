@@ -186,8 +186,8 @@ buildValues() {
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.server;
-            .auth.adminUser = $from.solution.common.s3.default_iam_users.auth_admin
-            | .auth.adminAccessKey = $from.solution.common.s3.default_iam_users.auth_user
+            .auth.adminUser = $from.solution.common.s3.default_iam_users.auth_user
+            | .auth.adminAccessKey = $from.solution.common.s3.default_iam_users.auth_admin
             | .maxStartTimeout = $from.solution.common.s3.max_start_timeout
             | .extraConfiguration = $from.solution.common.s3.extra_configuration)
         | $to' "${values_file}" "${solution_yaml}"

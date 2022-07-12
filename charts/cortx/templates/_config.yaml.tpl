@@ -67,8 +67,8 @@ cortx:
     message_bus_backend: kafka
   {{- if .Values.server.enabled }}
   rgw:
-    auth_user: {{ .Values.server.auth.adminAccessKey }}
-    auth_admin: {{ .Values.server.auth.adminUser }}
+    auth_user: {{ .Values.server.auth.adminUser }}
+    auth_admin: {{ .Values.server.auth.adminAccessKey }}
     auth_secret: s3_auth_admin_secret
     public:
       endpoints:
