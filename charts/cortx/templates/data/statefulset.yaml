@@ -2,11 +2,24 @@
 {{- . | lower | trimPrefix "/" | replace "/" "-" -}}
 {{- end -}}
 
+{{- define "cortx.data.blockDeviceStorageClass" -}}
+{{- $storageClass := .Values.data.blockDevicePersistence.storageClass -}}
+  {{- if $storageClass -}}
+    {{- if (eq "-" $storageClass) -}}
+      {{- printf "storageClassName: \"\"" -}}
+    {{- else -}}
+      {{- printf "storageClassName: %s" $storageClass -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* Currently only one storage set is supported */}}
 {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
-{{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
-{{- range $stsIndex := until $statefulSetCount -}}
-{{- $startingCvgIndex := (mul $stsIndex ($validatedContainerGroupSize | int)) | int -}}
-{{- $endingCvgIndex := (add (mul $stsIndex ($validatedContainerGroupSize | int)) ($validatedContainerGroupSize | int)) | int -}}
+{{- if gt $statefulSetCount 0 }}
+{{- $storageSet := first .Values.storageSets }}
+{{- $cvgGroups := $storageSet.storage | chunk ($storageSet.containerGroupSize | int) }}
+{{- range $stsIndex := until $statefulSetCount }}
+{{- $cvgGroup := index $cvgGroups $stsIndex }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -18,7 +31,7 @@ metadata:
 spec:
   podManagementPolicy: Parallel
   serviceName: {{ include "cortx.data.fullname" $ }}-headless
-  replicas: {{ $.Values.cortxdata.replicas }}
+  replicas: {{ $.Values.data.replicaCount }}
   selector:
     matchLabels: {{- include "cortx.selectorLabels" $ | nindent 6 }}
       app.kubernetes.io/component: data
@@ -51,10 +64,12 @@ spec:
           configMap:
             defaultMode: 0700
             name: {{ include "cortx.data.fullname" $ }}-node
+      {{- $image := include "cortx.data.image" $ }}
+      {{- $imagePullPolicy := $.Values.data.image.pullPolicy }}
       initContainers:
       - name: node-config
-        image: {{ $.Values.cortxdata.image }}
-        imagePullPolicy: IfNotPresent
+        image: {{ $image }}
+        imagePullPolicy: {{ $imagePullPolicy | quote }}
         command:
           - /nodeconfig/entrypoint.sh
         volumeMounts:
@@ -63,96 +78,13 @@ spec:
           readOnly: true
         securityContext:
           privileged: true
-      - name: cortx-setup
-        image: {{ $.Values.cortxdata.image }}
-        imagePullPolicy: IfNotPresent
-        command:
-          - /bin/sh
-        {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
-        args:
-          - -c
-          - sleep $(shuf -i 5-10 -n 1)s
-        {{- else }}
-        args:
-          - -c
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-        {{- end }}
-        volumeDevices:
-          {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-          {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
-          {{- if $cvg.devices.metadata }}
-          - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
-            devicePath: {{ $cvg.devices.metadata.device | quote }}
-          {{- end }}
-          {{- range $cvg.devices.data }}
-          - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device ) }}
-            devicePath: {{ .device | quote }}
-          {{- end }}
-          {{- end }}
-        volumeMounts:
-          - name: cortx-configuration
-            mountPath: /etc/cortx/solution
-          - name: cortx-ssl-cert
-            mountPath: /etc/cortx/solution/ssl
-          - name: data
-            mountPath: /etc/cortx
-          - name: configuration-secrets
-            mountPath: /etc/cortx/solution/secret
-            readOnly: true
-        env:
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
+      {{- include "cortx.containers.dataSetup" (dict "cvgGroup" $cvgGroup "root" $ ) | nindent 6 }}
       containers:
-        - name: cortx-hax
-          image: {{ $.Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
-          command: ["/bin/sleep", "3650d"]
-          {{- else }}
-          command:
-            - /bin/sh
-          args:
-            - -c
-            - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
-          {{- end }}
-          volumeMounts:
-            - name: cortx-configuration
-              mountPath: /etc/cortx/solution
-            - name: cortx-ssl-cert
-              mountPath: /etc/cortx/solution/ssl
-            - name: data
-              mountPath: /etc/cortx
-          env:
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          ports:
-          - name: hax-http
-            containerPort: {{ $.Values.hare.hax.ports.http.port | int }}
-            protocol: TCP
-          - name: hax-tcp
-            containerPort: {{ include "cortx.hare.hax.tcpPort" . | int }}
-            protocol: TCP
-          {{- if $.Values.hare.hax.resources }}
-          resources: {{- toYaml $.Values.hare.hax.resources | nindent 12 }}
-          {{- end }}
-          securityContext:
-            allowPrivilegeEscalation: false
+        {{- include "cortx.containers.hax" (dict "image" $.Values.data.image "root" $ ) | nindent 8 }}
         - name: cortx-motr-confd
-          image: {{ $.Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy | quote }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command:
@@ -161,18 +93,7 @@ spec:
             - -c
             - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
           {{- end }}
-          volumeDevices:
-            {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-            {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
-            {{- if $cvg.devices.metadata }}
-            - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
-              devicePath: {{ $cvg.devices.metadata.device | quote }}
-            {{- end }}
-            {{- range $cvg.devices.data }}
-            - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device ) }}
-              devicePath: {{ .device | quote }}
-            {{- end }}
-            {{- end }}
+          {{- include "cortx.containers.dataBlockDeviceVolumes" $cvgGroup | nindent 10 }}
           volumeMounts:
             - name: cortx-configuration
               mountPath: /etc/cortx/solution
@@ -192,16 +113,16 @@ spec:
           ports:
           - name: confd-tcp
             containerPort: {{ include "cortx.data.confdPort" $ | int }}
-          {{- if $.Values.cortxdata.confd.resources }}
-          resources: {{- toYaml $.Values.cortxdata.confd.resources | nindent 12 }}
+          {{- if $.Values.data.confd.resources }}
+          resources: {{- toYaml $.Values.data.confd.resources | nindent 12 }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
-        {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-        {{- $ioIndex := (add1 (mod $cvgIndex $validatedContainerGroupSize)) | int }}
+        {{- range $cvgIndex := until (len $cvgGroup) }}
+        {{- $ioIndex := add1 $cvgIndex }}
         - name: {{ printf "cortx-motr-io-%03d" $ioIndex }}
-          image: {{ $.Values.cortxdata.image }}
-          imagePullPolicy: IfNotPresent
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy | quote }}
           env:
             - name: IO_INDEX
               value: {{ printf "%d" $ioIndex | quote }}
@@ -213,7 +134,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-          {{- if eq $.Values.cortxdata.image  "ghcr.io/seagate/centos:7" }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command:
@@ -222,16 +143,7 @@ spec:
             - -c
             - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
-          volumeDevices:
-            {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
-            {{- if $cvg.devices.metadata }}
-            - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
-              devicePath: {{ $cvg.devices.metadata.device | quote }}
-            {{- end }}
-            {{- range $cvg.devices.data }}
-            - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device ) }}
-              devicePath: {{ .device | quote }}
-            {{- end }}
+          {{- include "cortx.containers.dataBlockDeviceVolumes" ((index $cvgGroup $cvgIndex) | list) | nindent 10 }}
           volumeMounts:
             - name: cortx-configuration
               mountPath: /etc/cortx/solution
@@ -242,8 +154,8 @@ spec:
           ports:
           - name: {{ printf "ios-%d-tcp" $ioIndex }}
             containerPort: {{ printf "%d" (add $ioIndex (include "cortx.data.iosPort" $) | int) }}
-          {{- if $.Values.cortxdata.motr.resources }}
-          resources: {{- toYaml $.Values.cortxdata.motr.resources | nindent 12 }}
+          {{- if $.Values.data.ios.resources }}
+          resources: {{- toYaml $.Values.data.ios.resources | nindent 12 }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
@@ -252,34 +164,19 @@ spec:
   - metadata:
       name: data
     spec:
-      accessModes: {{- toYaml $.Values.cortxdata.localpathpvc.accessmodes | nindent 6 }}
+      accessModes: {{- toYaml $.Values.data.persistence.accessModes | nindent 6 }}
       storageClassName: local-path
       resources:
         requests:
-          storage: {{ $.Values.cortxdata.localpathpvc.requeststoragesize }}
-  {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-  {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
-  {{- if $cvg.devices.metadata }}
-  - metadata:
-      name: {{ printf "block-%s" (include "cortx.data.devicePathToString" $cvg.devices.metadata.device) }}
-    spec:
-      accessModes: {{- toYaml $.Values.cortxdata.persistentStorage.accessModes | nindent 6 }}
-      volumeMode: {{ $.Values.cortxdata.persistentStorage.volumeMode | quote }}
-      storageClassName: {{ $.Values.cortxdata.storageClassName | quote }}
-      resources:
-        requests:
-          storage: {{ $cvg.devices.metadata.size | quote }}
-      selector:
-        matchLabels:
-          cortx.io/device-path: {{ include "cortx.data.devicePathToString" $cvg.devices.metadata.device | quote }}
-  {{- end }}
-  {{- range $cvg.devices.data }}
+          storage: {{ $.Values.data.persistence.size }}
+  {{- range $cvg := $cvgGroup }}
+  {{- range concat (list $cvg.devices.metadata) $cvg.devices.data }}
   - metadata:
       name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
     spec:
-      accessModes: {{- toYaml $.Values.cortxdata.persistentStorage.accessModes | nindent 6 }}
-      volumeMode: {{ $.Values.cortxdata.persistentStorage.volumeMode | quote }}
-      storageClassName: {{ $.Values.cortxdata.storageClassName | quote }}
+      accessModes: {{- toYaml $.Values.data.blockDevicePersistence.accessModes | nindent 6 }}
+      volumeMode: {{ $.Values.data.blockDevicePersistence.volumeMode | quote }}
+      {{- include "cortx.data.blockDeviceStorageClass" $ | nindent 6 }}
       resources:
         requests:
           storage: {{ .size | quote }}
@@ -289,4 +186,5 @@ spec:
   {{- end }}
   {{- end }}
 ---
+{{- end }}
 {{- end }}

@@ -190,24 +190,21 @@ Return the Motr confd endpoint port
 
 {{/*
 Return the number of StatefulSets required to fullfil the containerGroupSize to CVG mapping defined by the user
-This is calculated by (Number of CVGs in solution.yaml) / ({}.containerGroupSize).
+This is calculated by (Number of CVGs in storage set) / (storage set containerGroupSize).
 If CVGs are defined, the minimum value this should return is 1.
 If CVGs are not defined, this should return 0.
 */}}
 {{- define "cortx.data.statefulSetCount" -}}
-{{- if eq (len .Values.cortxdata.cvgs) 0 -}}
-0
-{{- else -}}
-{{- printf "%d" (max 1 (ceil (div (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize | int)))) -}}
+{{/* Currently a maximum of one storage set is supported */}}
+{{- if gt (len .Values.storageSets) 1 -}}
+{{- fail "A maximum of one storage set is currently supported" -}}
 {{- end -}}
+{{- $cvgCount := 0 -}}
+{{- $storageSet := first .Values.storageSets -}}
+{{- if and $storageSet.storage ($storageSet.containerGroupSize | int) -}}
+  {{- $cvgCount = len ($storageSet.storage | chunk ($storageSet.containerGroupSize | int)) -}}
 {{- end -}}
-
-{{/*
-Returns the maximally-allowed value for ContainerGroupSize,
-which prevents the containerGroupSize parameter from being larger than the number of CVGs.
-*/}}
-{{- define "cortx.data.validatedContainerGroupSize" -}}
-{{- printf "%d" (min (len .Values.cortxdata.cvgs) (.Values.cortxdata.motr.containerGroupSize | int)) -}}
+{{- printf "%d" $cvgCount -}}
 {{- end -}}
 
 {{/*

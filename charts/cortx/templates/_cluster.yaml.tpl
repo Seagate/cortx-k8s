@@ -6,15 +6,18 @@
 {{- end -}}
 
 {{- define "cluster.yaml" -}}
+{{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
+{{- $storageSet := dict -}}
+{{- $cvgGroups := list -}}
+{{- if gt $statefulSetCount 0 -}}
+{{- $storageSet = first .Values.storageSets -}}
+{{- $cvgGroups = $storageSet.storage | chunk ($storageSet.containerGroupSize | int) -}}
+{{- end -}}
 cluster:
   name: {{ default (include "cortx.fullname" .) .Values.clusterName | quote }}
   id: {{ default uuidv4 .Values.clusterId | quote }}
   node_types:
-  {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
-  {{- $validatedContainerGroupSize := (include "cortx.data.validatedContainerGroupSize" .) | int -}}
-  {{- range $stsIndex := until $statefulSetCount }}
-  {{- $startingCvgIndex := (mul $stsIndex ($validatedContainerGroupSize | int)) | int }}
-  {{- $endingCvgIndex := (add (mul $stsIndex ($validatedContainerGroupSize | int)) ($validatedContainerGroupSize | int)) | int }}
+  {{- range $stsIndex := until (len $cvgGroups) }}
   - name: {{ include "cortx.data.dataNodeName" $stsIndex }}
     components:
       - name: utils
@@ -23,8 +26,7 @@ cluster:
           - io
       - name: hare
     storage:
-    {{- range $cvgIndex := untilStep $startingCvgIndex $endingCvgIndex 1 }}
-    {{- $cvg := index $.Values.cortxdata.cvgs $cvgIndex }}
+    {{- range $cvg := index $cvgGroups $stsIndex }}
     - name: {{ $cvg.name }}
       type: {{ $cvg.type }}
       devices:
@@ -71,8 +73,8 @@ cluster:
   {{- $root := . }}
   {{- with .Values.storageSets }}
   storage_sets:
-  {{- range $storageSetName, $storageSet := . }}
-  - name: {{ $storageSetName }}
+  {{- range $storageSet := . }}
+  - name: {{ $storageSet.name }}
     durability:
       sns: {{ $storageSet.durability.sns | quote }}
       dix: {{ $storageSet.durability.dix | quote }}
@@ -87,7 +89,7 @@ cluster:
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "ha_node") | nindent 4 }}
     {{- end }}
     {{- range $stsIndex := until $statefulSetCount }}
-    {{- range $i := until (int $root.Values.cortxdata.replicas) }}
+    {{- range $i := until (int $root.Values.data.replicaCount) }}
     {{- $nodeType := (include "cortx.data.dataNodeName" $stsIndex) }}
     {{- $nodeName := printf "%s-%d" (include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex)) $i }}
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.data.serviceDomain" $root) }}

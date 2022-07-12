@@ -85,25 +85,21 @@ helm uninstall cortx
 | control.service.nodePorts.https | string | `""` | Node port for HTTPS for LoadBalancer and NodePort service types |
 | control.service.ports.https | int | `8081` | Control API service HTTPS port |
 | control.service.type | string | `"ClusterIP"` | Kubernetes service type |
-| cortxdata.confd.resources.limits.cpu | string | `"500m"` |  |
-| cortxdata.confd.resources.limits.memory | string | `"512Mi"` |  |
-| cortxdata.confd.resources.requests.cpu | string | `"250m"` |  |
-| cortxdata.confd.resources.requests.memory | string | `"128Mi"` |  |
-| cortxdata.cvgs | list | `[]` |  |
-| cortxdata.image | string | `"ghcr.io/seagate/centos:7"` |  |
-| cortxdata.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
-| cortxdata.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxdata.motr.containerGroupSize | int | `1` | The number of Motr IO containers per CORTX Data Pod. As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node. |
-| cortxdata.motr.extraConfiguration | string | `""` |  |
-| cortxdata.motr.resources.limits.cpu | string | `"1000m"` |  |
-| cortxdata.motr.resources.limits.memory | string | `"2Gi"` |  |
-| cortxdata.motr.resources.requests.cpu | string | `"250m"` |  |
-| cortxdata.motr.resources.requests.memory | string | `"1Gi"` |  |
-| cortxdata.nodes | list | `[]` |  |
-| cortxdata.persistentStorage.accessModes[0] | string | `"ReadWriteMany"` |  |
-| cortxdata.persistentStorage.volumeMode | string | `"Block"` |  |
-| cortxdata.replicas | int | `3` |  |
-| cortxdata.storageClassName | string | `"local-block-storage"` |  |
+| data.blockDevicePersistence.accessModes | list | `["ReadWriteOnce"]` | Persistent volume access modes |
+| data.blockDevicePersistence.storageClass | string | `""` | Persistent Volume storage class |
+| data.blockDevicePersistence.volumeMode | string | `"Block"` | Persistent volume mode |
+| data.confd.resources.limits | object | `{"cpu":"500m","memory":"512Mi"}` | The resource limits for the Motr confd containers and processes |
+| data.confd.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the Motr confd containers and processes |
+| data.extraConfiguration | string | `""` | Extra configuration, as a multiline string, to be appended to the Motr configuration. Template expressions are allowed. The result is appended to the end of the computed configuration. |
+| data.image.pullPolicy | string | `"IfNotPresent"` | Data image pull policy |
+| data.image.registry | string | `"ghcr.io"` | Data image registry |
+| data.image.repository | string | `"seagate/cortx-data"` | Data image name |
+| data.image.tag | string | Chart.AppVersion | Data image tag |
+| data.ios.resources.limits | object | `{"cpu":"1000m","memory":"2Gi"}` | The resource limits for the Motr IOS containers and processes |
+| data.ios.resources.requests | object | `{"cpu":"250m","memory":"1Gi"}` | The resource requests for the Motr IOS containers and processes |
+| data.persistence.accessModes | list | `["ReadWriteOnce"]` | Persistent volume access modes |
+| data.persistence.size | string | `"1Gi"` | Persistent volume size |
+| data.replicaCount | int | `1` | Number of Data replicas |
 | existingSecret | string | `""` | The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail. |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
@@ -167,4 +163,4 @@ helm uninstall cortx
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and `create` is true, a name is generated using the fullname template |
-| storageSets | object | `{}` |  |
+| storageSets | list | `[]` |  |

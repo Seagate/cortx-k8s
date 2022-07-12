@@ -171,6 +171,7 @@ buildValues() {
         | $to.control.image         = .cortxcontrol
         | $to.ha.image              = .cortxha
         | $to.server.image          = .cortxserver
+        | $to.data.image            = .cortxdata
         | $to.client.image          = .cortxclient
         | $to' "${values_file}" "${solution_yaml}"
 
@@ -212,10 +213,11 @@ buildValues() {
         | .client.enabled = ${components[client]}" "${values_file}"
 
     # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from | $from.solution.storage_sets[0].name as $name
-        | $to.storageSets.[$name].durability = $from.solution.storage_sets[0].durability
-        | $to' "${values_file}" "${solution_yaml}"
+    yq -i ".storageSets = (
+        load(\"${solution_yaml}\")
+        | .solution.storage_sets |
+        (.[].container_group_size | key) = \"containerGroupSize\"
+        | del(.[].nodes))" "${values_file}"
 
     local hax_service_protocol
     local s3_service_type
@@ -285,24 +287,20 @@ buildValues() {
 
      yq -i "
         .hare.hax.ports.http.protocol = \"${hax_service_protocol}\"
-        | with(.cortxdata;
-            .replicas = ${data_replicas}
-            | .storageClassName = \"${cortx_localblockstorage_storageclassname}\")" "${values_file}"
+        | with(.data;
+            .replicaCount = ${data_replicas}
+            | .blockDevicePersistence.storageClass = \"${cortx_localblockstorage_storageclassname}\")" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.hare.hax;
-            .ports.http.port   = $from.solution.common.hax.port_num
-            | .resources       = $from.solution.common.resource_allocation.hare.hax.resources)
-        | with($to.cortxdata;
-            .image                     = $from.solution.images.cortxdata
-            | .nodes                   = $from.solution.storage_sets[0].nodes
-            | .cvgs                    = $from.solution.storage_sets[0].storage
-            | .motr.containerGroupSize = $from.solution.storage_sets[0].container_group_size
-            | .motr.extraConfiguration = $from.solution.common.motr.extra_configuration
-            | .motr.resources          = $from.solution.common.resource_allocation.data.motr.resources
-            | .confd.resources         = $from.solution.common.resource_allocation.data.confd.resources)
+            .ports.http.port = $from.solution.common.hax.port_num
+            | .resources     = $from.solution.common.resource_allocation.hare.hax.resources)
+        | with($to.data;
+            .extraConfiguration = $from.solution.common.motr.extra_configuration
+            | .ios.resources      = $from.solution.common.resource_allocation.data.motr.resources
+            | .confd.resources    = $from.solution.common.resource_allocation.data.confd.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     client_replicas=${data_node_count}

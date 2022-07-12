@@ -14,24 +14,3 @@ spec:
     cortx.io/hax-enabled: "true"
     cortx.io/service-domain: {{ include "cortx.data.serviceDomain" . }}
     cortx.io/service-type: cortx-data
-  ### TODO CORTX-29859 - These ports may be superfluous or for documentation only...
-  ports:
-    - name: hax-http
-      protocol: TCP
-      port: {{ .Values.hare.hax.ports.http.port | int }}
-      targetPort: hax-http
-    - name: hax-tcp
-      protocol: TCP
-      port: {{ include "cortx.hare.hax.tcpPort" . | int }}
-      targetPort: hax-tcp
-    - name: confd-tcp
-      protocol: TCP
-      port: {{ include "cortx.data.confdPort" $ | int }}
-      targetPort: confd-tcp
-    {{- range $i := until (len .Values.cortxdata.cvgs) }}
-    {{- $portName := printf "ios-%d-tcp" (add 1 $i) }}
-    - name: {{ $portName }}
-      protocol: TCP
-      port: {{ printf "%d" (add $i (include "cortx.data.iosPort" $) | int) }}
-      targetPort: {{ $portName }}
-    {{- end }}

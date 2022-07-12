@@ -12,7 +12,7 @@
 {{- $dataHostnames := list -}}
 {{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
 {{- range $stsIndex := until $statefulSetCount }}
-{{- range $i := until (int $.Values.cortxdata.replicas) -}}
+{{- range $i := until (int $.Values.data.replicaCount) -}}
 {{- $dataHostnames = append $dataHostnames (printf "%s-%d.%s" (include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex)) $i (include "cortx.data.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
@@ -139,10 +139,10 @@ cortx:
     {{- end }}
     limits:
       services:
-      {{- include "config.yaml.service.limits" (dict "name" "ios" "resources" .Values.cortxdata.motr.resources) | nindent 6 }}
-      {{- include "config.yaml.service.limits" (dict "name" "confd" "resources" .Values.cortxdata.confd.resources) | nindent 6 }}
-    {{- if .Values.cortxdata.motr.extraConfiguration }}
-    {{- tpl .Values.cortxdata.motr.extraConfiguration . | nindent 4 }}
+      {{- include "config.yaml.service.limits" (dict "name" "ios" "resources" .Values.data.ios.resources) | nindent 6 }}
+      {{- include "config.yaml.service.limits" (dict "name" "confd" "resources" .Values.data.confd.resources) | nindent 6 }}
+    {{- if .Values.data.extraConfiguration }}
+    {{- tpl .Values.data.extraConfiguration . | nindent 4 }}
     {{- end }}
   {{- if .Values.control.enabled }}
   csm:

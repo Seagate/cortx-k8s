@@ -21,7 +21,7 @@ spec:
   capacity:
     storage: {{ $deviceiter.size }}
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   volumeMode: {{ $.Values.cortxblkdata.storage.volumeMode }}
   storageClassName: {{ $.Values.cortxblkdata.storageClassName }}
   persistentVolumeReclaimPolicy: Retain

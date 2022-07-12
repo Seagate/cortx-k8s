@@ -28,6 +28,13 @@ Return the Server image name
 {{- end -}}
 
 {{/*
+Return the Data image name
+*/}}
+{{- define "cortx.data.image" -}}
+{{ include "cortx.images.image" (dict "image" .Values.data.image "root" .) }}
+{{- end -}}
+
+{{/*
 Return the Client image name
 */}}
 {{- define "cortx.client.image" -}}
@@ -71,6 +78,31 @@ Return the CORTX setup initContainer
       valueFrom:
         fieldRef:
           fieldPath: metadata.name
+{{- end -}}
+
+{{/*
+Returns a volumeDevices definition for Data Pods given a list of CVGs
+
+{{ include "cortx.containers.dataBlockDeviceVolumes" $cvgList }}
+*/}}
+{{- define "cortx.containers.dataBlockDeviceVolumes" -}}
+volumeDevices:
+  {{- range . }}
+  {{- range concat (list .devices.metadata) .devices.data }}
+  - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
+    devicePath: {{ .device | quote }}
+  {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+Return the CORTX setup initContainer for Data Pods.
+This adds the block storage devices for each CVG to the container.
+{{- include "cortx.containers.dataSetup" (dict "cvgGroup" $cvgGroup "root" . }}
+*/}}
+{{- define "cortx.containers.dataSetup" -}}
+{{- include "cortx.containers.setup" (dict "image" .root.Values.data.image "root" .root) }}
+{{- include "cortx.containers.dataBlockDeviceVolumes" .cvgGroup | nindent 2 }}
 {{- end -}}
 
 {{/*
