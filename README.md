@@ -316,7 +316,7 @@ This section contains common parameters that affect all CORTX components running
 | `common.s3.default_iam_users.auth_admin`              | Username for the default administrative user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `sgiamadmin` |
 | `common.s3.default_iam_users.auth_user`               | Username for the default user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `user_name` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
-| `common.s3.instances_per_node`                        | This field determines the number of CORTX Server Pods to be deployed per Node specified in the `nodes` section of the solution configuration file. | `3` |
+| `common.s3.instances_per_node`                        | This field determines the number of CORTX Server Pods to be deployed per Node specified in the `nodes` section of the solution configuration file. | `1` |
 | `common.s3.extra_configuration`                       | _(Optional)_ Extra configuration settings to append to the RGW configuration. The value is a multi-line string included verbatim.  | `""` |
 | `common.motr.num_client_inst`                         | TODO       | `0` |
 | `common.motr.extra_configuration`                     | _(Optional)_ Extra configuration settings to append to the Motr configuration. The value is a multi-line string included verbatim. | `""` |
