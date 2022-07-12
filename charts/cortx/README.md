@@ -146,8 +146,8 @@ helm uninstall cortx
 | kafka.zookeeperConnectionTimeoutMs | int | `60000` | Extend timeout for successful Zookeeper connection |
 | nameOverride | string | `""` | A name that will partially override cortx.fullname |
 | rbac.create | bool | `true` | Enable the creation of RBAC resources, Role and RoleBinding, for the CORTX ServiceAccount. |
-| server.auth.adminAccessKey | string | `"cortx-user"` | Access Key of the admin user |
-| server.auth.adminUser | string | `"cortx-admin"` | Name of the admin user to create when initializing the cluster |
+| server.auth.adminAccessKey | string | `"cortx-admin"` | The admin user's Access Key |
+| server.auth.adminUser | string | `"cortx-user"` | Name of the admin user that is created when initializing the cluster |
 | server.enabled | bool | `true` | Enable installation of Server instances |
 | server.extraConfiguration | string | `""` | An optional multi-line string that contains extra RGW configuration settings. The string may contain template expressions, and is appended to the end of the computed configuration. |
 | server.image.pullPolicy | string | `"IfNotPresent"` | Server image pull policy |
