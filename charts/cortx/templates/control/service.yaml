@@ -1,6 +1,4 @@
-{{- if .Values.cortxcontrol.enabled }}
-{{- $svc := .Values.cortxcontrol.service.loadbal }}
-{{- if $svc.enabled }}
+{{- if .Values.control.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,17 +7,17 @@ metadata:
   labels: {{- include "cortx.labels" . | nindent 4 }}
     app.kubernetes.io/component: control
 spec:
-  type: {{ $svc.type }}
+  type: {{ .Values.control.service.type }}
   selector: {{- include "cortx.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: control
   ports:
-    {{- $nodePortAllowed := or (eq $svc.type "NodePort") (eq $svc.type "LoadBalancer") }}
     - name: control-https
       protocol: TCP
-      port: {{ $svc.ports.https }}
+      port: {{ .Values.control.service.ports.https }}
       targetPort: control-https
-      {{- if and $nodePortAllowed (not (empty $svc.nodePorts.https)) }}
-      nodePort: {{ $svc.nodePorts.https }}
+      {{- $nodePortAllowed := or (eq .Values.control.service.type "NodePort") (eq .Values.control.service.type "LoadBalancer") }}
+      {{- if and $nodePortAllowed (not (empty .Values.control.service.nodePorts.https)) }}
+      nodePort: {{ .Values.control.service.nodePorts.https }}
       {{- end }}
 ---
 # This service is deprecated and will be removed in a future release
@@ -38,7 +36,6 @@ spec:
   ports:
     - name: control-https
       protocol: TCP
-      port: {{ $svc.ports.https }}
+      port: {{ .Values.control.service.ports.https }}
       targetPort: control-https
-{{- end }}
 {{- end }}

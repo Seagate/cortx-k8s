@@ -47,7 +47,7 @@ cluster:
       services:
         - rgw_s3
   {{- end }}
-  {{- if .Values.cortxcontrol.enabled }}
+  {{- if .Values.control.enabled }}
   - name: control_node
     components:
     - name: utils
@@ -77,7 +77,7 @@ cluster:
       sns: {{ $storageSet.durability.sns | quote }}
       dix: {{ $storageSet.durability.dix | quote }}
     nodes:
-    {{- if $root.Values.cortxcontrol.enabled }}
+    {{- if $root.Values.control.enabled }}
     {{- $nodeName := (include "cortx.control.fullname" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "id" $nodeName "type" "control_node") | nindent 4 }}
     {{- end }}
