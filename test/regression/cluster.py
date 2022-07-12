@@ -10,200 +10,106 @@
 
 import os
 import subprocess  # nosec
-from yaml import safe_load, dump
+import sys
+from yaml import safe_load
 
 import utils
 from utils import RemoteRun, Logger
 
 
+class ClusterError(Exception):
+    pass
+
 class Cluster:
 
-    def __init__(self, solution_file, cluster_file=None,
-                 logger=None, logdir=None):
-        """Represents a CORTX cluster."""
-        if cluster_file and cluster_file.lower() == 'none':
-            # Special case -- this allows for the special name
-            # of "none" for the cluster file to allow tests that
-            # require a cluster_file to use this value.
-            cluster_file = None
+    def __init__(self, solution_files, solution_outfile=None,
+                  localfs=None, logger=None):
+        """Represents a CORTX cluster.
 
+           Arguments:
+               solution_files:
+                      Solution.yaml file(s) that specify
+                      the cluster configuration.
+
+                      If a single solution_file is specified then
+                      that file is used in place.
+
+                      If multiple solution_files are specified
+                      then the data from those files is combined
+                      into a single file file, with the data from
+                      the latter files overriding data in the
+                      previous files.  Often "solution.example.yaml"
+                      is specified as the first file in the list
+                      and is overridden (or "customized") by latter
+                      files.
+
+                      The result is a new file generated at the
+                      location specified by solution_outfile, or,
+                      if that is not specified, then by a filename
+                      in /tmp based on the input filenames.
+
+                solution_outfile: Name of the generated solution file.
+                      If multiple solution_files are specified then
+                      this specifies the name of the generated
+                      solution file.  If None, then a filename in
+                      /tmp is generated.
+
+                localfs: If specified, this indicates the path
+                      to the local filesystem configured for the
+                      Rancher local-path provisioner.  This is only
+                      needed by the prereq function.
+
+                logger: If specified, use this logger object for logging
+        """
         if not logger:
             logger = Logger()
         self.logger = logger
 
-        if not solution_file:
-            solution_file = os.environ.get('SOLUTION_FILE')
-            if solution_file:
-                print(f"Using SOLUTION_FILE {solution_file}")
-            else:
-                solution_file = os.path.relpath(os.path.join(
-                                           os.path.dirname(__file__),
-                                           '../../k8_cortx_cloud/'
-                                           'solution.example.yaml'))
-                print(f"No solution file specified: using {solution_file}")
+        if isinstance(solution_files, str):
+            solution_files = [solution_files]
 
-        self.solution_file = solution_file
+        if len(solution_files) == 1:
+            # If just a single solution file, then use it in
+            # place.  Do not generate a new solution file.
+            self.solution_file = solution_files[0]
+
+        else:
+            self.solution_file = self._generate_solution_yaml(solution_files, outfile=solution_outfile)
+            logger.log(f"Generated solution file: {self.solution_file}")
+            if not self.solution_file:
+                # There was an error.  Exit.
+                raise ClusterError('Failed to generate solution file')
+
+
         self.user = 'root'  # TODO: parameterize this
-
-        self.cluster_file = cluster_file
-        self.cluster_data = None
-        if self.cluster_file:
-            f = open(self.cluster_file)
-            self.cluster_data = safe_load(f)
-            f.close()
-
-            self._verify_cluster_yaml()
-            self.localfs = self.cluster_data['storage']['local-fs']
-
-            self.generate_solution_file()
+        self.localfs = localfs
 
         solution = safe_load(open(self.solution_file))
         self.solution = solution['solution']
-        nodes = solution['solution']['nodes']
-        self.nodes = [n['name'] for n in nodes.values()]
 
-    def _verify_cluster_yaml(self):
-        if not self.cluster_data['nodes']:
-            raise ValueError(f"Error in {self.cluster_file}: "
-                             "'nodes' not present")
-        if not isinstance(self.cluster_data['nodes'], list):
-            raise ValueError(f"Error in {self.cluster_file}: "
-                             "'nodes' must be a list of hostnames")
-        if not self.cluster_data['storage']:
-            raise ValueError(f"Error in {self.cluster_file}: "
-                             "'storage' not present")
 
-        # TODO: check the structure of 'storage'
-        fail = False
-        for node in self.cluster_data['nodes']:
-            self.logger.log(f'Testing remote access to {self.user}@{node}')
-            try:
-                RemoteRun(node, self.user).test()
-            except AssertionError:
-                self.logger.logfail(f'Cannot remote access {self.user}@{node}')
-                fail = True
+    @staticmethod
+    def _generate_solution_yaml(input_files, outfile=None, path='/tmp'):
+        if not outfile:
+            outfile_parts = []
+            for file_ in reversed(input_files):
+                file_ = os.path.basename(file_)
+                if file_.endswith('.yaml'):
+                    file_ = os.path.splitext(file_)[0]
+                if file_ == 'solution.example':
+                    file_ = 'solution'
+                outfile_parts.append(file_)
+            outfile = os.path.join(path, '.'.join(outfile_parts) + '.yaml')
+        outf = open(outfile, 'w')
+        args = ['yq', 'ea', '. as $item ireduce ({}; . * $item )'] + input_files
+        child = subprocess.Popen(args, stdout=outf, stderr=subprocess.PIPE)
+        child.wait()
+        if child.returncode != 0:
+            os.remove(outfile)
+            print(child.stderr.read().decode().strip(), file=sys.stderr)
+            return None
+        return outfile
 
-        if fail:
-            raise AssertionError('Cannot ssh to one or more nodes.')
-
-    def _set_cortx_version(self, solution):
-        cortx_ver = self.cluster_data.get('cortx_ver')
-        if cortx_ver:
-            images = solution['solution']['images']
-            for image in images:
-                if image == 'cortxserver':
-                    if 'cortx_rgw' in cortx_ver:
-                        images[image] = cortx_ver['cortx_rgw']
-                elif image in ('cortxcontrol', 'cortxha'):
-                    if 'cortx_control' in cortx_ver:
-                        images[image] = cortx_ver['cortx_control']
-                elif image in ('cortxdata', 'cortxclient'):
-                    if 'cortx_data' in cortx_ver:
-                        images[image] = cortx_ver['cortx_data']
-
-    def _set_secrets(self, solution):
-        secrets = self.cluster_data.get('secrets')
-        if secrets:
-            solution['solution']['secrets'] = secrets
-
-    def _set_namespace(self, solution):
-        namespace = self.cluster_data.get('namespace')
-        if namespace:
-            solution['solution']['namespace'] = namespace
-
-    def _set_nodeports(self, solution):
-        nodeports = self.cluster_data.get('nodePorts')
-        if nodeports:
-            # Allow for unspecified entries in input file
-            new_nodeports = {'control': {'https': None},
-                             's3': {'http': None, 'https': None}}
-            if 'control' in nodeports:
-                if 'https' in nodeports['control']:
-                    new_nodeports['control']['https'] = \
-                        nodeports['control']['https']
-            if 's3' in nodeports:
-                if 'https' in nodeports['s3']:
-                    new_nodeports['s3']['https'] = nodeports['s3']['https']
-                if 'http' in nodeports['s3']:
-                    new_nodeports['s3']['http'] = nodeports['s3']['http']
-
-            extsvc = solution['solution']['common']['external_services']
-            extsvc['control']['nodePorts']['https'] = \
-                new_nodeports['control']['https']
-            extsvc['s3']['nodePorts']['https'] = new_nodeports['s3']['https']
-            extsvc['s3']['nodePorts']['http'] = new_nodeports['s3']['http']
-
-    def _set_nodes(self, solution):
-        i = 1
-        nodes = {}
-        for node in self.cluster_data['nodes']:
-            nodekey = f'node{i}'
-            nodes[nodekey] = {'name': node}
-            i += 1
-        solution['solution']['nodes'] = nodes
-
-    def _set_storage(self, solution):
-
-        def get_device_size(blkdev):
-            # TODO: parameterize user
-            user = 'root'
-            node = self.cluster_data['nodes'][0]
-            stdout = subprocess.Popen(['ssh', f'{user}@{node}',  # nosec B602
-                                       f'lsblk {blkdev}'],
-                                      stdout=subprocess.PIPE).communicate()[0]
-            for line in stdout.splitlines():
-                line = line.decode('utf-8')
-                if line.startswith('NAME'):
-                    continue
-                size = line.split()[3]
-                return size
-
-        solution_storage = {}
-        cluster_storage = self.cluster_data.get('storage')
-
-        for cvg in cluster_storage:
-            if cvg == 'local-fs':
-                continue
-
-            solution_storage[cvg] = {'name': cvg, 'type': 'ios', 'devices': {}}
-            device = solution_storage[cvg]['devices']
-
-            metablk = cluster_storage[cvg]['metadata']
-            metasize = get_device_size(metablk)
-            device['metadata'] = {'device': metablk, 'size': metasize}
-
-            device['data'] = {}
-            i = 1
-            for datablk in cluster_storage[cvg]['data']:
-                datasize = get_device_size(datablk)
-                device['data'][f'd{i}'] = {'device': datablk, 'size': datasize}
-                i += 1
-        solution['solution']['storage'] = solution_storage
-
-    def generate_solution_file(self):
-
-        generated_solution = self.cluster_data.get('generated_solution')
-
-        if not generated_solution:
-            self.logger.log("'generated_solution' field not in cluster config "
-                            "file.  No new solution will be generated'")
-            return
-
-        solution = safe_load(open(self.solution_file))
-
-        self._set_cortx_version(solution)
-        self._set_secrets(solution)
-        self._set_namespace(solution)
-        self._set_nodeports(solution)
-        self._set_nodes(solution)
-        self._set_storage(solution)
-
-        print("Writing generated solution file: " + generated_solution)
-        f = open(generated_solution, 'w')
-        dump(solution, f)
-        f.close()
-
-        self.solution_file = generated_solution
 
     @staticmethod
     def _get_k8_cortx_cloud_dir():
@@ -214,9 +120,9 @@ class Cluster:
         """Run prereq script on all nodes."""
         # First copy the prereq script and solution file to the
         # node.  Then run the script.
-        if not self.cluster_data:
+        if not self.localfs:
             print("Cannot run prereq-deploy-cortx-cloud.sh. "
-                  "No cluster config file specified.")
+                  "No localfs specified.")
             return
 
         blkdev = self.localfs
@@ -224,7 +130,10 @@ class Cluster:
 
         print("\nRunning prereq-deploy-cortx-cloud.sh\n")
 
-        for node in self.nodes:
+        nodes = []
+        for storage_set in self.solution['storage_sets']:
+            nodes += storage_set['nodes']
+        for node in nodes:
             files = [
                       self.solution_file,
                       os.path.join(self._get_k8_cortx_cloud_dir(),
