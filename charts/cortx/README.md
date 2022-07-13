@@ -104,21 +104,6 @@ helm uninstall cortx
 | cortxdata.persistentStorage.volumeMode | string | `"Block"` |  |
 | cortxdata.replicas | int | `3` |  |
 | cortxdata.storageClassName | string | `"local-block-storage"` |  |
-| cortxha.enabled | bool | `true` |  |
-| cortxha.fault_tolerance.resources.limits.cpu | string | `"500m"` |  |
-| cortxha.fault_tolerance.resources.limits.memory | string | `"1Gi"` |  |
-| cortxha.fault_tolerance.resources.requests.cpu | string | `"250m"` |  |
-| cortxha.fault_tolerance.resources.requests.memory | string | `"128Mi"` |  |
-| cortxha.health_monitor.resources.limits.cpu | string | `"500m"` |  |
-| cortxha.health_monitor.resources.limits.memory | string | `"1Gi"` |  |
-| cortxha.health_monitor.resources.requests.cpu | string | `"250m"` |  |
-| cortxha.health_monitor.resources.requests.memory | string | `"128Mi"` |  |
-| cortxha.image | string | `"ghcr.io/seagate/centos:7"` |  |
-| cortxha.k8s_monitor.resources.limits.cpu | string | `"500m"` |  |
-| cortxha.k8s_monitor.resources.limits.memory | string | `"1Gi"` |  |
-| cortxha.k8s_monitor.resources.requests.cpu | string | `"250m"` |  |
-| cortxha.k8s_monitor.resources.requests.memory | string | `"128Mi"` |  |
-| cortxha.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
 | existingSecret | string | `""` | The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail. |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
@@ -127,6 +112,18 @@ helm uninstall cortx
 | externalKafka.adminUser | string | `"admin"` |  |
 | externalKafka.endpoints | list | `[]` |  |
 | fullnameOverride | string | `""` | A name that will fully override cortx.fullname |
+| ha.enabled | bool | `true` | Enable installation of HA instances |
+| ha.faultTolerance.resources.limits | object | `{"cpu":"500m","memory":"1Gi"}` | The resource limits for the HA Fault Tolerance containers and processes |
+| ha.faultTolerance.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the HA Fault Tolerance containers and processes |
+| ha.healthMonitor.resources.limits | object | `{"cpu":"500m","memory":"1Gi"}` | The resource limits for the HA Health Monitor containers and processes |
+| ha.healthMonitor.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the HA Health Monitor containers and processes |
+| ha.image.pullPolicy | string | `"IfNotPresent"` | HA image pull policy |
+| ha.image.registry | string | `"ghcr.io"` | HA image registry |
+| ha.image.repository | string | `"seagate/cortx-control"` | HA image name |
+| ha.image.tag | string | Chart.AppVersion | HA image tag |
+| ha.k8sMonitor.resources.limits | object | `{"cpu":"500m","memory":"1Gi"}` | The resource limits for the HA Kubernetes Monitor containers and processes |
+| ha.k8sMonitor.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the HA Kubernetes Monitor containers and processes |
+| ha.persistence.size | string | `"1Gi"` | Persistent volume size |
 | hare.hax.ports.http.port | int | `22003` | The port number of the Hax HTTP endpoint. |
 | hare.hax.ports.http.protocol | string | `"https"` | The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`. |
 | hare.hax.resources.limits | object | `{"cpu":"1000m","memory":"2Gi"}` | Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers. |

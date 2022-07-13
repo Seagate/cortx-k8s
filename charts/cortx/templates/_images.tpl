@@ -14,6 +14,13 @@ Return the Control image name
 {{- end -}}
 
 {{/*
+Return the HA image name
+*/}}
+{{- define "cortx.ha.image" -}}
+{{ include "cortx.images.image" (dict "image" .Values.ha.image "root" .) }}
+{{- end -}}
+
+{{/*
 Return the Server image name
 */}}
 {{- define "cortx.server.image" -}}

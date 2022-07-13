@@ -160,16 +160,28 @@ buildValues() {
             | .*.image = $from.solution.images.consul)
         | $to' "${values_file}" "${solution_yaml}"
 
+    # shellcheck disable=SC2016
+    yq -i eval-all '
+        select(fi==0) ref $to | select(fi==1) ref $from
+        | $from.solution.images.[]
+        |= capture("(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)")
+        | $from.solution.images
+        | $to.kafka.image           = .kafka
+        | $to.kafka.zookeeper.image = .zookeeper
+        | $to.control.image         = .cortxcontrol
+        | $to.ha.image              = .cortxha
+        | $to.server.image          = .cortxserver
+        | $to.client.image          = .cortxclient
+        | $to' "${values_file}" "${solution_yaml}"
+
     yq -i ".consul.server.replicas = ${num_consul_replicas}" "${values_file}"
 
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.kafka;
-            .image = ($from.solution.images.kafka | capture("(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)"))
-            | .resources = $from.solution.common.resource_allocation.kafka.resources
+            .resources = $from.solution.common.resource_allocation.kafka.resources
             | .persistence.size = $from.solution.common.resource_allocation.kafka.storage_request_size
-            | .zookeeper.image = ($from.solution.images.zookeeper | capture("(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)"))
             | .zookeeper.resources = $from.solution.common.resource_allocation.zookeeper.resources
             | .zookeeper.persistence.size = $from.solution.common.resource_allocation.zookeeper.storage_request_size)
         | $to' "${values_file}" "${solution_yaml}"
@@ -189,12 +201,13 @@ buildValues() {
             .auth.adminUser = $from.solution.common.s3.default_iam_users.auth_user
             | .auth.adminAccessKey = $from.solution.common.s3.default_iam_users.auth_admin
             | .maxStartTimeout = $from.solution.common.s3.max_start_timeout
-            | .extraConfiguration = $from.solution.common.s3.extra_configuration)
+            | .extraConfiguration = $from.solution.common.s3.extra_configuration
+            | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     yq -i "
         .server.enabled = ${components[server]}
-        | .cortxha.enabled = ${components[ha]}
+        | .ha.enabled = ${components[ha]}
         | .control.enabled = ${components[control]}
         | .client.enabled = ${components[client]}" "${values_file}"
 
@@ -232,8 +245,7 @@ buildValues() {
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.control;
-            .image                             = ($from.solution.images.cortxcontrol | capture("(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)"))
-            | .service.type                    = $from.solution.common.external_services.control.type
+            .service.type                    = $from.solution.common.external_services.control.type
             | .service.ports.https             = $from.solution.common.external_services.control.ports.https
             | .agent.resources.requests.memory = $from.solution.common.resource_allocation.control.agent.resources.requests.memory
             | .agent.resources.requests.cpu    = $from.solution.common.resource_allocation.control.agent.resources.requests.cpu
@@ -255,19 +267,10 @@ buildValues() {
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.cortxha;
-            .image                         = $from.solution.images.cortxha
-            | .fault_tolerance.resources   = $from.solution.common.resource_allocation.ha.fault_tolerance.resources
-            | .health_monitor.resources    = $from.solution.common.resource_allocation.ha.health_monitor.resources
-            | .k8s_monitor.resources       = $from.solution.common.resource_allocation.ha.k8s_monitor.resources)
-        | $to' "${values_file}" "${solution_yaml}"
-
-    # shellcheck disable=SC2016
-    yq -i eval-all '
-        select(fi==0) ref $to | select(fi==1) ref $from
-        | with($to.server;
-            .image           = ($from.solution.images.cortxserver | capture("(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)"))
-            | .rgw.resources = $from.solution.common.resource_allocation.server.rgw.resources)
+        | with($to.ha;
+            .faultTolerance.resources   = $from.solution.common.resource_allocation.ha.fault_tolerance.resources
+            | .healthMonitor.resources    = $from.solution.common.resource_allocation.ha.health_monitor.resources
+            | .k8sMonitor.resources       = $from.solution.common.resource_allocation.ha.k8s_monitor.resources)
         | $to' "${values_file}" "${solution_yaml}"
 
     yq -i ".server.replicaCount = ${total_server_pods}" "${values_file}"
@@ -307,11 +310,7 @@ buildValues() {
 
     yq -i "
         .client.replicaCount = ${client_replicas}
-        | .client.instanceCount = ${num_motr_client}
-        | .client.image = (
-            load(\"${solution_yaml}\")
-            | .solution.images.cortxclient
-            | capture(\"(?P<registry>.*?)/(?P<repository>.*):(?P<tag>.*)\"))" "${values_file}"
+        | .client.instanceCount = ${num_motr_client}" "${values_file}"
 
     set +eu
 }

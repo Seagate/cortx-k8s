@@ -108,6 +108,8 @@ existingSecret: ""
 
 # CORTX Hare component configuration
 hare:
+  # Hax settings
+  # Hax is deployed as a container in multiple workloads. These settings apply to all container instances.
   hax:
     ports:
       http:
@@ -115,6 +117,11 @@ hare:
         port: 22003
         # -- The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`.
         protocol: https
+
+    # Hax component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
     resources:
       # -- Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers.
       limits:
@@ -200,38 +207,79 @@ control:
     # -- Persistent volume size
     size: 1Gi
 
-##
-## Imported values from cortx-ha Helm Chart. These will be changed.
-##
-cortxha:
+# Deploy CORTX HA instance
+# HA manages the CORTX cluster availability
+# ref: https://github.com/Seagate/cortx-ha
+ha:
+    # -- Enable installation of HA instances
   enabled: true
-  image: ghcr.io/seagate/centos:7
-  fault_tolerance:
+
+  # HA image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-control
+  image:
+    # -- HA image registry
+    registry: ghcr.io
+    # -- HA image name
+    repository: seagate/cortx-control
+    # -- HA image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- HA image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent
+
+  # HA Fault Tolerance component settings
+  faultTolerance:
+    # HA Fault Tolerance component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
     resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
+      # -- The resource limits for the HA Fault Tolerance containers and processes
       limits:
-        memory: 1Gi
         cpu: 500m
-  health_monitor:
+        memory: 1Gi
+      # -- The resource requests for the HA Fault Tolerance containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+  # HA Health Monitor component settings
+  healthMonitor:
+    # HA Health Monitor component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
     resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
+      # -- The resource limits for the HA Health Monitor containers and processes
       limits:
-        memory: 1Gi
         cpu: 500m
-  k8s_monitor:
+        memory: 1Gi
+      # -- The resource requests for the HA Health Monitor containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+  # HA Kubernetes Monitor component settings
+  k8sMonitor:
+    # HA Kubernetes Monitor component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
     resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
+      # -- The resource limits for the HA Kubernetes Monitor containers and processes
       limits:
-        memory: 1Gi
         cpu: 500m
-  localpathpvc:
-    requeststoragesize: 1Gi
+        memory: 1Gi
+      # -- The resource requests for the HA Kubernetes Monitor containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+  # Persistence settings
+  persistence:
+    # -- Persistent volume size
+    size: 1Gi
 
 # Deploy CORTX Server instances
 # Server provides S3 storage
