@@ -33,46 +33,13 @@ spec:
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" . }}
-      {{- $image := include "cortx.control.image" . }}
-      {{- $imagePullPolicy := .Values.control.image.pullPolicy }}
       initContainers:
-      - name: cortx-setup
-        image: {{ $image }}
-        imagePullPolicy: {{ $imagePullPolicy | quote }}
-        command:
-          - /bin/sh
-        {{- if eq $image "ghcr.io/seagate/centos:7" }}
-        args:
-          - -c
-          - sleep $(shuf -i 5-10 -n 1)s
-        {{- else }}
-        args:
-          - -c
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-        {{- end }}
-        volumeMounts:
-          - name: cortx-configuration
-            mountPath: /etc/cortx/solution
-          - name: cortx-ssl-cert
-            mountPath: /etc/cortx/solution/ssl
-          - name: data
-            mountPath: /etc/cortx
-          - name: configuration-secrets
-            mountPath: /etc/cortx/solution/secret
-            readOnly: true
-        env:
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
+      {{- include "cortx.containers.setup" (dict "image" .Values.control.image "root" . ) | nindent 8 }}
       containers:
+        {{- $image := include "cortx.control.image" . }}
         - name: cortx-csm-agent
           image: {{ $image }}
-          imagePullPolicy: {{ $imagePullPolicy | quote }}
+          imagePullPolicy: {{ .Values.control.image.pullPolicy | quote }}
           {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}

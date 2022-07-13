@@ -17,8 +17,8 @@
 {{- end -}}
 {{- end -}}
 {{- $serverHostnames := list -}}
-{{- if .Values.cortxserver.enabled -}}
-{{- range $i := until (int .Values.cortxserver.replicas) -}}
+{{- if .Values.server.enabled -}}
+{{- range $i := until (int .Values.server.replicaCount) -}}
 {{- $serverHostnames = append $serverHostnames (printf "%s-%d.%s" (include "cortx.server.fullname" $) $i (include "cortx.server.serviceDomain" $)) -}}
 {{- end -}}
 {{- end -}}
@@ -65,33 +65,33 @@ cortx:
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:
     message_bus_backend: kafka
-  {{- if .Values.cortxserver.enabled }}
+  {{- if .Values.server.enabled }}
   rgw:
-    auth_user: {{ .Values.cortxserver.authUser }}
-    auth_admin: {{ .Values.cortxserver.authAdmin }}
+    auth_user: {{ .Values.server.auth.adminUser }}
+    auth_admin: {{ .Values.server.auth.adminAccessKey }}
     auth_secret: s3_auth_admin_secret
     public:
       endpoints:
-      - {{ printf "http://%s-0:%d" (include "cortx.server.fullname" .) (.Values.cortxserver.service.ports.http | int) }}
-      - {{ printf "https://%s-0:%d" (include "cortx.server.fullname" .) (.Values.cortxserver.service.ports.https | int) }}
+      - {{ printf "http://%s-0:%d" (include "cortx.server.fullname" .) (.Values.server.service.ports.http | int) }}
+      - {{ printf "https://%s-0:%d" (include "cortx.server.fullname" .) (.Values.server.service.ports.https | int) }}
     service:
       endpoints:
       - {{ printf "http://:%d" (include "cortx.server.rgwHttpPort" . | int) }}
       - {{ printf "https://:%d" (include "cortx.server.rgwHttpsPort" . | int) }}
     io_max_units: 8
-    max_start_timeout: {{ .Values.cortxserver.maxStartTimeout | int }}
+    max_start_timeout: {{ .Values.server.maxStartTimeout | int }}
     service_instances: 1
     limits:
       services:
       - name: rgw
         memory:
-          min: {{ .Values.cortxserver.rgw.resources.requests.memory }}
-          max: {{ .Values.cortxserver.rgw.resources.limits.memory }}
+          min: {{ .Values.server.rgw.resources.requests.memory }}
+          max: {{ .Values.server.rgw.resources.limits.memory }}
         cpu:
-          min: {{ .Values.cortxserver.rgw.resources.requests.cpu }}
-          max: {{ .Values.cortxserver.rgw.resources.limits.cpu }}
-    {{- if .Values.cortxserver.extraConfiguration }}
-    {{- tpl .Values.cortxserver.extraConfiguration . | nindent 4 }}
+          min: {{ .Values.server.rgw.resources.requests.cpu }}
+          max: {{ .Values.server.rgw.resources.limits.cpu }}
+    {{- if .Values.server.extraConfiguration }}
+    {{- tpl .Values.server.extraConfiguration . | nindent 4 }}
     {{- end }}
   {{- end }}
   hare:
@@ -118,7 +118,7 @@ cortx:
       - {{ printf "tcp://%s:%d" . (include "cortx.data.confdPort" $ | int) }}
       {{- end }}
     clients:
-    {{- if .Values.cortxserver.enabled }}
+    {{- if .Values.server.enabled }}
     - name: rgw_s3
       num_instances: 1  # number of instances *per-pod*
       endpoints:

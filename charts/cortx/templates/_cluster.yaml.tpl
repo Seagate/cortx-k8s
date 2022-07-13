@@ -38,7 +38,7 @@ cluster:
         {{- end }}
     {{- end }}
   {{- end }}
-  {{- if .Values.cortxserver.enabled }}
+  {{- if .Values.server.enabled }}
   - name: server_node
     components:
     - name: utils
@@ -94,8 +94,8 @@ cluster:
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" $nodeType) | nindent 4 }}
     {{- end }}
     {{- end }}
-    {{- if $root.Values.cortxserver.enabled }}
-    {{- range $i := until (int $root.Values.cortxserver.replicas) }}
+    {{- if $root.Values.server.enabled }}
+    {{- range $i := until (int $root.Values.server.replicaCount) }}
     {{- $nodeName := printf "%s-%d" (include "cortx.server.fullname" $root) $i }}
     {{- $hostName := printf "%s.%s" $nodeName (include "cortx.server.serviceDomain" $root) }}
     {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "server_node") | nindent 4 }}

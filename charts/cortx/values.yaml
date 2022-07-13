@@ -168,17 +168,18 @@ control:
     ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
     pullPolicy: IfNotPresent
 
-  # Control Agent resource requests and limits
-  # ref: https://kubernetes.io/docs/user-guide/compute-resources/
-  # These values specify the CORTX resource minimum requirements and limits.
-  # The values apply to both container resources and the CORTX internal configuration.
+  # Control Agent settings
   agent:
+    # Control Agent resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
     resources:
-      # -- The resource limits for the Control Agent containers
+      # -- The resource limits for the Control Agent containers and processes
       limits:
         cpu: 500m
         memory: 256Mi
-      # -- The resource requests for the Control Agent containers
+      # -- The resource requests for the Control Agent containers and processes
       requests:
         cpu: 250m
         memory: 128Mi
@@ -232,48 +233,88 @@ cortxha:
   localpathpvc:
     requeststoragesize: 1Gi
 
-##
-## Imported values from cortx-server Helm Chart. These will be changed.
-##
-cortxserver:
+# Deploy CORTX Server instances
+# Server provides S3 storage
+server:
+  # -- Enable installation of Server instances
   enabled: true
-  image: ghcr.io/seagate/centos:7
-  replicas: 3
+  # -- Number of Server replicas
+  replicaCount: 1
+
+  # Server image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-rgw
+  image:
+    # -- Server image registry
+    registry: ghcr.io
+    # -- Server image name
+    repository: seagate/cortx-rgw
+    # -- Server image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- Server image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent
+
+  # Server RGW settings
   rgw:
+    # Server RGW resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
     resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
+      # -- The resource limits for the Server RGW containers and processes
       limits:
-        memory: 2Gi
         cpu: 2000m
-  localpathpvc:
-    requeststoragesize: 1Gi
-    accessmodes:
-      - ReadWriteOnce
+        memory: 2Gi
+      # -- The resource requests for the Server RGW containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
 
-  authAdmin: cortx-admin
-  authUser: cortx-user
-  maxStartTimeout: 240
-  # An optional multi-line string that contains extra RGW configuration
-  # settings. The string may contain template expressions, and is appended to
-  # the end of the computed configuration.
-  # e.g.:
-  # extraConfiguration: |
-  #   thread_pool_size: 10
-  #   gc_max_objs: 32
-  #   motr_max_rpc_msg_size: 524288
-  extraConfiguration: ""
-
+  # Server S3 service
   service:
+    # -- Kubernetes service type
     type: ClusterIP
-    count: 1
+    # -- Number of service instances for LoadBalancer service types
+    instanceCount: 1
     ports:
+      # -- RGW S3 service HTTP port
       http: 80
+      # -- RGW S3 service HTTPS port
       https: 443
     nodePorts:
+      # -- Node port for S3 HTTP for LoadBalancer and NodePort service types
       http: ""
+      # -- Node port for S3 HTTPS for LoadBalancer and NodePort service types
       https: ""
+
+  # Persistence settings
+  persistence:
+    # -- Persistent volume size
+    size: 1Gi
+    # -- Persistent volume access modes
+    accessModes:
+      - ReadWriteOnce
+
+  # Authentication settings
+  auth:
+    # -- Name of the admin user that is created when initializing the cluster
+    adminUser: cortx-user
+    # -- The admin user's Access Key
+    adminAccessKey: cortx-admin
+
+  # TODO: can this be removed?
+  maxStartTimeout: 240
+
+  # -- An optional multi-line string that contains extra RGW configuration settings.
+  # The string may contain template expressions, and is appended to the end of the
+  # computed configuration.
+  ## e.g.:
+  ## extraConfiguration: |
+  ##   thread_pool_size: 10
+  ##   gc_max_objs: 32
+  ##   motr_max_rpc_msg_size: 524288
+  extraConfiguration: ""
 
 ##
 ## Imported values from cortx-data Helm Chart. These will be changed.

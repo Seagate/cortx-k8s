@@ -74,8 +74,8 @@ helm uninstall cortx
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
-| control.agent.resources.limits | object | `{"cpu":"500m","memory":"256Mi"}` | The resource limits for the Control Agent containers |
-| control.agent.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the Control Agent containers |
+| control.agent.resources.limits | object | `{"cpu":"500m","memory":"256Mi"}` | The resource limits for the Control Agent containers and processes |
+| control.agent.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the Control Agent containers and processes |
 | control.enabled | bool | `true` | Enable installation of Control instances |
 | control.image.pullPolicy | string | `"IfNotPresent"` | Control image pull policy |
 | control.image.registry | string | `"ghcr.io"` | Control image registry |
@@ -119,25 +119,6 @@ helm uninstall cortx
 | cortxha.k8s_monitor.resources.requests.cpu | string | `"250m"` |  |
 | cortxha.k8s_monitor.resources.requests.memory | string | `"128Mi"` |  |
 | cortxha.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxserver.authAdmin | string | `"cortx-admin"` |  |
-| cortxserver.authUser | string | `"cortx-user"` |  |
-| cortxserver.enabled | bool | `true` |  |
-| cortxserver.extraConfiguration | string | `""` |  |
-| cortxserver.image | string | `"ghcr.io/seagate/centos:7"` |  |
-| cortxserver.localpathpvc.accessmodes[0] | string | `"ReadWriteOnce"` |  |
-| cortxserver.localpathpvc.requeststoragesize | string | `"1Gi"` |  |
-| cortxserver.maxStartTimeout | int | `240` |  |
-| cortxserver.replicas | int | `3` |  |
-| cortxserver.rgw.resources.limits.cpu | string | `"2000m"` |  |
-| cortxserver.rgw.resources.limits.memory | string | `"2Gi"` |  |
-| cortxserver.rgw.resources.requests.cpu | string | `"250m"` |  |
-| cortxserver.rgw.resources.requests.memory | string | `"128Mi"` |  |
-| cortxserver.service.count | int | `1` |  |
-| cortxserver.service.nodePorts.http | string | `""` |  |
-| cortxserver.service.nodePorts.https | string | `""` |  |
-| cortxserver.service.ports.http | int | `80` |  |
-| cortxserver.service.ports.https | int | `443` |  |
-| cortxserver.service.type | string | `"ClusterIP"` |  |
 | existingSecret | string | `""` | The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail. |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
@@ -165,6 +146,26 @@ helm uninstall cortx
 | kafka.zookeeperConnectionTimeoutMs | int | `60000` | Extend timeout for successful Zookeeper connection |
 | nameOverride | string | `""` | A name that will partially override cortx.fullname |
 | rbac.create | bool | `true` | Enable the creation of RBAC resources, Role and RoleBinding, for the CORTX ServiceAccount. |
+| server.auth.adminAccessKey | string | `"cortx-admin"` | The admin user's Access Key |
+| server.auth.adminUser | string | `"cortx-user"` | Name of the admin user that is created when initializing the cluster |
+| server.enabled | bool | `true` | Enable installation of Server instances |
+| server.extraConfiguration | string | `""` | An optional multi-line string that contains extra RGW configuration settings. The string may contain template expressions, and is appended to the end of the computed configuration. |
+| server.image.pullPolicy | string | `"IfNotPresent"` | Server image pull policy |
+| server.image.registry | string | `"ghcr.io"` | Server image registry |
+| server.image.repository | string | `"seagate/cortx-rgw"` | Server image name |
+| server.image.tag | string | Chart.AppVersion | Server image tag |
+| server.maxStartTimeout | int | `240` |  |
+| server.persistence.accessModes | list | `["ReadWriteOnce"]` | Persistent volume access modes |
+| server.persistence.size | string | `"1Gi"` | Persistent volume size |
+| server.replicaCount | int | `1` | Number of Server replicas |
+| server.rgw.resources.limits | object | `{"cpu":"2000m","memory":"2Gi"}` | The resource limits for the Server RGW containers and processes |
+| server.rgw.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the Server RGW containers and processes |
+| server.service.instanceCount | int | `1` | Number of service instances for LoadBalancer service types |
+| server.service.nodePorts.http | string | `""` | Node port for S3 HTTP for LoadBalancer and NodePort service types |
+| server.service.nodePorts.https | string | `""` | Node port for S3 HTTPS for LoadBalancer and NodePort service types |
+| server.service.ports.http | int | `80` | RGW S3 service HTTP port |
+| server.service.ports.https | int | `443` | RGW S3 service HTTPS port |
+| server.service.type | string | `"ClusterIP"` | Kubernetes service type |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |
