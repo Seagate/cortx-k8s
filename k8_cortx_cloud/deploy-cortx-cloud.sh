@@ -648,7 +648,7 @@ function waitForClusterReady()
 {
     set -u
 
-    printf "Now waiting for all CORTX resources to become available, press Ctrl-C to quit...\n\n"
+    printf "\nNow waiting for all CORTX resources to become available, press Ctrl-C to quit...\n\n"
 
     trap killBackgroundJobs INT
 
@@ -722,51 +722,6 @@ deployCortxSecrets
 ##########################################################
 deployCortx
 cleanup
-
-# Note: It is not ideal that some of these values are hard-coded here.
-#       The data comes from the helm charts and so there is no feasible
-#       way of getting the values otherwise.
-data_service_name="cortx-server-0"  # present in cortx values.yaml... what to do?
-data_service_default_user="$(extractBlock 'solution.common.s3.default_iam_users.auth_admin' || true)"
-control_service_name="cortx-control"  # hard coded in script above installing help or cortx-control
-control_service_default_user="cortxadmin" #hard coded in cortx-configmap/templates/_config.tpl
-
-cat << EOF
-
------------------------------------------------------------
-
-Thanks for installing CORTX Community Object Storage!
-
-** Please wait while CORTX Kubernetes resources are being deployed. **
-EOF
-
-if [[ ${components[server]} == true ]]; then
-    cat << EOF
-
-The S3 data service is accessible through the ${data_service_name} service.
-   Default IAM access key: ${data_service_default_user}
-   Default IAM secret key is accessible via:
-      kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
-        --template={{.data.s3_auth_admin_secret}} | base64 -d
-EOF
-fi
-
-if [[ ${components[control]} == true ]]; then
-    cat << EOF
-
-The CORTX control service is accessible through the ${control_service_name} service.
-   Default control username: ${control_service_default_user}
-   Default control password is accessible via:
-      kubectl get secrets/${cortx_secret_name} --namespace ${namespace} \\
-        --template={{.data.csm_mgmt_admin_secret}} | base64 -d
-EOF
-fi
-
-cat << EOF
-
------------------------------------------------------------
-
-EOF
 
 if [[ ${CORTX_DEPLOY_NO_WAIT:-false} == true ]]; then
     exit
