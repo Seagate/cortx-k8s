@@ -132,28 +132,42 @@ hare:
         cpu: 250m
         memory: 128Mi
 
-### TODO Update this structure similar to solution.yaml, merge with appropriate .cortxdata elements, and convert to a list.
-# storageSets is a Dictionary of storage sets.
+# storageSets is a List of storage sets.
+# Note that currently, only one storage set is supported.
 # e.g.:
 # storageSets:
-#   storage-set-1:
+#   - name: storage-set-1
 #     durability:
 #       sns: 1+0+0
 #       dix: 1+0+0
-#     controlUuid: "bfcb40c12e9f4fa4b924a787886a40b6"
-#     haUuid: "0789bc5f5f544197a5c204ed5d68ab07"
-#     nodes:
-#       ssc-vm-g4-rhev4-0009.colo.seagate.com:
-#         serverUuid: 50b3871d48fa4032bf27a211b4088df7
-#         dataUuid: "8466d0079fd44cd38164d8e31f5cd067"
-#         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
-#       ssc-vm-g4-rhev4-0010.colo.seagate.com:
-#         serverUuid: "05ceb17b5cdf47538db1bb89ccc247d2"
-#         dataUuid: "eb79cc372c7443cbac768db4313cc0e8"
-#         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
-# UUIDs are optional and if omitted, will be randomly generated, with
-# the exception of client UUIDs, which will not be configured if omitted.
-storageSets: {}
+#     # The number of Motr IO containers per CORTX Data Pod.
+#     # As the number of CVGs increase, this value can be increased to reduce
+#     # the number of total CORTX Data Pods per Kubernetes Worker Node.
+#     containerGroupSize: 1
+#     storage:
+#       - name: cvg-1
+#         type: ios
+#         devices:
+#           metadata:
+#             device: /dev/sdc
+#             size: 25Gi
+#           data:
+#             - device: /dev/sdd
+#               size: 25Gi
+#             - device: /dev/sde
+#               size: 25Gi
+#       - name: cvg-2
+#         type: ios
+#         devices:
+#           metadata:
+#             device: /dev/sdf
+#             size: 25Gi
+#           data:
+#             - device: /dev/sdg
+#               size: 25Gi
+#             - device: /dev/sdh
+#               size: 25Gi
+storageSets: []
 
 # Deploy CORTX Control instance
 # Control provides APIs to manage the CORTX cluster
@@ -364,65 +378,85 @@ server:
   ##   motr_max_rpc_msg_size: 524288
   extraConfiguration: ""
 
-##
-## Imported values from cortx-data Helm Chart. These will be changed.
-##
-cortxdata:
-  image: ghcr.io/seagate/centos:7
-  replicas: 3
-  # nodes is an array of Kubernetes worker node names on which CORTX will be deployed.
-  # NOTE: This parameter will eventually merge with .storageSets in some form.
-  nodes: []
-  # cvgs is an array of container volume groups (CVG).
-  # A CVG contains a name, type, an optional array of metadata devices, and
-  # an array of data devices.
-  # NOTE: This parameter will eventually merge with .storageSets in some form.
-  # e.g:
-  # cvgs:
-  # - name: cvg-01
-  #   type: ios
-  #   metadataDevices:
-  #     - /dev/sdc
-  #   dataDevices:
-  #     - /dev/sdd
-  #     - /dev/sde
-  #     - /dev/sdf
-  cvgs: []
-  storageClassName: local-block-storage
-  persistentStorage:
-    volumeMode: Block
-    accessModes:
-    - ReadWriteMany
-  motr:
-    # -- The number of Motr IO containers per CORTX Data Pod.
-    # As the number of CVGs increase, this value can be increased to reduce the number of total CORTX Data Pods per Kubernetes Worker Node.
-    containerGroupSize: 1
-    # An optional multi-line string that contains extra Motr configuration
-    # settings. The string may contain template expressions, and is appended to
-    # the end of the computed configuration.
-    # e.g.:
-    # extraConfiguration: |
-    #   md_size: 10
-    #   group_size: 1
-    extraConfiguration: ""
+# Deploy CORTX Data instances
+# Data provides the Motr object store
+data:
+  # -- Number of Data replicas
+  replicaCount: 1
+
+  # -- Extra configuration, as a multiline string, to be appended to the Motr configuration.
+  # Template expressions are allowed. The result is appended to the end of the computed configuration.
+  ## e.g.:
+  ## extraConfiguration: |
+  ##   md_size: 10
+  ##   group_size: 1
+  extraConfiguration: ""
+
+  # Data image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-data
+  image:
+    # -- Data image registry
+    registry: ghcr.io
+    # -- Data image name
+    repository: seagate/cortx-data
+    # -- Data image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- Data image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent
+
+  # Motr IOS component settings
+  ios:
+    # Motr IOS component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
     resources:
-      requests:
-        memory: 1Gi
-        cpu: 250m
+      # -- The resource limits for the Motr IOS containers and processes
       limits:
-        memory: 2Gi
         cpu: 1000m
-  confd:
-    resources:
+        memory: 2Gi
+      # -- The resource requests for the Motr IOS containers and processes
       requests:
-        memory: 128Mi
         cpu: 250m
+        memory: 1Gi
+
+  # Motr confd component settings
+  confd:
+    # Motr confd component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- The resource limits for the Motr confd containers and processes
       limits:
-        memory: 512Mi
         cpu: 500m
-  localpathpvc:
-    requeststoragesize: 1Gi
-    accessmodes:
+        memory: 512Mi
+      # -- The resource requests for the Motr confd containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+  # Persistence settings
+  persistence:
+    # -- Persistent volume size
+    size: 1Gi
+    # -- Persistent volume access modes
+    accessModes:
+      - ReadWriteOnce
+
+  # Persistence settings for Motr Block Devices
+  blockDevicePersistence:
+    # -- Persistent Volume storage class
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
+    storageClass: ""
+    # -- Persistent volume mode
+    volumeMode: Block
+    # -- Persistent volume access modes
+    accessModes:
       - ReadWriteOnce
 
 # Deploy CORTX Motr Client instances
