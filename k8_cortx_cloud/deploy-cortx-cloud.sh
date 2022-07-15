@@ -416,20 +416,6 @@ fi
 ##########################################################
 
 ##########################################################
-# Deploy CORTX k8s pre-reqs
-##########################################################
-function deployKubernetesPrereqs()
-{
-    # Add Helm repository dependencies
-    helm repo add hashicorp https://helm.releases.hashicorp.com
-    helm repo add bitnami https://charts.bitnami.com/bitnami
-
-    # Installing a chart from the filesystem requires fetching the dependencies
-    helm dependency build ../charts/cortx
-}
-
-
-##########################################################
 # Deploy CORTX 3rd party
 ##########################################################
 function deployRancherProvisioner()
@@ -468,7 +454,7 @@ function deployCortx()
     # file for Helm, instead of passing in each option with `--set`.
     buildValues ${values_file}
 
-    helm install cortx ../charts/cortx \
+    helm install --dependency-update cortx ../charts/cortx \
         -f ${values_file} \
         --namespace "${namespace}" \
         --create-namespace \
@@ -712,7 +698,6 @@ fi
 # Deploy CORTX cloud pre-requisites
 ##########################################################
 deleteStaleAutoGenFolders
-deployKubernetesPrereqs
 deployRancherProvisioner
 deployCortxLocalBlockStorage
 deployCortxSecrets
