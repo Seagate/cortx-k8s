@@ -24,18 +24,10 @@ Kubernetes: `>=1.22.0-0`
 
 ### Downloading the Chart
 
-Locally download the Chart files:
+Download the Chart files:
 
 ```bash
 git clone https://github.com/Seagate/cortx-k8s.git
-```
-
-Install Chart dependencies:
-
-```bash
-helm repo add hashicorp https://helm.releases.hashicorp.com
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm dependency build cortx-k8s/charts/cortx
 ```
 
 ### Installing the Chart
@@ -43,7 +35,7 @@ helm dependency build cortx-k8s/charts/cortx
 To install the chart with the release name `cortx` and a configuration specified by the `myvalues.yaml` file:
 
 ```bash
-helm install cortx cortx-k8s/charts/cortx -f myvalues.yaml
+helm install --dependency-update cortx cortx-k8s/charts/cortx -f myvalues.yaml
 ```
 
 See the [Parameters](#parameters) section for details about all of the options available for configuration.
