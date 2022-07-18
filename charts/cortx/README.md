@@ -71,8 +71,12 @@ helm uninstall cortx
 | clusterId | string | A random UUID (v4) | The unique ID of the CORTX cluster. |
 | clusterName | string | Chart Release fullname | The name of the CORTX cluster. |
 | consul.client.containerSecurityContext.client.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul client agent containers |
+| consul.client.resources.limits | object | `{"cpu":"500m","memory":"500Mi"}` | Client resource limits. Default values are based on a typical VM deployment and should be tuned as needed. |
+| consul.client.resources.requests | object | `{"cpu":"200m","memory":"200Mi"}` | Client resource requests. Default values are based on a typical VM deployment and should be tuned as needed. |
 | consul.enabled | bool | `true` | Enable installation of the Consul chart |
 | consul.server.containerSecurityContext.server.allowPrivilegeEscalation | bool | `false` | Allow extra privileges in Consul server agent containers |
+| consul.server.resources.limits | object | `{"cpu":"500m","memory":"500Mi"}` | Server resource limits. Default values are based on a typical VM deployment and should be tuned as needed. |
+| consul.server.resources.requests | object | `{"cpu":"200m","memory":"200Mi"}` | Server resource requests. Default values are based on a typical VM deployment and should be tuned as needed. |
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
 | control.agent.resources.limits | object | `{"cpu":"500m","memory":"256Mi"}` | The resource limits for the Control Agent containers and processes |
 | control.agent.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the Control Agent containers and processes |

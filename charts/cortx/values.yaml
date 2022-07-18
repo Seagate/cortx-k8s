@@ -34,11 +34,29 @@ consul:
     # -- Enable the Consul UI
     enabled: false
   server:
+    resources:
+      # -- Server resource limits. Default values are based on a typical VM deployment and should be tuned as needed.
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      # -- Server resource requests. Default values are based on a typical VM deployment and should be tuned as needed.
+      requests:
+        cpu: 200m
+        memory: 200Mi
     containerSecurityContext:
       server:
         # -- Allow extra privileges in Consul server agent containers
         allowPrivilegeEscalation: false
   client:
+    resources:
+      # -- Client resource limits. Default values are based on a typical VM deployment and should be tuned as needed.
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      # -- Client resource requests. Default values are based on a typical VM deployment and should be tuned as needed.
+      requests:
+        cpu: 200m
+        memory: 200Mi
     containerSecurityContext:
       client:
         # -- Allow extra privileges in Consul client agent containers
