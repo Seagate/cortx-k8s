@@ -252,15 +252,15 @@ for ((cvg_instance = 1 ; cvg_instance <= NUM_CVGS ; cvg_instance++)); do
             | .devices = {} ))" "${_YAML_BODY}"
 
     # Generate metadata drive stanza
-    yq -i "with(.solution.storage_sets[0].storage[${_CVG_INDEX}].devices.metadata ; (
-            .device = \"${DEVICE_PATHS[${_DEVICE_OFFSET}]}\"
+    yq -i "with(.solution.storage_sets[0].storage[${_CVG_INDEX}].devices.metadata[0] ; (
+            .path = \"${DEVICE_PATHS[${_DEVICE_OFFSET}]}\"
             | .size = \"${SIZE_METADATA_DRIVE}\" ))" "${_YAML_BODY}"
     ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
 
     # Generate data drive stanzas
     for ((data_instance = 0 ; data_instance < NUM_DATA_DRIVES ; data_instance++)); do
       yq -i "with(.solution.storage_sets[0].storage[${_CVG_INDEX}].devices.data[${data_instance}] ; (
-            .device = \"${DEVICE_PATHS[${_DEVICE_OFFSET}]}\"
+            .path = \"${DEVICE_PATHS[${_DEVICE_OFFSET}]}\"
             | .size = \"${SIZE_DATA_DRIVE}\" ))" "${_YAML_BODY}"
       ((_DEVICE_OFFSET=_DEVICE_OFFSET+1))
     done

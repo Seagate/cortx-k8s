@@ -513,8 +513,7 @@ function deployCortxLocalBlockStorage()
         select(fi==0) ref $to | select(fi==1) ref $from
         | with($to.cortxblkdata;
             .nodes                             = $from.solution.storage_sets[0].nodes
-            | .blockDevicePaths                = [$from.solution.storage_sets[0].storage[].devices.data[]]
-            | .blockDevicePaths                += [$from.solution.storage_sets[0].storage[].devices.metadata])
+            | .blockDevicePaths                = [$from.solution.storage_sets[0].storage[].devices[].[]])
         | $to' "${cortx_block_data_values_file}" "${solution_yaml}"
 
     helm install "cortx-data-blk-data-${namespace}" cortx-cloud-helm-pkg/cortx-data-blk-data \
