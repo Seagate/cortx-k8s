@@ -59,19 +59,19 @@ solution:
           storage: 10Gi
           resources:
             requests:
-              memory: 100Mi
-              cpu: 100m
+              memory: 200Mi
+              cpu: 200m
             limits:
-              memory: 300Mi
-              cpu: 100m
+              memory: 500Mi
+              cpu: 500m
         client:
           resources:
             requests:
-              memory: 100Mi
-              cpu: 100m
+              memory: 200Mi
+              cpu: 200m
             limits:
-              memory: 300Mi
-              cpu: 100m
+              memory: 500Mi
+              cpu: 500m
       zookeeper:
         storage_request_size: 8Gi
         data_log_dir_request_size: 8Gi
@@ -90,7 +90,7 @@ solution:
             cpu: 250m
           limits:
             memory: 2Gi
-            cpu: 1
+            cpu: 1000m
       hare:
         hax:
           resources:
