@@ -57,7 +57,7 @@ Return the CORTX setup initContainer
   {{- if eq $image "ghcr.io/seagate/centos:7" }}
     - sleep $(shuf -i 5-10 -n 1)s
   {{- else }}
-    - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+    - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c $CONFSTORE_URL
   {{- end }}
   volumeMounts:
     - name: cortx-configuration
@@ -70,6 +70,8 @@ Return the CORTX setup initContainer
       mountPath: /etc/cortx/solution/secret
       readOnly: true
   env:
+    - name: CONFSTORE_URL
+      value: {{ include "cortx.confstore.url" .root }}
     - name: NODE_NAME
       valueFrom:
         fieldRef:
@@ -121,7 +123,7 @@ Return the CORTX Hax container
     - /bin/sh
   args:
     - -c
-    - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
+    - /opt/seagate/cortx/hare/bin/hare_setup start --config $CONFSTORE_URL
   {{- end }}
   volumeMounts:
     - name: cortx-configuration
@@ -131,6 +133,8 @@ Return the CORTX Hax container
     - name: data
       mountPath: /etc/cortx
   env:
+    - name: CONFSTORE_URL
+      value: {{ include "cortx.confstore.url" .root }}
     - name: NODE_NAME
       valueFrom:
         fieldRef:

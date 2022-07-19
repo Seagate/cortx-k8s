@@ -269,3 +269,15 @@ Return the Motr-client endpoint port
 {{- define "cortx.client.motrClientPort" -}}
 21501
 {{- end -}}
+
+{{/*
+Create a URL CORTX Confstore URL
+*/}}
+{{- define "cortx.confstore.url" -}}
+{{- if .Values.consul.enabled -}}
+{{- printf "consul://%s-consul-server:8500/conf" (include "cortx.fullname" .) -}}
+{{- else -}}
+{{/* FIXME: how do we get the external service name? */}}
+{{- printf "yaml:///etc/cortx/cluster.conf" -}}
+{{- end -}}
+{{- end -}}
