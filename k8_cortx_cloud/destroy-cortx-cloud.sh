@@ -144,7 +144,11 @@ function deleteCortxLocalBlockStorage()
     printf "########################################################\n"
     printf "# Delete CORTX Local Block Storage                     #\n"
     printf "########################################################\n"
+
+    # Deprecated release
     uninstallHelmChart "cortx-data-blk-data-${namespace}" "${namespace}"
+
+    uninstallHelmChart "cortx-block-data" "${namespace}"
 }
 
 function deleteCortxConfigmap()
@@ -279,8 +283,10 @@ function deleteNodeDataFiles()
     #################################################################
     # Delete files that contain disk partitions on the worker nodes #
     #################################################################
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
-    find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
+    if [[ -d $(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data ]]; then
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "mnt-blk-*" -delete
+        find "$(pwd)/cortx-cloud-helm-pkg/cortx-data-blk-data" -name "node-list-*" -delete
+    fi
     if [[ -d $(pwd)/cortx-cloud-helm-pkg/cortx-data ]]; then
         find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "mnt-blk-*" -delete
         find "$(pwd)/cortx-cloud-helm-pkg/cortx-data" -name "node-list-*" -delete
@@ -311,5 +317,5 @@ uninstallHelmChart cortx "${namespace}"
 # Clean up
 #############################################################
 delete3rdPartyPVCs
-deleteKubernetesPrereqs
-deleteNodeDataFiles
+deleteKubernetesPrereqs  # deprecated
+deleteNodeDataFiles      # deprecated

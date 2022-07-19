@@ -517,7 +517,7 @@ function deployCortxLocalBlockStorage()
             | .blockDevicePaths                += [$from.solution.storage_sets[0].storage[].devices.metadata])
         | $to' "${cortx_block_data_values_file}" "${solution_yaml}"
 
-    helm install "cortx-data-blk-data-${namespace}" cortx-cloud-helm-pkg/cortx-data-blk-data \
+    helm install cortx-block-data ../charts/cortx-block-data \
         -f ${cortx_block_data_values_file} \
         --namespace "${namespace}" \
         --create-namespace \
