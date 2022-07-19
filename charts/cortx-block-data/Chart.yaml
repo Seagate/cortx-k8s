@@ -1,0 +1,18 @@
+apiVersion: v2
+description: CORTX block device provider for object storage
+home: https://github.com/Seagate/cortx-k8s/tree/integration/charts/cortx-block-data
+icon: https://raw.githubusercontent.com/Seagate/cortx/main/doc/assets/CORTX-Logo-GRN_400x400.jpg
+keywords:
+  - cortx
+  - storage
+  - s3
+  - object-storage
+maintainers:
+  - email: cortx-questions@seagate.com
+    name: Seagate
+name: cortx-block-data
+sources:
+  - https://github.com/Seagate/cortx
+  - https://github.com/Seagate/cortx-k8s
+type: application
+version: 0.1.0
