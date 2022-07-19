@@ -8,6 +8,7 @@ if ! ./parse_scripts/check_yq.sh; then
 fi
 
 readonly solution_yaml=${1:-'solution.yaml'}
+readonly custom_values_file=${CORTX_DEPLOY_CUSTOM_VALUES_FILE:-}
 readonly cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 cortx_secret_fields=("kafka_admin_secret"
                      "consul_admin_secret"
@@ -99,6 +100,15 @@ function configurationCheck()
     ((num_motr_client < 1)) && components[client]=false
 
     readonly components
+
+    # Check for existence of custom values file
+    if [[ -n ${custom_values_file} ]]; then
+        if [[ ! -f ${custom_values_file} ]]; then
+            printf "ERROR: custom values file %s does not exist\n" "${custom_values_file}"
+            exit 1
+        fi
+        printf "Custom values file: %s\n" "${custom_values_file}"
+    fi
 
     # Validate secrets configuration
     secret_name=$(getSolutionValue "solution.secrets.name")
@@ -468,8 +478,11 @@ function deployCortx()
     # file for Helm, instead of passing in each option with `--set`.
     buildValues ${values_file}
 
+    values=(-f "${values_file}")
+     [[ -f ${custom_values_file} ]] && values+=(-f "${custom_values_file}")
+
     helm install cortx ../charts/cortx \
-        -f ${values_file} \
+        "${values[@]}" \
         --namespace "${namespace}" \
         --create-namespace \
         || exit $?
