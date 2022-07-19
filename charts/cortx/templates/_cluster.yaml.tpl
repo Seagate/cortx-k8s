@@ -20,23 +20,33 @@ cluster:
   {{- range $stsIndex := until (len $cvgGroups) }}
   - name: {{ include "cortx.data.dataNodeName" $stsIndex }}
     components:
-      - name: utils
-      - name: motr
-        services:
-          - io
-      - name: hare
+    - name: utils
+    - name: motr
+      services:
+      - io
+    - name: hare
     storage:
     {{- range $cvg := index $cvgGroups $stsIndex }}
     - name: {{ $cvg.name }}
       type: {{ $cvg.type }}
       devices:
-        {{- if $cvg.devices.metadata }}
+        {{- with $cvg.devices.metadata }}
         metadata:
-          - {{ $cvg.devices.metadata.device }}
+        {{- range . }}
+        - {{ .path }}
         {{- end }}
+        {{- end }}
+        {{- with $cvg.devices.log }}
+        log:
+        {{- range . }}
+        - {{ .path }}
+        {{- end }}
+        {{- end }}
+        {{- with $cvg.devices.data }}
         data:
-        {{- range $cvg.devices.data }}
-          - {{ .device }}
+        {{- range . }}
+        - {{ .path }}
+        {{- end }}
         {{- end }}
     {{- end }}
   {{- end }}
@@ -47,7 +57,7 @@ cluster:
     - name: hare
     - name: rgw
       services:
-        - rgw_s3
+      - rgw_s3
   {{- end }}
   {{- if .Values.control.enabled }}
   - name: control_node
@@ -68,7 +78,7 @@ cluster:
     - name: utils
     - name: motr
       services:
-        - motr_client
+      - motr_client
     - name: hare
   {{- $root := . }}
   {{- with .Values.storageSets }}

@@ -167,23 +167,23 @@ hare:
 #         type: ios
 #         devices:
 #           metadata:
-#             device: /dev/sdc
-#             size: 25Gi
-#           data:
-#             - device: /dev/sdd
+#             - path: /dev/sdc
 #               size: 25Gi
-#             - device: /dev/sde
+#           data:
+#             - path: /dev/sdd
+#               size: 25Gi
+#             - path: /dev/sde
 #               size: 25Gi
 #       - name: cvg-2
 #         type: ios
 #         devices:
 #           metadata:
-#             device: /dev/sdf
-#             size: 25Gi
-#           data:
-#             - device: /dev/sdg
+#             - path: /dev/sdf
 #               size: 25Gi
-#             - device: /dev/sdh
+#           data:
+#             - path: /dev/sdg
+#               size: 25Gi
+#             - path: /dev/sdh
 #               size: 25Gi
 storageSets: []
 

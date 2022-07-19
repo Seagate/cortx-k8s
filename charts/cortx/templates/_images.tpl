@@ -88,9 +88,9 @@ Returns a volumeDevices definition for Data Pods given a list of CVGs
 {{- define "cortx.containers.dataBlockDeviceVolumes" -}}
 volumeDevices:
   {{- range . }}
-  {{- range concat (list .devices.metadata) .devices.data }}
-  - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
-    devicePath: {{ .device | quote }}
+  {{- range concat (.devices.metadata | default list) (.devices.log | default list) (.devices.data | default list) }}
+  - name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .path) }}
+    devicePath: {{ .path | quote }}
   {{- end }}
   {{- end }}
 {{- end -}}

@@ -8,7 +8,7 @@
 # Loop through each entry in the block device list which contains the following array:
 # [{"device":"/dev/sdd", "size":"25Gi"}]
 {{- range $deviceiter := $.Values.cortxblkdata.blockDevicePaths }}
-{{- $localpath := $deviceiter.device }}
+{{- $localpath := $deviceiter.path }}
 {{- $disk := (base $localpath) }}
 apiVersion: v1
 kind: PersistentVolume

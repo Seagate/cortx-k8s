@@ -53,13 +53,16 @@ parseSolution() {
 
 setup_colors
 
+if ! ./solution_validation_scripts/solution-validation.sh "${solution_yaml}"; then
+    exit 1
+fi
+
 readonly release_selector="app.kubernetes.io/instance=cortx"
 readonly cortx_selector="${release_selector},app.kubernetes.io/name=cortx"
 
 namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
 num_nodes=$(yq '.solution.storage_sets[0].nodes | length' "${solution_yaml}")
-num_devices=$(yq '[.solution.storage_sets[0].storage[].devices.metadata.device,
-                   .solution.storage_sets[0].storage[].devices.data[].device] | length' "${solution_yaml}")
+num_devices=$(yq '[.solution.storage_sets[0].storage[].devices[].[]] | length' "${solution_yaml}")
 num_cvgs=$(yq '.solution.storage_sets[0].storage | length' "${solution_yaml}")
 container_group_size=$(yq '.solution.storage_sets[0].container_group_size' "${solution_yaml}")
 num_data_sts=$(( (num_cvgs+container_group_size-1) / container_group_size ))

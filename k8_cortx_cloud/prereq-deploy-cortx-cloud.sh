@@ -348,8 +348,7 @@ function symlinkBlockDevices()
 
     # Create comma-separated string from the device paths in solution.yaml
     # Template replacement variable
-    DEVICE_PATHS=$(yq '[.solution.storage_sets[0].storage[].devices.metadata.device,
-                   .solution.storage_sets[0].storage[].devices.data[].device]' --output-format=csv "${solution_yaml}")
+    DEVICE_PATHS=$(yq '[.solution.storage_sets[0].storage[].devices[].[].path]' --output-format=csv "${solution_yaml}")
     export DEVICE_PATHS
 
     # Prepare local templated Job definition

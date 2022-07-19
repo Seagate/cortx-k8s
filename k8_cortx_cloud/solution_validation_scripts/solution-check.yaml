@@ -151,9 +151,9 @@ solution:
           type: required
           devices:
             metadata:
-              device: required
-              size: required
+              - path: required
+                size: required
             data:
-              - device: required
+              - path: required
                 size: required
       nodes: required

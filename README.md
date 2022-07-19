@@ -353,10 +353,10 @@ The metadata and data drives are defined in this section. All drives must be the
 | `storage_sets[].storage[].name` | This value is used to identify the specific collection of drives CORTX will use to store data. | `cvg-01` |
 | `storage_sets[].storage[].type` | `TBD` | `ios` |
 | `storage_sets[].storage[].devices` | The list of specific block devices CORTX will use to store both object metadata and data on inside this CVG. | See `solution.example.yaml` |
-| `storage_sets[].storage[].devices.metadata.device` | The block device path CORTX will use to store object metadata on for this CVG. | `/dev/sdc` |
-| `storage_sets[].storage[].devices.metadata.size` | The size of the block device CORTX will use to store object metadata on for this CVG. | `5Gi` |
+| `storage_sets[].storage[].devices.metadata[].path` | The block device path CORTX will use to store object metadata on for this CVG. | `/dev/sdc` |
+| `storage_sets[].storage[].devices.metadata[].size` | The size of the block device CORTX will use to store object metadata on for this CVG. | `5Gi` |
 | `storage_sets[].storage[].devices.data[]` | The list of block devices CORTX will use to store its object data on for this CVG. This list can _(and most often will)_ have multiple devices defined in it. | See `solution.example.yaml` |
-| `storage_sets[].storage[].devices.data[].device` | The block device path CORTX will use to store some of its object data on for this CVG. | See `solution.example.yaml` |
+| `storage_sets[].storage[].devices.data[].path` | The block device path CORTX will use to store some of its object data on for this CVG. | See `solution.example.yaml` |
 | `storage_sets[].storage[].devices.data[].size` | The size of the block device CORTX will use to store some of its object data on for this CVG. | `5Gi` |
 
 ## Troubleshooting

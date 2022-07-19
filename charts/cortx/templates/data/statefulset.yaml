@@ -170,9 +170,9 @@ spec:
         requests:
           storage: {{ $.Values.data.persistence.size }}
   {{- range $cvg := $cvgGroup }}
-  {{- range concat (list $cvg.devices.metadata) $cvg.devices.data }}
+  {{- range concat ($cvg.devices.metadata | default list) ($cvg.devices.log | default list) ($cvg.devices.data | default list) }}
   - metadata:
-      name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .device) }}
+      name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .path) }}
     spec:
       accessModes: {{- toYaml $.Values.data.blockDevicePersistence.accessModes | nindent 6 }}
       volumeMode: {{ $.Values.data.blockDevicePersistence.volumeMode | quote }}
@@ -182,7 +182,7 @@ spec:
           storage: {{ .size | quote }}
       selector:
         matchLabels:
-          cortx.io/device-path: {{ include "cortx.data.devicePathToString" .device | quote }}
+          cortx.io/device-path: {{ include "cortx.data.devicePathToString" .path | quote }}
   {{- end }}
   {{- end }}
 ---

@@ -176,41 +176,41 @@ solution:
       type: ios
       devices:
         metadata:
-          device: /dev/sdc
+        - path: /dev/sdc
           size: 5Gi
         data:
-        - device: /dev/sdd
+        - path: /dev/sdd
           size: 5Gi
-        - device: /dev/sde
+        - path: /dev/sde
           size: 5Gi
-        - device: /dev/sdf
+        - path: /dev/sdf
           size: 5Gi
-        - device: /dev/sdg
+        - path: /dev/sdg
           size: 5Gi
-        - device: /dev/sdh
+        - path: /dev/sdh
           size: 5Gi
-        - device: /dev/sdi
+        - path: /dev/sdi
           size: 5Gi
-        - device: /dev/sdj
+        - path: /dev/sdj
           size: 5Gi
     - name: cvg-02
       type: ios
       devices:
         metadata:
-          device: /dev/sdk
+        - path: /dev/sdk
           size: 5Gi
         data:
-        - device: /dev/sdl
+        - path: /dev/sdl
           size: 5Gi
-        - device: /dev/sdm
+        - path: /dev/sdm
           size: 5Gi
-        - device: /dev/sdn
+        - path: /dev/sdn
           size: 5Gi
-        - device: /dev/sdo
+        - path: /dev/sdo
           size: 5Gi
-        - device: /dev/sdp
+        - path: /dev/sdp
           size: 5Gi
-        - device: /dev/sdq
+        - path: /dev/sdq
           size: 5Gi
-        - device: /dev/sdr
+        - path: /dev/sdr
           size: 5Gi

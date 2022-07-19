@@ -50,8 +50,6 @@ cortx:
       admin: {{ .Values.externalConsul.adminUser }}
       secret: {{ .Values.externalConsul.adminSecretName }}
   common:
-    release:
-      name: CORTX
     service:
       admin: admin
       secret: common_admin_secret
