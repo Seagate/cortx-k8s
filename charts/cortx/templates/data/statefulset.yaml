@@ -153,7 +153,7 @@ spec:
               mountPath: /etc/cortx
           ports:
           - name: {{ printf "ios-%d-tcp" $ioIndex }}
-            containerPort: {{ printf "%d" (add $ioIndex (include "cortx.data.iosPort" $) | int) }}
+            containerPort: {{ printf "%d" (add $cvgIndex (include "cortx.data.iosPort" $) | int) }}
           {{- if $.Values.data.ios.resources }}
           resources: {{- toYaml $.Values.data.ios.resources | nindent 12 }}
           {{- end }}
