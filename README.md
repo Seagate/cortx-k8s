@@ -378,6 +378,25 @@ After the CORTX Kubernetes resources are created, the deployment script will wai
 | `CORTX_DEPLOY_SERVER_TIMEOUT`  | Server Deployment timeout duration  | `10m` (10 minutes)        |
 | `CORTX_DEPLOY_NO_WAIT`         | Disable all waits when `true`       | `false`, wait is enabled |
 
+### Overriding Helm Chart Values
+
+During the deployment process, the CORTX Helm Chart is installed, based on the input from the `solution.yaml` file. The solution file does not support all possible Chart value configuration settings. For those times you want to customize the deployment beyond what is available in `solution.yaml`, you can specify a custom Chart values.yaml file using the `CORTX_DEPLOY_CUSTOM_VALUES_FILE` environment variable. The custom file will **override** anything set in `solution.yaml` or calculated by the deployment script, so be careful when using this feature. See the [Chart documentation](charts/cortx/README.md) for details on possible configuration settings.
+
+For example, this values file will enable the Consul Web UI:
+
+```yaml
+consul:
+  ui:
+    # Enable the Consul Web UI
+    enable: true
+```
+
+Set the environment variable when deploying:
+
+```bash
+CORTX_DEPLOY_CUSTOM_VALUES_FILE="myvalues.yaml" ./deploy-cortx-cloud.sh solution.yaml
+```
+
 ### Crash-looping InitContainers
 
 During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such error conditions. This command can be used to spin up a debugging container instance that has access to those same logs.
