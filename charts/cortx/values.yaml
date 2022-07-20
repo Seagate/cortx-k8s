@@ -1,11 +1,14 @@
 # Default values for cortx.
 # This is a YAML-formatted file.
 
-## -- A name that will partially override cortx.fullname
+# -- A name that will partially override cortx.fullname
 nameOverride: ""
 
-## -- A name that will fully override cortx.fullname
+# -- A name that will fully override cortx.fullname
 fullnameOverride: ""
+
+# -- Kubernetes Cluster Domain
+clusterDomain: cluster.local
 
 serviceAccount:
   # -- Enable the creation of a ServiceAccount for CORTX pods
@@ -18,6 +21,10 @@ serviceAccount:
   # -- Allow auto mounting of the service account token
   automountServiceAccountToken: false
 
+rbac:
+  # -- Enable the creation of RBAC resources, Role and RoleBinding, for the CORTX ServiceAccount.
+  create: true
+
 # Consul chart configuration
 # ref: https://github.com/hashicorp/consul-k8s/blob/main/charts/consul/values.yaml
 consul:
@@ -27,11 +34,29 @@ consul:
     # -- Enable the Consul UI
     enabled: false
   server:
+    resources:
+      # -- Server resource limits. Default values are based on a typical VM deployment and should be tuned as needed.
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      # -- Server resource requests. Default values are based on a typical VM deployment and should be tuned as needed.
+      requests:
+        cpu: 200m
+        memory: 200Mi
     containerSecurityContext:
       server:
         # -- Allow extra privileges in Consul server agent containers
         allowPrivilegeEscalation: false
   client:
+    resources:
+      # -- Client resource limits. Default values are based on a typical VM deployment and should be tuned as needed.
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      # -- Client resource requests. Default values are based on a typical VM deployment and should be tuned as needed.
+      requests:
+        cpu: 200m
+        memory: 200Mi
     containerSecurityContext:
       client:
         # -- Allow extra privileges in Consul client agent containers
@@ -60,6 +85,13 @@ kafka:
   deleteTopicEnable: true
   # -- Overridden min.insync.replicas config for the transaction topic
   transactionStateLogMinIsr: 2
+  # -- Extend timeout for successful Zookeeper connection
+  zookeeperConnectionTimeoutMs: 60000
+  startupProbe:
+    # -- Enable startup probe to allow for slow Zookeeper startup
+    enabled: true
+    # -- Initial delay for startup probe
+    initialDelaySeconds: 10
 
   # ZooKeeper chart configuration
   # ref: https://github.com/bitnami/charts/blob/master/bitnami/zookeeper/values.yaml
@@ -81,228 +113,390 @@ externalKafka:
   adminUser: admin
   adminSecretName: kafka_admin_secret
 
-##
-## Imported values from the cortx-configmap Helm Chart. These will be changed.
-##
-configmap:
-  # clusterName is the name of the CORTX cluster
-  clusterName: cortx-cluster
+# -- The name of the CORTX cluster.
+# @default -- Chart Release fullname
+clusterName: ""
 
-  # clusterId is the unique ID number of the CORTX cluster
-  clusterId: ""
+# -- The unique ID of the CORTX cluster.
+# @default -- A random UUID (v4)
+clusterId: ""
 
-  # clusterStorageVolumes is a Dictionary of container volume groups.
-  # e.g:
-  # clusterStorageVolumes:
-  #   cvg-01:
-  #     type: ios
-  #     metadataDevices:
-  #       - /dev/sdc
-  #     dataDevices:
-  #       - /dev/sdd
-  #       - /dev/sde
-  #       - /dev/sdf
-  clusterStorageVolumes: {}
+# -- The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail.
+existingSecret: ""
 
-  # clusterStorageSets is a Dictionary of storage sets.
-  # e.g.:
-  # clusterStorageSets:
-  #   storage-set-1:
-  #     durability:
-  #       sns: 1+0+0
-  #       dix: 1+0+0
-  #     controlUuid: "bfcb40c12e9f4fa4b924a787886a40b6"
-  #     haUuid: "0789bc5f5f544197a5c204ed5d68ab07"
-  #     nodes:
-  #       ssc-vm-g4-rhev4-0009.colo.seagate.com:
-  #         serverUuid: 50b3871d48fa4032bf27a211b4088df7
-  #         dataUuid: "8466d0079fd44cd38164d8e31f5cd067"
-  #         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
-  #       ssc-vm-g4-rhev4-0010.colo.seagate.com:
-  #         serverUuid: "05ceb17b5cdf47538db1bb89ccc247d2"
-  #         dataUuid: "eb79cc372c7443cbac768db4313cc0e8"
-  #         clientUuid: "6900a455cb634acea727cb01a7ac8e0a"
-  # UUIDs are optional and if omitted, will be randomly generated, with
-  # the exception of client UUIDs, which will not be configured if omitted.
-  clusterStorageSets: {}
-
-  # cortxVersion is a version string representing the CORTX version being
-  # installed
-  # e.g.:
-  # cortxVersion: 2.0.0-624-custom-ci
-  cortxVersion: "unknown"
-
-  # cortxStoragePaths allows configuring the location of CORTX filesystem paths
-  cortxStoragePaths:
-    local: "/etc/cortx"
-    log: "/etc/cortx/log"
-    config: "/etc/cortx"
-
-  # cortxIoService allows configuring information about the external IO service.
-  # All values must be specified.
-  # e.g.
-  # cortxIoService:
-  #   name: cortx-io-svc-0
-  #   ports:
-  #     http: 80
-  #     https: 443
-  cortxIoService:
-    name: cortx-io-svc-0
+# CORTX Hare component configuration
+hare:
+  # Hax settings
+  # Hax is deployed as a container in multiple workloads. These settings apply to all container instances.
+  hax:
     ports:
-      http: ""
+      http:
+        # -- The port number of the Hax HTTP endpoint.
+        port: 22003
+        # -- The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`.
+        protocol: https
+
+    # Hax component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers.
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      # -- Configure the requested resources for all Hax containers. This applies to all Pods that run Hax containers.
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+# storageSets is a List of storage sets.
+# Note that currently, only one storage set is supported.
+# e.g.:
+# storageSets:
+#   - name: storage-set-1
+#     durability:
+#       sns: 1+0+0
+#       dix: 1+0+0
+#     # The number of Motr IO containers per CORTX Data Pod.
+#     # As the number of CVGs increase, this value can be increased to reduce
+#     # the number of total CORTX Data Pods per Kubernetes Worker Node.
+#     containerGroupSize: 1
+#     storage:
+#       - name: cvg-1
+#         type: ios
+#         devices:
+#           metadata:
+#             - path: /dev/sdc
+#               size: 25Gi
+#           data:
+#             - path: /dev/sdd
+#               size: 25Gi
+#             - path: /dev/sde
+#               size: 25Gi
+#       - name: cvg-2
+#         type: ios
+#         devices:
+#           metadata:
+#             - path: /dev/sdf
+#               size: 25Gi
+#           data:
+#             - path: /dev/sdg
+#               size: 25Gi
+#             - path: /dev/sdh
+#               size: 25Gi
+storageSets: []
+
+# Deploy CORTX Control instance
+# Control provides APIs to manage the CORTX cluster
+control:
+  # -- Enable installation of Control instances
+  enabled: true
+
+  # Control image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-control
+  image:
+    # -- Control image registry
+    registry: ghcr.io
+    # -- Control image name
+    repository: seagate/cortx-control
+    # -- Control image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- Control image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent
+
+  # Control Agent settings
+  agent:
+    # Control Agent resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- The resource limits for the Control Agent containers and processes
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      # -- The resource requests for the Control Agent containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+  # Control API service
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    ports:
+      # -- Control API service HTTPS port
+      https: 8081
+    nodePorts:
+      # -- Node port for HTTPS for LoadBalancer and NodePort service types
       https: ""
 
-  # cortxControl allows configuring CORTX CSM settings
-  cortxControl:
-    enabled: true
-    agent:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 256Mi
-          cpu: 500m
+  # Persistence settings
+  persistence:
+    # -- Persistent volume size
+    size: 1Gi
 
-  # cortxRgw allows configuring CORTX RGW settings
-  cortxRgw:
-    enabled: true
-    authAdmin: cortx-admin
-    authUser: cortx-user
-    # The below value should match the corresponding key in solution.yaml
-    # and is generally not changed by default.
-    authSecret: s3_auth_admin_secret
-    maxStartTimeout: 240
-    # An optional multi-line string that contains extra RGW configuration
-    # settings. The string may contain template expressions, and is appended to
-    # the end of the computed configuration.
-    # e.g.:
-    # extraConfiguration: |
-    #   thread_pool_size: 10
-    #   gc_max_objs: 32
-    #   motr_max_rpc_msg_size: 524288
-    extraConfiguration: ""
-    rgw:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 2Gi
-          cpu: 2000m
+# Deploy CORTX HA instance
+# HA manages the CORTX cluster availability
+# ref: https://github.com/Seagate/cortx-ha
+ha:
+    # -- Enable installation of HA instances
+  enabled: true
 
-  # cortxHA allows configuring CORTX HA settings
-  cortxHa:
-    enabled: true
-    fault_tolerance:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 1Gi
-          cpu: 500m
-    health_monitor:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 1Gi
-          cpu: 500m
-    k8s_monitor:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 1Gi
-          cpu: 500m
+  # HA image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-control
+  image:
+    # -- HA image registry
+    registry: ghcr.io
+    # -- HA image name
+    repository: seagate/cortx-control
+    # -- HA image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- HA image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent
 
-  # cortxHare allows configuring CORTX HARE settings
-  cortxHare:
-    haxDataEndpoints: []
-    haxServerEndpoints: []
-    haxClientEndpoints: []
-    hax:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 2Gi
-          cpu: 1000m
+  # HA Fault Tolerance component settings
+  faultTolerance:
+    # HA Fault Tolerance component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- The resource limits for the HA Fault Tolerance containers and processes
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      # -- The resource requests for the HA Fault Tolerance containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
 
+  # HA Health Monitor component settings
+  healthMonitor:
+    # HA Health Monitor component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- The resource limits for the HA Health Monitor containers and processes
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      # -- The resource requests for the HA Health Monitor containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
 
-  # cortxMotr allows configuring CORTX MOTR settings
-  cortxMotr:
-    clientInstanceCount: 0
-    clientEndpoints: []
-    confdEndpoints: []
-    iosEndpoints: []
-    rgwEndpoints: []
-    # An optional multi-line string that contains extra Motr configuration
-    # settings. The string may contain template expressions, and is appended to
-    # the end of the computed configuration.
-    # e.g.:
-    # extraConfiguration: |
-    #   md_size: 10
-    #   group_size: 1
-    extraConfiguration: ""
-    motr:
-      resources:
-        requests:
-          memory: 1Gi
-          cpu: 250m
-        limits:
-          memory: 2Gi
-          cpu: 1000m
-    confd:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 250m
-        limits:
-          memory: 512Mi
-          cpu: 500m
+  # HA Kubernetes Monitor component settings
+  k8sMonitor:
+    # HA Kubernetes Monitor component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- The resource limits for the HA Kubernetes Monitor containers and processes
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      # -- The resource requests for the HA Kubernetes Monitor containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
 
-  # cortxSecretName is the name of the Secret mounted in CORTX Pods
-  cortxSecretName: "cortx-secret"
-  # cortxSecretValues: is a Dictionary of CORTX secret names and values
-  cortxSecretValues: {}
+  # Persistence settings
+  persistence:
+    # -- Persistent volume size
+    size: 1Gi
 
-##
-## Imported values from cortx-platform Helm Chart. These will be changed.
-##
-platform:
-  podSecurityPolicy:
-    create: false
+# Deploy CORTX Server instances
+# Server provides S3 storage
+server:
+  # -- Enable installation of Server instances
+  enabled: true
+  # -- Number of Server replicas
+  replicaCount: 1
 
-  rbacRole:
-    create: true
+  # Server image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-rgw
+  image:
+    # -- Server image registry
+    registry: ghcr.io
+    # -- Server image name
+    repository: seagate/cortx-rgw
+    # -- Server image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- Server image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent
 
-  rbacRoleBinding:
-    create: true
+  # Server RGW settings
+  rgw:
+    # Server RGW resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- The resource limits for the Server RGW containers and processes
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+      # -- The resource requests for the Server RGW containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
 
-  networkPolicy:
-    create: false
-    cortxControl:
-      podAppLabel: cortx-control-pod
-    cortxData:
-      podNameLabel: cortx-data
+  # Server S3 service
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    # -- Number of service instances for LoadBalancer service types
+    instanceCount: 1
+    ports:
+      # -- RGW S3 service HTTP port
+      http: 80
+      # -- RGW S3 service HTTPS port
+      https: 443
+    nodePorts:
+      # -- Node port for S3 HTTP for LoadBalancer and NodePort service types
+      http: ""
+      # -- Node port for S3 HTTPS for LoadBalancer and NodePort service types
+      https: ""
 
-  services:
-    hax:
-      type: ClusterIP
-      protocol: https
-      port: 22003
-    io:
-      name: cortx-io-svc
-      type: ClusterIP
-      count: 1
-      ports:
-        http: 80
-        https: 443
-      nodePorts:
-        http: ""
-        https: ""
+  # Persistence settings
+  persistence:
+    # -- Persistent volume size
+    size: 1Gi
+    # -- Persistent volume access modes
+    accessModes:
+      - ReadWriteOnce
+
+  # Authentication settings
+  auth:
+    # -- Name of the admin user that is created when initializing the cluster
+    adminUser: cortx-user
+    # -- The admin user's Access Key
+    adminAccessKey: cortx-admin
+
+  # TODO: can this be removed?
+  maxStartTimeout: 240
+
+  # -- An optional multi-line string that contains extra RGW configuration settings.
+  # The string may contain template expressions, and is appended to the end of the
+  # computed configuration.
+  ## e.g.:
+  ## extraConfiguration: |
+  ##   thread_pool_size: 10
+  ##   gc_max_objs: 32
+  ##   motr_max_rpc_msg_size: 524288
+  extraConfiguration: ""
+
+# Deploy CORTX Data instances
+# Data provides the Motr object store
+data:
+  # -- Number of Data replicas
+  replicaCount: 1
+
+  # -- Extra configuration, as a multiline string, to be appended to the Motr configuration.
+  # Template expressions are allowed. The result is appended to the end of the computed configuration.
+  ## e.g.:
+  ## extraConfiguration: |
+  ##   md_size: 10
+  ##   group_size: 1
+  extraConfiguration: ""
+
+  # Data image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-data
+  image:
+    # -- Data image registry
+    registry: ghcr.io
+    # -- Data image name
+    repository: seagate/cortx-data
+    # -- Data image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- Data image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent
+
+  # Motr IOS component settings
+  ios:
+    # Motr IOS component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- The resource limits for the Motr IOS containers and processes
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      # -- The resource requests for the Motr IOS containers and processes
+      requests:
+        cpu: 250m
+        memory: 1Gi
+
+  # Motr confd component settings
+  confd:
+    # Motr confd component resource requests and limits
+    # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+    # These values specify the CORTX resource minimum requirements and limits.
+    # The values apply to both container resources and the CORTX internal configuration.
+    resources:
+      # -- The resource limits for the Motr confd containers and processes
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      # -- The resource requests for the Motr confd containers and processes
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+  # Persistence settings
+  persistence:
+    # -- Persistent volume size
+    size: 1Gi
+    # -- Persistent volume access modes
+    accessModes:
+      - ReadWriteOnce
+
+  # Persistence settings for Motr Block Devices
+  blockDevicePersistence:
+    # -- Persistent Volume storage class
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
+    storageClass: ""
+    # -- Persistent volume mode
+    volumeMode: Block
+    # -- Persistent volume access modes
+    accessModes:
+      - ReadWriteOnce
+
+# Deploy CORTX Motr Client instances
+# Motr Clients are generally a developer tool used for testing purposes
+client:
+  # -- Enable installation of Client instances
+  enabled: false
+  # -- Number of Client replicas
+  replicaCount: 1
+  # -- Number of Client instances (containers) per replica
+  instanceCount: 1
+
+  # Client image
+  # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-data
+  image:
+    # -- Client image registry
+    registry: ghcr.io
+    # -- Client image name
+    repository: seagate/cortx-data
+    # -- Client image tag
+    # @default -- Chart.AppVersion
+    tag: ""
+    # -- Client image pull policy
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    pullPolicy: IfNotPresent

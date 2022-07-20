@@ -1,4 +1,0 @@
-apiVersion: v1
-description: CORTX HA
-name: cortx-ha
-version: 0.0.1

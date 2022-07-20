@@ -1,4 +1,0 @@
-apiVersion: v1
-description: CORTX Control
-name: cortx-control
-version: 0.0.1

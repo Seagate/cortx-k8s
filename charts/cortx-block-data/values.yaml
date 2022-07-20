@@ -1,0 +1,6 @@
+cortxblkdata:
+  storageClassName: local-block-storage
+  blockDevicePaths: []
+  nodes: []
+  storage:
+    volumeMode: Block

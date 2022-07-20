@@ -1,1 +1,27 @@
+CHART NAME: {{ .Chart.Name }}
+CHART VERSION: {{ .Chart.Version }}
+APP VERSION: {{ .Chart.AppVersion }}
+
 Thanks for installing CORTX Community Object Storage!
+
+** Please wait while CORTX Kubernetes resources are being deployed. **
+
+{{- if and .Values.server.enabled (gt (.Values.server.service.instanceCount | int) 0) }}
+
+The S3 data service is accessible through the "{{ include "cortx.server.fullname" . }}-0" Service.
+Execute the following commands to get the S3 admin user IAM credentials:
+
+  echo "Access Key: {{ .Values.server.auth.adminAccessKey }}"
+  echo "Secret Key: $(kubectl -n {{ .Release.Namespace }} get secret {{ .Values.existingSecret }} -o jsonpath="{.data.s3_auth_admin_secret}" | base64 -d)"
+
+{{- end }}
+
+{{- if .Values.control.enabled }}
+
+The CORTX control API is accessible through the "{{ include "cortx.control.fullname" . }}" Service.
+Execute the following commands to get the Control admin user credentials:
+
+  echo "Username: cortxadmin"
+  echo "Password: $(kubectl -n {{ .Release.Namespace }} get secret {{ .Values.existingSecret }} -o jsonpath="{.data.csm_mgmt_admin_secret}" | base64 -d)"
+
+{{- end }}

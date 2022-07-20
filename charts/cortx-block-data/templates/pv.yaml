@@ -1,0 +1,40 @@
+{{- define "cortx_data.device_path.to_string" }}
+{{- . | lower | trimPrefix "/" | replace "/" "-" }}
+{{- end }}
+# Loop through each node in the nodes list array
+{{- range $nodename := .Values.cortxblkdata.nodes }}
+{{- $nodeparts := split "." $nodename }}
+{{- $shortnode := $nodeparts._0 }}
+# Loop through each entry in the block device list which contains the following array:
+# [{"device":"/dev/sdd", "size":"25Gi"}]
+{{- range $deviceiter := $.Values.cortxblkdata.blockDevicePaths }}
+{{- $localpath := $deviceiter.path }}
+{{- $disk := (base $localpath) }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ printf "cortx-data-%s-%s" $shortnode $disk }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    cortx.io/device-path: {{ include "cortx_data.device_path.to_string" $localpath | quote }}
+spec:
+  capacity:
+    storage: {{ $deviceiter.size }}
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: {{ $.Values.cortxblkdata.storage.volumeMode }}
+  storageClassName: {{ $.Values.cortxblkdata.storageClassName }}
+  persistentVolumeReclaimPolicy: Retain
+  local:
+    path: {{ $localpath }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ $nodename }}
+---
+{{- end }}
+{{- end }}

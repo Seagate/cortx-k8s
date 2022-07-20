@@ -19,7 +19,8 @@
     6. [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
 6. [Solution YAML Overview](#solution-yaml-overview)
 7. [Troubleshooting](#troubleshooting)
-8. [License](#license)
+8. [Glossary](#glossary)
+9. [License](#license)
 
 ## Project Overview
 
@@ -29,7 +30,7 @@ Deploying and managing Kubernetes is outside the scope of this repository, howev
 
 ## Reference Architecture
 
-![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s.jpg)
+![CORTX on Kubernetes Reference Architecture](./doc/images/cortx-ref-arch-k8s-28968.jpg)
 
 CORTX on Kubernetes consists of five primary components:
 
@@ -37,19 +38,19 @@ CORTX on Kubernetes consists of five primary components:
 
 2. CORTX Control Pods
     - These pods maintain the CORTX control plane
-    - Usually with a cardinality of one pod per CORTX deployment
+    - There is a default cardinality of one pod per CORTX deployment
 
 3. CORTX Data Pods
     - These pods maintain the CORTX data plane
-    - Usually with a cardinality of one pod per CORTX node
+    - There is a default cardinality of one pod per defined CVG per CORTX node
 
 4. CORTX Server Pods
     - These pods maintain the CORTX API and user interfaces
-    - Usually with a cardinality of one pod per CORTX node (but scalable based on system traffic)
+    - There is a default cardinality of three pods per CORTX node (but scalable based on system traffic)
 
 5. CORTX HA Pods
     - These pods maintain the overall high-availability of the CORTX deployment
-    - Usually with a cardinality of one pod per CORTX deployment
+    - There is a default cardinality of one pod per CORTX deployment
 
 ## CORTX on Kubernetes Prerequisites
 
@@ -142,7 +143,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
 3. Update the solution configuration file to reflect your environment. The most common and expected updates are reflected below:
 
-   - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created.
+   - Update the namespace you want to deploy CORTX into.  The default is "cortx".  If the namespace does not exist then it will be created for you. **There is currently a limitation on the maximum length of the namespace to 20 characters.**
 
    - Update the `deployment_type` with the desired deployment mode. See under [Global Parameters](#global-parameters) for more details.
 
@@ -184,32 +185,34 @@ This upgrade process updates all containers in all CORTX pods to the new specifi
 To upgrade a previously deployed CORTX cluster, run the `upgrade-cortx-cloud.sh` script to patch the CORTX on Kubernetes deployments using an updated image _(:information_source: You will want to update the `TARGET_IMAGE` variable below to your desired image tag)_. The script will stop all CORTX Pods, update the Deployments and StatefulSets, and then re-start the Pods.
 
    ```bash
-   TARGET_IMAGE="ghcr.io/seagate/cortx-data:2.0.0-834"
+   TARGET_IMAGE="ghcr.io/seagate/cortx-data:2.0.0-835"
    ./upgrade-cortx-cloud.sh -s solution.yaml -i $TARGET_IMAGE
    ```
 
-Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image ghcr.io/seagate/cortx-data:2.0.0-834 is specified, then:
+Note: There are three separate CORTX images (cortx-data, cortx-rgw, and cortx-control).  By specifying any one of these images, all images will be updated to that same version.  For example, if the image `ghcr.io/seagate/cortx-data:2.0.0-835` is specified, then:
 
-- ghcr.io/seagate/cortx-data:2.0.0-834 will be applied to the cortx-data and cortx-client containers
-- ghcr.io/seagate/cortx-rgw:2.0.0-834 will be applied to the cortx-server containers
-- ghcr.io/seagate/cortx-control:2.0.0-834 will be applied to the cortx-control and cortx-ha containers
-
+- `ghcr.io/seagate/cortx-data:2.0.0-835` will be applied to the cortx-data and cortx-client containers
+- `ghcr.io/seagate/cortx-rgw:2.0.0-835` will be applied to the cortx-server containers
+- `ghcr.io/seagate/cortx-control:2.0.0-835` will be applied to the cortx-control and cortx-ha containers
 
 To update the image for a specific CORTX Deployment or StatefulSet use `kubectl set image`:
+
 ```bash
 # Update image on all containers in a cortx-data statefulset
-kubectl set image --namespace=${NAMESPACE} statefulset cortx-data '*=ghcr.io/seagate/cortx-data:2.0.0-834'
+kubectl set image --namespace=${NAMESPACE} statefulset cortx-data '*=ghcr.io/seagate/cortx-data:2.0.0-835'
 
 # Update image on all containers in a cortx-server statefulset
-kubectl set image --namespace=${NAMESPACE} statefulset cortx-server '*=ghcr.io/seagate/cortx-rgw:2.0.0-834'
+kubectl set image --namespace=${NAMESPACE} statefulset cortx-server '*=ghcr.io/seagate/cortx-rgw:2.0.0-835'
 
 # Update image on all containers in a cortx-control deployment
-kubectl set image --namespace=${NAMESPACE} deployment cortx-control '*=ghcr.io/seagate/cortx-control:2.0.0-834'
+kubectl set image --namespace=${NAMESPACE} deployment cortx-control '*=ghcr.io/seagate/cortx-control:2.0.0-835'
 
 # Update image on all containers in a cortx-ha deployment
-kubectl set image --namespace=${NAMESPACE} deployment cortx-ha '*=ghcr.io/seagate/cortx-control:2.0.0-834'
-```
+kubectl set image --namespace=${NAMESPACE} deployment cortx-ha '*=ghcr.io/seagate/cortx-control:2.0.0-835'
 
+# Update image on all containers in a cortx-client statefulset
+kubectl set image --namespace=${NAMESPACE} statefulset cortx-client '*=ghcr.io/seagate/cortx-client:2.0.0-835'
+```
 
 ### Using CORTX on Kubernetes
 
@@ -249,7 +252,7 @@ All paths below are prefixed with `solution.` for fully-qualified naming and are
 
 | Name              | Description                                                                                                                  | Default Value |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `namespace`       | The Kubernetes namespace that all CORTX-related resources will be deployed into.
+| `namespace`       | The Kubernetes namespace that all CORTX-related resources will be deployed into. Currently limited to a maximum of 20 characters.
 | `deployment_type` | The type of deployment. This determines which Kubernetes resources are created. Valid values are `standard` and `data-only`. | `standard`    |
 
 ### Secret parameters
@@ -310,17 +313,12 @@ This section contains common parameters that affect all CORTX components running
 | Name                                                  | Description                                                     | Default Value       |
 | ----------------------------------------------------- | --------------------------------------------------------------- | ------------------- |
 | `common.storage_provisioner_path`                     | TODO       | `/mnt/fs-local-volume` |
-| `common.container_path.local`                         | TODO       | `/etc/cortx` |
-| `common.container_path.shared`                        | TODO       | `/share` |
-| `common.container_path.log`                           | TODO       | `/etc/cortx/log` |
 | `common.s3.default_iam_users.auth_admin`              | Username for the default administrative user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `sgiamadmin` |
 | `common.s3.default_iam_users.auth_user`               | Username for the default user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `user_name` |
-| `common.s3.num_inst`                                  | TODO       | `2` |
-| `common.s3.start_port_num`                            | TODO       | `28051` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
+| `common.s3.instances_per_node`                        | This field determines the number of CORTX Server Pods to be deployed per Node specified in the `nodes` section of the solution configuration file. | `1` |
 | `common.s3.extra_configuration`                       | _(Optional)_ Extra configuration settings to append to the RGW configuration. The value is a multi-line string included verbatim.  | `""` |
 | `common.motr.num_client_inst`                         | TODO       | `0` |
-| `common.motr.start_port_num`                          | TODO       | `29000` |
 | `common.motr.extra_configuration`                     | _(Optional)_ Extra configuration settings to append to the Motr configuration. The value is a multi-line string included verbatim. | `""` |
 | `common.hax.protocol`                                 | Protocol that is used to communicate with HAX components running across Server and Data Pods.     | `http` |
 | `common.hax.port_num`                                 | Port number that is used to communicate with HAX components running across Server and Data Pods.  | `22003` |
@@ -333,9 +331,9 @@ This section contains common parameters that affect all CORTX components running
 | `common.external_services.control.type`               | Kubernetes Service type for external access to CSM Management API                                 | `NodePort` |
 | `common.external_services.control.ports.https`        | Secure (https) service port number for CSM Management API.                                        | `8081` |
 | `common.external_services.control.nodePorts.https`    | _(Optional)_ Node port for secure (https) CSM Management API.                                     | `null` |
-| `common.resource_allocation.**.storage`               | The desired storage space allocated to PVCs used by that component or sub-component.              | See `solution.yaml` |
-| `common.resource_allocation.**.resources.requests.*`  | CPU & Memory requested for Pods managed by a specific component or sub-component.                 | See `solution.yaml` |
-| `common.resource_allocation.**.resources.limits.*`    | CPU & Memory limits for Pods managed by a specific component or sub-component.                    | See `solution.yaml` |
+| `common.resource_allocation.**.storage`               | The desired storage space allocated to PVCs used by that component or sub-component.              | See `solution.example.yaml` |
+| `common.resource_allocation.**.resources.requests.*`  | CPU & Memory requested for Pods managed by a specific component or sub-component.                 | See `solution.example.yaml` |
+| `common.resource_allocation.**.resources.limits.*`    | CPU & Memory limits for Pods managed by a specific component or sub-component.                    | See `solution.example.yaml` |
 
 ### Storage parameters
 
@@ -343,19 +341,23 @@ This section contains common parameters that affect all CORTX components running
 
 The metadata and data drives are defined in this section. All drives must be the same across all nodes on which CORTX Data will be deployed. A minimum of 1 CVG of type `ios` with one metadata drive and one data drive is required.
 
-| Name                     | Description                                                                             | Default Value           |
-| ------------------------ | --------------------------------------------------------------------------------------- | ----------------------- |
-| `_TODO_`                 | TBD                                                                                     | `TBD`                   |
-
-### Node parameters
-
-This section contains information about all the worker nodes used to deploy CORTX cloud cluster. All nodes must have all the metadata and data drives mentioned in the "Storage" section above.
-
-| Name                     | Description                                                                                              | Default Value           |
-| ------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `nodes.node1.name`       | Kubernetes node name for the first node in the Kubernetes cluster available to deploy CORTX components.  | `node-1`                |
-| `nodes.node2.name`       | Kubernetes node name for the second node in the Kubernetes cluster available to deploy CORTX components. | `node-2`                |
-| `nodes.node{N}.name`     | Kubernetes node name for the Nth node in the Kubernetes cluster available to deploy CORTX components.    | None                    |
+| Name                     | Description                                                                                      | Default Value           |
+| ------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------- |
+| `storage_sets`           | A list of the storage defined for use by CORTX. At this time, only one storage set is supported. | See `solution.example.yaml`  |
+| `storage_sets[].name`    | The name of an individual storage set.    | `storage-set-1`         |
+| `storage_sets[].durability.sns` | `TBD`                               | `1+0+0` |
+| `storage_sets[].durability.dix` | `TBD`                               | `1+0+0` |
+| `storage_sets[].container_group_size` | This value determines the number of Motr IO containers inside of a single CORTX Data Pod. This value can be tuned for optimal performance based upon different Kubernetes environments. | `1` |
+| `storage_sets[].nodes`   | The list of Kubernetes worker nodes that CORTX will use to manage data inside the defined storage set. | See `solution.example.yaml` |
+| `storage_sets[].storage` | The list of CVGs (or Cylinder Volume Groups) that CORTX will use to store its data. All nodes defined in the parameter above must have all the same metadata and data drives available as defined in this parameter. | See `solution.example.yaml` |
+| `storage_sets[].storage[].name` | This value is used to identify the specific collection of drives CORTX will use to store data. | `cvg-01` |
+| `storage_sets[].storage[].type` | `TBD` | `ios` |
+| `storage_sets[].storage[].devices` | The list of specific block devices CORTX will use to store both object metadata and data on inside this CVG. | See `solution.example.yaml` |
+| `storage_sets[].storage[].devices.metadata[].path` | The block device path CORTX will use to store object metadata on for this CVG. | `/dev/sdc` |
+| `storage_sets[].storage[].devices.metadata[].size` | The size of the block device CORTX will use to store object metadata on for this CVG. | `5Gi` |
+| `storage_sets[].storage[].devices.data[]` | The list of block devices CORTX will use to store its object data on for this CVG. This list can _(and most often will)_ have multiple devices defined in it. | See `solution.example.yaml` |
+| `storage_sets[].storage[].devices.data[].path` | The block device path CORTX will use to store some of its object data on for this CVG. | See `solution.example.yaml` |
+| `storage_sets[].storage[].devices.data[].size` | The size of the block device CORTX will use to store some of its object data on for this CVG. | `5Gi` |
 
 ## Troubleshooting
 
@@ -363,16 +365,37 @@ This section contains information about all the worker nodes used to deploy CORT
 
 The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
 
-### Overriding Helm Install  / Wait Timeouts
+### Overriding Cluster Install Wait Timeouts
 
-There is a "wait" after each of the cortx helm charts are deployed.  This wait is guarded by a timeout.  If needed, these timeout values can be overridden by environment variables.
+After the CORTX Kubernetes resources are created, the deployment script will wait for those resources to finish installing and reach a ready state. This wait is guarded by a set of timeout values which can be overridden using environment variables. The values are duration strings, such as `"30s"` or `"10m"`. The wait can be disabled completely by setting `CORTX_DEPLOY_NO_WAIT` to `true`.
 
-| Environment Variable           | Default Value |
-| ------------------------------ | ------------- |
-| `CORTX_DEPLOY_CONTROL_TIMEOUT` | `300s`        |
-| `CORTX_DEPLOY_DATA_TIMEOUT`    | `300s`        |
-| `CORTX_DEPLOY_SERVER_TIMEOUT`  | `300s`        |
-| `CORTX_DEPLOY_HA_TIMEOUT`      | `120s`        |
+| Environment Variable           | Description                         | Default Value            |
+| ------------------------------ | ----------------------------------- | ------------------------ |
+| `CORTX_DEPLOY_CLIENT_TIMEOUT`  | Client Deployment timeout duration  | `10m` (10 minutes)        |
+| `CORTX_DEPLOY_CONTROL_TIMEOUT` | Control Deployment timeout duration | `10m` (10 minutes)        |
+| `CORTX_DEPLOY_DATA_TIMEOUT`    | Data Deployment timeout duration    | `10m` (10 minutes)        |
+| `CORTX_DEPLOY_HA_TIMEOUT`      | HA Deployment timeout duration      | `4m` (4 minutes)         |
+| `CORTX_DEPLOY_SERVER_TIMEOUT`  | Server Deployment timeout duration  | `10m` (10 minutes)        |
+| `CORTX_DEPLOY_NO_WAIT`         | Disable all waits when `true`       | `false`, wait is enabled |
+
+### Overriding Helm Chart Values
+
+During the deployment process, the CORTX Helm Chart is installed, based on the input from the `solution.yaml` file. The solution file does not support all possible Chart value configuration settings. For those times you want to customize the deployment beyond what is available in `solution.yaml`, you can specify a custom Chart values.yaml file using the `CORTX_DEPLOY_CUSTOM_VALUES_FILE` environment variable. The custom file will **override** anything set in `solution.yaml` or calculated by the deployment script, so be careful when using this feature. See the [Chart documentation](charts/cortx/README.md) for details on possible configuration settings.
+
+For example, this values file will enable the Consul Web UI:
+
+```yaml
+consul:
+  ui:
+    # Enable the Consul Web UI
+    enable: true
+```
+
+Set the environment variable when deploying:
+
+```bash
+CORTX_DEPLOY_CUSTOM_VALUES_FILE="myvalues.yaml" ./deploy-cortx-cloud.sh solution.yaml
+```
 
 ### Crash-looping InitContainers
 
@@ -386,6 +409,10 @@ kubectl exec -it cortx-debug -c cortx-setup -- sh
 Once you are done with your debugging session, you can exit the shell session and delete the `cortx-debug` pod.
 
 **_Note:_** This requires a `kubectl` [minimum version of 1.20](https://kubernetes.io/docs/tasks/tools/#kubectl).
+
+## Glossary
+
+For any terms, acronyms, or phrases that are unfamiliar to you as an end-user, please consult the [GLOSSARY](GLOSSARY.md) page for a growing list of definitions and clarifications as needed.
 
 ## License
 

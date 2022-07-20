@@ -18,20 +18,18 @@ function parseSolution()
 
 namespace=$(parseSolution 'solution.namespace' | cut -f2 -d'>')
 deployment_type=$(parseSolution 'solution.deployment_type' | cut -f2 -d'>')
+num_nodes=$(yq '.solution.storage_sets[0].nodes | length' "${solution_yaml}")
 
 readonly namespace
 readonly deployment_type
+readonly num_nodes
 
 if [[ ${deployment_type} != "data-only" ]]; then
     printf "########################################################\n"
     printf "# Start CORTX Control                                   \n"
     printf "########################################################\n"
-    num_nodes=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a deployments <<< "${line}"
-        kubectl scale deploy "${deployments[0]}" --replicas 1 --namespace="${namespace}"
-        num_nodes=$((num_nodes+1))
-    done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-control')
+    expected_count=1
+    kubectl scale deploy cortx-control --replicas ${expected_count} --namespace="${namespace}"
 
     printf "\nWait for CORTX Control to be ready"
     while true; do
@@ -49,7 +47,7 @@ if [[ ${deployment_type} != "data-only" ]]; then
             count=$((count+1))
         done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-control-')
 
-        if [[ ${num_nodes} -eq ${count} ]]; then
+        if [[ ${expected_count} -eq ${count} ]]; then
             break
         else
             printf "."
@@ -64,14 +62,15 @@ fi
 printf "########################################################\n"
 printf "# Start CORTX Data                                      \n"
 printf "########################################################\n"
-num_nodes=0
-while IFS= read -r line; do
-    IFS=" " read -r -a deployments <<< "${line}"
-    kubectl scale deploy "${deployments[0]}" --replicas 1 --namespace="${namespace}"
-    num_nodes=$((num_nodes+1))
-done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-data-')
+readonly data_selector="app.kubernetes.io/component=data,app.kubernetes.io/instance=cortx"
+num_data_sts=0
+for statefulset in $(kubectl get statefulset --selector "${data_selector}" --no-headers --namespace="${namespace}" --output custom-columns=NAME:metadata.name); do
+    kubectl scale statefulset "${statefulset}" --replicas "${num_nodes}" --namespace="${namespace}"
+    ((num_data_sts+=1))
+done
 
 printf "\nWait for CORTX Data to be ready"
+expected_count=$((num_nodes * num_data_sts))
 while true; do
     count=0
     while IFS= read -r line; do
@@ -87,7 +86,7 @@ while true; do
         count=$((count+1))
     done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-data-')
 
-    if [[ ${num_nodes} -eq ${count} ]]; then
+    if [[ ${expected_count} -eq ${count} ]]; then
         break
     else
         printf "."
@@ -102,12 +101,18 @@ if [[ ${deployment_type} != "data-only" ]]; then
     printf "########################################################\n"
     printf "# Start CORTX Server                                    \n"
     printf "########################################################\n"
-    num_nodes=0
+
+    server_instances_per_node="$(parseSolution 'solution.common.s3.instances_per_node' | cut -f2 -d'>')"
+    total_server_pods=$(( num_nodes * server_instances_per_node ))
+
+    readonly server_instances_per_node
+    readonly total_server_pods
+
+    readonly server_selector="app.kubernetes.io/component=server,app.kubernetes.io/instance=cortx"
     while IFS= read -r line; do
         IFS=" " read -r -a deployments <<< "${line}"
-        kubectl scale deploy "${deployments[0]}" --replicas 1 --namespace="${namespace}"
-        num_nodes=$((num_nodes+1))
-    done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-server-')
+        kubectl scale statefulset "${deployments[0]}" --replicas ${total_server_pods} --namespace="${namespace}"
+    done < <(kubectl get statefulsets --namespace="${namespace}" --selector=${server_selector} --no-headers)
 
     printf "\nWait for CORTX Server to be ready"
     while true; do
@@ -123,9 +128,9 @@ if [[ ${deployment_type} != "data-only" ]]; then
                 break
             fi
             count=$((count+1))
-        done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-server-')
+        done < <(kubectl get pods --namespace="${namespace}" --selector=${server_selector} --no-headers)
 
-        if [[ ${num_nodes} -eq ${count} ]]; then
+        if [[ ${total_server_pods} -eq ${count} ]]; then
             break
         else
             printf "."
@@ -139,12 +144,8 @@ if [[ ${deployment_type} != "data-only" ]]; then
     printf "########################################################\n"
     printf "# Start CORTX HA                                        \n"
     printf "########################################################\n"
-    num_nodes=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a deployments <<< "${line}"
-        kubectl scale deploy "${deployments[0]}" --replicas 1 --namespace="${namespace}"
-        num_nodes=$((num_nodes+1))
-    done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-ha')
+    expected_count=1
+    kubectl scale deploy cortx-ha --replicas ${expected_count} --namespace="${namespace}"
 
     printf "\nWait for CORTX HA to be ready"
     while true; do
@@ -162,7 +163,7 @@ if [[ ${deployment_type} != "data-only" ]]; then
             count=$((count+1))
         done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-ha')
 
-        if [[ ${num_nodes} -eq ${count} ]]; then
+        if [[ ${expected_count} -eq ${count} ]]; then
             break
         else
             printf "."
@@ -174,18 +175,13 @@ if [[ ${deployment_type} != "data-only" ]]; then
     printf "\n\n"
 fi
 
-num_motr_client=$(parseSolution 'solution.common.motr.num_client_inst' | cut -f2 -d'>')
-
-if [[ ${num_motr_client} -gt 0 ]]; then
+if kubectl get statefulset cortx-client --namespace="${namespace}" &> /dev/null; then
     printf "########################################################\n"
     printf "# Start CORTX Client                                    \n"
     printf "########################################################\n"
-    num_nodes=0
-    while IFS= read -r line; do
-        IFS=" " read -r -a deployments <<< "${line}"
-        kubectl scale deploy "${deployments[0]}" --replicas 1 --namespace="${namespace}"
-        num_nodes=$((num_nodes+1))
-    done < <(kubectl get deployments --namespace="${namespace}" | grep 'cortx-client-')
+
+    replica_count=${num_nodes}
+    kubectl scale statefulset cortx-client --replicas "${replica_count}" --namespace="${namespace}"
 
     printf "\nWait for CORTX Client to be ready"
     while true; do
@@ -203,7 +199,7 @@ if [[ ${num_motr_client} -gt 0 ]]; then
             count=$((count+1))
         done < <(kubectl get pods --namespace="${namespace}" | grep 'cortx-client-')
 
-        if [[ ${num_nodes} -eq ${count} ]]; then
+        if [[ ${replica_count} -eq ${count} ]]; then
             break
         else
             printf "."

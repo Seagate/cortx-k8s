@@ -1,0 +1,18 @@
+{{- if .Values.server.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cortx.server.fullname" . }}-headless
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector: {{- include "cortx.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+    cortx.io/hax-enabled: "true"
+    cortx.io/service-domain: {{ include "cortx.server.serviceDomain" . }}
+    cortx.io/service-type: cortx-server
+{{- end }}

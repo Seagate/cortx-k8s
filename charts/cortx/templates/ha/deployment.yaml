@@ -1,0 +1,141 @@
+{{- if .Values.ha.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cortx.ha.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ha
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ha
+  template:
+    metadata:
+      labels: {{- include "cortx.labels" . | nindent 8 }}
+        app.kubernetes.io/component: ha
+        cortx.io/machine-id: {{ printf "%s-headless" (include "cortx.ha.fullname" . ) }}
+        cortx.io/service-type: cortx-ha
+    spec:
+      hostname: {{ include "cortx.ha.fullname" . }}-headless
+      serviceAccountName: {{ include "cortx.ha.fullname" . }}-monitor
+      automountServiceAccountToken: true
+      volumes:
+        - name: cortx-configuration
+          configMap:
+            name: {{ include "cortx.configmapName" . }}
+        - name: cortx-ssl-cert
+          configMap:
+            name: {{ include "cortx.tls.configmapName" . }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "cortx.ha.fullname" . }}
+        - name: configuration-secrets
+          secret:
+            secretName: {{ include "cortx.secretName" . }}
+      initContainers:
+      {{- include "cortx.containers.setup" (dict "image" .Values.ha.image "root" . ) | nindent 8 }}
+      containers:
+        {{- $image := include "cortx.ha.image" . }}
+        {{- $imagePullPolicy := .Values.ha.image.pullPolicy }}
+        - name: cortx-ha-fault-tolerance
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy | quote }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/ha/bin/ha_start -s fault_tolerance -c yaml:///etc/cortx/cluster.conf
+          {{- end }}
+          volumeMounts:
+            - name: cortx-configuration
+              mountPath: /etc/cortx/solution
+            - name: cortx-ssl-cert
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- if .Values.ha.faultTolerance.resources }}
+          resources: {{- toYaml .Values.ha.faultTolerance.resources | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+        - name: cortx-ha-health-monitor
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy | quote }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/ha/bin/ha_start -s health_monitor -c yaml:///etc/cortx/cluster.conf
+          {{- end }}
+          volumeMounts:
+            - name: cortx-configuration
+              mountPath: /etc/cortx/solution
+            - name: cortx-ssl-cert
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- if .Values.ha.healthMonitor.resources }}
+          resources: {{- toYaml .Values.ha.healthMonitor.resources | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+        - name: cortx-ha-k8s-monitor
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy | quote }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/ha/bin/ha_start -s k8s_monitor -c yaml:///etc/cortx/cluster.conf
+          {{- end }}
+          volumeMounts:
+            - name: cortx-configuration
+              mountPath: /etc/cortx/solution
+            - name: cortx-ssl-cert
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- if .Values.ha.k8sMonitor.resources }}
+          resources: {{- toYaml .Values.ha.k8sMonitor.resources | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+{{- end }}

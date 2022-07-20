@@ -44,11 +44,6 @@ jobs:
         shell: bash
         working-directory: ./k8_cortx_cloud
 
-      - name: Validate solution_stub.yaml
-        run: ./solution_validation_scripts/solution-validation.sh solution_stub.yaml
-        shell: bash
-        working-directory: ./k8_cortx_cloud
-
   # Reference: https://github.com/helm/chart-testing-action
   chart-lint-test:
     name: Lint and Test Helm Charts

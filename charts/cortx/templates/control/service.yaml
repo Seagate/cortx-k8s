@@ -1,0 +1,41 @@
+{{- if .Values.control.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cortx.control.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control
+spec:
+  type: {{ .Values.control.service.type }}
+  selector: {{- include "cortx.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: control
+  ports:
+    - name: control-https
+      protocol: TCP
+      port: {{ .Values.control.service.ports.https }}
+      targetPort: control-https
+      {{- $nodePortAllowed := or (eq .Values.control.service.type "NodePort") (eq .Values.control.service.type "LoadBalancer") }}
+      {{- if and $nodePortAllowed (not (empty .Values.control.service.nodePorts.https)) }}
+      nodePort: {{ .Values.control.service.nodePorts.https }}
+      {{- end }}
+---
+# This service is deprecated and will be removed in a future release
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cortx.control.fullname" . }}-loadbal-svc
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "cortx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control
+    cortx.io/deprecated: "true"
+spec:
+  type: ClusterIP
+  selector: {{- include "cortx.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: control
+  ports:
+    - name: control-https
+      protocol: TCP
+      port: {{ .Values.control.service.ports.https }}
+      targetPort: control-https
+{{- end }}

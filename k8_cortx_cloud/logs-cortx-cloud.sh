@@ -76,6 +76,7 @@ fi
 namespace=$(parseSolution 'solution.namespace')
 namespace=$(echo "${namespace}" | cut -f2 -d'>')
 logs_folder="logs-cortx-cloud-${date}"
+outfile="${logs_folder}.tgz"
 mkdir "${logs_folder}" -p
 status=""
 
@@ -154,7 +155,7 @@ while IFS= read -r line; do
     pods_found=$((pods_found+1))
 
     case ${pod_name} in
-      cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-*)
+      cortx-control-* | cortx-data-* | cortx-ha-* | cortx-server-* | cortx-client-*)
         containers=$(kubectl get pods "${pod_name}" -n "${namespace}" -o jsonpath="{.spec['containers', 'initContainers'][*].name}")
         IFS=" " read -r -a containers <<< "${containers}"
         tarPodLogs "${pod_name}" "${containers[@]}" &
@@ -170,14 +171,14 @@ done <<< "$(kubectl get pods --namespace="${namespace}" || true)"
 wait
 
 
-echo "Creating support bundle tar file: ${logs_folder}.tgz"
+echo "Creating support bundle tar file: ${outfile}"
 
-tar cfz "${logs_folder}.tgz" "${logs_folder}"
+tar cfz "${outfile}" "${logs_folder}"
 
 if [[ ${nodename} ]] && [[ ${pods_found} == "0" ]]; then
   printf "\n❌ No pods are running on the node: \"%s\".\n" "${nodename}"
 else
-  printf "\n\n📦 \"%s.tar\" file generated" "${logs_folder}"
+  printf "\n\n📦 \"%s.\" file generated" "${outfile}"
 fi
 rm -rf "${logs_folder}"
 printf "\n✔️  All done\n\n"

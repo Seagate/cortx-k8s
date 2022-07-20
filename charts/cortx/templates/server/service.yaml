@@ -1,20 +1,24 @@
-{{- $svc := .Values.platform.services.io -}}
-{{- if gt (int $svc.count) 0 -}}
+{{- if .Values.server.enabled }}
+{{- $svc := .Values.server.service -}}
+{{- $count := ($svc.instanceCount | int) -}}
+{{- if gt $count 0 }}
 {{- $isLB := eq $svc.type "LoadBalancer" -}}
 {{- $nodePortAllowed := or (eq $svc.type "NodePort") $isLB -}}
-{{- $svcCount := ternary $svc.count 1 $isLB | int -}}
+{{- $count = ternary $count 1 $isLB -}}
 {{- $root := . -}}
-{{- range $i := until $svcCount -}}
+{{- range $i := until $count -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ printf "%s-%d" $svc.name $i | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-%d" (include "cortx.server.fullname" $root) $i }}
   namespace: {{ $root.Release.Namespace }}
-  labels: {{ include "cortx.labels" $ | nindent 4 }}
+  labels: {{- include "cortx.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: server
 spec:
   type: {{ $svc.type }}
-  selector:
-    cortx.io/service-type: "cortx-server"
+  selector: {{- include "cortx.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: server
+    cortx.io/service-type: cortx-server
   ports:
     - name: rgw-http
       protocol: TCP
@@ -31,5 +35,30 @@ spec:
       nodePort: {{ add $svc.nodePorts.https $i }}
       {{- end }}
 ---
+# This service is deprecated and will be removed in a future release
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "cortx-io-svc-%d" $i | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $root.Release.Namespace }}
+  labels: {{- include "cortx.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: server
+    cortx.io/deprecated: "true"
+spec:
+  type: {{ ternary "LoadBalancer" "ClusterIP" $isLB }}
+  selector: {{- include "cortx.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: server
+    cortx.io/service-type: cortx-server
+  ports:
+    - name: rgw-http
+      protocol: TCP
+      port: {{ $svc.ports.http }}
+      targetPort: rgw-http
+    - name: rgw-https
+      protocol: TCP
+      port: {{ $svc.ports.https }}
+      targetPort: rgw-https
+---
+{{- end }}
 {{- end }}
 {{- end }}
