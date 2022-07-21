@@ -114,7 +114,6 @@ else
 fi
 
 # Check pods
-count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
     IFS=" " read -r -a status <<< "${line}"
@@ -122,19 +121,10 @@ while IFS= read -r line; do
     printf "%s..." "${status[0]}"
     if [[ "${status[2]}" != "Running" || "${ready_status[0]}" != "${ready_status[1]}" ]]; then
         msg_failed
-        failcount=$((failcount+1))
     else
         msg_passed
-        count=$((count+1))
     fi
 done < <(kubectl get pods --namespace="${namespace}" --selector=${control_selector} --no-headers)
-
-if [[ ${expected_count} -eq ${count} ]]; then
-    msg_overall_passed
-else
-    msg_overall_failed
-    failcount=$((failcount+1))
-fi
 
 readonly exclude_deprecated_selector="cortx.io/deprecated!=true"  # exclude deprecated service
 
