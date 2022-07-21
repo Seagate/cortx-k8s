@@ -155,42 +155,6 @@ else
     failcount=$((failcount+1))
 fi
 
-# Check storage local
-count=0
-num_pvs_pvcs=2
-[[ ${data_deployment} == true ]] && num_pvs_pvcs=0
-msg_info "| Checking Storage: Local [PVCs/PVs] |"
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "${line}"
-    printf "PVC: %s..." "${status[0]}"
-    if [[ "${status[1]}" != "Bound" ]]; then
-        msg_failed
-        failcount=$((failcount+1))
-    else
-        msg_passed
-        count=$((count+1))
-    fi
-done < <(kubectl get pvc --namespace="${namespace}" --selector=${control_selector} --no-headers)
-
-while IFS= read -r line; do
-    IFS=" " read -r -a status <<< "${line}"
-    printf "PV: %s..." "${status[5]}"
-    if [[ "${status[4]}" != "Bound" ]]; then
-        msg_failed
-        failcount=$((failcount+1))
-    else
-        msg_passed
-        count=$((count+1))
-    fi
-done < <(kubectl get pv --no-headers | grep "${namespace}/cortx-control")
-
-if [[ ${num_pvs_pvcs} -eq ${count} ]]; then
-    msg_overall_passed
-else
-    msg_overall_failed
-    failcount=$((failcount+1))
-fi
-
 #########################################################################################
 # CORTX Data
 #########################################################################################
