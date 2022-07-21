@@ -28,8 +28,7 @@ spec:
           configMap:
             name: {{ include "cortx.tls.configmapName" . }}
         - name: data
-          persistentVolumeClaim:
-            claimName: {{ include "cortx.control.fullname" . }}
+          emptyDir: {}
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" . }}
