@@ -7,7 +7,7 @@ metadata:
   labels: {{- include "cortx.labels" . | nindent 4 }}
     app.kubernetes.io/component: control
 spec:
-  replicas: {{ .Values.control.service.instanceCount }}
+  replicas: {{ .Values.control.replicaCount }}
   selector:
     matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: control
