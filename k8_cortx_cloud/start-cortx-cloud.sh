@@ -29,7 +29,7 @@ if [[ ${deployment_type} != "data-only" ]]; then
     printf "# Start CORTX Control                                   \n"
     printf "########################################################\n"
     expected_count=$(helm get values cortx -n "${namespace}" | yq .control.replicaCount)
-    kubectl scale deploy cortx-control --replicas ${expected_count} --namespace="${namespace}"
+    kubectl scale deploy cortx-control --replicas "${expected_count}" --namespace="${namespace}"
 
     printf "\nWait for CORTX Control to be ready"
     while true; do
