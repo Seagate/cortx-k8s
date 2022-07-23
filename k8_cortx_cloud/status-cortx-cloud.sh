@@ -114,7 +114,7 @@ else
 fi
 
 # Check pods
-expected_count=$(helm get values cortx -n "${namespace}" | yq .control.replicaCount)
+expected_count=$(helm get values cortx --all --namespace "${namespace}" -o yaml | yq .control.replicaCount)
 count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do

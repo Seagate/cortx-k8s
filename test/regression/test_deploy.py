@@ -11,7 +11,7 @@ from utils import Logger, StopWatch
 
 
 def get_expected_cortx_control_pods(namespace):
-    cmd = f'helm get values cortx -n {namespace} | yq .control.replicaCount'
+    cmd = f'helm get values cortx --all --namespace {namespace} | yq .control.replicaCount'
     child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)  # nosec
     return int(child.communicate()[0])
     
