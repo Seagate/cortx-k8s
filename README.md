@@ -155,7 +155,7 @@ If you have direct access to the underlying Kubernetes Nodes in your cluster, CO
 
    - Update SNS and DIX durability values. The default value for both parameters is `1+0+0`.
 
-   - Update storage cvg devices for data and metadata with respect to the devices in your environment.
+   - Update storage cvg devices for data and metadata with respect to the devices in your environment. **There is currently a limitation on the maximum metadata disk size to 20TB (check bug CORTX-29365 for more info). There are no limitations on data disk size.**
 
    - Update nodes section with proper node hostnames from your Kubernetes cluster.
      - If the Kubernetes control plane nodes are required to be used for deployment, make sure to remove the taint from it before deploying CORTX.
