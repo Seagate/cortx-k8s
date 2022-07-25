@@ -86,6 +86,7 @@ helm uninstall cortx
 | control.image.repository | string | `"seagate/cortx-control"` | Control image name |
 | control.image.tag | string | Chart.AppVersion | Control image tag |
 | control.persistence.size | string | `"1Gi"` | Persistent volume size |
+| control.replicaCount | int | `1` | Number of Control replicas |
 | control.service.nodePorts.https | string | `""` | Node port for HTTPS for LoadBalancer and NodePort service types |
 | control.service.ports.https | int | `8081` | Control API service HTTPS port |
 | control.service.type | string | `"ClusterIP"` | Kubernetes service type |
