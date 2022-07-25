@@ -641,7 +641,7 @@ function cleanup()
     # to clean up as much as possible going forward.
     # Delete files that contain disk partitions on the worker nodes and the node info
     # and left-over secret data
-    find "$(pwd)/cortx-cloud-helm-pkg" -type f \( -name 'mnt-blk-*' -o -name 'node-list-*' -o -name secret-info.txt \) -delete
+    [[ -d $(pwd)/cortx-cloud-helm-pkg ]] && find "$(pwd)/cortx-cloud-helm-pkg" -type f \( -name 'mnt-blk-*' -o -name 'node-list-*' -o -name secret-info.txt \) -delete
 
     # Delete left-over machine IDs and any other auto-gen data
     rm -rf "${cfgmap_path}"

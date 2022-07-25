@@ -192,6 +192,8 @@ storageSets: []
 control:
   # -- Enable installation of Control instances
   enabled: true
+  # -- Number of Control replicas
+  replicaCount: 1
 
   # Control image
   # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-control

@@ -114,6 +114,7 @@ else
 fi
 
 # Check pods
+expected_count=$(helm get values cortx --all --namespace "${namespace}" --output yaml | yq .control.replicaCount)
 count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
@@ -139,6 +140,7 @@ fi
 readonly exclude_deprecated_selector="cortx.io/deprecated!=true"  # exclude deprecated service
 
 # Check services
+expected_count=1
 count=0
 msg_info "| Checking Services: cortx-control |"
 while IFS= read -r line; do
