@@ -236,11 +236,6 @@ control:
       # -- Node port for HTTPS for LoadBalancer and NodePort service types
       https: ""
 
-  # Persistence settings
-  persistence:
-    # -- Persistent volume size
-    size: 1Gi
-
 # Deploy CORTX HA instance
 # HA manages the CORTX cluster availability
 # ref: https://github.com/Seagate/cortx-ha
