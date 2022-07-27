@@ -117,7 +117,7 @@ function tarPodLogs()
     printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
     kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- \
       cortx_support_bundle generate \
-        --cluster_conf_path yaml:///etc/cortx/cluster.conf \
+        --cluster_conf_path \$CONFSTORE_URL \
         --location file://${path} \
         --bundle_id "${name}" \
         --message "${name}" \
