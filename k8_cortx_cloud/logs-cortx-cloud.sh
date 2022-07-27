@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 SCRIPT=$(readlink -f "$0")
 DIR=$(dirname "${SCRIPT}")
 
@@ -78,6 +80,14 @@ namespace=$(echo "${namespace}" | cut -f2 -d'>')
 logs_folder="logs-cortx-cloud-${date}"
 outfile="${logs_folder}.tgz"
 mkdir "${logs_folder}" -p
+
+function cleanup()
+{
+    echo "Cleaning up ${logs_folder}"
+    rm -r "${logs_folder}"
+}
+trap cleanup EXIT
+
 status=""
 
 printf "######################################################\n"
@@ -139,6 +149,7 @@ function tarPodLogs()
   fi
 }
 
+pids=""
 while IFS= read -r line; do
   IFS=" " read -r -a pod_line <<< "${line}"
   IFS="/" read -r -a status <<< "${pod_line[2]}"
@@ -159,16 +170,29 @@ while IFS= read -r line; do
         containers=$(kubectl get pods "${pod_name}" -n "${namespace}" -o jsonpath="{.spec['containers', 'initContainers'][*].name}")
         IFS=" " read -r -a containers <<< "${containers}"
         tarPodLogs "${pod_name}" "${containers[@]}" &
+        pids+=" $!"
         ;;
       *)
         tarPodLogs "${pod_name}" &
+        pids+=" $!"
         ;;
     esac
   fi
 
 done <<< "$(kubectl get pods --namespace="${namespace}" || true)"
 
-wait
+# Wait for all processes to finish.  Fail on error.
+failed=false
+for pid in ${pids}; do
+    if ! wait "${pid}"; then
+        failed=true
+    fi
+done
+
+if [[ "${failed}" == "true" ]]; then
+    echo "Log collection failed.  Exiting."
+    exit 1
+fi
 
 
 echo "Creating support bundle tar file: ${outfile}"
@@ -180,5 +204,5 @@ if [[ ${nodename} ]] && [[ ${pods_found} == "0" ]]; then
 else
   printf "\n\n📦 \"%s.\" file generated" "${outfile}"
 fi
-rm -rf "${logs_folder}"
+
 printf "\n✔️  All done\n\n"
