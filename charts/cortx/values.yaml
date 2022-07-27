@@ -1,6 +1,26 @@
 # Default values for cortx.
 # This is a YAML-formatted file.
 
+# Global chart settings. These override all other specified chart settings, including chart dependencies.
+global:
+  # -- Global container image registry. Overrides CORTX component `image.registry` and sub-charts (except Consul).
+  imageRegistry: ""
+
+  # CORTX global values. Overrides all CORTX component values.
+  cortx:
+    # CORTX component image overrides.
+    image:
+      # -- CORTX container image registry. Overrides CORTX component `image.registry`.
+      ## e.g.
+      ## registry: myPrivateRegistry
+      registry: ""
+      # -- CORTX image tag. Overrides CORTX component `image.tag`.
+      ## e.g.
+      ## tag: 2.0.0-999
+      tag: ""
+      # -- CORTX image pull policy. Overrides CORTX component `image.pullPolicy`.
+      pullPolicy: ""
+
 # -- A name that will partially override cortx.fullname
 nameOverride: ""
 

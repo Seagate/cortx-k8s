@@ -3,7 +3,17 @@ Return a valid CORTX image name from parts
 {{ include "cortx.images.image" ( dict "image" .Values.path.to.the.image "root" $) }}
 */}}
 {{- define "cortx.images.image" -}}
-{{- printf "%s/%s:%s" .image.registry .image.repository (default .root.Chart.AppVersion .image.tag) -}}
+{{- $registry := coalesce .root.Values.global.imageRegistry .root.Values.global.cortx.image.registry .image.registry -}}
+{{- $tag := coalesce (.root.Values.global.cortx.image.tag | toString) (.image.tag | toString) .root.Chart.AppVersion -}}
+{{- printf "%s/%s:%s" $registry .image.repository $tag -}}
+{{- end -}}
+
+{{/*
+Return a valid CORTX image pull policy
+{{ include "cortx.images.imagePullPolicy" (dict "image" .Values.path.to.the.image "root" $) }}
+*/}}
+{{- define "cortx.images.imagePullPolicy" -}}
+{{ .root.Values.global.cortx.image.pullPolicy | default .image.pullPolicy | quote }}
 {{- end -}}
 
 {{/*
@@ -43,13 +53,13 @@ Return the Client image name
 
 {{/*
 Return the CORTX setup initContainer
-{{ include "cortx.containers.setup" ( dict "image" .Values.path.to.the.image "root" $) }}
+{{ include "cortx.containers.setup" (dict "image" .Values.path.to.the.image "root" $) }}
 */}}
 {{- define "cortx.containers.setup" -}}
 {{- $image := include "cortx.images.image" (dict "image" .image "root" .root) -}}
 - name: cortx-setup
   image: {{ $image }}
-  imagePullPolicy: {{ .image.pullPolicy | quote }}
+  imagePullPolicy: {{ include "cortx.images.imagePullPolicy" (dict "image" .image "root" .root) }}
   command:
     - /bin/sh
   args:
@@ -113,7 +123,7 @@ Return the CORTX Hax container
 {{- $image := include "cortx.images.image" (dict "image" .image "root" .root) -}}
 - name: cortx-hax
   image: {{ $image }}
-  imagePullPolicy: {{ .image.pullPolicy | quote }}
+  imagePullPolicy: {{ include "cortx.images.imagePullPolicy" (dict "image" .image "root" .root) }}
   {{- if eq $image "ghcr.io/seagate/centos:7" }}
   command: ["/bin/sleep", "3650d"]
   {{- else }}
