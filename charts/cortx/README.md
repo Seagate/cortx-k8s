@@ -85,7 +85,6 @@ helm uninstall cortx
 | control.image.registry | string | `"ghcr.io"` | Control image registry |
 | control.image.repository | string | `"seagate/cortx-control"` | Control image name |
 | control.image.tag | string | Chart.AppVersion | Control image tag |
-| control.persistence.size | string | `"1Gi"` | Persistent volume size |
 | control.replicaCount | int | `1` | Number of Control replicas |
 | control.service.nodePorts.https | string | `""` | Node port for HTTPS for LoadBalancer and NodePort service types |
 | control.service.ports.https | int | `8081` | Control API service HTTPS port |
@@ -113,6 +112,10 @@ helm uninstall cortx
 | externalKafka.adminUser | string | `"admin"` |  |
 | externalKafka.endpoints | list | `[]` |  |
 | fullnameOverride | string | `""` | A name that will fully override cortx.fullname |
+| global.cortx.image.pullPolicy | string | `""` | CORTX image pull policy. Overrides CORTX component `image.pullPolicy`. |
+| global.cortx.image.registry | string | `""` | CORTX container image registry. Overrides CORTX component `image.registry`. |
+| global.cortx.image.tag | string | `""` | CORTX image tag. Overrides CORTX component `image.tag`. |
+| global.imageRegistry | string | `""` | Global container image registry. Overrides CORTX component `image.registry` and sub-charts (except Consul). |
 | ha.enabled | bool | `true` | Enable installation of HA instances |
 | ha.faultTolerance.resources.limits | object | `{"cpu":"500m","memory":"1Gi"}` | The resource limits for the HA Fault Tolerance containers and processes |
 | ha.faultTolerance.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the HA Fault Tolerance containers and processes |

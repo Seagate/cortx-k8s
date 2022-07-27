@@ -34,14 +34,15 @@ spec:
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" . }}
+      {{- $imageContext := dict "image" .Values.ha.image "root" . }}
       initContainers:
-      {{- include "cortx.containers.setup" (dict "image" .Values.ha.image "root" . ) | nindent 8 }}
+      {{- include "cortx.containers.setup" $imageContext | nindent 8 }}
       containers:
         {{- $image := include "cortx.ha.image" . }}
-        {{- $imagePullPolicy := .Values.ha.image.pullPolicy }}
+        {{- $imagePullPolicy := include "cortx.images.imagePullPolicy" $imageContext }}
         - name: cortx-ha-fault-tolerance
           image: {{ $image }}
-          imagePullPolicy: {{ $imagePullPolicy | quote }}
+          imagePullPolicy: {{ $imagePullPolicy }}
           {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
@@ -76,7 +77,7 @@ spec:
             allowPrivilegeEscalation: false
         - name: cortx-ha-health-monitor
           image: {{ $image }}
-          imagePullPolicy: {{ $imagePullPolicy | quote }}
+          imagePullPolicy: {{ $imagePullPolicy }}
           {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
@@ -111,7 +112,7 @@ spec:
             allowPrivilegeEscalation: false
         - name: cortx-ha-k8s-monitor
           image: {{ $image }}
-          imagePullPolicy: {{ $imagePullPolicy | quote }}
+          imagePullPolicy: {{ $imagePullPolicy }}
           {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
