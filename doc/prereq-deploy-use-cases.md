@@ -52,3 +52,20 @@ The following example will mount the device located at `/dev/sdb`, create a file
 ```bash
 sudo ./prereq-deploy-cortx-cloud.sh -d /dev/sdb -s solution-1234.yaml -p
 ```
+
+## Consistent "connection reset by peer" issues
+
+If you experience consistent "connection reset by peer" errors when operating CORTX in a high traffic volume or large file transfer environment, you may be affected by an issue in the `conntrack` Linux networking module and its conservative default settings. The original issue is covered in depth in the Kubernetes blog post titled ["kube-proxy Subtleties: Debugging an Intermittent Connection Reset"](https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/).
+
+The prevailing fix for this issue in a Kubernetes environment is to set `conntrack` to a more liberal processing state. That can be done by performing the following command on your underlying Kubernetes worker nodes. Note that how you apply and persist this command on underlying Kubernetes worker nodes will vary by environment, distribution, or service you are using. This fix is implemented in the [`prereq-deploy-cortx-cloud.sh`](../k8_cortx_cloud/prereq-deploy-cortx-cloud.sh#L226-L241) script as a reference example.
+
+```bash
+echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
+```
+
+This implemeted fix is only one way to solve this specific issue, as it is highly dependent upon the underlying Linux OS and kernel settings, Kubernetes cluster settings, Container Networking Interface (CNI) component selection and configuration, kube-proxy component settings, and application-specific activity. If this specific does not resolve your explicit "connection reset by peer issues", you can reference the original Kubernetes Issues and Pull Requests below for more of the conversation that handles the individual settings that can be manually adjusted for your specific environment.
+
+**Follow-up issues:**
+- https://github.com/kubernetes/kubernetes/issues/74839
+- https://github.com/kubernetes/kubernetes/pull/74840
+- https://github.com/kubernetes/kubernetes/issues/94861
