@@ -410,6 +410,10 @@ Once you are done with your debugging session, you can exit the shell session an
 
 **_Note:_** This requires a `kubectl` [minimum version of 1.20](https://kubernetes.io/docs/tasks/tools/#kubectl).
 
+### Consistent "Connection Reset By Peer" issues
+
+TODO CORTX-33749 & CORTX-33217
+
 ## Glossary
 
 For any terms, acronyms, or phrases that are unfamiliar to you as an end-user, please consult the [GLOSSARY](GLOSSARY.md) page for a growing list of definitions and clarifications as needed.

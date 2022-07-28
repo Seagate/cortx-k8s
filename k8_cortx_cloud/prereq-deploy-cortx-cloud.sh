@@ -216,12 +216,21 @@ function cleanupFolders()
     rm -rf "${fs_mount_path}/local-path-provisioner/*"
 }
 
-function increaseResources()
+function modifySystemSettings()
 {
     # Increase Resources
     sysctl -w vm.max_map_count=30000000;
     # Add timestamp in core file name
     sysctl -w kernel.core_pattern=core.%t
+
+
+    ### CORTX-33749
+    ### TBD Explanation and references
+
+    echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
+
+    ### CORTX-33749 - END
+
 }
 
 function prepCortxDeployment()
@@ -433,6 +442,6 @@ fi
 # Perform the following functions if the 'disk' is provided
 if [[ "${disk}" != "" ]]; then
     cleanupFolders
-    increaseResources
+    modifySystemSettings
     prepCortxDeployment
 fi

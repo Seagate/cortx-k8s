@@ -52,3 +52,7 @@ The following example will mount the device located at `/dev/sdb`, create a file
 ```bash
 sudo ./prereq-deploy-cortx-cloud.sh -d /dev/sdb -s solution-1234.yaml -p
 ```
+
+## Consistent "Connection Reset By Peer" issues
+
+TODO CORTX-33749 & CORTX-33217
