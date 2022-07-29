@@ -161,6 +161,9 @@ buildValues() {
         (.global.storageClass, .consul.server.storageClass) = \"local-path\"
         | .existingSecret = \"${cortx_secret_name}\"" > "${values_file}"
 
+    # Configure all cortx-setup containers for console component logging
+    yq -i '.global.cortx.setupLoggingDetail = "component"' "${values_file}"
+
     # shellcheck disable=SC2016
     yq -i eval-all '
         select(fi==0) ref $to | select(fi==1) ref $from
