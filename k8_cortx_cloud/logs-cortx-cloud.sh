@@ -2,6 +2,7 @@
 
 SCRIPT=$(readlink -f "$0")
 DIR=$(dirname "${SCRIPT}")
+total_nodes=$(kubectl get pods --output name | grep 'cortx-control-*\|cortx-data-*\|cortx-ha-*\|cortx-server-*' | wc -l)
 
 function parseSolution()
 {
@@ -79,6 +80,9 @@ logs_folder="logs-cortx-cloud-${date}"
 outfile="${logs_folder}.tgz"
 mkdir "${logs_folder}" -p
 status=""
+size_limit_num=${size_limit::-2}
+size_limit_unit=${size_limit:(-2)}
+pods_share_size=$(($size_limit_num / $total_nodes))
 
 printf "######################################################\n"
 printf "# ✍️  Generating logs, namespace: %s, date: %s\n" "${namespace}" "${date}"
@@ -97,6 +101,8 @@ function tarPodLogs()
 
   local log_cmd=(kubectl logs --namespace="${namespace}" "${pod}")
   local log_name="${pod}"
+  local container_count=$(kubectl get pods $pod -o jsonpath="{.spec['containers', 'initContainers'][*].name}" | wc -w)
+  container_share_size=$(($pods_share_size / $container_count))
 
   if (($# > 0)); then
     # If there are remaining arguments, these are the list of cortx
@@ -113,6 +119,12 @@ function tarPodLogs()
     local path="/var/cortx/support_bundle"
     local name="bundle-logs-${pod}-${date}"
     local container=$1
+    # Retrive components counts
+    pod_machine_id=$(kubectl exec $pod -c $container -- cat /etc/machine-id)
+    get_conf_path="node>${pod_machine_id}>num_components"
+    local component_count=$(kubectl exec $pod -c $container -- conf yaml:///etc/cortx/cluster.conf get $get_conf_path | grep -o '[0-9]')
+    components_share_size=$(($container_share_size / $component_count))
+    # TODO: Need to implement component level size limit
 
     printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
     kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- \
