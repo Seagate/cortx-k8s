@@ -115,10 +115,21 @@ function tarPodLogs()
     local container=$1
 
     printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
+    # shellcheck disable=SC2016
     kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- \
+      env location="file://${path}" \
+          name="${name}" \
+          modules="${modules}" \
+          duration="${duration}" \
+          size_limit="${size_limit}" \
+          binlogs="${binlogs}" \
+          coredumps="${coredumps}" \
+          stacktrace="${stacktrace}" \
+          all="${all}" \
+      bash -c '
       cortx_support_bundle generate \
-        --cluster_conf_path \$CONFSTORE_URL \
-        --location file://${path} \
+        --cluster_conf_path "${CONFSTORE_URL}" \
+        --location "${location}" \
         --bundle_id "${name}" \
         --message "${name}" \
         --modules "${modules}" \
@@ -127,7 +138,7 @@ function tarPodLogs()
         --binlogs "${binlogs}" \
         --coredumps "${coredumps}" \
         --stacktrace "${stacktrace}" \
-        --all "${all}"
+        --all "${all}"'
     kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" -c "${container}" --namespace="${namespace}"
     kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
 
