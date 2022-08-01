@@ -412,9 +412,9 @@ Once you are done with your debugging session, you can exit the shell session an
 
 ### Consistent "connection reset by peer" issues
 
-If you experience consistent "connection reset by peer" errors when operating CORTX in a high traffic volume or large file transfer environment, you may be affected by an issue in the `conntrack` Linux networking module and its conservative default settings. The original issue is covered in depth in the Kubernetes blog post titled ["kube-proxy Subtleties: Debugging an Intermittent Connection Reset"](https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/).
+If you experience consistent "connection reset by peer" errors when operating CORTX in a high traffic volume or large file transfer environment, you may be affected by an issue in the `conntrack` Linux networking module and its aggressive default settings. The original issue is covered in depth in the Kubernetes blog post titled ["kube-proxy Subtleties: Debugging an Intermittent Connection Reset"](https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/).
 
-The prevailing fix for this issue in a Kubernetes environment is to set `conntrack` to a more liberal processing state. That can be done by performing the following command on your underlying Kubernetes worker nodes. Note that how you apply and persist this command on underlying Kubernetes worker nodes will vary by environment, distribution, or service you are using. This fix is implemented in the [`prereq-deploy-cortx-cloud.sh`](k8_cortx_cloud/prereq-deploy-cortx-cloud.sh#L226-L241) script as a reference example.
+The prevailing fix for this issue in a Kubernetes environment is to set `conntrack` to a more relaxed processing state. That can be done by performing the following command on your underlying Kubernetes worker nodes. Note that how you apply and persist this command on underlying Kubernetes worker nodes will vary by environment, distribution, or service you are using. This fix is implemented in the [`prereq-deploy-cortx-cloud.sh`](k8_cortx_cloud/prereq-deploy-cortx-cloud.sh#L226-L241) script as a reference example.
 
 ```bash
 echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
