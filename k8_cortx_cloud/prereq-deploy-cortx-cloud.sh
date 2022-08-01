@@ -216,12 +216,30 @@ function cleanupFolders()
     rm -rf "${fs_mount_path}/local-path-provisioner/*"
 }
 
-function increaseResources()
+function modifySystemSettings()
 {
     # Increase Resources
     sysctl -w vm.max_map_count=30000000;
     # Add timestamp in core file name
     sysctl -w kernel.core_pattern=core.%t
+
+    ### CORTX-33749
+    ### This fix will prevent unexpected "connection reset by peer" errors when running either a high traffic volume
+    ### or transferring large files into CORTX. The root cause of this issue is generally routed to the conntrack module
+    ### of the core Linux networking stack. However, there are many other variables that can affect the default and 
+    ### expected performance of conntrack in high-volume situations. The prevailing answer for this specific issue is
+    ### implemented below, with setting conntrack to a liberal setting. However, there may be other required environment 
+    ### configurations depending upon a user's Linux OS/kernel settings, Kubernetes settings, kube-proxy settings, 
+    ### and application-specific activity. 
+    ### Main reference: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
+    ### Follow-up issues:
+    ### - https://github.com/kubernetes/kubernetes/issues/74839
+    ### - https://github.com/kubernetes/kubernetes/pull/74840
+    ### - https://github.com/kubernetes/kubernetes/issues/94861
+
+    echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
+    ### CORTX-33749 - END
+
 }
 
 function prepCortxDeployment()
@@ -433,6 +451,6 @@ fi
 # Perform the following functions if the 'disk' is provided
 if [[ "${disk}" != "" ]]; then
     cleanupFolders
-    increaseResources
+    modifySystemSettings
     prepCortxDeployment
 fi

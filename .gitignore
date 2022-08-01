@@ -7,3 +7,6 @@ k8_cortx_cloud/cortx-cloud-helm-pkg/cortx-configmap/auto-gen-*
 
 # Runtime-dependent Helm Charts
 charts/cortx/charts
+
+# MacOS
+.DS_Store
