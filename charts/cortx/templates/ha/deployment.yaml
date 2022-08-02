@@ -34,7 +34,15 @@ spec:
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" . }}
-      {{- $imageContext := dict "image" .Values.ha.image "root" . }}
+      {{- $logFiles := list }}
+      {{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .Values.ha "root" .) }}
+      {{- if has $logDetails (list "component" "all") }}
+        {{- $logFiles = list
+            "/etc/cortx/log/utils/$TAIL_MACHINE_ID/utils_setup.log"
+            "/etc/cortx/log/ha/$TAIL_MACHINE_ID/ha_setup.log"
+            "/etc/cortx/log/ha/$TAIL_MACHINE_ID/event_manager.log" }}
+      {{- end }}
+      {{- $imageContext := dict "image" .Values.ha.image "logFiles" $logFiles "root" . }}
       initContainers:
       {{- include "cortx.containers.setup" $imageContext | nindent 8 }}
       containers:

@@ -32,7 +32,14 @@ spec:
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" . }}
-      {{- $imageContext := dict "image" .Values.control.image "root" . }}
+      {{- $logFiles := list }}
+      {{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .Values.control "root" .) }}
+      {{- if has $logDetails (list "component" "all") }}
+        {{- $logFiles = list
+            "/etc/cortx/log/utils/$TAIL_MACHINE_ID/utils_setup.log"
+            "/etc/cortx/log/csm/csm_setup.log" }}
+      {{- end }}
+      {{- $imageContext := dict "image" .Values.control.image "logFiles" $logFiles "root" . }}
       initContainers:
       {{- include "cortx.containers.setup" $imageContext | nindent 8 }}
       containers:
