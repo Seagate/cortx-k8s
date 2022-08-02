@@ -399,6 +399,8 @@ CORTX_DEPLOY_CUSTOM_VALUES_FILE="myvalues.yaml" ./deploy-cortx-cloud.sh solution
 
 ### Crash-looping InitContainers
 
+#### Debugging
+
 During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such error conditions. This command can be used to spin up a debugging container instance that has access to those same logs.
 
 ```bash
@@ -409,6 +411,27 @@ kubectl exec -it cortx-debug -c cortx-setup -- sh
 Once you are done with your debugging session, you can exit the shell session and delete the `cortx-debug` pod.
 
 **_Note:_** This requires a `kubectl` [minimum version of 1.20](https://kubernetes.io/docs/tasks/tools/#kubectl).
+
+#### Increase Setup Log Details
+
+Another troubleshooting tool is to increase the amount of information logged to the `cortx-setup` InitContainers' stdout, making the setup logs available to cluster logging solutions. The deployment script configures the setup components to perform logging with `"component"` detail. This means that the components' setup files will be redirected to the container's standard out. Another option is `"all"`, which is the most verbose configuration and redirects all files created during setup. The final option is `"default"` (or the empty `""`), which disables any extra logging details and only contains the setup command's normal output.
+
+The setup log details can be configured on a global level, or per-component, using a [custom values file](#overriding-helm-chart-values). All values are optional. Example:
+
+```yaml
+# Configure all components with the most verbose setup logging
+global:
+  cortx:
+    setupLoggingDetail: "all"
+
+# Configure control with default (no extra details) logging
+control:
+  setupLoggingDetail: "default"
+
+# Configure server with component-only logging
+server:
+  setupLoggingDetail: "component"
+```
 
 ### Consistent "connection reset by peer" issues
 

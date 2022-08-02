@@ -21,6 +21,11 @@ global:
       # -- CORTX image pull policy. Overrides CORTX component `image.pullPolicy`.
       pullPolicy: ""
 
+    # -- Configure cortx-setup Init Container logging detail levels. Overridden by component settings.
+    # "default" for default (no extra details), "component" for extra component logs, and "all" for all logs.
+    # An empty value means use the component-specific value. If all values are empty, behaves as-if "default".
+    setupLoggingDetail: ""
+
 # -- A name that will partially override cortx.fullname
 nameOverride: ""
 
@@ -256,6 +261,11 @@ control:
       # -- Node port for HTTPS for LoadBalancer and NodePort service types
       https: ""
 
+  # -- Configure cortx-setup Init Container logging detail levels.
+  # "default" for default (no extra details), "component" for extra component logs, and "all" for all logs.
+  # An empty value means use the global value. If all values are empty, behaves as-if "default".
+  setupLoggingDetail: ""
+
 # Deploy CORTX HA instance
 # HA manages the CORTX cluster availability
 # ref: https://github.com/Seagate/cortx-ha
@@ -329,6 +339,11 @@ ha:
   persistence:
     # -- Persistent volume size
     size: 1Gi
+
+  # -- Configure cortx-setup Init Container logging detail levels.
+  # "default" for default (no extra details), "component" for extra component logs, and "all" for all logs.
+  # An empty value means use the global value. If all values are empty, behaves as-if "default".
+  setupLoggingDetail: ""
 
 # Deploy CORTX Server instances
 # Server provides S3 storage
@@ -413,6 +428,11 @@ server:
   ##   motr_max_rpc_msg_size: 524288
   extraConfiguration: ""
 
+  # -- Configure cortx-setup Init Container logging detail levels.
+  # "default" for default (no extra details), "component" for extra component logs, and "all" for all logs.
+  # An empty value means use the global value. If all values are empty, behaves as-if "default".
+  setupLoggingDetail: ""
+
 # Deploy CORTX Data instances
 # Data provides the Motr object store
 data:
@@ -494,6 +514,11 @@ data:
     accessModes:
       - ReadWriteOnce
 
+  # -- Configure cortx-setup Init Container logging detail levels.
+  # "default" for default (no extra details), "component" for extra component logs, and "all" for all logs.
+  # An empty value means use the global value. If all values are empty, behaves as-if "default".
+  setupLoggingDetail: ""
+
 # Deploy CORTX Motr Client instances
 # Motr Clients are generally a developer tool used for testing purposes
 client:
@@ -517,3 +542,8 @@ client:
     # -- Client image pull policy
     ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
     pullPolicy: IfNotPresent
+
+  # -- Configure cortx-setup Init Container logging detail levels.
+  # "default" for default (no extra details), "component" for extra component logs, and "all" for all logs.
+  # An empty value means use the global value. If all values are empty, behaves as-if "default".
+  setupLoggingDetail: ""

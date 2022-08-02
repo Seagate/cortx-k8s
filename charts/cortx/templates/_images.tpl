@@ -53,7 +53,7 @@ Return the Client image name
 
 {{/*
 Return the CORTX setup initContainer
-{{ include "cortx.containers.setup" (dict "image" .Values.path.to.the.image "root" $) }}
+{{ include "cortx.containers.setup" (dict "image" .Values.path.to.the.image "logFiles" (list "x.log" "y.log") ("root" $) }}
 */}}
 {{- define "cortx.containers.setup" -}}
 {{- $image := include "cortx.images.image" (dict "image" .image "root" .root) -}}
@@ -64,11 +64,21 @@ Return the CORTX setup initContainer
     - /bin/sh
   args:
     - -c
-  {{- if eq $image "ghcr.io/seagate/centos:7" }}
-    - sleep $(shuf -i 5-10 -n 1)s
-  {{- else }}
-    - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-  {{- end }}
+    - |
+    {{- if eq $image "ghcr.io/seagate/centos:7" }}
+      sleep $(shuf -i 5-10 -n 1)s
+    {{- else }}
+      {{- if .logFiles }}
+      export TAIL_MACHINE_ID="$(echo -n $(hostname -f) | md5sum | head --bytes=32)"
+
+      # Exit all tail jobs when finished
+      trap 'kill $(jobs -p)' EXIT
+      {{ range .logFiles }}
+      tail -F --quiet --lines=0 {{ . }} 2> /dev/null &
+      {{- end }}
+      {{ end }}
+      /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+    {{- end }}
   volumeMounts:
     - name: cortx-configuration
       mountPath: /etc/cortx/solution
@@ -111,7 +121,23 @@ This adds the block storage devices for each CVG to the container.
 {{- include "cortx.containers.dataSetup" (dict "cvgGroup" $cvgGroup "root" . }}
 */}}
 {{- define "cortx.containers.dataSetup" -}}
-{{- include "cortx.containers.setup" (dict "image" .root.Values.data.image "root" .root) }}
+{{- $logFiles := list -}}
+{{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .root.Values.data "root" .root) -}}
+{{- if has $logDetails (list "component" "all") -}}
+  {{- $logFiles = list
+        "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare_deployment/setup.log"
+        "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/setup.log"
+        "/etc/cortx/log/motr/$TAIL_MACHINE_ID/mini_provisioner"
+        "/etc/cortx/log/utils/$TAIL_MACHINE_ID/utils_setup.log" -}}
+  {{- if (eq $logDetails "all") -}}
+    {{- $logFiles = concat $logFiles (list
+          "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/consul-elect-rc-leader.log"
+          "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/consul-watch-handler.log"
+          "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare-consul.log"
+          "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare-hax.log") -}}
+  {{- end -}}
+{{- end -}}
+{{- include "cortx.containers.setup" (dict "image" .root.Values.data.image "logFiles" $logFiles "root" .root) }}
 {{- include "cortx.containers.dataBlockDeviceVolumes" .cvgGroup | nindent 2 }}
 {{- end -}}
 
