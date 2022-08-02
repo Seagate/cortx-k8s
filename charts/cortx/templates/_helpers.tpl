@@ -279,13 +279,13 @@ Return the setup container log details setting for the component. The component 
 {{- end -}}
 
 {{/*
-Create a URL CORTX Confstore URL
+Create a CORTX Confstore URL
 */}}
 {{- define "cortx.confstore.url" -}}
 {{- if .Values.consul.enabled -}}
 {{- printf "consul://%s-consul-server:8500/conf" (include "cortx.fullname" .) -}}
 {{- else -}}
-{{/* FIXME: how do we get the external service name? */}}
+{{/* TODO: handle external Consul services */}}
 {{- printf "yaml:///etc/cortx/cluster.conf" -}}
 {{- end -}}
 {{- end -}}
