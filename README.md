@@ -399,6 +399,8 @@ CORTX_DEPLOY_CUSTOM_VALUES_FILE="myvalues.yaml" ./deploy-cortx-cloud.sh solution
 
 ### Crash-looping InitContainers
 
+#### Debugging
+
 During CORTX deployments, there are edge cases where the InitContainers of a CORTX pod will fail into a CrashLoopBackoff state and it becomes difficult to capture the internal logs that provide necessary context for such error conditions. This command can be used to spin up a debugging container instance that has access to those same logs.
 
 ```bash
@@ -409,6 +411,39 @@ kubectl exec -it cortx-debug -c cortx-setup -- sh
 Once you are done with your debugging session, you can exit the shell session and delete the `cortx-debug` pod.
 
 **_Note:_** This requires a `kubectl` [minimum version of 1.20](https://kubernetes.io/docs/tasks/tools/#kubectl).
+
+#### Increase Setup Log Details
+
+Another troubleshooting tool is to increase the amount of information logged to the `cortx-setup` InitContainers' stdout, making the setup logs available to cluster logging solutions. The deployment script configures the setup components to perform logging with `"component"` detail. This means that the components' setup files will be redirected to the container's standard out. Another option is `"all"`, which is the most verbose configuration and redirects all files created during setup. The final option is `"default"` (or the empty `""`), which disables any extra logging details and only contains the setup command's normal output.
+
+The setup log details can be configured on a global level, or per-component, using a [custom values file](#overriding-helm-chart-values). All values are optional. Example:
+
+```yaml
+# Configure all components with the most verbose setup logging
+global:
+  cortx:
+    setupLoggingDetail: "all"
+
+# Configure control with default (no extra details) logging
+control:
+  setupLoggingDetail: "default"
+
+# Configure server with component-only logging
+server:
+  setupLoggingDetail: "component"
+```
+
+### Consistent "connection reset by peer" issues
+
+If you experience consistent "connection reset by peer" errors when operating CORTX in a high traffic volume or large file transfer environment, you may be affected by an issue in the `conntrack` Linux networking module and its aggressive default settings. The original issue is covered in depth in the Kubernetes blog post titled ["kube-proxy Subtleties: Debugging an Intermittent Connection Reset"](https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/).
+
+The prevailing fix for this issue in a Kubernetes environment is to set `conntrack` to a more relaxed processing state. That can be done by performing the following command on your underlying Kubernetes worker nodes. Note that how you apply and persist this command on underlying Kubernetes worker nodes will vary by environment, distribution, or service you are using. This fix is implemented in the [`prereq-deploy-cortx-cloud.sh`](k8_cortx_cloud/prereq-deploy-cortx-cloud.sh#L226-L241) script as a reference example.
+
+```bash
+echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
+```
+
+More details on this issue are captured in the [Prerequisite use cases for deploying CORTX on Kubernetes](doc/prereq-deploy-use-cases.md#consistent-connection-reset-by-peer-issues) page for further explanation.
 
 ## Glossary
 

@@ -271,6 +271,14 @@ Return the Motr-client endpoint port
 {{- end -}}
 
 {{/*
+Return the setup container log details setting for the component. The component value overrides the global value.
+{{ include "cortx.setupLoggingDetail" ( dict "component" .Values.path.to.the.component "root" $) }}
+*/}}
+{{- define "cortx.setupLoggingDetail" -}}
+{{- coalesce .component.setupLoggingDetail .root.Values.global.cortx.setupLoggingDetail -}}
+{{- end -}}
+
+{{/*
 Create a URL CORTX Confstore URL
 */}}
 {{- define "cortx.confstore.url" -}}
