@@ -126,8 +126,7 @@ function tarPodLogs()
           coredumps="${coredumps}" \
           stacktrace="${stacktrace}" \
           all="${all}" \
-      bash -c '
-      cortx_support_bundle generate \
+      bash -c 'cortx_support_bundle generate \
         --cluster_conf_path "${CONFSTORE_URL}" \
         --location "${location}" \
         --bundle_id "${name}" \
