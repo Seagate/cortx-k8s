@@ -18,9 +18,10 @@
     5. [Log collection for CORTX on Kubernetes](#log-collection-for-cortx-on-kubernetes)
     6. [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
 6. [Solution YAML Overview](#solution-yaml-overview)
-7. [Troubleshooting](#troubleshooting)
-8. [Glossary](#glossary)
-9. [License](#license)
+7. [Advanced Deployment Scenarios](#advanced-deployment-scenarios)
+8. [Troubleshooting](#troubleshooting)
+9. [Glossary](#glossary)
+10. [License](#license)
 
 ## Project Overview
 
@@ -358,6 +359,10 @@ The metadata and data drives are defined in this section. All drives must be the
 | `storage_sets[].storage[].devices.data[]` | The list of block devices CORTX will use to store its object data on for this CVG. This list can _(and most often will)_ have multiple devices defined in it. | See `solution.example.yaml` |
 | `storage_sets[].storage[].devices.data[].path` | The block device path CORTX will use to store some of its object data on for this CVG. | See `solution.example.yaml` |
 | `storage_sets[].storage[].devices.data[].size` | The size of the block device CORTX will use to store some of its object data on for this CVG. | `5Gi` |
+
+## Advanced Deployment Scenarios
+
+This README file contains the most common user scenarios for deploying CORTX on Kubernetes. For additional advanced deployment scenarios covering more complex use cases and capabilities of CORTX on Kubernetes, you can refer to the [Advanced Deployment Scenarios](doc/advanced-deployment-scenarios.md) documentation.
 
 ## Troubleshooting
 
