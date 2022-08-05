@@ -54,7 +54,7 @@ JBOD stands for "Just a Bunch of Disks" and refers to a rack enclosure containin
 
 ### KUDO
 
-[KUDO](https://kudo.dev/), which stands for the Kubernetes Universal Declarative Operator, is a toolkit that makes it easy to build Kubernetes Operators, in most cases just using YAML.
+[KUDO](https://kudo.dev/), which stands for the Kubernetes Universal Declarative Operator, is a toolkit used to build Kubernetes Operators, in most cases just using YAML.
 
 ### Managed resources
 
