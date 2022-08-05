@@ -18,7 +18,8 @@ cortx_secret_fields=("kafka_admin_secret"
                      "csm_mgmt_admin_secret")
 readonly cortx_secret_fields
 ## TODO CORTX-32209 - Allow for manual override; Use custom values file pattern?
-readonly cortx_localblockstorage_storageclassname="manual-local-block-storage"
+readonly cortx_localblockstorage_storageclassname=${CORTX_DEPLOY_CUSTOM_STORAGE_CLASS:-"cortx-local-block-storage"}
+readonly cortx_localblockstorage_skipdeployment=${CORTX_DEPLOY_CUSTOM_BLOCK_STORAGE:-}
 
 # Enabled/disabled flags for components
 declare -A components
@@ -730,7 +731,9 @@ fi
 deleteStaleAutoGenFolders
 deployKubernetesPrereqs
 deployRancherProvisioner
-#deployCortxLocalBlockStorage
+if [[ -z ${cortx_localblockstorage_skipdeployment} ]]; then
+    deployCortxLocalBlockStorage
+fi
 deployCortxSecrets
 
 ##########################################################
