@@ -393,7 +393,7 @@ For example, this values file will enable the Consul Web UI:
 consul:
   ui:
     # Enable the Consul Web UI
-    enable: true
+    enabled: true
 ```
 
 Set the environment variable when deploying:
