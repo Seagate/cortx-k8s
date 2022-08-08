@@ -364,6 +364,12 @@ The metadata and data drives are defined in this section. All drives must be the
 
 This README file contains the most common user scenarios for deploying CORTX on Kubernetes. For additional advanced deployment scenarios covering more complex use cases and capabilities of CORTX on Kubernetes, you can refer to the [Advanced Deployment Scenarios](doc/advanced-deployment-scenarios.md) documentation.
 
+The documented advanced deployment scenarios may introduce additional custom environment variables which can be leveraged to modify the default installation patterns. Those environment variables are documented below:
+
+| Environment Variable                           | Description                                                   |
+| ---------------------------------------------- | ------------------------------------------------------------- |
+| `CORTX_DEPLOY_CUSTOM_BLOCK_STORAGE_CLASS`      | When set to a non-empty string, CORTX will skip the deployment of the `cortx-block-data` Helm Chart, along with the automatic creation of the underlying PersistentVolumes necessary to deploy CORTX. It will instead use the value of this variable as the expected Kubernetes StorageClass and expect all available PersistentVolumes to be created manually by the user. See [Advanced Deployment Scenarios - Using manually-created PersistentVolumes](doc/advanced-deployment-scenarios.md#using-manually-created-persistentvolumes) for use case details.  |
+
 ## Troubleshooting
 
 ### Using stub containers
