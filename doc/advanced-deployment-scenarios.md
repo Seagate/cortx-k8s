@@ -15,7 +15,7 @@ As a warning, this does come at the cost of advanced and manually-required manag
 #### 1. Create a StorageClass _(if you do not already have one available for use)_
 
 An example storage class for use by CORTX when manually creating PersistentVolumes, with the following points of configuration:
-- You can select whatever unique value you desire for a name
+- You can select whatever unique value you would like for a StorageClass name
 - It is imperative that you set `volumeBindingMode` to `WaitForFirstConsumer` in order to allow Kubernetes to schedule and attach Pods correctly to the underlying physical volumes.
 - The value of the `provisioner` field will vary depending upon your Kubernetes cluster setup, but the majority of the time it can be left at `kubernetes.io/no-provisioner` unless you have explicitly installed a controller to manage and provision local path PersistentVolumes.
 
@@ -41,7 +41,7 @@ CORTX maps the dynamic PersistentVolumeClaims of the CORTX Data Pods to underlyi
 CORTX Data Pods will create PVCs based upon the `cortx.io/device-path` label and automatically do the mapping conversion between `cortx.io/device-path` to `.spec.local.path`. In other words, the CORTX Data Pods will write to the `cortx.io/device-path` inside the running container and the underlying Kubernetes worker nodes will have that data storead at `.spec.local.path`.
 
 
-Keep in mind that you will need to manage your own ReclaimPolicy when manually managing PersistentVolumes in this way. This will be most important after you destroy a CORTX Cluster and before you deploy a new CORTX Cluster in its place on the same Kubernetes cluster.
+Keep in mind that you will need to manage your own ReclaimPolicy when manually managing PersistentVolumes in this way. This will be most important after you remove a CORTX Cluster and before you deploy a new CORTX Cluster in its place on the same Kubernetes cluster.
 
 **Example solution.yaml excerpt for CVG definitions**:
 ```yaml
@@ -163,7 +163,7 @@ This use case will follow the majority of the steps in the above [Using manually
 
 #### 2. Stack multiple Data Pods per Worker Node with manually-created PVs
 
-The key to this use case lies in the mapping of the PersistentVolumes to the generated PersistentVolumeClaims and that taking a higher priority than the implicit anti-affinity provided by the Kubernetes StatefulSet controllers. Using the same structure as defined above in Step 2, you can now create groups of PVs per Worker Node as long as you have enough PVs labeled with the appropriate `cortx.io/device-path` values.
+The key to this use case is contained in the mapping of the PersistentVolumes to the generated PersistentVolumeClaims and that taking a higher priority than the implicit anti-affinity provided by the Kubernetes StatefulSet controllers. Using the same structure as defined above in Step 2, you can now create groups of PVs per Worker Node as long as you have enough PVs labeled with the appropriate `cortx.io/device-path` values.
 
 For an environment with nodes named `0703`, `0704`, `0705`, and `0706`, the `kubectl` output at the end of the [Create all your PersistentVolumes for use by CORTX](#2-create-all-your-persistentvolumes-for-use-by-cortx), is complete. You can see that each node has 4 PVs each, labeled as `dev-sdc`, `dev-sdd`, `dev-sde`, and `dev-sdf`. 
 
