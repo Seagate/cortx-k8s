@@ -4,11 +4,9 @@ This repository's root README file contains the most common user scenarios for d
 
 ## Using manually-created PersistentVolumes
 
-TODO CORTX-32209 - Need to update and enable switches in cortx-deploy-cloud.sh
-
 > ⚠️ **WARNING:** This use case assumes advanced knowledge of PersistentVolumes, StorageClasses, PersistentVolumeClaims, and how they all interact in Kubernetes workloads. Reference https://kubernetes.io/docs/concepts/storage/persistent-volumes/ for specifics.
 
-### Using manually-created PersistentVolumes with map heterogeneous local paths
+### Using manually-created PersistentVolumes to map heterogeneous local paths
 
 One of the main pre-requisites of CORTX on Kubernetes is that all storage provided to CORTX from the underlying infrastructure must be homogenuous -- that is to say, the same across all Kubernetes worker nodes. However, sometimes that is not possible. This use case will document how you can provide manually created PersistentVolumes to CORTX on Kubernetes in order to achieve finer-grained control over your storage layout. 
 
@@ -34,9 +32,14 @@ reclaimPolicy: Delete
 
 #### 2. Create all your PersistentVolumes for use by CORTX
 
-CORTX maps the dynamic PersistentVolumeClaims of the CORTX Data Pods to underlying PersistentVolumes based upon the `cortx.io/device-path` label. This label's value does not need to match the underlying `.spec.local.path` that the PersistentVolume actually points to. As such, you can manually map your own heterogeneous PersistentVolume paths into CORTX's requirement for homogeneous CVG device paths by applying the desired labels to each distinct PersistentVolume.
+CORTX maps the dynamic PersistentVolumeClaims of the CORTX Data Pods to underlying PersistentVolumes based upon the `cortx.io/device-path` label. This label's value does not need to match the underlying `.spec.local.path` that the PersistentVolume actually points to. As such, you can manually map your own heterogeneous PersistentVolume paths into CORTX's requirement for homogeneous CVG device paths by applying the desired labels to each distinct PersistentVolume. As captured in the diagram below, the crux of this use case if the focus on the manual facilitiation of the **red arrows** inside of Kubernetes _(instead of CORTX explicitly creating those linkages by default)_.
+
+| ![Advanced Use Cases - Manual PersistentVolume Mapping for CORTX Data Pods](images/advanced-use-cases-manual-pvs-01.png) |
+|:--:|
+| **Figure 1 - Advanced Use Cases - Manual PersistentVolume Mapping for CORTX Data Pods** |
 
 CORTX Data Pods will create PVCs based upon the `cortx.io/device-path` label and automatically do the mapping conversion between `cortx.io/device-path` to `.spec.local.path`. In other words, the CORTX Data Pods will write to the `cortx.io/device-path` inside the running container and the underlying Kubernetes worker nodes will have that data storead at `.spec.local.path`.
+
 
 Keep in mind that you will need to manage your own ReclaimPolicy when manually managing PersistentVolumes in this way. This will be most important after you destroy a CORTX Cluster and before you deploy a new CORTX Cluster in its place on the same Kubernetes cluster.
 
@@ -127,7 +130,7 @@ manual-pv-0706-sde   map[cortx.io/device-path:dev-sde]   /dev/cortx/disk0706p3
 manual-pv-0706-sdf   map[cortx.io/device-path:dev-sdf]   /dev/cortx/disk0706p4
 ```
 
-#### 3. Modify deploy-cortx-cloud.sh to skip cortx-block-data deployment and use manually created StorageClass
+#### 3. Altering default install behavior to skip cortx-block-data deployment and use manually-created StorageClass
 
 In order to direct the [`deploy-cortx-cloud.sh`](https://github.com/Seagate/cortx-k8s/blob/integration/k8_cortx_cloud/deploy-cortx-cloud.sh) script from automatically deploying its own local block data storage, you will need to provide two environment variables to the deployment script prior to running it.
 
@@ -148,4 +151,55 @@ Run [`deploy-cortx-cloud.sh`](https://github.com/Seagate/cortx-k8s/blob/integrat
 
 ### Using manually-created PersistentVolumes to stack multiple Data Pods per Worker Node
 
-TODO CORTX-32209 Works as expected; Just need to create manual PVs with unique names, correct labels, and local.path pointing to unique devices on each node
+CORTX manages each CORTX Data Pod, the finest-grained unit of storage management inside CORTX, through the use of a Kubernetes StatefulSet. By default, StatefulSets have anti-affinity built in to them so that Pods managed by the controller are spread out across the possible Kubernetes Worker Nodes on which they could run. This helps to enhance the reliability and durability of Kubernetes workloads by preventing a single Node failure from taking out multiple Pods from the same StatefulSet.
+
+However, there are situations where it is beneficial to override this default anti-affinity behavior that is softly enforced by Kubernetes in order to achieve a higher level of deployment configurability, demonstration purposes, etc. This use case expands upon the previous use case above, by not only allowing manual mapping of PersistentVolumes on a given Kubernetes Worker Node, but also creating and labeling those PersistentVolumes in a way that multiple Pods from the same CORTX Data StatefulSet would get scheduled to the same Kubernetes Worker Node.
+
+Note that we are again focusing on the **red arrows** and the manual facilitation of them in the diagram below, however there are now more PVs on one Kubernetes Worker Node and they are missing completely from another.
+
+| ![Advanced Use Cases - Manual PersistentVolume Mapping for CORTX Data Pods on the same Worker Node](images/advanced-use-cases-manual-pvs-02.png) |
+|:--:|
+| **Figure 2 - Advanced Use Cases - Manual PersistentVolume Mapping for CORTX Data Pods on the same Worker Node** |
+
+> Note, that this behavior is similarly capable with out-of-the-box CORTX configurations (as of v0.9.0), with the ability to configure the `container_group_size` parameter. When coupled with the complete listing of CVGs required in the solution configuration file, this allows you to dictate how many CORTX Data Pods would end up on a single Kubernetes Worker Node. The use case documented here allows you to create custom deployment topologies as needed, but is not expected to replace the default out-of-the-box behavior of CORTX in this regard.
+
+#### 1. Create a StorageClass and manual PersistentVolumes
+
+This use case will follow the majority of the steps in the above [Using manually-created PersistentVolumes to map heterogeneous local paths](#using-manually-created-persistentvolumes-to-map-heterogeneous-local-paths). Verify you are comfortable with Steps 1 and 2 in the above use case.
+
+#### 2. Stack multiple Data Pods per Worker Node with manually-created PVs
+
+The key to this use case lies in the mapping of the PersistentVolumes to the generated PersistentVolumeClaims and that taking a higher priority than the implicit anti-affinity provided by the Kubernetes StatefulSet controllers. Using the same structure as defined above in Step 2, you can now create groups of PVs per Worker Node as long as you have enough PVs labeled with the appropriate `cortx.io/device-path` values.
+
+For an environment with nodes named `0703`, `0704`, `0705`, and `0706`, the `kubectl` output at the end of the [Create all your PersistentVolumes for use by CORTX](#2-create-all-your-persistentvolumes-for-use-by-cortx), is complete. You can see that each node has 4 PVs each, labeled as `dev-sdc`, `dev-sdd`, `dev-sde`, and `dev-sdf`. 
+
+In order to see multiple Data Pods from the same StatefulSet controller be scheduled to the same Kubernetes Worker Node, you can update your labeling on some of these PVs. Assuming the Worker Nodes from above have enough underlying block devices to map to distinct PersistentVolumes, you could update the PVs as such to get 2 Data Pods scheduled to the `0703` Worker Node.
+
+```bash 
+> kubectl get pv -o custom-columns=NAME:.metadata.name,LABELS:.metadata.labels,PATH:.spec.local.path
+NAME                 LABELS                              PATH
+manual-pv-0703-sdc0  map[cortx.io/device-path:dev-sdc]   /dev/cortx/disk0703p1
+manual-pv-0703-sdd0  map[cortx.io/device-path:dev-sdd]   /dev/cortx/disk0703p2
+manual-pv-0703-sde0  map[cortx.io/device-path:dev-sde]   /dev/cortx/disk0703p3
+manual-pv-0703-sdf0  map[cortx.io/device-path:dev-sdf]   /dev/cortx/disk0703p4
+manual-pv-0703-sdc1  map[cortx.io/device-path:dev-sdc]   /dev/cortx/disk0703p5
+manual-pv-0703-sdd1  map[cortx.io/device-path:dev-sdd]   /dev/cortx/disk0703p6
+manual-pv-0703-sde1  map[cortx.io/device-path:dev-sde]   /dev/cortx/disk0703p7
+manual-pv-0703-sdf1  map[cortx.io/device-path:dev-sdf]   /dev/cortx/disk0703p8
+manual-pv-0705-sdc   map[cortx.io/device-path:dev-sdc]   /dev/cortx/disk0705p1
+manual-pv-0705-sdd   map[cortx.io/device-path:dev-sdd]   /dev/cortx/disk0705p2
+manual-pv-0705-sde   map[cortx.io/device-path:dev-sde]   /dev/cortx/disk0705p3
+manual-pv-0705-sdf   map[cortx.io/device-path:dev-sdf]   /dev/cortx/disk0705p4
+manual-pv-0706-sdc   map[cortx.io/device-path:dev-sdc]   /dev/cortx/disk0706p1
+manual-pv-0706-sdd   map[cortx.io/device-path:dev-sdd]   /dev/cortx/disk0706p2
+manual-pv-0706-sde   map[cortx.io/device-path:dev-sde]   /dev/cortx/disk0706p3
+manual-pv-0706-sdf   map[cortx.io/device-path:dev-sdf]   /dev/cortx/disk0706p4
+```
+
+You can see that the Kubernetes Worker Node named `0703` now has 8 PVs referenced to it _(by name via this console output; the PV's internal `nodeSelector` expression must be updated as well)_, where as the Worker Node named `0704` now has none.
+
+If we were to deploy a CORTX Cluster using the same default values as the previous use case, we would now see 2 CORTX Data Pods scheduled to the `0703` Worker Node, 1 CORTX Data Pod each to the `0705` and `0706` Worker Nodes, while the `0704` Worker Node had 0 CORTX Data Pods scheduled to it _(as there are no longer any matching PVs that can satisfy the CORTX Data Pods storage requirements)_.
+
+#### 3. Deploy CORTX on Kubernetes
+
+Proceed with Steps 3 and 4 from the use case above, by altering the default behavior of `deploy-cortx-cloud.sh` through the use of environment variables and then deploying to Kubernetes!
