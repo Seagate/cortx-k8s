@@ -1,0 +1,191 @@
+{{- define "cortx.data.devicePathToString" -}}
+{{- . | lower | trimPrefix "/" | replace "/" "-" -}}
+{{- end -}}
+
+{{- define "cortx.data.blockDeviceStorageClass" -}}
+{{- $storageClass := .Values.data.blockDevicePersistence.storageClass -}}
+  {{- if $storageClass -}}
+    {{- if (eq "-" $storageClass) -}}
+      {{- printf "storageClassName: \"\"" -}}
+    {{- else -}}
+      {{- printf "storageClassName: %s" $storageClass -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* Currently only one storage set is supported */}}
+{{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
+{{- if gt $statefulSetCount 0 }}
+{{- $storageSet := first .Values.storageSets }}
+{{- $cvgGroups := $storageSet.storage | chunk ($storageSet.containerGroupSize | int) }}
+{{- range $stsIndex := until $statefulSetCount }}
+{{- $cvgGroup := index $cvgGroups $stsIndex }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex) }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {{- include "cortx.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: data
+    cortx.io/node-type: {{ include "cortx.data.dataNodeLabel" $stsIndex }}
+spec:
+  podManagementPolicy: Parallel
+  serviceName: {{ include "cortx.data.fullname" $ }}-headless
+  replicas: {{ $.Values.data.replicaCount }}
+  selector:
+    matchLabels: {{- include "cortx.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: data
+      cortx.io/hax-enabled: "true"
+      cortx.io/service-domain: {{ include "cortx.data.serviceDomain" $ }}
+      cortx.io/service-type: cortx-data
+      cortx.io/node-type: {{ include "cortx.data.dataNodeLabel" $stsIndex }}
+  template:
+    metadata:
+      labels: {{- include "cortx.labels" $ | nindent 8 }}
+        app.kubernetes.io/component: data
+        cortx.io/hax-enabled: "true"
+        cortx.io/service-domain: {{ include "cortx.data.serviceDomain" $ }}
+        cortx.io/service-type: cortx-data
+        cortx.io/node-type: {{ include "cortx.data.dataNodeLabel" $stsIndex }}
+    spec:
+      subdomain: {{ include "cortx.data.fullname" $ }}-headless
+      serviceAccountName: {{ include "cortx.serviceAccountName" $ }}
+      volumes:
+        - name: cortx-configuration
+          configMap:
+            name: {{ include "cortx.configmapName" $ }}
+        - name: cortx-ssl-cert
+          configMap:
+            name: {{ include "cortx.tls.configmapName" $ }}
+        - name: configuration-secrets
+          secret:
+            secretName: {{ include "cortx.secretName" $ }}
+        - name: node-config
+          configMap:
+            defaultMode: 0700
+            name: {{ include "cortx.data.fullname" $ }}-node
+      {{- $imageContext := dict "image" $.Values.data.image "root" $ }}
+      {{- $image := include "cortx.data.image" $ }}
+      {{- $imagePullPolicy := include "cortx.images.imagePullPolicy" $imageContext }}
+      initContainers:
+      - name: node-config
+        image: {{ $image }}
+        imagePullPolicy: {{ $imagePullPolicy }}
+        command:
+          - /nodeconfig/entrypoint.sh
+        volumeMounts:
+        - name: node-config
+          mountPath: /nodeconfig
+          readOnly: true
+        securityContext:
+          privileged: true
+      {{- include "cortx.containers.dataSetup" (dict "cvgGroup" $cvgGroup "root" $ ) | nindent 6 }}
+      containers:
+        {{- include "cortx.containers.hax" $imageContext | nindent 8 }}
+        - name: cortx-motr-confd
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config yaml:///etc/cortx/cluster.conf
+          {{- end }}
+          {{- include "cortx.containers.dataBlockDeviceVolumes" $cvgGroup | nindent 10 }}
+          volumeMounts:
+            - name: cortx-configuration
+              mountPath: /etc/cortx/solution
+            - name: cortx-ssl-cert
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          ports:
+          - name: confd-tcp
+            containerPort: {{ include "cortx.data.confdPort" $ | int }}
+          {{- if $.Values.data.confd.resources }}
+          resources: {{- toYaml $.Values.data.confd.resources | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+        {{- range $cvgIndex := until (len $cvgGroup) }}
+        {{- $ioIndex := add1 $cvgIndex }}
+        - name: {{ printf "cortx-motr-io-%03d" $ioIndex }}
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy }}
+          env:
+            - name: IO_INDEX
+              value: {{ printf "%d" $ioIndex | quote }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
+          command: ["/bin/sleep", "3650d"]
+          {{- else }}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config yaml:///etc/cortx/cluster.conf
+          {{- end }}
+          {{- include "cortx.containers.dataBlockDeviceVolumes" ((index $cvgGroup $cvgIndex) | list) | nindent 10 }}
+          volumeMounts:
+            - name: cortx-configuration
+              mountPath: /etc/cortx/solution
+            - name: cortx-ssl-cert
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
+          ports:
+          - name: {{ printf "ios-%d-tcp" $ioIndex }}
+            containerPort: {{ printf "%d" (add $cvgIndex (include "cortx.data.iosPort" $) | int) }}
+          {{- if $.Values.data.ios.resources }}
+          resources: {{- toYaml $.Values.data.ios.resources | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+        {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: {{- toYaml $.Values.data.persistence.accessModes | nindent 6 }}
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: {{ $.Values.data.persistence.size }}
+  {{- range $cvg := $cvgGroup }}
+  {{- range concat ($cvg.devices.metadata | default list) ($cvg.devices.log | default list) ($cvg.devices.data | default list) }}
+  - metadata:
+      name: {{ printf "block-%s" (include "cortx.data.devicePathToString" .path) }}
+    spec:
+      accessModes: {{- toYaml $.Values.data.blockDevicePersistence.accessModes | nindent 6 }}
+      volumeMode: {{ $.Values.data.blockDevicePersistence.volumeMode | quote }}
+      {{- include "cortx.data.blockDeviceStorageClass" $ | nindent 6 }}
+      resources:
+        requests:
+          storage: {{ .size | quote }}
+      selector:
+        matchLabels:
+          cortx.io/device-path: {{ include "cortx.data.devicePathToString" .path | quote }}
+  {{- end }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}

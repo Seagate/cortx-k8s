@@ -216,12 +216,30 @@ function cleanupFolders()
     rm -rf "${fs_mount_path}/local-path-provisioner/*"
 }
 
-function increaseResources()
+function modifySystemSettings()
 {
     # Increase Resources
     sysctl -w vm.max_map_count=30000000;
     # Add timestamp in core file name
     sysctl -w kernel.core_pattern=core.%t
+
+    ### CORTX-33749
+    ### This fix will prevent unexpected "connection reset by peer" errors when running either a high traffic volume
+    ### or transferring large files into CORTX. The root cause of this issue is generally routed to the conntrack module
+    ### of the core Linux networking stack. However, there are many other variables that can affect the default and 
+    ### expected performance of conntrack in high-volume situations. The prevailing answer for this specific issue is
+    ### implemented below, with setting conntrack to a liberal setting. However, there may be other required environment 
+    ### configurations depending upon a user's Linux OS/kernel settings, Kubernetes settings, kube-proxy settings, 
+    ### and application-specific activity. 
+    ### Main reference: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
+    ### Follow-up issues:
+    ### - https://github.com/kubernetes/kubernetes/issues/74839
+    ### - https://github.com/kubernetes/kubernetes/pull/74840
+    ### - https://github.com/kubernetes/kubernetes/issues/94861
+
+    echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
+    ### CORTX-33749 - END
+
 }
 
 function prepCortxDeployment()
@@ -328,7 +346,6 @@ function symlinkBlockDevices()
 
     # Local variables
     local filter
-    local device_paths=()
     local job_template
     local job_file
 
@@ -348,24 +365,16 @@ function symlinkBlockDevices()
     export CORTX_IMAGE="${cortx_image_yaml#*>}"
 
     # Create comma-separated string from the device paths in solution.yaml
-    filter="solution.storage.cvg*.devices*.device"
-    device_output=$(parseSolution "${solution_yaml}" "${filter}")
-    IFS=';' read -r -a device_array <<< "${device_output}"
-    for device_path in "${device_array[@]}"
-    do
-        device_paths+=("${device_path#*>}")
-    done
     # Template replacement variable
-    DEVICE_PATHS=$(join_array "," "${device_paths[@]}")
+    DEVICE_PATHS=$(yq '[.solution.storage_sets[0].storage[].devices[].[].path]' --output-format=csv "${solution_yaml}")
     export DEVICE_PATHS
 
     # Prepare local templated Job definition
     rm -f "${job_file}"
 
-    # Iterate over the defined nodes in solution.yaml
-    filter="solution.nodes.node*.name"
-    node_output=$(parseSolution "${solution_yaml}" "${filter}")
-    IFS=';' read -r -a node_array <<< "${node_output}"
+    # Split defined node information into an array
+    IFS=',' read -r -a node_array < <(yq '.solution.storage_sets[0].nodes' --output-format=csv "${solution_yaml}")
+
     for node_element in "${node_array[@]}"
     do
         # Template replacement variable
@@ -442,6 +451,6 @@ fi
 # Perform the following functions if the 'disk' is provided
 if [[ "${disk}" != "" ]]; then
     cleanupFolders
-    increaseResources
+    modifySystemSettings
     prepCortxDeployment
 fi

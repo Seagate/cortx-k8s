@@ -1,30 +1,30 @@
-{{- if .Values.server.enabled }}
+{{- if .Values.client.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "cortx.server.fullname" . }}
+  name: {{ include "cortx.client.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels: {{- include "cortx.labels" . | nindent 4 }}
-    app.kubernetes.io/component: server
+    app.kubernetes.io/component: client
 spec:
   podManagementPolicy: Parallel
-  serviceName: {{ include "cortx.server.fullname" . }}-headless
-  replicas: {{ .Values.server.replicaCount }}
+  serviceName: {{ include "cortx.client.fullname" . }}-headless
+  replicas: {{ .Values.client.replicaCount }}
   selector:
     matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: server
+      app.kubernetes.io/component: client
       cortx.io/hax-enabled: "true"
-      cortx.io/service-domain: {{ include "cortx.server.serviceDomain" . }}
-      cortx.io/service-type: cortx-server
+      cortx.io/service-domain: {{ include "cortx.client.serviceDomain" . }}
+      cortx.io/service-type: cortx-client
   template:
     metadata:
       labels: {{- include "cortx.labels" . | nindent 8 }}
-        app.kubernetes.io/component: server
+        app.kubernetes.io/component: client
         cortx.io/hax-enabled: "true"
-        cortx.io/service-domain: {{ include "cortx.server.serviceDomain" . }}
-        cortx.io/service-type: cortx-server
+        cortx.io/service-domain: {{ include "cortx.client.serviceDomain" . }}
+        cortx.io/service-type: cortx-client
     spec:
-      subdomain: {{ include "cortx.server.fullname" . }}-headless
+      subdomain: {{ include "cortx.client.fullname" . }}-headless
       serviceAccountName: {{ include "cortx.serviceAccountName" . }}
       volumes:
         - name: cortx-configuration
@@ -36,31 +36,32 @@ spec:
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" . }}
+        - name: data
+          emptyDir: {}
       {{- $logFiles := list }}
-      {{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .Values.server "root" .) }}
+      {{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .Values.client "root" .) }}
       {{- if has $logDetails (list "component" "all") }}
         {{- $logFiles = list
               "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare_deployment/setup.log"
               "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/setup.log"
               "/etc/cortx/log/motr/$TAIL_MACHINE_ID/mini_provisioner"
-              "/etc/cortx/log/rgw/$TAIL_MACHINE_ID/rgw_setup.log"
               "/etc/cortx/log/utils/$TAIL_MACHINE_ID/utils_setup.log" }}
         {{- if (eq $logDetails "all") }}
           {{- $logFiles = concat $logFiles (list
                 "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/consul-elect-rc-leader.log"
                 "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/consul-watch-handler.log"
                 "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare-consul.log"
-                "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare-hax.log"
-                "/etc/cortx/log/rgw/$TAIL_MACHINE_ID/radosgw-admin.log") }}
+                "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare-hax.log") }}
         {{- end }}
       {{- end }}
-      {{- $imageContext := dict "image" .Values.server.image "logFiles" $logFiles "root" . }}
+      {{- $imageContext := dict "image" .Values.client.image "logFiles" $logFiles "root" . }}
       initContainers:
         {{- include "cortx.containers.setup" $imageContext | nindent 8 }}
       containers:
         {{- include "cortx.containers.hax" $imageContext | nindent 8 }}
-        - name: cortx-rgw
-          {{- $image := include "cortx.server.image" . }}
+        {{- $image := include "cortx.client.image" . }}
+        {{- range $i := until (.Values.client.instanceCount | int) }}
+        - name: {{ printf "cortx-motr-client-%03d" (add 1 $i) }}
           image: {{ $image }}
           imagePullPolicy: {{ include "cortx.images.imagePullPolicy" $imageContext }}
           {{- if eq $image "ghcr.io/seagate/centos:7" }}
@@ -70,7 +71,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/rgw/bin/rgw_setup start -c yaml:///etc/cortx/cluster.conf;
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services client --idx $CLIENT_INDEX --config yaml:///etc/cortx/cluster.conf
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
@@ -80,34 +81,17 @@ spec:
             - name: data
               mountPath: /etc/cortx
           env:
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          ports:
-          - name: rgw-http
-            containerPort: {{ include "cortx.server.rgwHttpPort" . | int }}
-            protocol: TCP
-          - name: rgw-https
-            containerPort: {{ include "cortx.server.rgwHttpsPort" . | int }}
-            protocol: TCP
-          - name: motr-client
-            containerPort: {{ include "cortx.server.motrClientPort" . | int }}
-            protocol: TCP
-          resources: {{- toYaml .Values.server.rgw.resources | nindent 12 }}
+            - name: CLIENT_INDEX
+              value: {{ printf "%d" (add 1 $i) | quote }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           securityContext:
             allowPrivilegeEscalation: false
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: {{- toYaml .Values.server.persistence.accessModes | nindent 6 }}
-      storageClassName: local-path
-      resources:
-        requests:
-          storage: {{ .Values.server.persistence.size }}
+        {{- end }}
 {{- end }}

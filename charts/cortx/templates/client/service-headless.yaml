@@ -1,18 +1,18 @@
-{{- if .Values.server.enabled }}
+{{- if .Values.client.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cortx.server.fullname" . }}-headless
+  name: {{ include "cortx.client.fullname" . }}-headless
   namespace: {{ .Release.Namespace }}
   labels: {{- include "cortx.labels" . | nindent 4 }}
-    app.kubernetes.io/component: server
+    app.kubernetes.io/component: client
 spec:
   type: ClusterIP
   clusterIP: None
   publishNotReadyAddresses: true
   selector: {{- include "cortx.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: server
+    app.kubernetes.io/component: client
     cortx.io/hax-enabled: "true"
-    cortx.io/service-domain: {{ include "cortx.server.serviceDomain" . }}
-    cortx.io/service-type: cortx-server
+    cortx.io/service-domain: {{ include "cortx.client.serviceDomain" . }}
+    cortx.io/service-type: cortx-client
 {{- end }}

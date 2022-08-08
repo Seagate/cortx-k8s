@@ -12,9 +12,6 @@ solution:
     rancher: required
   common:
     storage_provisioner_path: required
-    container_path:
-      local: required
-      log: required
     s3:
       default_iam_users:
         auth_admin: required
@@ -22,15 +19,9 @@ solution:
       instances_per_node: required
     motr:
       num_client_inst: required
-      start_port_num: required
     hax:
       protocol: required
       port_num: required
-    storage_sets:
-      name: required
-      durability:
-        sns: required
-        dix: required
     external_services:
       s3:
         type: required
@@ -149,18 +140,20 @@ solution:
             limits:
               memory: required
               cpu: required
-  storage:
-    cvg1:
-      name: required
-      type: required
-      devices:
-        metadata:
-          device: required
-          size: required
-        data:
-          d1:
-            device: required
-            size: required
-  nodes:
-    node1:
-      name: required
+  storage_sets:
+    - name: required
+      durability:
+        sns: required
+        dix: required
+      container_group_size: required
+      storage:
+        - name: required
+          type: required
+          devices:
+            metadata:
+              - path: required
+                size: required
+            data:
+              - path: required
+                size: required
+      nodes: required

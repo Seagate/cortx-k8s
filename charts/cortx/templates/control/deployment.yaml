@@ -1,4 +1,4 @@
-{{- if .Values.cortxcontrol.enabled }}
+{{- if .Values.control.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,17 +7,15 @@ metadata:
   labels: {{- include "cortx.labels" . | nindent 4 }}
     app.kubernetes.io/component: control
 spec:
-  replicas: 1
+  replicas: {{ .Values.control.replicaCount }}
   selector:
-    matchLabels:
+    matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: control
   template:
     metadata:
       labels: {{- include "cortx.labels" . | nindent 8 }}
         app.kubernetes.io/component: control
-        {{- if .Values.cortxcontrol.machineid.value }}
-        cortx.io/machine-id: {{ .Values.cortxcontrol.machineid.value }}
-        {{- end }}
+        cortx.io/machine-id: {{ include "cortx.control.fullname" . | quote }}
         cortx.io/service-type: cortx-control
     spec:
       hostname: {{ include "cortx.control.fullname" . }}
@@ -29,71 +27,27 @@ spec:
         - name: cortx-ssl-cert
           configMap:
             name: {{ include "cortx.tls.configmapName" . }}
-        {{- if .Values.cortxcontrol.machineid.value }}
-        - name: machine-id
-          downwardAPI:
-            items:
-              - path: "id"
-                fieldRef:
-                  fieldPath: metadata.labels['cortx.io/machine-id']
-        {{- end }}
-        - name: local-path-pv
-          persistentVolumeClaim:
-            claimName: {{ include "cortx.control.fullname" . }}
-        - name: {{ .Values.configmap.cortxSecretName }}
+        - name: data
+          emptyDir: {}
+        - name: configuration-secrets
           secret:
-            secretName: {{ .Values.configmap.cortxSecretName }}
+            secretName: {{ include "cortx.secretName" . }}
+      {{- $logFiles := list }}
+      {{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .Values.control "root" .) }}
+      {{- if has $logDetails (list "component" "all") }}
+        {{- $logFiles = list
+            "/etc/cortx/log/utils/$TAIL_MACHINE_ID/utils_setup.log"
+            "/etc/cortx/log/csm/csm_setup.log" }}
+      {{- end }}
+      {{- $imageContext := dict "image" .Values.control.image "logFiles" $logFiles "root" . }}
       initContainers:
-      - name: cortx-setup
-        image: {{ .Values.cortxcontrol.image }}
-        imagePullPolicy: IfNotPresent
-        command:
-          - /bin/sh
-        {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
-        args:
-          - -c
-          - sleep $(shuf -i 5-10 -n 1)s
-        {{- else }}
-        args:
-          - -c
-          {{- if .Values.cortxcontrol.machineid.value }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
-          {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf;
-          {{- end }}
-        {{- end }}
-        volumeMounts:
-          - name: cortx-configuration
-            mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
-          - name: cortx-ssl-cert
-            mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
-          {{- if .Values.cortxcontrol.machineid.value }}
-          - name: machine-id
-            mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
-          {{- end }}
-          - name: local-path-pv
-            mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
-          - name: {{ .Values.configmap.cortxSecretName }}
-            mountPath: /etc/cortx/solution/secret
-            readOnly: true
-        env:
-          - name: MACHINE_ID
-            value: {{ printf "%s" .Values.cortxcontrol.machineid.value | quote }}
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-        ports:
-        - containerPort: 5050
+      {{- include "cortx.containers.setup" $imageContext | nindent 8 }}
       containers:
+        {{- $image := include "cortx.control.image" . }}
         - name: cortx-csm-agent
-          image: {{ .Values.cortxcontrol.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxcontrol.image "ghcr.io/seagate/centos:7" }}
+          image: {{ $image }}
+          imagePullPolicy: {{ include "cortx.images.imagePullPolicy" $imageContext }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command:
@@ -104,15 +58,11 @@ spec:
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ .Values.cortxcontrol.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ .Values.cortxcontrol.sslcfgmap.mountpath }}
-            {{- if .Values.cortxcontrol.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxcontrol.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxcontrol.localpathpvc.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
           env:
           - name: NODE_NAME
             valueFrom:
@@ -124,10 +74,10 @@ spec:
                 fieldPath: metadata.name
           ports:
             - name: control-https
-              containerPort: 8081
+              containerPort: {{ include "cortx.control.agentPort" . | int }}
               protocol: TCP
-          {{- if .Values.cortxcontrol.agent.resources }}
-          resources: {{- toYaml .Values.cortxcontrol.agent.resources | nindent 12 }}
+          {{- if .Values.control.agent.resources }}
+          resources: {{- toYaml .Values.control.agent.resources | nindent 12 }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

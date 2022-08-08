@@ -1,4 +1,4 @@
-{{- if .Values.cortxha.enabled }}
+{{- if .Values.ha.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,15 +9,13 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels:
+    matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: ha
   template:
     metadata:
       labels: {{- include "cortx.labels" . | nindent 8 }}
         app.kubernetes.io/component: ha
-        {{- if .Values.cortxha.machineid.value }}
-        cortx.io/machine-id: {{ .Values.cortxha.machineid.value }}
-        {{- end }}
+        cortx.io/machine-id: {{ printf "%s-headless" (include "cortx.ha.fullname" . ) }}
         cortx.io/service-type: cortx-ha
     spec:
       hostname: {{ include "cortx.ha.fullname" . }}-headless
@@ -30,71 +28,30 @@ spec:
         - name: cortx-ssl-cert
           configMap:
             name: {{ include "cortx.tls.configmapName" . }}
-        {{- if .Values.cortxha.machineid.value }}
-        - name: machine-id
-          downwardAPI:
-            items:
-              - path: "id"
-                fieldRef:
-                  fieldPath: metadata.labels['cortx.io/machine-id']
-        {{- end }}
-        - name: local-path-pv
+        - name: data
           persistentVolumeClaim:
             claimName: {{ include "cortx.ha.fullname" . }}
-        - name: {{ .Values.configmap.cortxSecretName }}
+        - name: configuration-secrets
           secret:
-            secretName: {{ .Values.configmap.cortxSecretName }}
+            secretName: {{ include "cortx.secretName" . }}
+      {{- $logFiles := list }}
+      {{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .Values.ha "root" .) }}
+      {{- if has $logDetails (list "component" "all") }}
+        {{- $logFiles = list
+            "/etc/cortx/log/utils/$TAIL_MACHINE_ID/utils_setup.log"
+            "/etc/cortx/log/ha/$TAIL_MACHINE_ID/ha_setup.log"
+            "/etc/cortx/log/ha/$TAIL_MACHINE_ID/event_manager.log" }}
+      {{- end }}
+      {{- $imageContext := dict "image" .Values.ha.image "logFiles" $logFiles "root" . }}
       initContainers:
-      - name: cortx-setup
-        image: {{ .Values.cortxha.image }}
-        imagePullPolicy: IfNotPresent
-        command:
-          - /bin/sh
-        {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
-        args:
-          - -c
-          - sleep $(shuf -i 5-10 -n 1)s
-        {{- else }}
-        args:
-          - -c
-          {{- if .Values.cortxha.machineid.value }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -n $MACHINE_ID -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-          {{- else }}
-          - /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
-          {{- end }}
-        {{- end }}
-        volumeMounts:
-          - name: cortx-configuration
-            mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
-          - name: cortx-ssl-cert
-            mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
-          {{- if .Values.cortxha.machineid.value }}
-          - name: machine-id
-            mountPath: {{ .Values.cortxha.machineid.mountpath }}
-          {{- end }}
-          - name: local-path-pv
-            mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
-          - name: {{ .Values.configmap.cortxSecretName }}
-            mountPath: /etc/cortx/solution/secret
-            readOnly: true
-        env:
-          - name: MACHINE_ID
-            value: {{ printf "%s" .Values.cortxha.machineid.value | quote }}
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-        ports:
-        - containerPort: 5050
+      {{- include "cortx.containers.setup" $imageContext | nindent 8 }}
       containers:
+        {{- $image := include "cortx.ha.image" . }}
+        {{- $imagePullPolicy := include "cortx.images.imagePullPolicy" $imageContext }}
         - name: cortx-ha-fault-tolerance
-          image: {{ .Values.cortxha.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command:
@@ -105,15 +62,11 @@ spec:
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
-            {{- if .Values.cortxha.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxha.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
           env:
           - name: NODE_NAME
             valueFrom:
@@ -123,15 +76,15 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-          {{- if .Values.cortxha.fault_tolerance.resources }}
-          resources: {{- toYaml .Values.cortxha.fault_tolerance.resources | nindent 12 }}
+          {{- if .Values.ha.faultTolerance.resources }}
+          resources: {{- toYaml .Values.ha.faultTolerance.resources | nindent 12 }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-health-monitor
-          image: {{ .Values.cortxha.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command:
@@ -142,15 +95,11 @@ spec:
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
-            {{- if .Values.cortxha.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxha.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
           env:
           - name: NODE_NAME
             valueFrom:
@@ -160,15 +109,15 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-          {{- if .Values.cortxha.health_monitor.resources }}
-          resources: {{- toYaml .Values.cortxha.health_monitor.resources | nindent 12 }}
+          {{- if .Values.ha.healthMonitor.resources }}
+          resources: {{- toYaml .Values.ha.healthMonitor.resources | nindent 12 }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
         - name: cortx-ha-k8s-monitor
-          image: {{ .Values.cortxha.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if eq .Values.cortxha.image  "ghcr.io/seagate/centos:7" }}
+          image: {{ $image }}
+          imagePullPolicy: {{ $imagePullPolicy }}
+          {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}
           command:
@@ -179,15 +128,11 @@ spec:
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
-              mountPath: {{ .Values.cortxha.cfgmap.mountpath }}
+              mountPath: /etc/cortx/solution
             - name: cortx-ssl-cert
-              mountPath: {{ .Values.cortxha.sslcfgmap.mountpath }}
-            {{- if .Values.cortxha.machineid.value }}
-            - name: machine-id
-              mountPath: {{ .Values.cortxha.machineid.mountpath }}
-            {{- end }}
-            - name: local-path-pv
-              mountPath: {{ .Values.cortxha.localpathpvc.mountpath }}
+              mountPath: /etc/cortx/solution/ssl
+            - name: data
+              mountPath: /etc/cortx
           env:
           - name: NODE_NAME
             valueFrom:
@@ -197,8 +142,8 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-          {{- if .Values.cortxha.k8s_monitor.resources }}
-          resources: {{- toYaml .Values.cortxha.k8s_monitor.resources | nindent 12 }}
+          {{- if .Values.ha.k8sMonitor.resources }}
+          resources: {{- toYaml .Values.ha.k8sMonitor.resources | nindent 12 }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

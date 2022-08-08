@@ -7,12 +7,14 @@ from cluster import Cluster
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', dest='solution')
-    parser.add_argument('-c', dest='cluster')
+    parser.add_argument('-s', '--solution', action='append', required=True)
+    parser.add_argument('--local-fs')
     args = parser.parse_args()
 
-    cluster = Cluster(args.solution, args.cluster)
-    if args.cluster:
+    print(f"args = {args}")
+
+    cluster = Cluster(args.solution, localfs=args.local_fs)
+    if args.local_fs:
         result = cluster.run_prereq()
         if result != 0:
             sys.exit(1)

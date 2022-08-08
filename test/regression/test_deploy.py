@@ -5,19 +5,22 @@ import re
 import subprocess  # nosec
 import sys
 
-import yaml
-
 from checker import Checker
 from cluster import Cluster
 from utils import Logger, StopWatch
 
+
+def get_expected_cortx_control_pods(namespace):
+    cmd = f'helm get values cortx --all --namespace {namespace} --output yaml | yq .control.replicaCount'
+    child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)  # nosec
+    return int(child.communicate()[0])
 
 def verify_pods_in_namespace(checker, namespace):
     cmd = ['kubectl', 'get', 'pods', '-n', namespace, '--no-headers']
     # nosec
     child = subprocess.Popen(cmd, stdout=subprocess.PIPE)  # nosec
     stdout = child.communicate()[0].decode('utf-8')
-    expected_pods = {
+    deployed_pods = {
         'cortx-control': 0,
         'cortx-data': 0,
         'cortx-ha': 0,
@@ -28,16 +31,17 @@ def verify_pods_in_namespace(checker, namespace):
         podname, _ = line.split(None, 1)
         m = re.match(r'(cortx-[\w]+)', podname)
         if m:
-            if m.group(1) in expected_pods:
-                expected_pods[m.group(1)] += 1
+            if m.group(1) in deployed_pods:
+                deployed_pods[m.group(1)] += 1
 
-    checker.test(expected_pods['cortx-control'] == 1,
-                 f'Verify one cortx-control pod deployed in namespace {namespace}')
-    checker.test(expected_pods['cortx-ha'] == 1,
+    num_control_pods = get_expected_cortx_control_pods(namespace)
+    checker.test(deployed_pods['cortx-control'] == num_control_pods,
+                 f'Verify {num_control_pods} cortx-control pod deployed in namespace {namespace}')
+    checker.test(deployed_pods['cortx-ha'] == 1,
                  f'Verify one cortx-ha pod deployed in namespace {namespace}')
-    checker.test(expected_pods['cortx-data'] >= 1,
+    checker.test(deployed_pods['cortx-data'] >= 1,
                  f'Verify at least one cortx-data pod deployed in namespace {namespace}')
-    checker.test(expected_pods['cortx-server'] >= 1,
+    checker.test(deployed_pods['cortx-server'] >= 1,
                  f'Verify at least one cortx-server pod deployed in namespace {namespace}')
 
 def run_deploy_test(cluster, logger, checker, shutdown=False):
@@ -140,30 +144,16 @@ def run_deploy_test(cluster, logger, checker, shutdown=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', dest='cluster')
-    parser.add_argument('-s', dest='solution')
-    parser.add_argument('--namespace', dest='namespace')
+    parser.add_argument('-s', '--solution', action='append', required=True)
+    parser.add_argument('--localfs')
+
     parser.add_argument('--shutdown', action='store_true')
     parser.add_argument('--logdir', dest='logdir', default='.')
     args = parser.parse_args()
 
-    # Update namespace if specified
-    cluster_file = args.cluster
-    if args.namespace:
-        with open(args.cluster) as f:
-            cluster_data = yaml.safe_load(f)
-        cluster_data['namespace'] = args.namespace
-        cluster_file = f'{args.namespace}.' + args.cluster
-        # Note: This creates a new config file that is
-        # note deleted by this test.  I am ok with that.
-        # I prefer this than deleting a file that I might
-        # want to inspect after the test runs.
-        with open(cluster_file, 'w') as f:
-            yaml.dump(cluster_data, f)
-
     logger = Logger()
     checker = Checker(logger)
-    cluster = Cluster(args.solution, cluster_file)
+    cluster = Cluster(args.solution, localfs=args.localfs)
     run_deploy_test(cluster, logger, checker, args.shutdown)
 
     sys.exit(checker.result())

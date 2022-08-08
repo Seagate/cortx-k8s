@@ -4,4 +4,5 @@ tests:
 testlist:
  - test_deploy_basic
  - test_deploy_basic_default
- - test_deploy_stub
+ - test_deploy_basic_with_motrclient
+ - test_deploy_basic_default_with_motrclient

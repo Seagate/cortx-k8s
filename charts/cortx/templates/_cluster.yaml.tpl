@@ -1,47 +1,65 @@
-### TODO Revisit UUID defaults here since we are moving away from UUID entirely...
 {{- define "storageset.node" -}}
 - name: {{ .name }}
-  {{- if eq .type "server_node" }}
-  id: {{ required "A valid id is required for server nodes" .id | quote }}
-  {{- else }}
-  id: {{ default uuidv4 .id | replace "-" "" | quote }}
-  {{- end }}
+  id: {{ required "A storageset node id is required" .id | quote }}
   hostname: {{ coalesce .hostname .name }}
   type: {{ .type }}
 {{- end -}}
 
 {{- define "cluster.yaml" -}}
+{{- $statefulSetCount := (include "cortx.data.statefulSetCount" .) | int -}}
+{{- $storageSet := dict -}}
+{{- $cvgGroups := list -}}
+{{- if gt $statefulSetCount 0 -}}
+{{- $storageSet = first .Values.storageSets -}}
+{{- $cvgGroups = $storageSet.storage | chunk ($storageSet.containerGroupSize | int) -}}
+{{- end -}}
 cluster:
-  name: {{ .Values.configmap.clusterName }}
-  id: {{ default uuidv4 .Values.configmap.clusterId | replace "-" "" | quote }}
+  name: {{ default (include "cortx.fullname" .) .Values.clusterName | quote }}
+  id: {{ default uuidv4 .Values.clusterId | quote }}
   node_types:
-  - name: data_node
+  {{- range $stsIndex := until (len $cvgGroups) }}
+  - name: {{ include "cortx.data.dataNodeName" $stsIndex }}
     components:
-      - name: utils
-      - name: motr
-        services:
-          - io
-      - name: hare
-    {{- with .Values.configmap.clusterStorageVolumes }}
+    - name: utils
+    - name: motr
+      services:
+      - io
+    - name: hare
     storage:
-    {{- range $key, $val := . }}
-    - name: {{ $key }}
-      type: {{ $val.type }}
+    {{- range $cvg := index $cvgGroups $stsIndex }}
+    - name: {{ $cvg.name }}
+      type: {{ $cvg.type }}
       devices:
-        metadata: {{- toYaml $val.metadataDevices | nindent 10 }}
-        data: {{- toYaml $val.dataDevices | nindent 10 }}
+        {{- with $cvg.devices.metadata }}
+        metadata:
+        {{- range . }}
+        - {{ .path }}
+        {{- end }}
+        {{- end }}
+        {{- with $cvg.devices.log }}
+        log:
+        {{- range . }}
+        - {{ .path }}
+        {{- end }}
+        {{- end }}
+        {{- with $cvg.devices.data }}
+        data:
+        {{- range . }}
+        - {{ .path }}
+        {{- end }}
+        {{- end }}
     {{- end }}
-    {{- end }}
-  {{- if .Values.cortxserver.enabled }}
+  {{- end }}
+  {{- if .Values.server.enabled }}
   - name: server_node
     components:
     - name: utils
     - name: hare
     - name: rgw
       services:
-        - rgw_s3
+      - rgw_s3
   {{- end }}
-  {{- if .Values.cortxcontrol.enabled }}
+  {{- if .Values.control.enabled }}
   - name: control_node
     components:
     - name: utils
@@ -49,7 +67,7 @@ cluster:
       services:
       - agent
   {{- end }}
-  {{- if .Values.cortxha.enabled }}
+  {{- if .Values.ha.enabled }}
   - name: ha_node
     components:
     - name: utils
@@ -60,35 +78,45 @@ cluster:
     - name: utils
     - name: motr
       services:
-        - motr_client
+      - motr_client
     - name: hare
-  {{- with .Values.configmap.clusterStorageSets }}
+  {{- $root := . }}
+  {{- with .Values.storageSets }}
   storage_sets:
-  {{- range $key, $val := . }}
-  - name: {{ $key }}
+  {{- range $storageSet := . }}
+  - name: {{ $storageSet.name }}
     durability:
-      sns: {{ $val.durability.sns | quote }}
-      dix: {{ $val.durability.dix | quote }}
+      sns: {{ $storageSet.durability.sns | quote }}
+      dix: {{ $storageSet.durability.dix | quote }}
     nodes:
-    {{- if $.Values.cortxcontrol.enabled }}
-    {{- include "storageset.node" (dict "name" (include "cortx.control.fullname" $) "id" $val.controlUuid "type" "control_node") | nindent 4 }}
+    {{- if $root.Values.control.enabled }}
+    {{- $nodeName := (include "cortx.control.fullname" $root) }}
+    {{- include "storageset.node" (dict "name" $nodeName "id" $nodeName "type" "control_node") | nindent 4 }}
     {{- end }}
-    {{- if $.Values.cortxha.enabled }}
-    {{- include "storageset.node" (dict "name" (printf "%s-headless" (include "cortx.ha.fullname" $)) "id" $val.haUuid "type" "ha_node") | nindent 4 }}
+    {{- if $root.Values.ha.enabled }}
+    {{- $nodeName := (include "cortx.ha.fullname" $root) }}
+    {{- $hostName := (printf "%s-headless" $nodeName) }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "ha_node") | nindent 4 }}
     {{- end }}
-    {{- range $key, $val := $val.nodes }}
-    {{- $shortHost := (split "." $key)._0 -}}
-    {{- if and $.Values.cortxserver.enabled $val.serverUuid }}
-    {{- include "storageset.node" (dict "name" $key "hostname" $val.serverUuid "id" $val.serverUuid "type" "server_node") | nindent 4 }}
+    {{- range $stsIndex := until $statefulSetCount }}
+    {{- range $i := until (int $root.Values.data.replicaCount) }}
+    {{- $nodeType := (include "cortx.data.dataNodeName" $stsIndex) }}
+    {{- $nodeName := printf "%s-%d" (include "cortx.data.groupFullname" (dict "root" $ "stsIndex" $stsIndex)) $i }}
+    {{- $hostName := printf "%s.%s" $nodeName (include "cortx.data.serviceDomain" $root) }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" $nodeType) | nindent 4 }}
     {{- end }}
-    {{- if $val.dataUuid }}
-    {{- $dataName := printf "cortx-data-headless-svc-%s" $shortHost -}}
-    {{- include "storageset.node" (dict "name" $dataName "id" $val.dataUuid "type" "data_node") | nindent 4 }}
     {{- end }}
-    {{- if $val.clientUuid -}}
-    {{- $clientName := printf "cortx-client-headless-svc-%s" $shortHost -}}
-    {{- include "storageset.node" (dict "name" $clientName "id" $val.clientUuid "type" "client_node") | nindent 4 }}
+    {{- if $root.Values.server.enabled }}
+    {{- range $i := until (int $root.Values.server.replicaCount) }}
+    {{- $nodeName := printf "%s-%d" (include "cortx.server.fullname" $root) $i }}
+    {{- $hostName := printf "%s.%s" $nodeName (include "cortx.server.serviceDomain" $root) }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "server_node") | nindent 4 }}
     {{- end }}
+    {{- end }}
+    {{- range $i := until (int $root.Values.client.replicaCount) }}
+    {{- $nodeName := printf "%s-%d" (include "cortx.client.fullname" $root) $i }}
+    {{- $hostName := printf "%s.%s" $nodeName (include "cortx.client.serviceDomain" $root) }}
+    {{- include "storageset.node" (dict "name" $nodeName "hostname" $hostName "id" $hostName "type" "client_node") | nindent 4 }}
     {{- end }}
   {{- end }}
   {{- end }}

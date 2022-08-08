@@ -1,6 +1,0 @@
-cortxblkdata:
-  storageclass: local-blk-storage
-  nodelistinfo: node-list-info.txt
-  mountblkinfo: mnt-blk-info.txt
-  storage:
-    volumemode: Block

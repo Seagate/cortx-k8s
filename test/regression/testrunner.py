@@ -175,12 +175,15 @@ class Test:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', dest='cluster', required=True)
+    parser.add_argument('-s', '--solution-segment', required=True)
+    parser.add_argument('--local-fs', default='/dev/sdb')
     parser.add_argument('-t', dest='testlist', required=True)
     args = parser.parse_args()
 
     vars_ = {
-                  'cluster': args.cluster,
+                  'solution': args.solution_segment,
+                  'localfs': args.local_fs,
+                  'test_dir': os.path.relpath(os.path.dirname(__file__)),
                   'k8_cloud_dir': os.path.relpath(os.path.join(
                                                   os.path.dirname(__file__),
                                                   '../../k8_cortx_cloud')),
