@@ -132,18 +132,12 @@ manual-pv-0706-sdf   map[cortx.io/device-path:dev-sdf]   /dev/cortx/disk0706p4
 
 #### 3. Altering default install behavior to skip cortx-block-data deployment and use manually-created StorageClass
 
-In order to direct the [`deploy-cortx-cloud.sh`](https://github.com/Seagate/cortx-k8s/blob/integration/k8_cortx_cloud/deploy-cortx-cloud.sh) script from automatically deploying its own local block data storage, you will need to provide two environment variables to the deployment script prior to running it.
+In order to direct the [`deploy-cortx-cloud.sh`](https://github.com/Seagate/cortx-k8s/blob/integration/k8_cortx_cloud/deploy-cortx-cloud.sh) script from automatically deploying its own local block data storage, you will need to provide the name of the StorageClass you created above to the deployment script prior to running it.
 
-1. Set `CORTX_DEPLOY_CUSTOM_BLOCK_STORAGE` to any non-empty value to instruct the deploy script to skip creation of its own PersistentVolumes.
-
-```bash
-export CORTX_DEPLOY_CUSTOM_BLOCK_STORAGE=true
-```
-
-2. Set `CORTX_DEPLOY_CUSTOM_STORAGE_CLASS` equal to the value of your StorageClass name, defined above in Step 1. 
+Set `CORTX_DEPLOY_CUSTOM_BLOCK_STORAGE_CLASS` equal to the value of your StorageClass name, defined above in Step 1. 
 
 ```bash
-export CORTX_DEPLOY_CUSTOM_STORAGE_CLASS=manual-block-storage
+export CORTX_DEPLOY_CUSTOM_BLOCK_STORAGE_CLASS=manual-block-storage
 ```
 #### 4. Deploy CORTX on Kubernetes 
 
