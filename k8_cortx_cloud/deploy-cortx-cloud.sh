@@ -142,6 +142,17 @@ function configurationCheck()
         fi
     fi
 
+    # Validate common.ssl.secret configuration
+    secret_name=$(getSolutionValue "solution.common.ssl.secret")
+    secret_ext=$(getSolutionValue "solution.common.ssl.external_secret")
+    if [[ -z "${secret_name}" && -z "${secret_ext}" ]] ; then
+        printf "Error: %s: solution.common.ssl.secret or solution.common.ssl.external_secret must be specified\n" "${solution_yaml}"
+        exit 1
+    elif [[ -n "${secret_name}" && -n "${secret_ext}" ]] ; then
+        printf "Error: %s: Cannot specify both solution.common.ssl.secret or solution.common.ssl.external_secret\n" "${solution_yaml}"
+        exit 1
+    fi
+
     # Validate the "solution.yaml" file against the "solution_check.yaml" file
     if ! ./solution_validation_scripts/solution-validation.sh "${solution_yaml}"; then
         exit 1
@@ -160,6 +171,8 @@ buildValues() {
     # Initialize
     yq --null-input "
         (.global.storageClass, .consul.server.storageClass) = \"local-path\"
+        | (.server.certificateSecret, .control.certificateSecret) = \"${cortx_secret_cert_name}\"
+        | (.server.certificateSecretKey, .control.certificateSecretKey) = \"${cortx_secret_cert_key}\"
         | .existingSecret = \"${cortx_secret_name}\"" > "${values_file}"
 
     # Configure all cortx-setup containers for console component logging
@@ -612,6 +625,22 @@ function deployCortxSecrets()
         cortx_secret_name="$(getSolutionValue "solution.secrets.external_secret")"
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
+
+    # Create cortx-cert Secret
+    cortx_secret_cert_name=$(getSolutionValue "solution.common.ssl.secret")  # This is a global variable
+    cortx_secret_cert_key=$(getSolutionValue "solution.common.ssl.secret_key")  # This is a global variable
+    if [[ -n "${cortx_secret_cert_name}" ]]; then
+        if ! kubectl create secret generic "${cortx_secret_cert_name}" \
+            --from-file="${cortx_secret_cert_key}=./ssl-cert/cortx.pem" \
+            --namespace="${namespace}"; then
+            printf "Exit early.  Failed to create Secret '%s'\n" "${cortx_secret_cert_name}"
+            exit 1
+        fi
+    else
+        cortx_secret_cert_name="$(getSolutionValue "solution.common.ssl.external_secret")"
+        printf "Installing CORTX with existing SSL Secret %s.\n" "${cortx_secret_cert_name}"
+    fi
+
 }
 
 function silentKill()

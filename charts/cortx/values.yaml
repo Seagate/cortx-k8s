@@ -219,6 +219,10 @@ control:
   enabled: true
   # -- Number of Control replicas
   replicaCount: 1
+  # -- Name of Secret that contains the certificate
+  certificateSecret: ""
+  # -- Name of Secret key that contains the certificate
+  certificateSecretKey: ""
 
   # Control image
   # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-control
@@ -352,6 +356,10 @@ server:
   enabled: true
   # -- Number of Server replicas
   replicaCount: 1
+  # -- Name of Secret that contains tls.key/tls.crt
+  certificateSecret: ""
+  # -- Name of Secret key that contains the certificate
+  certificateSecretKey: ""
 
   # Server image
   # ref: https://github.com/Seagate/cortx/pkgs/container/cortx-rgw

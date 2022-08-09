@@ -12,6 +12,8 @@ solution:
     rancher: required
   common:
     storage_provisioner_path: required
+    ssl:
+      secret_key: required
     s3:
       default_iam_users:
         auth_admin: required

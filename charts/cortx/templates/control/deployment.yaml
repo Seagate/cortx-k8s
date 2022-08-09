@@ -25,8 +25,11 @@ spec:
           configMap:
             name: {{ include "cortx.configmapName" . }}
         - name: cortx-ssl-cert
-          configMap:
-            name: {{ include "cortx.tls.configmapName" . }}
+          secret:
+            secretName: {{ .Values.control.certificateSecret }}
+            items:
+              - key: {{ .Values.control.certificateSecretKey }}
+                path: cortx.pem
         - name: data
           emptyDir: {}
         - name: configuration-secrets
