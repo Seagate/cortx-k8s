@@ -1,6 +1,6 @@
 # cortx
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-871](https://img.shields.io/badge/AppVersion-2.0.0--871-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-886](https://img.shields.io/badge/AppVersion-2.0.0--886-informational?style=flat-square)
 
 CORTX is a distributed object storage system designed for great efficiency, massive capacity, and high HDD-utilization.
 
@@ -67,6 +67,7 @@ helm uninstall cortx
 | client.image.tag | string | Chart.AppVersion | Client image tag |
 | client.instanceCount | int | `1` | Number of Client instances (containers) per replica |
 | client.replicaCount | int | `1` | Number of Client replicas |
+| client.setupLoggingDetail | string | `""` | Configure cortx-setup Init Container logging detail levels. "default" for default (no extra details), "component" for extra component logs, and "all" for all logs. An empty value means use the global value. If all values are empty, behaves as-if "default". |
 | clusterDomain | string | `"cluster.local"` | Kubernetes Cluster Domain |
 | clusterId | string | A random UUID (v4) | The unique ID of the CORTX cluster. |
 | clusterName | string | Chart Release fullname | The name of the CORTX cluster. |
@@ -85,10 +86,11 @@ helm uninstall cortx
 | control.image.registry | string | `"ghcr.io"` | Control image registry |
 | control.image.repository | string | `"seagate/cortx-control"` | Control image name |
 | control.image.tag | string | Chart.AppVersion | Control image tag |
-| control.persistence.size | string | `"1Gi"` | Persistent volume size |
+| control.replicaCount | int | `1` | Number of Control replicas |
 | control.service.nodePorts.https | string | `""` | Node port for HTTPS for LoadBalancer and NodePort service types |
 | control.service.ports.https | int | `8081` | Control API service HTTPS port |
 | control.service.type | string | `"ClusterIP"` | Kubernetes service type |
+| control.setupLoggingDetail | string | `""` | Configure cortx-setup Init Container logging detail levels. "default" for default (no extra details), "component" for extra component logs, and "all" for all logs. An empty value means use the global value. If all values are empty, behaves as-if "default". |
 | data.blockDevicePersistence.accessModes | list | `["ReadWriteOnce"]` | Persistent volume access modes |
 | data.blockDevicePersistence.storageClass | string | `""` | Persistent Volume storage class |
 | data.blockDevicePersistence.volumeMode | string | `"Block"` | Persistent volume mode |
@@ -104,6 +106,7 @@ helm uninstall cortx
 | data.persistence.accessModes | list | `["ReadWriteOnce"]` | Persistent volume access modes |
 | data.persistence.size | string | `"1Gi"` | Persistent volume size |
 | data.replicaCount | int | `1` | Number of Data replicas |
+| data.setupLoggingDetail | string | `""` | Configure cortx-setup Init Container logging detail levels. "default" for default (no extra details), "component" for extra component logs, and "all" for all logs. An empty value means use the global value. If all values are empty, behaves as-if "default". |
 | existingSecret | string | `""` | The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail. |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
@@ -112,6 +115,11 @@ helm uninstall cortx
 | externalKafka.adminUser | string | `"admin"` |  |
 | externalKafka.endpoints | list | `[]` |  |
 | fullnameOverride | string | `""` | A name that will fully override cortx.fullname |
+| global.cortx.image.pullPolicy | string | `""` | CORTX image pull policy. Overrides CORTX component `image.pullPolicy`. |
+| global.cortx.image.registry | string | `""` | CORTX container image registry. Overrides CORTX component `image.registry`. |
+| global.cortx.image.tag | string | `""` | CORTX image tag. Overrides CORTX component `image.tag`. |
+| global.cortx.setupLoggingDetail | string | `""` | Configure cortx-setup Init Container logging detail levels. Overridden by component settings. "default" for default (no extra details), "component" for extra component logs, and "all" for all logs. An empty value means use the component-specific value. If all values are empty, behaves as-if "default". |
+| global.imageRegistry | string | `""` | Global container image registry. Overrides CORTX component `image.registry` and sub-charts (except Consul). |
 | ha.enabled | bool | `true` | Enable installation of HA instances |
 | ha.faultTolerance.resources.limits | object | `{"cpu":"500m","memory":"1Gi"}` | The resource limits for the HA Fault Tolerance containers and processes |
 | ha.faultTolerance.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the HA Fault Tolerance containers and processes |
@@ -124,6 +132,7 @@ helm uninstall cortx
 | ha.k8sMonitor.resources.limits | object | `{"cpu":"500m","memory":"1Gi"}` | The resource limits for the HA Kubernetes Monitor containers and processes |
 | ha.k8sMonitor.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the HA Kubernetes Monitor containers and processes |
 | ha.persistence.size | string | `"1Gi"` | Persistent volume size |
+| ha.setupLoggingDetail | string | `""` | Configure cortx-setup Init Container logging detail levels. "default" for default (no extra details), "component" for extra component logs, and "all" for all logs. An empty value means use the global value. If all values are empty, behaves as-if "default". |
 | hare.hax.ports.http.port | int | `22003` | The port number of the Hax HTTP endpoint. |
 | hare.hax.ports.http.protocol | string | `"https"` | The protocol to configure the Hax HTTP endpoint as. Valid values are `http` or `https`. |
 | hare.hax.resources.limits | object | `{"cpu":"1000m","memory":"2Gi"}` | Configure the resource limits for Hax containers. This applies to all Pods that run Hax containers. |
@@ -163,6 +172,7 @@ helm uninstall cortx
 | server.service.ports.http | int | `80` | RGW S3 service HTTP port |
 | server.service.ports.https | int | `443` | RGW S3 service HTTPS port |
 | server.service.type | string | `"ClusterIP"` | Kubernetes service type |
+| server.setupLoggingDetail | string | `""` | Configure cortx-setup Init Container logging detail levels. "default" for default (no extra details), "component" for extra component logs, and "all" for all logs. An empty value means use the global value. If all values are empty, behaves as-if "default". |
 | serviceAccount.annotations | object | `{}` | Custom annotations for the CORTX ServiceAccount |
 | serviceAccount.automountServiceAccountToken | bool | `false` | Allow auto mounting of the service account token |
 | serviceAccount.create | bool | `true` | Enable the creation of a ServiceAccount for CORTX pods |

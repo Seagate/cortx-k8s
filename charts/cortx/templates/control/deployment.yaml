@@ -7,7 +7,7 @@ metadata:
   labels: {{- include "cortx.labels" . | nindent 4 }}
     app.kubernetes.io/component: control
 spec:
-  replicas: 1
+  replicas: {{ .Values.control.replicaCount }}
   selector:
     matchLabels: {{- include "cortx.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: control
@@ -28,18 +28,25 @@ spec:
           configMap:
             name: {{ include "cortx.tls.configmapName" . }}
         - name: data
-          persistentVolumeClaim:
-            claimName: {{ include "cortx.control.fullname" . }}
+          emptyDir: {}
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" . }}
+      {{- $logFiles := list }}
+      {{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .Values.control "root" .) }}
+      {{- if has $logDetails (list "component" "all") }}
+        {{- $logFiles = list
+            "/etc/cortx/log/utils/$TAIL_MACHINE_ID/utils_setup.log"
+            "/etc/cortx/log/csm/csm_setup.log" }}
+      {{- end }}
+      {{- $imageContext := dict "image" .Values.control.image "logFiles" $logFiles "root" . }}
       initContainers:
-      {{- include "cortx.containers.setup" (dict "image" .Values.control.image "root" . ) | nindent 8 }}
+      {{- include "cortx.containers.setup" $imageContext | nindent 8 }}
       containers:
         {{- $image := include "cortx.control.image" . }}
         - name: cortx-csm-agent
           image: {{ $image }}
-          imagePullPolicy: {{ .Values.control.image.pullPolicy | quote }}
+          imagePullPolicy: {{ include "cortx.images.imagePullPolicy" $imageContext }}
           {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}

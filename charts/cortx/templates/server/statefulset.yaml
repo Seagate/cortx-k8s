@@ -36,14 +36,33 @@ spec:
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" . }}
+      {{- $logFiles := list }}
+      {{- $logDetails := include "cortx.setupLoggingDetail" ( dict "component" .Values.server "root" .) }}
+      {{- if has $logDetails (list "component" "all") }}
+        {{- $logFiles = list
+              "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare_deployment/setup.log"
+              "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/setup.log"
+              "/etc/cortx/log/motr/$TAIL_MACHINE_ID/mini_provisioner"
+              "/etc/cortx/log/rgw/$TAIL_MACHINE_ID/rgw_setup.log"
+              "/etc/cortx/log/utils/$TAIL_MACHINE_ID/utils_setup.log" }}
+        {{- if (eq $logDetails "all") }}
+          {{- $logFiles = concat $logFiles (list
+                "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/consul-elect-rc-leader.log"
+                "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/consul-watch-handler.log"
+                "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare-consul.log"
+                "/etc/cortx/log/hare/log/$TAIL_MACHINE_ID/hare-hax.log"
+                "/etc/cortx/log/rgw/$TAIL_MACHINE_ID/radosgw-admin.log") }}
+        {{- end }}
+      {{- end }}
+      {{- $imageContext := dict "image" .Values.server.image "logFiles" $logFiles "root" . }}
       initContainers:
-        {{- include "cortx.containers.setup" (dict "image" .Values.server.image "root" . ) | nindent 8 }}
+        {{- include "cortx.containers.setup" $imageContext | nindent 8 }}
       containers:
-        {{- include "cortx.containers.hax" (dict "image" .Values.server.image "root" . ) | nindent 8 }}
+        {{- include "cortx.containers.hax" $imageContext | nindent 8 }}
         - name: cortx-rgw
           {{- $image := include "cortx.server.image" . }}
           image: {{ $image }}
-          imagePullPolicy: {{ .Values.server.image.pullPolicy | quote }}
+          imagePullPolicy: {{ include "cortx.images.imagePullPolicy" $imageContext }}
           {{- if eq $image "ghcr.io/seagate/centos:7" }}
           command: ["/bin/sleep", "3650d"]
           {{- else }}

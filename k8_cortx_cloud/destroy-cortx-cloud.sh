@@ -219,7 +219,7 @@ function deleteSecrets()
         secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
         kubectl delete secret "${secret_name}" --namespace="${namespace}" --ignore-not-found=true
 
-        find "$(pwd)/cortx-cloud-helm-pkg" -name "secret-info.txt" -delete
+        [[ -d $(pwd)/cortx-cloud-helm-pkg ]] && find "$(pwd)/cortx-cloud-helm-pkg" -name "secret-info.txt" -delete
     fi
 }
 
