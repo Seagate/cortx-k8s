@@ -16,6 +16,10 @@ Per [Red Hat](https://www.redhat.com/en/topics/containers/whats-a-linux-containe
 
 CORTX Control Pods contain the APIs which are exposed to the end-user in order to maintain the CORTX control plane and are most often used to interact with IAM settings.
 
+### CORTX Core
+
+The smallest, atomic deployable unit of the CORTX stack is sometimes referred to as "CORTX Core". This includes the CORTX Control, CORTX RGW, CORTX Cluster Coordinator (nee HA), and CORTX Data components, along with the third-party prerequisites of Apache Kafka and HashiCorp’s Consul.
+
 ### CORTX Data Pods
 
 CORTX Data Pods contain the internal APIs which are used to manage the storage and protection of data at the lowest possible level inside of a CORTX cluster.
@@ -28,6 +32,14 @@ CORTX HA Pods are responsible for monitoring the overall health of the CORTX clu
 
 CORTX Server Pods contain the APIs which are exposed to the end-user in order to provide general S3 functionality - create buckets, copy objects, delete objects, delete buckets. This API layer is implemented using the Rados Gateway (RGW) interface.
 
+### CustomResource (CR)
+
+A CustomResource, or CR, is an instance of the CustomResourceDefinition a Kubernetes Operator ships that represents the Operand or an Operation on the Operand.
+
+### CustomResourceDefinition
+
+A CustomResourceDefinition, or CRD, is an API of a Kubernetes Operator, providing the blueprint and validation rules for Custom Resources.
+
 ### CVG (Cylinder Volume Group)
 
 A Cylinder Volume Group, or CVG, is a collection of drives or block devices which CORTX utilizes as a unit of storage, all managed by a single Motr IO process.
@@ -39,6 +51,14 @@ Block devices, HDDs, SDDs, or other types of storage devices addressable by `/de
 ### JBOD
 
 JBOD stands for "Just a Bunch of Disks" and refers to a rack enclosure containing many disks which are each individually exposed to the host (CORTX in our case).
+
+### KUDO
+
+[KUDO](https://kudo.dev/), which stands for the Kubernetes Universal Declarative Operator, is a toolkit used to build Kubernetes Operators, in most cases just using YAML.
+
+### Managed resources
+
+Managed resources are the Kubernetes objects (Pods, Deployments, StatefulSets, PersistentVolumes, ConfigMaps, Secrets, etc.) the Operator uses to constitute an Operand.
 
 ### Metadata Devices / Drives
 
@@ -53,6 +73,18 @@ Motr is the central storage capability inside of a CORTX cluster. It functions a
 This term is unfortunately overloaded in the context of CORTX on Kubernetes. It can either mean an underlying Kubernetes worker node (in general) or it can mean any single component working inside of the CORTX cluster (Data Pod, Server Pod, Control Pod, etc.). 
 
 Context is important and required to discern when which is which. Through the https://github.com/Seagate/cortx-k8s repository, care is used to refer to Kubernetes worker nodes as "Nodes" and CORTX nodes running on Kubernetes as "Pods".
+
+### Operand
+
+As defined by the [Operator SDK](https://sdk.operatorframework.io/docs/overview/operator-capabilities/#terminology), an Operand is the managed workload provided by the Operator as a service.
+
+### Operator
+
+As defined by the [Operator SDK](https://sdk.operatorframework.io/docs/overview/operator-capabilities/#terminology), an Operator is the custom controller installed on a Kubernetes cluster.
+
+### Operator SDK
+
+An [open-source framework](https://sdk.operatorframework.io/), provided by Red Hat, which helps users quickly create functional Kubernetes Operators from Go, Helm, and Ansible scaffolding.
 
 ### Pod
 

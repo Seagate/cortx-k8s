@@ -2,6 +2,7 @@
 remote: origin
 target-branch: integration
 lint-conf: .github/linters/lintconf.yaml
+chart-yaml-schema: .github/linters/chart_schema.yaml
 helm-extra-args: "--timeout 600s"
 chart-dirs:
   - charts
@@ -9,5 +10,5 @@ excluded-charts:
 chart-repos:
   - hashicorp=https://helm.releases.hashicorp.com
   - bitnami=https://charts.bitnami.com/bitnami
-validate-chart-schema: false
 check-version-increment: false
+all: true
