@@ -77,7 +77,7 @@ Return the CORTX setup initContainer
       tail -F --quiet --lines=0 {{ . }} 2> /dev/null &
       {{- end }}
       {{ end }}
-      /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c yaml:///etc/cortx/cluster.conf
+      /opt/seagate/cortx/provisioner/bin/cortx_deploy -f /etc/cortx/solution -c $CORTX_CONFSTORE_URL
     {{- end }}
   volumeMounts:
     - name: cortx-configuration
@@ -90,6 +90,8 @@ Return the CORTX setup initContainer
       mountPath: /etc/cortx/solution/secret
       readOnly: true
   env:
+    - name: CORTX_CONFSTORE_URL
+      value: {{ include "cortx.confstore.url" .root }}
     - name: NODE_NAME
       valueFrom:
         fieldRef:
@@ -157,7 +159,7 @@ Return the CORTX Hax container
     - /bin/sh
   args:
     - -c
-    - /opt/seagate/cortx/hare/bin/hare_setup start --config yaml:///etc/cortx/cluster.conf
+    - /opt/seagate/cortx/hare/bin/hare_setup start --config $CORTX_CONFSTORE_URL
   {{- end }}
   volumeMounts:
     - name: cortx-configuration
@@ -167,6 +169,8 @@ Return the CORTX Hax container
     - name: data
       mountPath: /etc/cortx
   env:
+    - name: CORTX_CONFSTORE_URL
+      value: {{ include "cortx.confstore.url" .root }}
     - name: NODE_NAME
       valueFrom:
         fieldRef:
