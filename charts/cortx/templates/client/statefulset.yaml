@@ -71,7 +71,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/motr/bin/motr_setup start --services client --idx $CLIENT_INDEX --config $CONFSTORE_URL
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services client --idx $CLIENT_INDEX --config $CORTX_CONFSTORE_URL
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
@@ -83,7 +83,7 @@ spec:
           env:
             - name: CLIENT_INDEX
               value: {{ printf "%d" (add 1 $i) | quote }}
-            - name: CONFSTORE_URL
+            - name: CORTX_CONFSTORE_URL
               value: {{ include "cortx.confstore.url" $ }}
             - name: NODE_NAME
               valueFrom:

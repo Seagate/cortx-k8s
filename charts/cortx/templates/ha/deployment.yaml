@@ -58,7 +58,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start --services fault_tolerance --config $CONFSTORE_URL
+            - /opt/seagate/cortx/ha/bin/ha_start --services fault_tolerance --config $CORTX_CONFSTORE_URL
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
@@ -68,7 +68,7 @@ spec:
             - name: data
               mountPath: /etc/cortx
           env:
-          - name: CONFSTORE_URL
+          - name: CORTX_CONFSTORE_URL
             value: {{ include "cortx.confstore.url" . }}
           - name: NODE_NAME
             valueFrom:
@@ -93,7 +93,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start --services health_monitor --config $CONFSTORE_URL
+            - /opt/seagate/cortx/ha/bin/ha_start --services health_monitor --config $CORTX_CONFSTORE_URL
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
@@ -103,7 +103,7 @@ spec:
             - name: data
               mountPath: /etc/cortx
           env:
-          - name: CONFSTORE_URL
+          - name: CORTX_CONFSTORE_URL
             value: {{ include "cortx.confstore.url" . }}
           - name: NODE_NAME
             valueFrom:
@@ -128,7 +128,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/ha/bin/ha_start --services k8s_monitor --config $CONFSTORE_URL
+            - /opt/seagate/cortx/ha/bin/ha_start --services k8s_monitor --config $CORTX_CONFSTORE_URL
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
@@ -138,7 +138,7 @@ spec:
             - name: data
               mountPath: /etc/cortx
           env:
-          - name: CONFSTORE_URL
+          - name: CORTX_CONFSTORE_URL
             value: {{ include "cortx.confstore.url" . }}
           - name: NODE_NAME
             valueFrom:

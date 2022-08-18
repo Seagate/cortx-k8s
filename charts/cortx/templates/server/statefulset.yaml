@@ -70,7 +70,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/rgw/bin/rgw_setup start --config $CONFSTORE_URL
+            - /opt/seagate/cortx/rgw/bin/rgw_setup start --config $CORTX_CONFSTORE_URL
           {{- end }}
           volumeMounts:
             - name: cortx-configuration
@@ -80,7 +80,7 @@ spec:
             - name: data
               mountPath: /etc/cortx
           env:
-            - name: CONFSTORE_URL
+            - name: CORTX_CONFSTORE_URL
               value: {{ include "cortx.confstore.url" . }}
             - name: NODE_NAME
               valueFrom:

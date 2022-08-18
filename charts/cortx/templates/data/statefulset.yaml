@@ -92,7 +92,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config $CONFSTORE_URL
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services confd --config $CORTX_CONFSTORE_URL
           {{- end }}
           {{- include "cortx.containers.dataBlockDeviceVolumes" $cvgGroup | nindent 10 }}
           volumeMounts:
@@ -103,7 +103,7 @@ spec:
             - name: data
               mountPath: /etc/cortx
           env:
-          - name: CONFSTORE_URL
+          - name: CORTX_CONFSTORE_URL
             value: {{ include "cortx.confstore.url" $ }}
           - name: NODE_NAME
             valueFrom:
@@ -133,7 +133,7 @@ spec:
             - /bin/sh
           args:
             - -c
-            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config $CONFSTORE_URL
+            - /opt/seagate/cortx/motr/bin/motr_setup start --services ioservice --idx $IO_INDEX --config $CORTX_CONFSTORE_URL
           {{- end }}
           {{- include "cortx.containers.dataBlockDeviceVolumes" ((index $cvgGroup $cvgIndex) | list) | nindent 10 }}
           volumeMounts:
@@ -146,7 +146,7 @@ spec:
           env:
             - name: IO_INDEX
               value: {{ printf "%d" $ioIndex | quote }}
-            - name: CONFSTORE_URL
+            - name: CORTX_CONFSTORE_URL
               value: {{ include "cortx.confstore.url" $ }}
             - name: NODE_NAME
               valueFrom:
