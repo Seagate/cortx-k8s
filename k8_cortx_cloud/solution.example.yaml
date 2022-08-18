@@ -11,11 +11,11 @@ solution:
       csm_auth_admin_secret: null
       csm_mgmt_admin_secret: null
   images:
-    cortxcontrol: ghcr.io/seagate/cortx-control:2.0.0-895
-    cortxdata: ghcr.io/seagate/cortx-data:2.0.0-895
-    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-895
-    cortxha: ghcr.io/seagate/cortx-control:2.0.0-895
-    cortxclient: ghcr.io/seagate/cortx-data:2.0.0-895
+    cortxcontrol: ghcr.io/seagate/cortx-control:2.0.0-902
+    cortxdata: ghcr.io/seagate/cortx-data:2.0.0-902
+    cortxserver: ghcr.io/seagate/cortx-rgw:2.0.0-902
+    cortxha: ghcr.io/seagate/cortx-control:2.0.0-902
+    cortxclient: ghcr.io/seagate/cortx-data:2.0.0-902
     consul: ghcr.io/seagate/consul:1.11.4
     kafka: ghcr.io/seagate/kafka:3.0.0-debian-10-r97
     zookeeper: ghcr.io/seagate/zookeeper:3.8.0-debian-10-r9
