@@ -372,6 +372,13 @@ The documented advanced deployment scenarios may introduce additional custom env
 
 ## Troubleshooting
 
+### CORTX server pod fails during deployment
+
+To fix:
+- destroy the cluster
+- restart cordns pods: kubectl rollout restart -n kube-system deployment/coredns
+- deploy again
+
 ### Using stub containers
 
 The Helm charts work with both "stub" and "CORTX ALL" containers, allowing users to deploy both placeholder Kubernetes artifacts and functioning CORTX deployments using the same code base. If you are encountering issues deploying CORTX on Kubernetes, you can utilize the stub container method by setting the necessary component in `solution.yaml` to use an image of `ghcr.io/seagate/centos:7` instead of a CORTX-based image. This will deploy the same Kubernetes structure, expect the container entrypoints will be set to `sleep 3650d` to allow for deployment progression and user inspection of the overall deployment.
