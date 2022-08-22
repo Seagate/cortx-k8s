@@ -372,7 +372,7 @@ The documented advanced deployment scenarios may introduce additional custom env
 
 ## Troubleshooting
 
-### CORTX server pod fails during deployment
+### CORTX Deployment failed due to "timeout waiting for cortx-server or cortx-data-g0 to initialize"
 
 To fix:
 - destroy the cluster
