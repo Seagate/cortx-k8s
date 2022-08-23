@@ -45,7 +45,7 @@ Note if encounter this error "Exiting due to GUEST_MISSING_CONNTRACK: Sorry, Kub
 **5. Clone Cortx-K8s framework**
 
 ```
-git clone -b v0.0.22 https://github.com/Seagate/cortx-k8s
+git clone -b v0.7.0 https://github.com/Seagate/cortx-k8s
 cd cortx-k8s/k8_cortx_cloud/
 ```
 
