@@ -277,3 +277,15 @@ Return the setup container log details setting for the component. The component 
 {{- define "cortx.setupLoggingDetail" -}}
 {{- coalesce .component.setupLoggingDetail .root.Values.global.cortx.setupLoggingDetail -}}
 {{- end -}}
+
+{{/*
+Create a CORTX Confstore URL
+*/}}
+{{- define "cortx.confstore.url" -}}
+{{- if .Values.consul.enabled -}}
+{{- printf "consul://%s-consul-server:8500/conf" (include "cortx.fullname" .) -}}
+{{- else -}}
+{{/* TODO: handle external Consul services */}}
+{{- printf "yaml:///etc/cortx/cluster.conf" -}}
+{{- end -}}
+{{- end -}}
