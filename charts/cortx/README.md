@@ -81,6 +81,8 @@ helm uninstall cortx
 | consul.ui.enabled | bool | `false` | Enable the Consul UI |
 | control.agent.resources.limits | object | `{"cpu":"500m","memory":"256Mi"}` | The resource limits for the Control Agent containers and processes |
 | control.agent.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the Control Agent containers and processes |
+| control.certificateSecret | string | `""` | Name of Secret that contains the certificate |
+| control.certificateSecretKey | string | `""` | Name of Secret key that contains the certificate |
 | control.enabled | bool | `true` | Enable installation of Control instances |
 | control.image.pullPolicy | string | `"IfNotPresent"` | Control image pull policy |
 | control.image.registry | string | `"ghcr.io"` | Control image registry |
@@ -154,6 +156,8 @@ helm uninstall cortx
 | rbac.create | bool | `true` | Enable the creation of RBAC resources, Role and RoleBinding, for the CORTX ServiceAccount. |
 | server.auth.adminAccessKey | string | `"cortx-admin"` | The admin user's Access Key |
 | server.auth.adminUser | string | `"cortx-user"` | Name of the admin user that is created when initializing the cluster |
+| server.certificateSecret | string | `""` | Name of Secret that contains the certificate |
+| server.certificateSecretKey | string | `""` | Name of Secret key that contains the certificate |
 | server.enabled | bool | `true` | Enable installation of Server instances |
 | server.extraConfiguration | string | `""` | An optional multi-line string that contains extra RGW configuration settings. The string may contain template expressions, and is appended to the end of the computed configuration. |
 | server.image.pullPolicy | string | `"IfNotPresent"` | Server image pull policy |

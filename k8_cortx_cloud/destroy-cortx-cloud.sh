@@ -214,7 +214,8 @@ function deleteSecrets()
     printf "########################################################\n"
     printf "# Delete Secrets                                       #\n"
     printf "########################################################\n"
-    local secret_name=$(./parse_scripts/parse_yaml.sh "${solution_yaml}" "solution.secrets.name")
+    local secret_name
+    secret_name=$(./parse_scripts/parse_yaml.sh "${solution_yaml}" "solution.secrets.name")
     if [[ -n "${secret_name}" ]]; then
         secret_name=$(echo "${secret_name}" | cut -f2 -d'>')
         kubectl delete secret "${secret_name}" --namespace="${namespace}" --ignore-not-found=true
@@ -222,7 +223,8 @@ function deleteSecrets()
         [[ -d $(pwd)/cortx-cloud-helm-pkg ]] && find "$(pwd)/cortx-cloud-helm-pkg" -name "secret-info.txt" -delete
     fi
 
-    local ssl_secret_name=$(./parse_scripts/parse_yaml.sh "${solution_yaml}" "solution.common.ssl.secret")
+    local ssl_secret_name
+    ssl_secret_name=$(./parse_scripts/parse_yaml.sh "${solution_yaml}" "solution.common.ssl.secret")
     if [[ -n "${ssl_secret_name}" ]]; then
         ssl_secret_name=$(echo "${ssl_secret_name}" | cut -f2 -d'>')
         kubectl delete secret "${ssl_secret_name}" --namespace="${namespace}" --ignore-not-found=true

@@ -356,7 +356,7 @@ server:
   enabled: true
   # -- Number of Server replicas
   replicaCount: 1
-  # -- Name of Secret that contains tls.key/tls.crt
+  # -- Name of Secret that contains the certificate
   certificateSecret: ""
   # -- Name of Secret key that contains the certificate
   certificateSecretKey: ""
