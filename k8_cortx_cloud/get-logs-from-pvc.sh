@@ -28,7 +28,7 @@ while [[ $# -gt 0 ]]; do
       if [[ $1 = -* ]]; then
         echo "ERROR: Unsupported Option \"$1\"."
         usage
-      elif [[ -z $pvc ]]; then
+      elif [[ -z "${pvc}" ]]; then
         pvc=$1
       fi
       shift 1
@@ -36,7 +36,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z $pvc ]]; then
+if [[ -z "${pvc}" ]]; then
   echo "ERROR: Specify PVC."
   exit 1
 fi
@@ -51,7 +51,7 @@ if [[ -f "${tarfile}" && "${force_overwrite}" == "false" ]]; then
 fi
 
 
-cat << EOF | kubectl apply -f -
+cat << EOF | kubectl apply -f - || true
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -89,7 +89,7 @@ while [[ "${pod_status}" != "Running" ]]; do
     pod_name="${my_array[0]}"
     pod_status="${my_array[2]}"
     echo "Waiting for job to complete (${pod_name}  ${pod_status})"
-  done <<< "$(kubectl get pod --namespace ${namespace} | grep ^${job_name})"
+  done <<< $(kubectl get pod --namespace "${namespace}" | grep "^${job_name}") || true
   if [[ -z "${pod_status}" ]]; then
     printf "ERROR: %s did not tar PVC files as expected\n" % "${pod_name}"
     exit 1
