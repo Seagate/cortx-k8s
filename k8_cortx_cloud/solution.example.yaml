@@ -25,7 +25,6 @@ solution:
     storage_provisioner_path: /mnt/fs-local-volume
     ssl:
        secret: cortx-cert
-       #external_secret: cortx-cert
        secret_key: cortx.pem
     s3:
       default_iam_users:
