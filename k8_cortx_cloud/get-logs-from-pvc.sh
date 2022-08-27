@@ -89,7 +89,7 @@ while [[ "${pod_status}" != "Running" ]]; do
     pod_name="${my_array[0]}"
     pod_status="${my_array[2]}"
     echo "Waiting for job to complete (${pod_name}  ${pod_status})"
-  done <<< $(kubectl get pod --namespace "${namespace}" | grep "^${job_name}") || true
+  done <<< "$(kubectl get pod --namespace "${namespace}" | grep "^${job_name}")" || true
   if [[ -z "${pod_status}" ]]; then
     printf "ERROR: %s did not tar PVC files as expected\n" % "${pod_name}"
     exit 1
