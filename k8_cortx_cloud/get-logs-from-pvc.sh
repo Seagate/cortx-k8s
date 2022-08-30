@@ -12,13 +12,13 @@ function usage()
   cat << EOF
 ** Recover contents of PVC from Non-Running CORTX Containers **
 
-Usage: 
+Usage:
   ${SCRIPT_NAME} PVC [-s SOLUTION_CONFIG_FILE] [--force]
 
 Where:
   PVC is the name of the PersistentVolumeClaim to collect
   data from.  To see all available PVCs:
-  
+
       kubectl get pvc -n \$NAMESPACE
 
 
@@ -59,6 +59,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ ! -f "${solution_yaml}" ]]; then
+  echo "ERROR: ${solution_yaml} does not exist."
+  exit 1
+fi
+
 if [[ -z "${pvc}" ]]; then
   echo "ERROR: Specify PVC."
   exit 1
@@ -71,12 +76,12 @@ job_name="cortx-log-${pvc}-${datestr}"
 tarfile="${pvc}.tgz"
 
 if [[ -f "${tarfile}" && "${force_overwrite}" == "false" ]]; then
-  printf "%s already exists. User '--force' to overwrite an existing file.\n" "${tarfile}"
+  printf "ERROR: %s already exists. Use '--force' to overwrite an existing file.\n" "${tarfile}"
   exit 1
 fi
 
 
-printf "Starting job %s\n" "${job_name}"
+printf "Starting job %s.\n" "${job_name}"
 
 cat << EOF | kubectl apply -f - || true
 apiVersion: batch/v1
@@ -125,7 +130,7 @@ function delete_job()
 trap delete_job EXIT
 
 # Get pod name
-printf "Waiting for pod to start\n"
+printf "Waiting for pod to start.\n"
 kubectl wait --for=condition=ready --selector=job-name="${job_name}" --namespace="${namespace}" --timeout="${STARTUP_TIMEOUT}" pod || exit 1
 
 pod_name=
@@ -144,5 +149,5 @@ kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'until [ -f /tmp/
 
 # Get logs, save to .tgz
 printf "Copying PVC contents to %s.\n" "${tarfile}"
-kubectl cp "${pod_name}":tmp/"${tarfile}" "${tarfile}"
+kubectl cp "${namespace}/${pod_name}":tmp/"${tarfile}" "${tarfile}"
 kubectl exec "${pod_name}" -- touch /tmp/stopme
