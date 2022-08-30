@@ -81,9 +81,17 @@ if [[ -f "${tarfile}" && "${force_overwrite}" == "false" ]]; then
 fi
 
 
+function exit_msg()
+{
+  msg=$1
+  errcode=$2
+  echo "${msg}"
+  exit "${errcode}"
+}
+
 printf "Starting job %s.\n" "${job_name}"
 
-cat << EOF | kubectl apply -f - || true
+cat << EOF | kubectl apply -f - || exit_msg "Could not create job ${job_name}. Exiting." 1
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -113,14 +121,6 @@ spec:
             claimName: "${pvc}"
       restartPolicy: OnFailure
 EOF
-
-function exit_msg()
-{
-  msg=$1
-  errcode=$2
-  echo "${msg}"
-  exit "${errcode}"
-}
 
 function delete_job()
 {
