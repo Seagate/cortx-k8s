@@ -19,6 +19,7 @@
     6. [Undeploying CORTX on Kubernetes](#undeploying-cortx-on-kubernetes)
 6. [Solution YAML Overview](#solution-yaml-overview)
 7. [Advanced Deployment Scenarios](#advanced-deployment-scenarios)
+    1. [Deploy with SSL Certificate](#deploy-with-ssl-certificate)
 8. [Troubleshooting](#troubleshooting)
 9. [Glossary](#glossary)
 10. [License](#license)
@@ -371,21 +372,21 @@ The documented advanced deployment scenarios may introduce additional custom env
 | ---------------------------------------------- | ------------------------------------------------------------- |
 | `CORTX_DEPLOY_CUSTOM_BLOCK_STORAGE_CLASS`      | When set to a non-empty string, CORTX will skip the deployment of the `cortx-block-data` Helm Chart, along with the automatic creation of the underlying PersistentVolumes necessary to deploy CORTX. It will instead use the value of this variable as the expected Kubernetes StorageClass and expect all available PersistentVolumes to be created manually by the user. See [Advanced Deployment Scenarios - Using manually-created PersistentVolumes](doc/advanced-deployment-scenarios.md#using-manually-created-persistentvolumes) for use case details.  |
 
-## Deploy with SSL Certificate
+### Deploy with SSL Certificate
 
 By default, CORTX is installed with a default self-signed SSL certificate.  This section describes how to deploy with a specific SSL certificate.
 
-First, before deploying CORTX, create a Kubernetes secret that containers the SSL certificate.
+Before deploying CORTX, create a Kubernetes secret that contains the SSL certificate.
 
   * The Secret must contain the key `cortx.pem`
-  * The value must be a PEM format that contains the Private Key and Certificate.
+  * The value must be in PEM format and must contain the Private Key and Certificate.
 
    ```bash
    # where "mycert.pem" contains the certificate
    kubectl create secret generic my-ssl-cert --from-file=cortx.pem=mycert.pem -n "${namespace}"
    ```
 
-Second, specify common.ssl.external_secret in `solution.yaml`:
+Specify common.ssl.external_secret in `solution.yaml`:
 
    ```bash
    solution:
@@ -394,7 +395,7 @@ Second, specify common.ssl.external_secret in `solution.yaml`:
          external_secret: my-ssl-cert
    ```
 
-Now, when you deploy CORTX it will use the certificate from the Secret `my-ssl-cert`.
+When you deploy CORTX it will use the certificate from the Secret `my-ssl-cert`.
 
 
 ## Troubleshooting
