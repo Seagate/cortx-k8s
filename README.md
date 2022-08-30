@@ -395,7 +395,7 @@ Specify common.ssl.external_secret in `solution.yaml`:
          external_secret: my-ssl-cert
    ```
 
-When you deploy CORTX, it will now use the SSL certificate from the Secret `my-ssl-cert` instead of the efault self-signed SSL certificate.
+When you deploy CORTX, it will now use the SSL certificate from the Secret `my-ssl-cert` instead of the default self-signed SSL certificate.
 
 
 ## Troubleshooting
