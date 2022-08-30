@@ -107,8 +107,8 @@ helm uninstall cortx
 | data.persistence.size | string | `"1Gi"` | Persistent volume size |
 | data.replicaCount | int | `1` | Number of Data replicas |
 | data.setupLoggingDetail | string | `""` | Configure cortx-setup Init Container logging detail levels. "default" for default (no extra details), "component" for extra component logs, and "all" for all logs. An empty value means use the global value. If all values are empty, behaves as-if "default". |
+| existingCertificateSecret | string | `""` | The name of an existing Secret that contains the CORTX TLS Certificate secret.  The key must be `cortx.pem`.  The value must be in PEM format and contain the Private Key and Certificate.  If not specified, a self-signed certificate will be generated. |
 | existingSecret | string | `""` | The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail. |
-existingCertificateSecret | string | `""` | The name of an existing Secret that contains the CORTX TLS Certificate secret.  The key must be `cortx.pem`.  The value must be in PEM format and contain the Private Key and Certificate.  If not specified, a self-signed certificate will be generated. |
 | externalConsul.adminSecretName | string | `"consul_admin_secret"` |  |
 | externalConsul.adminUser | string | `"admin"` |  |
 | externalConsul.endpoints | list | `[]` |  |
