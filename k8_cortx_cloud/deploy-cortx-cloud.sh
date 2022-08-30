@@ -615,7 +615,7 @@ function deployCortxSecrets()
     fi
 
     # This is a global variable
-    # If common.ssl.exteran_secret is not defined, this will be empty, which is ok
+    # If common.ssl.external_secret is not defined, this will be empty, which is ok
     cortx_external_ssl_secret=$(getSolutionValue "solution.common.ssl.external_secret")
 }
 

@@ -314,6 +314,7 @@ This section contains common parameters that affect all CORTX components running
 | Name                                                  | Description                                                     | Default Value       |
 | ----------------------------------------------------- | --------------------------------------------------------------- | ------------------- |
 | `common.storage_provisioner_path`                     | TODO       | `/mnt/fs-local-volume` |
+| `common.ssl.external_secret`                          | If specified, a Secret that containes the certificate used for CORTX servers. | `""` |
 | `common.s3.default_iam_users.auth_admin`              | Username for the default administrative user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `sgiamadmin` |
 | `common.s3.default_iam_users.auth_user`               | Username for the default user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `user_name` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
@@ -369,6 +370,32 @@ The documented advanced deployment scenarios may introduce additional custom env
 | Environment Variable                           | Description                                                   |
 | ---------------------------------------------- | ------------------------------------------------------------- |
 | `CORTX_DEPLOY_CUSTOM_BLOCK_STORAGE_CLASS`      | When set to a non-empty string, CORTX will skip the deployment of the `cortx-block-data` Helm Chart, along with the automatic creation of the underlying PersistentVolumes necessary to deploy CORTX. It will instead use the value of this variable as the expected Kubernetes StorageClass and expect all available PersistentVolumes to be created manually by the user. See [Advanced Deployment Scenarios - Using manually-created PersistentVolumes](doc/advanced-deployment-scenarios.md#using-manually-created-persistentvolumes) for use case details.  |
+
+## Deploy with SSL Certificate
+
+By default, CORTX is installed with a default self-signed SSL certificate.  This section describes how to deploy with a specific SSL certificate.
+
+First, before deploying CORTX, create a Kubernetes secret that containers the SSL certificate.
+
+  * The Secret must contain the key `cortx.pem`
+  * The value must be a PEM format that contains the Private Key and Certificate.
+
+   ```bash
+   # where "mycert.pem" contains the certificate
+   kubectl create secret generic my-ssl-cert --from-file=cortx.pem=mycert.pem -n "${namespace}"
+   ```
+
+Second, specify common.ssl.external_secret in `solution.yaml`:
+
+   ```bash
+   solution:
+     common:
+       ssl:
+         external_secret: my-ssl-cert
+   ```
+
+Now, when you deploy CORTX it will use the certificate from the Secret `my-ssl-cert`.
+
 
 ## Troubleshooting
 
