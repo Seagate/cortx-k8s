@@ -26,8 +26,8 @@ spec:
           configMap:
             name: {{ include "cortx.configmapName" . }}
         - name: cortx-ssl-cert
-          configMap:
-            name: {{ include "cortx.tls.configmapName" . }}
+          secret:
+            secretName: {{ include "cortx.tls.secretName" . }}
         - name: data
           persistentVolumeClaim:
             claimName: {{ include "cortx.ha.fullname" . }}

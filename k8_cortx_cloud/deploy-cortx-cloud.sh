@@ -160,7 +160,8 @@ buildValues() {
     # Initialize
     yq --null-input "
         (.global.storageClass, .consul.server.storageClass) = \"local-path\"
-        | .existingSecret = \"${cortx_secret_name}\"" > "${values_file}"
+        | .existingSecret = \"${cortx_secret_name}\"
+        | .existingCertificateSecret = \"${cortx_external_ssl_secret}\"" > "${values_file}"
 
     # Configure all cortx-setup containers for console component logging
     yq -i '.global.cortx.setupLoggingDetail = "component"' "${values_file}"
@@ -612,6 +613,10 @@ function deployCortxSecrets()
         cortx_secret_name="$(getSolutionValue "solution.secrets.external_secret")"
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
+
+    # This is a global variable
+    # If common.ssl.external_secret is not defined, this will be empty, which is ok
+    cortx_external_ssl_secret=$(getSolutionValue "solution.common.ssl.external_secret")
 }
 
 function silentKill()
