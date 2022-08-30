@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+STARTUP_TIMEOUT=120s
+
 SCRIPT=$(readlink -f "$0")
 SCRIPT_NAME=$(basename "${SCRIPT}")
 solution_yaml="${CORTX_SOLUTION_CONFIG_FILE:-solution.yaml}"
@@ -74,6 +76,8 @@ if [[ -f "${tarfile}" && "${force_overwrite}" == "false" ]]; then
 fi
 
 
+printf "Starting job %s\n" "${job_name}"
+
 cat << EOF | kubectl apply -f - || true
 apiVersion: batch/v1
 kind: Job
@@ -105,34 +109,35 @@ spec:
       restartPolicy: OnFailure
 EOF
 
+function exit_msg()
+{
+  msg=$1
+  errcode=$2
+  echo "${msg}"
+  exit "${errcode}"
+}
+
+function delete_job()
+{
+  kubectl delete job "${job_name}" --namespace "${namespace}"
+}
+
+trap delete_job EXIT
 
 # Get pod name
-pod_status="Starting"
-while [[ "${pod_status}" != "Running" ]]; do
-  sleep 1
-  while IFS= read -r line; do
-    IFS=" " read -r -a my_array <<< "${line}"
-    pod_name="${my_array[0]}"
-    pod_status="${my_array[2]}"
-    echo "Waiting for job to complete (${pod_name}  ${pod_status})"
-  done < <(kubectl get pods --namespace "${namespace}" --selector=job-name="${job_name}" --no-headers)
-  if [[ -z "${pod_status}" ]]; then
-    printf "ERROR: %s did not tar PVC files as expected\n" "${pod_name}"
-    exit 1
-  fi
-done
+printf "Waiting for pod to start\n"
+kubectl wait --for=condition=ready --selector=job-name="${job_name}" --namespace="${namespace}" --timeout="${STARTUP_TIMEOUT}" pod || exit 1
 
-# Wait for tar process to complete
-tar_complete="false"
-while [[ "${tar_complete}" == "false" ]]; do
-  sleep 1
-  kubectl exec "${pod_name}" -- ls /tmp/tarfile_created &> /dev/null && tar_complete=true
-done
+while IFS= read -r line; do
+  IFS=" " read -r -a my_array <<< "${line}"
+  pod_name="${my_array[0]}"
+done < <(kubectl get pods --namespace "${namespace}" --selector=job-name="${job_name}" --no-headers)
+
+
+printf "Waiting for tar to complete.\n"
+kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'until [ -f /tmp/tarfile_created ]; do sleep 1; done' || exit_msg "Failed waiting for job to complete" 1
 
 # Get logs, save to .tgz
-echo "Copying PVC contents to ${tarfile}"
+printf "Copying PVC contents to %s.\n" "${tarfile}"
 kubectl cp "${pod_name}":tmp/"${tarfile}" "${tarfile}"
 kubectl exec "${pod_name}" -- touch /tmp/stopme
-
-# Delete the job
-kubectl delete job "${job_name}" --namespace "${namespace}"
