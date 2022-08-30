@@ -58,7 +58,7 @@ cortx:
       local: /etc/cortx
       config: /etc/cortx
     security:
-      ssl_certificate: /etc/cortx/solution/ssl/s3.seagate.com.pem
+      ssl_certificate: /etc/cortx/solution/ssl/cortx.pem
       domain_certificate: /etc/cortx/solution/ssl/stx.pem
       device_certificate: /etc/cortx/solution/ssl/stx.pem
   utils:

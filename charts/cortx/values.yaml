@@ -148,6 +148,8 @@ clusterId: ""
 
 # -- The name of an existing Secret that contains CORTX configuration secrets. Required or the Chart installation will fail.
 existingSecret: ""
+# -- The name of an existing Secret that contains the CORTX TLS Cerfitificate secret.  The key must be `cortx.pem`.  The value must be in PEM format and contain the Private Key and Certificate.  If not specified, a self-signed certificate will be generated.
+existingCertificateSecret: ""
 
 # CORTX Hare component configuration
 hare:
