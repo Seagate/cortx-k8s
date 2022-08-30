@@ -48,13 +48,13 @@ A Cylinder Volume Group, or CVG, is a collection of drives or block devices whic
 
 Block devices, HDDs, SDDs, or other types of storage devices addressable by `/dev/{device-name}` which CORTX uses to store user data.
 
-### JBOD
-
-JBOD stands for "Just a Bunch of Disks" and refers to a rack enclosure containing many disks which are each individually exposed to the host (CORTX in our case).
-
 ### Helm
 
 Commonly known as "the package manager for Kubernetes", [Helm](https://helm.sh/) is a CLI tool that builds and deploys Kubernetes applications through application packages known as Helm Charts.
+
+### JBOD
+
+JBOD stands for "Just a Bunch of Disks" and refers to a rack enclosure containing many disks which are each individually exposed to the host (CORTX in our case).
 
 ### KUDO
 
