@@ -149,5 +149,5 @@ kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'until [ -f /tmp/
 
 # Get logs, save to .tgz
 printf "Copying PVC contents to %s.\n" "${tarfile}"
-kubectl cp "${namespace}/${pod_name}":tmp/"${tarfile}" "${tarfile}"
+kubectl cp "${namespace}"/"${pod_name}":tmp/"${tarfile}" "${tarfile}"
 kubectl exec "${pod_name}" -- touch /tmp/stopme
