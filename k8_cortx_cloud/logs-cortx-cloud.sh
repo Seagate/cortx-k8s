@@ -142,7 +142,7 @@ function tarPodLogs()
     kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
 
   else
-    # There are no remaining arguments.  Get logs from defaut container.
+    # There are no remaining arguments.  Get logs from default container.
     local log_file="${logs_folder}/${log_name}.logs.txt"
     printf "================= Logs of %s =================\n" "${pod}" > "${log_file}"
     "${log_cmd[@]}" >> "${log_file}"

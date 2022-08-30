@@ -42,7 +42,7 @@ if [[ ${not_ready_node_count} -gt 0 ]]; then
         echo "- ${not_ready_node}"
     done
 
-    printf "\nContinue CORTX Cloud destruction could lead to unexpeted results.\n"
+    printf "\nContinue CORTX Cloud destruction could lead to unexpected results.\n"
     read -p "Do you want to continue (y/n, yes/no)? " -r reply
     if [[ "${reply}" =~ ^(y|Y)*.(es)$ || "${reply}" =~ ^(y|Y)$ ]]; then
         exit_early=false

@@ -193,7 +193,7 @@ Return the Motr confd endpoint port
 {{- end -}}
 
 {{/*
-Return the number of StatefulSets required to fullfil the containerGroupSize to CVG mapping defined by the user
+Return the number of StatefulSets required to fulfill the containerGroupSize to CVG mapping defined by the user
 This is calculated by (Number of CVGs in storage set) / (storage set containerGroupSize).
 If CVGs are defined, the minimum value this should return is 1.
 If CVGs are not defined, this should return 0.

@@ -10,7 +10,7 @@ This document is a collection of prerequisite use cases that are beneficial to c
 
 ### Background
 
-CORTX's goal is to deliver object storage capabilities which are optimized for mass capacity local storage devices. As such, CORTX expects to write to those local storage devices and requires them to be repeatedly accessible upon Kubernetes node reboot, failure, addition, etc. CORTX leverages the built-in storage concepts of [PersistentVolumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) to work with the underlying local storage, but in addressing the local storage devices, concerns are introduced for satisfying the expectations of node reboot support and beyond. 
+CORTX's goal is to deliver object storage capabilities which are optimized for mass capacity local storage devices. As such, CORTX expects to write to those local storage devices and requires them to be repeatedly accessible upon Kubernetes node reboot, failure, addition, etc. CORTX leverages the built-in storage concepts of [PersistentVolumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) to work with the underlying local storage, but in addressing the local storage devices, concerns are introduced for satisfying the expectations of node reboot support and beyond.
 
 The official Kubernetes [Local Persistence Volume Static Provisioner](https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner) captures these concerns explicitly in their [Operations](https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner/blob/master/docs/operations.md#operations) guide:
 
@@ -63,7 +63,7 @@ The prevailing fix for this issue in a Kubernetes environment is to set `conntra
 echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
 ```
 
-This implemeted fix is only one way to solve this specific issue, as it is highly dependent upon the underlying Linux OS and kernel settings, Kubernetes cluster settings, Container Networking Interface (CNI) component selection and configuration, kube-proxy component settings, and application-specific activity. If this specific does not resolve your explicit "connection reset by peer issues", you can reference the original Kubernetes Issues and Pull Requests below for more of the conversation that handles the individual settings that can be manually adjusted for your specific environment.
+This implemented fix is only one way to solve this specific issue, as it is highly dependent upon the underlying Linux OS and kernel settings, Kubernetes cluster settings, Container Networking Interface (CNI) component selection and configuration, kube-proxy component settings, and application-specific activity. If this specific does not resolve your explicit "connection reset by peer issues", you can reference the original Kubernetes Issues and Pull Requests below for more of the conversation that handles the individual settings that can be manually adjusted for your specific environment.
 
 **Follow-up issues:**
 - https://github.com/kubernetes/kubernetes/issues/74839

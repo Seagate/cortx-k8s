@@ -78,7 +78,7 @@ Motr is the central storage capability inside of a CORTX cluster. It functions a
 
 ### Node
 
-This term is unfortunately overloaded in the context of CORTX on Kubernetes. It can either mean an underlying Kubernetes worker node (in general) or it can mean any single component working inside of the CORTX cluster (Data Pod, Server Pod, Control Pod, etc.). 
+This term is unfortunately overloaded in the context of CORTX on Kubernetes. It can either mean an underlying Kubernetes worker node (in general) or it can mean any single component working inside of the CORTX cluster (Data Pod, Server Pod, Control Pod, etc.).
 
 Context is important and required to discern when which is which. Through the https://github.com/Seagate/cortx-k8s repository, care is used to refer to Kubernetes worker nodes as "Nodes" and CORTX nodes running on Kubernetes as "Pods".
 
@@ -96,7 +96,7 @@ An [open-source framework](https://sdk.operatorframework.io/), provided by Red H
 
 ### Pod
 
-Per the [official Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/pods/), "Pods are the smallest deployable units of computing that you can create and manage in Kubernetes." Inside of a CORTX cluster, all relevant containers that need to be contextually grouped together are deployed as a Pod. 
+Per the [official Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/pods/), "Pods are the smallest deployable units of computing that you can create and manage in Kubernetes." Inside of a CORTX cluster, all relevant containers that need to be contextually grouped together are deployed as a Pod.
 
 ### Rados Gateway (RGW)
 
@@ -104,7 +104,7 @@ This is the component which provides all necessary S3 functionality in a CORTX c
 
 ### RBOD
 
-RBOD means "Reliable Bunch of Drives". Physically it is similar to JBOD but interally it uses erasure or RAID to add better data protection by distributing data across multiple disks and protecting it with parity. Logically, an RBOD will therefore export itself to the host (CORTX in our case) as a smaller number of drives which are much larger in capacity. For example, imagine an RBOD of 100 drives. For high availability reasons, most RBODs will use dual ported drives and will split themselves into two groups of disks. A pair of controllers in the RBOD will provide active-passive access to each pair such that the drives served by the active controller can be instead served by the passive controller in the case of a failure of the active controller. Further imagine, that the RBOD is configured for 8+2 parity within each group of drives. Therefore, to the upper level host, this RBOD will logically appear as just two large drives, each of which being the aggregate size of 40 drives (i.e. 8+2 on 50 drives will use 20% of capacity for parity thereby leaving 80% of capacity for host data).
+RBOD means "Reliable Bunch of Drives". Physically it is similar to JBOD but internally it uses erasure or RAID to add better data protection by distributing data across multiple disks and protecting it with parity. Logically, an RBOD will therefore export itself to the host (CORTX in our case) as a smaller number of drives which are much larger in capacity. For example, imagine an RBOD of 100 drives. For high availability reasons, most RBODs will use dual ported drives and will split themselves into two groups of disks. A pair of controllers in the RBOD will provide active-passive access to each pair such that the drives served by the active controller can be instead served by the passive controller in the case of a failure of the active controller. Further imagine, that the RBOD is configured for 8+2 parity within each group of drives. Therefore, to the upper level host, this RBOD will logically appear as just two large drives, each of which being the aggregate size of 40 drives (i.e. 8+2 on 50 drives will use 20% of capacity for parity thereby leaving 80% of capacity for host data).
 
 ### Storage Set
 

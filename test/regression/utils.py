@@ -49,7 +49,7 @@ class Logger:
             return
 
         if not s:
-            # empty string should at leat print a newline
+            # empty string should at least print a newline
             s = ' '
         for line in s.splitlines():
             if prefix is not None:
