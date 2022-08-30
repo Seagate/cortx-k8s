@@ -69,10 +69,14 @@ Return the CORTX configuration configmap
 {{- end -}}
 
 {{/*
-Return the CORTX SSL certificate configmap
+Return the CORTX SSL certificate secret
 */}}
-{{- define "cortx.tls.configmapName" -}}
+{{- define "cortx.tls.secretName" -}}
+{{- if .Values.existingCertificateSecret }}
+{{- printf "%s" .Values.existingCertificateSecret -}}
+{{- else }}
 {{- printf "%s-ssl-cert" (include "cortx.fullname" .) -}}
+{{- end }}
 {{- end -}}
 
 {{/*

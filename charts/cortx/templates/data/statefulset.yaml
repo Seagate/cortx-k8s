@@ -55,8 +55,8 @@ spec:
           configMap:
             name: {{ include "cortx.configmapName" $ }}
         - name: cortx-ssl-cert
-          configMap:
-            name: {{ include "cortx.tls.configmapName" $ }}
+          secret:
+            secretName: {{ include "cortx.tls.secretName" $ }}
         - name: configuration-secrets
           secret:
             secretName: {{ include "cortx.secretName" $ }}
