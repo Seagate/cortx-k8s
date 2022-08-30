@@ -52,9 +52,17 @@ Block devices, HDDs, SDDs, or other types of storage devices addressable by `/de
 
 JBOD stands for "Just a Bunch of Disks" and refers to a rack enclosure containing many disks which are each individually exposed to the host (CORTX in our case).
 
+### Helm
+
+Commonly known as "the package manager for Kubernetes", [Helm](https://helm.sh/) is a CLI tool that builds and deploys Kubernetes applications through application packages known as Helm Charts.
+
 ### KUDO
 
 [KUDO](https://kudo.dev/), which stands for the Kubernetes Universal Declarative Operator, is a toolkit used to build Kubernetes Operators, in most cases just using YAML.
+
+### kustomize
+
+Per the offifical [Kustomize](https://kustomize.io/) site, "Kustomize lets you customize raw, template-free YAML files for multiple purposes, leaving the original YAML untouched and usable as is." Kustomize is used in conjunction with `kubectl` for advanced customization and robust templating for Kubernetes application deployment and management.
 
 ### Managed resources
 
