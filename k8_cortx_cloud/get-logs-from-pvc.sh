@@ -1,33 +1,54 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+SCRIPT=$(readlink -f "$0")
+SCRIPT_NAME=$(basename "${SCRIPT}")
+solution_yaml="${CORTX_SOLUTION_CONFIG_FILE:-solution.yaml}"
+force_overwrite=false
 
 function usage()
 {
-  echo -e "\n** Recover contents of PVC from Non-Running CORTX Containers **\n"
-  echo -e "Usage: \`sh $0 [PVC]\`\n"
-  echo "Optional Arguments:"
-  echo "    -n|--namespace NAMESPACE: K8s namespace that PVC is in (default=default)"
-  echo "    -f|--force:  Force overwrite of output file"
-  exit 1
+  cat << EOF
+** Recover contents of PVC from Non-Running CORTX Containers **
+
+Usage: 
+  ${SCRIPT_NAME} PVC [-s SOLUTION_CONFIG_FILE] [--force]
+
+Where:
+  PVC is the name of the PersistentVolumeClaim to collect
+  data from.  To see all available PVCs:
+  
+      kubectl get pvc -n \$NAMESPACE
+
+
+Options:
+  -s <FILE>     The cluster solution configuration file.  Can
+                also be set with the CORTX_SOLUTION_CONFIG_FILE
+                environment variable.  Defaults to 'solution.yaml'
+
+  -f|--force    Force overwrite the output file.
+EOF
 }
 
 pvc=
-namespace=default
-force_overwrite=false
-
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -n|--namespace )
-      namespace="$2"
+    -s )
+      solution_yaml="$2"
       shift 2
       ;;
     -f|--force )
       force_overwrite=true
       shift 1
       ;;
+    -h|--help )
+      usage
+      exit 0
+      ;;
     * )
       if [[ $1 = -* ]]; then
         echo "ERROR: Unsupported Option \"$1\"."
         usage
+        exit 1
       elif [[ -z "${pvc}" ]]; then
         pvc=$1
       fi
@@ -41,12 +62,14 @@ if [[ -z "${pvc}" ]]; then
   exit 1
 fi
 
+namespace=$(yq '.solution.namespace' "${solution_yaml}")
+busybox_image=$(yq '.solution.images.busybox' "${solution_yaml}")
 datestr=$(date '+%Y%m%d.%H%M%S')
 job_name="cortx-log-${pvc}-${datestr}"
 tarfile="${pvc}.tgz"
 
 if [[ -f "${tarfile}" && "${force_overwrite}" == "false" ]]; then
-  printf "%s already exists. -f to overwrite.\n" "${tarfile}"
+  printf "%s already exists. User '--force' to overwrite an existing file.\n" "${tarfile}"
   exit 1
 fi
 
@@ -61,14 +84,17 @@ spec:
   template:
     spec:
       containers:
-        - image: busybox
+        - image: "${busybox_image}"
           name: tar-pvc
           command:
             - sh
             - -c
-            - tar cfz /tmp/"${tarfile}" -C /etc "${pvc}"; \
-              touch /tmp/tarfile_created; \
-              while [ ! -f /tmp/stopme ]; do sleep 1; done
+            - |
+              tar cfz /tmp/"${tarfile}" -C /etc "${pvc}"
+              touch /tmp/tarfile_created
+              until [ -f /tmp/stopme ]; do
+                sleep 1
+              done
           volumeMounts:
             - mountPath: "/etc/${pvc}"
               name: data
@@ -89,9 +115,9 @@ while [[ "${pod_status}" != "Running" ]]; do
     pod_name="${my_array[0]}"
     pod_status="${my_array[2]}"
     echo "Waiting for job to complete (${pod_name}  ${pod_status})"
-  done <<< "$(kubectl get pod --namespace "${namespace}" | grep "^${job_name}")" || true
+  done < <(kubectl get pods --namespace "${namespace}" --selector=job-name="${job_name}" --no-headers)
   if [[ -z "${pod_status}" ]]; then
-    printf "ERROR: %s did not tar PVC files as expected\n" % "${pod_name}"
+    printf "ERROR: %s did not tar PVC files as expected\n" "${pod_name}"
     exit 1
   fi
 done
