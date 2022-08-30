@@ -315,7 +315,7 @@ This section contains common parameters that affect all CORTX components running
 | Name                                                  | Description                                                     | Default Value       |
 | ----------------------------------------------------- | --------------------------------------------------------------- | ------------------- |
 | `common.storage_provisioner_path`                     | TODO       | `/mnt/fs-local-volume` |
-| `common.ssl.external_secret`                          | If specified, a Secret that containes the certificate used for CORTX servers. | `""` |
+| `common.ssl.external_secret`                          | If specified, a Secret that contains the certificate used for CORTX servers. | `""` |
 | `common.s3.default_iam_users.auth_admin`              | Username for the default administrative user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `sgiamadmin` |
 | `common.s3.default_iam_users.auth_user`               | Username for the default user created for internal RGW interactions. Corresponds to `secrets.content.s3_auth_admin_secret` above. | `user_name` |
 | `common.s3.max_start_timeout`                         | TODO       | `240` |
@@ -383,12 +383,12 @@ Before deploying CORTX, create a Kubernetes secret that contains the SSL certifi
 
    ```bash
    # where "mycert.pem" contains the certificate
-   kubectl create secret generic my-ssl-cert --from-file=cortx.pem=mycert.pem -n "${namespace}"
+   kubectl create secret generic my-ssl-cert --from-file=cortx.pem=mycert.pem -n "${NAMESPACE}"
    ```
 
 Specify common.ssl.external_secret in `solution.yaml`:
 
-   ```bash
+   ```yaml
    solution:
      common:
        ssl:
