@@ -374,7 +374,7 @@ The documented advanced deployment scenarios may introduce additional custom env
 
 ### Deploy with SSL Certificate
 
-By default, CORTX is installed with a self-signed SSL certificate.  This section describes how to deploy with a custom SSL instead.
+By default, CORTX is installed with a self-signed SSL certificate.  This section describes how to deploy with a custom certificate instead.
 
 Before deploying CORTX, create a Kubernetes Secret that contains the SSL certificate.
 
