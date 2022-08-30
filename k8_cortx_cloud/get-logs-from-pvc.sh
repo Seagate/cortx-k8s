@@ -128,11 +128,16 @@ trap delete_job EXIT
 printf "Waiting for pod to start\n"
 kubectl wait --for=condition=ready --selector=job-name="${job_name}" --namespace="${namespace}" --timeout="${STARTUP_TIMEOUT}" pod || exit 1
 
+pod_name=
 while IFS= read -r line; do
   IFS=" " read -r -a my_array <<< "${line}"
   pod_name="${my_array[0]}"
-done < <(kubectl get pods --namespace "${namespace}" --selector=job-name="${job_name}" --no-headers)
+done < <(kubectl get pods --namespace "${namespace}" --selector=job-name="${job_name}" --no-headers) || true
 
+if [[ -z "${pod_name}" ]]; then
+  printf "Could not get pod name from kubectl get pods. Exiting."
+  exit 1
+fi
 
 printf "Waiting for tar to complete.\n"
 kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'until [ -f /tmp/tarfile_created ]; do sleep 1; done' || exit_msg "Failed waiting for job to complete" 1
