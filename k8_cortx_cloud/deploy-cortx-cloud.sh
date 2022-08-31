@@ -334,7 +334,6 @@ if [[ -n $(helm ls --all-namespaces --short -f '^cortx$') ]]; then
     exit 1
 fi
 
-
 num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 
 # Initial solution.yaml / system state checks
