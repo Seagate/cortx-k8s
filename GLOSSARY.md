@@ -70,7 +70,7 @@ Per the offifical [Kustomize](https://kustomize.io/) site, "Kustomize lets you c
 
 ### Liveness Probe
 
-The kubelet uses [liveness probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) to know when to restart a container. For example, liveness probes could catch a deadlock, where an application is running, but unable to make progress. Restarting a container in such a state can help to make the application more available despite bugs.
+The kubelet uses [liveness probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) to know when to restart a container. For example, liveness probes could catch a deadlock where an application is running but unable to make progress. Restarting a container in such a state can help to make the application more available despite bugs.
 
 ### Managed resources
 
