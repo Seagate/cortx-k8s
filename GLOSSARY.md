@@ -4,6 +4,14 @@ This page will serve as a clearinghouse for all terms, definitions, and acronyms
 
 ## Glossary
 
+### CatalogSource
+
+A [CatalogSource](https://olm.operatorframework.io/docs/concepts/crds/catalogsource/), or more simply Catalog, is a CustomResourceDefinition defined by the Operator Lifecycle Manager (OLM) and represents a store of metadata that OLM can query to discover and install operators and their dependencies.
+
+### ClusterServiceVersion (CSV)
+
+A [ClusterServiceVersion](https://github.com/operator-framework/operator-lifecycle-manager/blob/0.15.1/doc/design/building-your-csv.md) is the metadata that accompanies your Operator container image when an Operator is deployed through the Operator Lifecycle Manager (OLM). It can be used to populate user interfaces with info like your logo/description/version and it is also a source of technical information needed to run the Operator, like the role-based access control rules it requires and which Custom Resources it manages or depends on.
+
 ### Container
 
 Per [Red Hat](https://www.redhat.com/en/topics/containers/whats-a-linux-container), a container, or sometimes referred to as a Linux container, is "a set of 1 or more processes that are isolated from the rest of the system. All the files necessary to run them are provided from a distinct image, meaning Linux containers are portable and consistent as they move from development, to testing, and finally to production."
@@ -89,6 +97,10 @@ Motr is the central storage capability inside of a CORTX cluster. It functions a
 This term is unfortunately overloaded in the context of CORTX on Kubernetes. It can either mean an underlying Kubernetes worker node (in general) or it can mean any single component working inside of the CORTX cluster (Data Pod, Server Pod, Control Pod, etc.).
 
 Context is important and required to discern when which is which. Through the https://github.com/Seagate/cortx-k8s repository, care is used to refer to Kubernetes worker nodes as "Nodes" and CORTX nodes running on Kubernetes as "Pods".
+
+### Operator Lifecycle Manager (OLM)
+
+The [Operator Lifecycle Manager (OLM)](https://github.com/operator-framework/operator-lifecycle-manager/) is an optional set of Kubernetes cluster resources that can manage the lifecycle of an Operator. The Operator SDK supports both creating manifests for OLM deployment, and testing your Operator on an OLM-enabled Kubernetes cluster. OLM integration is not a foundational requirement for all Kubernetes Operators.
 
 ### Operand
 
