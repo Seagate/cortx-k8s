@@ -110,14 +110,14 @@ function tarPodLogs()
     done
 
     # Get support bundle.  Use first container.
-    local path="/var/cortx/support_bundle"
+    local path="var/cortx/support_bundle"
     local name="bundle-logs-${pod}-${date}"
     local container=$1
 
     printf "\n ⭐ Generating support-bundle logs for pod: %s\n" "${pod}"
     # shellcheck disable=SC2016
     kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- \
-      env location="file://${path}" \
+      env location="file:///${path}" \
           name="${name}" \
           modules="${modules}" \
           duration="${duration}" \
@@ -137,9 +137,10 @@ function tarPodLogs()
         --binlogs "${binlogs}" \
         --coredumps "${coredumps}" \
         --stacktrace "${stacktrace}" \
-        --all "${all}"'
-    kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" -c "${container}" --namespace="${namespace}"
-    kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- bash -c "rm -rf ${path}"
+        --all "${all}"' || return
+    kubectl cp "${pod}:${path}/${name}" "${logs_folder}/${name}" -c "${container}" --namespace="${namespace}" || return
+
+    kubectl exec "${pod}" -c "${container}" --namespace="${namespace}" -- bash -c "rm -rf /${path}"
 
   else
     # There are no remaining arguments.  Get logs from default container.
