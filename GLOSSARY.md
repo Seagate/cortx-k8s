@@ -56,6 +56,10 @@ A Cylinder Volume Group, or CVG, is a collection of drives or block devices whic
 
 Block devices, HDDs, SDDs, or other types of storage devices addressable by `/dev/{device-name}` which CORTX uses to store user data.
 
+### Finalizers
+
+[Finalizers](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) are namespaced keys that tell Kubernetes to wait until specific conditions are met before it fully deletes resources marked for deletion. Finalizers alert controllers to clean up resources the deleted object owned.
+
 ### Helm
 
 Commonly known as "the package manager for Kubernetes", [Helm](https://helm.sh/) is a CLI tool that builds and deploys Kubernetes applications through application packages known as Helm Charts.
