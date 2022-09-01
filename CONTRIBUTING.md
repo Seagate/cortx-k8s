@@ -1,6 +1,6 @@
 # Contribute to the CORTX Project
 
-CORTX is about building the world's best scalable mass-capacity object storage system. If you’re interested in what we’re building and intrigued by hard challenges, here's everything you need to know about contributing to the project and how to get started. 
+CORTX is about building the world's best scalable mass-capacity object storage system. If you’re interested in what we’re building and intrigued by hard challenges, here's everything you need to know about contributing to the project and how to get started.
 
 This guide is intended to provide quick start instructions for developers who want to build, test, and contribute to the CORTX software running on Kubernetes.
 
@@ -8,7 +8,7 @@ After reading this guide, you'll be able to pick up topics and issues to contrib
 
 ## Code of Conduct
 
-Thanks for joining us and we're glad to have you. We take community very seriously and we are committed to creating a community built on respectful interactions and inclusivity as documented in our [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). 
+Thanks for joining us and we're glad to have you. We take community very seriously and we are committed to creating a community built on respectful interactions and inclusivity as documented in our [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
 
 You can report instances of abusive, harassing, or otherwise unacceptable behavior by contacting the project team at opensource@seagate.com.
 
@@ -22,7 +22,7 @@ You can report instances of abusive, harassing, or otherwise unacceptable behavi
 - `main`: The primary branch for the repository. This branch will be the source for all `cortx-k8s` releases and is managed only by the [Maintainers](#maintainers) of the repository.
 - `integration`: This branch does the bulk of the heavy lifting for the `cortx-k8s` project, as it is the target for all Pull Requests - both internal to the repository and external from forked repositories. Maintainers of the repository merge from `integration` to `main` to control the release flow of the repository.
 - `cortx-test`: An internal development-focused branch to stage breaking changes, while allowing the larger community to test CORTX in motion.
-- `CORTX-12345...`: Branches with the format of `CORTX-12345` are feature branches that are actively being worked upon by contributors and will eventually be PR'ed into `integration` once complete. Due to historical changes in tooling, feature branches may also begin with `EOS` or `UDX` as well. 
+- `CORTX-12345...`: Branches with the format of `CORTX-12345` are feature branches that are actively being worked upon by contributors and will eventually be PR'ed into `integration` once complete. Due to historical changes in tooling, feature branches may also begin with `EOS` or `UDX` as well.
 
 ## Contribution Process
 
@@ -37,7 +37,7 @@ The following prerequisites are all available in the root [CORTX](https://github
 
 ### Submitting a PR
 
-This compact flow for submitting a Pull Request to the [cortx-k8s](https://github.com/Seagate/cortx-k8s) repository will help ensure that it is able to be accepted and merged with minimal overhead or editing. 
+This compact flow for submitting a Pull Request to the [cortx-k8s](https://github.com/Seagate/cortx-k8s) repository will help ensure that it is able to be accepted and merged with minimal overhead or editing.
 
 > :warning: The target branch of your Pull Request should be the default **`integration`** branch
 
@@ -79,13 +79,13 @@ This compact flow for submitting a Pull Request to the [cortx-k8s](https://githu
 
 ## Additional Resources
 
-- Learn more about the [CORTX Architechture](https://github.com/Seagate/cortx/blob/main/doc/architecture.md). 
+- Learn more about the [CORTX Architecture](https://github.com/Seagate/cortx/blob/main/doc/architecture.md).
 - Learn more about [CORTX CI/CD and Automation](https://github.com/Seagate/cortx/blob/main/doc/CI_CD.md).
 - Browse our [suggested list of contributions](https://github.com/Seagate/cortx/blob/main/doc/SuggestedContributions.md).
 
 ## Communication Channels
 
-Please refer to the [Support](https://github.com/Seagate/cortx/blob/main/SUPPORT.md) section in the root [CORTX](https://github.com/Seagate/cortx) repository to learn more about the various channels by which you can reach out to us. 
+Please refer to the [Support](https://github.com/Seagate/cortx/blob/main/SUPPORT.md) section in the root [CORTX](https://github.com/Seagate/cortx) repository to learn more about the various channels by which you can reach out to us.
 
 ## Maintainers
 
