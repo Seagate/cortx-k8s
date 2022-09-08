@@ -13,7 +13,7 @@ function usage()
 ** Recover contents of PVC from Non-Running CORTX Containers **
 
 Usage:
-  ${SCRIPT_NAME} PVC [-s SOLUTION_CONFIG_FILE] [--force]
+  ${SCRIPT_NAME} PVC [-s SOLUTION_CONFIG_FILE] [-d PATH] [--force]
 
 Where:
   PVC is the name of the PersistentVolumeClaim to collect
@@ -27,15 +27,24 @@ Options:
                 also be set with the CORTX_SOLUTION_CONFIG_FILE
                 environment variable.  Defaults to 'solution.yaml'
 
+  -d <PATH>     Collect files from the specified directory within the PVC
+                only.  This path is relative to the root of the PVC.
+                By default, all files in the PVC are collected.
+
   -f|--force    Force overwrite the output file.
 EOF
 }
 
 pvc=
+path=
 while [[ $# -gt 0 ]]; do
   case $1 in
     -s )
       solution_yaml="$2"
+      shift 2
+      ;;
+    -d )
+      path="$2"
       shift 2
       ;;
     -f|--force )
@@ -80,6 +89,10 @@ if [[ -f "${tarfile}" && "${force_overwrite}" == "false" ]]; then
   exit 1
 fi
 
+tar_target="${pvc}"
+if [[ -n "${path}" ]]; then
+   tar_target="${pvc}/${path}"
+fi
 
 printf "Starting job %s.\n" "${job_name}"
 
@@ -99,7 +112,7 @@ spec:
             - sh
             - -c
             - |
-              tar cfz /tmp/"${tarfile}" -C /etc "${pvc}"
+              tar cfz /tmp/"${tarfile}" -C /etc "${tar_target}" || touch /tmp/tar_failed
               touch /tmp/tarfile_created
               until [ -f /tmp/stopme ]; do
                 sleep 1
@@ -116,6 +129,8 @@ EOF
 
 function exit_msg()
 {
+  local msg
+  local errcode
   msg=$1
   errcode=$2
   echo "${msg}"
@@ -146,6 +161,16 @@ fi
 
 printf "Waiting for tar to complete.\n"
 kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'until [ -f /tmp/tarfile_created ]; do sleep 1; done' || exit_msg "Failed waiting for job to complete" 1
+
+if kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'ls /tmp/tar_failed &> /dev/null'
+then
+    kubectl logs --namespace "${namespace}" "${pod_name}"
+    msg="Failed to collect files from PVC ${pvc}"
+    if [ -n "${path}" ]; then 
+        msg="${msg}, path=${path}"
+    fi
+    exit_msg "${msg}" 1
+fi
 
 # Get logs, save to .tgz
 printf "Copying PVC contents to %s.\n" "${tarfile}"
