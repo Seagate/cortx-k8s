@@ -162,11 +162,11 @@ fi
 printf "Waiting for tar to complete.\n"
 kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'until [ -f /tmp/tarfile_created ]; do sleep 1; done' || exit_msg "Failed waiting for job to complete" 1
 
-if kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'ls /tmp/tar_failed &> /dev/null'
+if kubectl exec --namespace "${namespace}" "${pod_name}" -- sh -c 'ls /tmp/tar_failed &> /dev/null' 2> /dev/null
 then
     kubectl logs --namespace "${namespace}" "${pod_name}"
     msg="Failed to collect files from PVC ${pvc}"
-    if [ -n "${path}" ]; then 
+    if [[ -n "${path}" ]]; then 
         msg="${msg}, path=${path}"
     fi
     exit_msg "${msg}" 1
