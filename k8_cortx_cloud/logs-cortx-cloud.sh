@@ -1,6 +1,7 @@
 #!/bin/bash
 
 SCRIPT=$(readlink -f "$0")
+SCRIPT_NAME=$(basename "${SCRIPT}")
 DIR=$(dirname "${SCRIPT}")
 
 function parseSolution()
@@ -9,30 +10,44 @@ function parseSolution()
 }
 
 function usage() {
-  echo -e "\n** Generate CORTX Cluster Support Bundle **\n"
-  echo -e "Usage: \`sh $0 [-n NODENAME] [-s SOLUTION_CONFIG_FILE]\`\n"
-  echo "Optional Arguments:"
-  echo "    -s|--solution-config FILE_PATH : path of solution configuration file."
-  echo "                                     default file path is ${solution_yaml}."
-  echo "    -n|--nodename NODENAME: collects logs from pods running only on given node".
-  echo "                            collects logs from all the nodes by default."
-  echo "    --duration DURATION : duration for which logs should be collected"
-  echo "    --size_limit SIZE : max size limit for support bundle to be generated"
-  echo "    --binlogs True/False : option to collect binary logs"
-  echo "    --coredumps True/False : option to collect core dumps"
-  echo "    --stacktrace True/False : option to collect stack trace"
-  echo "    --all True/False : aggregated option to collect binlogs, coredumps & stacktrace."
-  echo "                       If set to true, It overrides --binlogs, --coredumps"
-  echo "                       & --stacktrace at once."
-  exit 1
+    cat << EOF
+
+Usage:
+    ${SCRIPT_NAME} [-s SOLUTION_CONFIG_FILE] <options>
+
+
+Options:
+    -h                     Prints this help information
+
+    -s <FILE>              The cluster solution configuration file. Can
+                           also be set with the CORTX_SOLUTION_CONFIG_FILE
+                           environment variable. Defaults to 'solution.yaml'.
+
+    -n|--nodename <NODE>   Collect logs from pods running only on given node.
+                           By default logs are collected from all nodes.
+
+    --duration <DURATION>  Maximum allowed duration Pod's support bundle
+                           operation to run.  This is specified in 8601 duration
+                           format.  The default is P5D (5 days).
+
+    --size_limit <SIZE>    Maximum allowed size limit in bytes for each Pod's
+                           support bundle.  Units MB and GB are supported.
+                           Defaults to 500MB.
+
+    --binlogs              Collect binary logs
+    --coredumps            Collect existing core dump files
+    --stacktrace           Collect existing stack trace files
+    --all                  Collect binlogs, coredumps & stacktrace
+EOF
 }
 
 date=$(date +%F_%H-%M)
-solution_yaml=${1:-"solution.yaml"}
+solution_yaml="${CORTX_SOLUTION_CONFIG_FILE:-solution.yaml}"
 nodename=""
+modules=""
 pods_found=0
 size_limit="500MB"
-duration="P5D"
+duration="P1D"
 binlogs="False"
 coredumps="False"
 stacktrace="False"
@@ -42,34 +57,53 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     -s|--solution-config )
       solution_yaml="$2"
+      shift 2
       ;;
     -n|--nodename )
       nodename="$2"
+      shift 2
+      ;;
+    -h|--help )
+      usage
+      exit 0
       ;;
     --modules )
       modules="$2"
+      shift 2
       ;;
-    --duration )  duration=$2
+    --duration )
+      duration=$2
+      shift 2
       ;;
-    --size_limit  )  size_limit=$2
+    --size_limit )
+      size_limit=$2
+      shift 2
       ;;
-    --binlogs ) binlogs=$2
+    --binlogs )
+      binlogs="True"
+      shift
       ;;
-    --coredumps ) coredumps=$2
+    --coredumps )
+      coredumps="True"
+      shift
       ;;
-    --stacktrace ) stacktrace=$2
+    --stacktrace )
+      stacktrace="True"
+      shift
       ;;
-    --all ) all=$2
+    --all ) all="True"
+      shift
       ;;
     * )
       echo "ERROR: Unsupported Option \"$1\"."
       usage
+      exit 1
       ;;
   esac
-  shift 2
 done
+
 if [[ ! -f ${solution_yaml} ]]; then
-    echo "ERROR: ${solution_yaml} does not exist"
+    echo "ERROR: ${solution_yaml} does not exist."
     exit 1
 fi
 
