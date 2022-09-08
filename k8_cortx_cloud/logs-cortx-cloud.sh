@@ -17,9 +17,10 @@ Usage:
 
 
 Options:
-    -h                     Prints this help information
+    -h|--help              Prints this help information
 
-    -s <FILE>              The cluster solution configuration file. Can
+    -s|--solution-config <FILE>
+                           The cluster solution configuration file. Can
                            also be set with the CORTX_SOLUTION_CONFIG_FILE
                            environment variable. Defaults to 'solution.yaml'.
 
