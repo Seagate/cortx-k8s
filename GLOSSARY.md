@@ -4,9 +4,21 @@ This page will serve as a clearinghouse for all terms, definitions, and acronyms
 
 ## Glossary
 
+### Artifact
+
+Artifact - a packaged software bundle, part of Bill Of Materials (BOM)
+
+### BMC network
+
+BMC network - optional and uses dedicated onboard BMC port (on server's mainboard). Primarily for monitoring and collecting health data.
+
 ### CatalogSource
 
 A [CatalogSource](https://olm.operatorframework.io/docs/concepts/crds/catalogsource/), or more simply Catalog, is a CustomResourceDefinition defined by the Operator Lifecycle Manager (OLM) and represents a store of metadata that OLM can query to discover and install operators and their dependencies.
+
+### Cluster
+
+Cluster - a combination of the nodes configured to act as one. The nodes share the same S3 namespace, accounts, etc. The minimum number of nodes per cluster is three (3)
 
 ### ClusterServiceVersion (CSV)
 
@@ -20,6 +32,10 @@ Per [Red Hat](https://www.redhat.com/en/topics/containers/whats-a-linux-containe
 
 [CORVAULT](https://www.seagate.com/products/storage/data-storage-systems/corvault/) is the brand name for a specific Seagate storage hardware product. CORVAULT generally belongs to a category of storage referred to as RBOD (reliable bunch of disks). Physically, CORVAULT is a large 4U rack enclosure which holds up to 106 devices. By virtue of firmware running inside the enclosure, CORVAULT appears to the upper-layer host (CORTX in our case) as two very large individual disks. Internally, CORVAULT does declustered erasure such that the frequency of "disk" failures seen by the host is very low (albeit when they happen, they are a large failure).
 
+### CORTX Admin
+
+CORTX Admin - a person whose primary responsibilities include completing the final stages of the cluster deployment and performing various administrative tasks on the live clusters (creating users, monitoring logs, updating software, etc.)
+
 ### CORTX Control Pods
 
 CORTX Control Pods contain the APIs which are exposed to the end-user in order to maintain the CORTX control plane and are most often used to interact with IAM settings.
@@ -27,6 +43,7 @@ CORTX Control Pods contain the APIs which are exposed to the end-user in order t
 ### CORTX Core
 
 The smallest, atomic deployable unit of the CORTX stack is sometimes referred to as "CORTX Core". This includes the CORTX Control, CORTX RGW, CORTX Cluster Coordinator (nee HA), and CORTX Data components, along with the third-party prerequisites of Apache Kafka and HashiCorp’s Consul.
+CORTX Core - a software defined storage (object store) developed by Seagate
 
 ### CORTX Data Pods
 
@@ -35,6 +52,10 @@ CORTX Data Pods contain the internal APIs which are used to manage the storage a
 ### CORTX HA (High Availability) Pods
 
 CORTX HA Pods are responsible for monitoring the overall health of the CORTX cluster and notifying components of changes in system status.
+
+### CORTX Halo
+
+CORTX Halo - a solution framework (set of software services and data stores for management, monitoring and configuration data) developed by Seagate to build storage (object store) as a service appliance solution using qualified deployment configuration consisting of storage enclosures, servers, networking hardware, object store and halo software
 
 ### CORTX Server Pods
 
@@ -52,9 +73,29 @@ A CustomResourceDefinition, or CRD, is an API of a Kubernetes Operator, providin
 
 A Cylinder Volume Group, or CVG, is a collection of drives or block devices which CORTX utilizes as a unit of storage, all managed by a single Motr IO process.
 
+### Datacenter Technician (DT)
+
+Datacenter Technician (DT) - a person that is working at the datacenter. When it comes to working with the cluster, his/her primary responsibilities are: to install and cable the equipment, perform the initial configuration of each node and initiate cluster deployment
+
 ### Data Devices / Drives
 
 Block devices, HDDs, SDDs, or other types of storage devices addressable by `/dev/{device-name}` which CORTX uses to store user data.
+
+### Deployment
+
+Deployment - a process of software installation and configuration of the cluster. This process does not include installing the operating system and other tasks related to the Factory process.
+
+### Enclosure
+
+Enclosure - Seagate's Corvault or 5U84 enclosure (with "Thor" controllers) with maximum allowed number of the drives. Aim is to support the largest capacity drives available for given enclosure. The enclosure is equipped with two identical RBOD controllers.
+
+### Factory
+
+Factory - a Seagate or a 3rd-party (including vendor’s) facility, equipped and capable of manufacturing servers and/or enclosures using the approved hardware and software per specifications.
+
+### Field
+
+Field - customer (deployment) site.
 
 ### Finalizers
 
@@ -68,6 +109,10 @@ Commonly known as "the package manager for Kubernetes", [Helm](https://helm.sh/)
 
 JBOD stands for "Just a Bunch of Disks" and refers to a rack enclosure containing many disks which are each individually exposed to the host (CORTX in our case).
 
+### Kickstart
+
+Kickstart - an automated method of installing a Linux operating system (usually, RedHat-alike).
+
 ### kubelet
 
 The [kubelet](https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/) is the primary "node agent" that runs on each node. It can register the node with the apiserver using one of: the hostname; a flag to override the hostname; or specific logic for a cloud provider.
@@ -80,6 +125,10 @@ The [kubelet](https://kubernetes.io/docs/reference/command-line-tools-reference/
 
 Per the offifical [Kustomize](https://kustomize.io/) site, "Kustomize lets you customize raw, template-free YAML files for multiple purposes, leaving the original YAML untouched and usable as is." Kustomize is used in conjunction with `kubectl` for advanced customization and robust templating for Kubernetes application deployment and management.
 
+### LACP
+
+LACP, or interface bonding, is a protocol that allows the bandwidth of multiple interfaces to be aggregated together and treated as a single interface.
+
 ### Liveness Probe
 
 The kubelet uses [liveness probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) to know when to restart a container. For example, liveness probes could catch a deadlock where an application is running but unable to make progress. Restarting a container in such a state can help to make the application more available despite bugs.
@@ -87,6 +136,23 @@ The kubelet uses [liveness probes](https://kubernetes.io/docs/tasks/configure-po
 ### Managed resources
 
 Managed resources are the Kubernetes objects (Pods, Deployments, StatefulSets, PersistentVolumes, ConfigMaps, Secrets, etc.) the Operator uses to constitute an Operand.
+
+### Management network (in CORTX Halo solution context)
+
+Management network - provides access to the management and monitoring functionality of the cluster (access to WebUI, access to CLI). Uses 1 GbE onboard interfaces.
+
+### Public Data network (in CORTX Halo solution context)
+
+Public Data network - uses one of the high-speed network adapters installed in the PCI-e slots of the server. To provide S3 access from and to the S3 clients. Supports optional bonding.
+
+### Private Data network (in CORTX Halo solution context)
+
+Private Data network - another high-speed network adapter installed in the PCI-e slots of the server.
+Be configured on a separate adapter from the one used for the Public Data network. To provide backend network communications related to the cluster's functionality, like Erasure Coding, HA, logs collection, 3rd party data replication, cluster management. Supports optional bonding.
+
+### Node Configuration network (in CORTX Halo solution context)
+
+Node Configuration network - Uses dedicated 1 GbE onboard interface (on server's mainboard). Configured for point-to-point network and, in general, is not meant to be connected to the switch. To provide access to the server for the initial setup and configuration at a customer site.
 
 ### Metadata Devices / Drives
 
@@ -96,11 +162,19 @@ Block devices, HDDs, SDDs, or other types of storage devices addressable by `/de
 
 Motr is the central storage capability inside of a CORTX cluster. It functions as a distributed object and key-value storage system targeting mass-capacity storage configurations.
 
+### Node (in CORTX Halo solution context)
+
+Node - an hardware component, consisting of Server and Enclosure connected using SAS cables.
+
 ### Node
 
 This term is unfortunately overloaded in the context of CORTX on Kubernetes. It can either mean an underlying Kubernetes worker node (in general) or it can mean any single component working inside of the CORTX cluster (Data Pod, Server Pod, Control Pod, etc.).
 
 Context is important and required to discern when which is which. Through the https://github.com/Seagate/cortx-k8s repository, care is used to refer to Kubernetes worker nodes as "Nodes" and CORTX nodes running on Kubernetes as "Pods".
+
+### Operator (user in Factory)
+
+Operator - a person performing preparation and installation of the hardware and artifacts at the Factory.
 
 ### Operator Lifecycle Manager (OLM)
 
@@ -134,9 +208,25 @@ RBOD means "Reliable Bunch of Drives". Physically it is similar to JBOD but inte
 
 The kubelet uses [readiness probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) to know when a container is ready to start accepting traffic. A Pod is considered ready when all of its containers are ready. One use of this signal is to control which Pods are used as backends for Services. When a Pod is not ready, it is removed from Service load balancers.
 
+### Release Engineering (RE)
+
+Release Engineering (RE) - a software development team, likely a part of the CORTX dev team.
+
+### SAS (enclosure) network (in CORTX Halo solution context)
+
+SAS (enclosure) network - provides for virtual TCP/IP connection between the server and the attached enclosure. Uses IP-over-SCSI technology over LSI SAS HBA. Provides for in-band management of the enclosure. It is a closed network.
+
+### Server
+
+Server - a 1U HPE ProLiant DL360 latest generation server.
+
 ### Startup Probe
 
 The kubelet uses [startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) to know when a container application has started. If such a probe is configured, it disables liveness and readiness checks until it succeeds, making sure those probes don't interfere with the application startup. This can be used to adopt liveness checks on slow starting containers, preventing the kubelet from terminating them before they are up and running.
+
+### Storage Set (in CORTX Halo solution context)
+
+Storage Set - a single Storage Set shall contain a uniform set of hardware. It applies to the servers, and storage hard drives. Different Storage Sets within the same cluster may be created using different hardware options.
 
 ### Storage Set
 
