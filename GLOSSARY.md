@@ -64,6 +64,10 @@ Block devices, HDDs, SDDs, or other types of storage devices addressable by `/de
 
 Commonly known as "the package manager for Kubernetes", [Helm](https://helm.sh/) is a CLI tool that builds and deploys Kubernetes applications through application packages known as Helm Charts.
 
+### IEM
+
+IEM stands for Interesting Event Messages, relating to events happening within the system, affecting normal system functionality and which may be useful for preliminary debugging. 
+
 ### JBOD
 
 JBOD stands for "Just a Bunch of Disks" and refers to a rack enclosure containing many disks which are each individually exposed to the host (CORTX in our case).
