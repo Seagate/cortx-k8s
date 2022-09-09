@@ -80,8 +80,6 @@ The [Kubernetes API](https://kubernetes.io/docs/reference/using-api/api-concepts
 
 The [Kubernetes API server](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/) validates and configures data for the api objects which include pods, services, replicationcontrollers, and others. The API Server services REST operations and provides the frontend to the cluster's shared state through which all other components interact.
 
-`kube-apiserver` is the process that services the API and runs on the control plane nodes.
-
 ### KUDO
 
 [KUDO](https://kudo.dev/), which stands for the Kubernetes Universal Declarative Operator, is a toolkit used to build Kubernetes Operators, in most cases just using YAML.
