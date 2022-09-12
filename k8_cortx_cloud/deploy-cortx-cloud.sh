@@ -436,10 +436,7 @@ fi
 # Begin CORTX on k8s deployment
 ##########################################################
 
-##########################################################
-# Deploy CORTX k8s pre-reqs
-##########################################################
-function deployKubernetesPrereqs()
+function deployCortxPrereqs()
 {
     # Add Helm repository dependencies
     helm repo add hashicorp https://helm.releases.hashicorp.com
@@ -449,10 +446,6 @@ function deployKubernetesPrereqs()
     helm dependency build ../charts/cortx
 }
 
-
-##########################################################
-# Deploy CORTX 3rd party
-##########################################################
 function deployRancherProvisioner()
 {
     local image
@@ -497,24 +490,6 @@ function deployCortx()
         --namespace "${namespace}" \
         --create-namespace \
         || exit $?
-
-    # Restarting Consul at this time causes havoc. Disabling this for now until
-    # Consul supports configuring automountServiceAccountToken (a PR is planned
-    # to add support).
-
-    # # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
-    # kubectl patch serviceaccount/cortx-consul-client \
-    #     -p '{"automountServiceAccountToken": false}' \
-    #     --namespace "${namespace}"
-    # kubectl patch serviceaccount/cortx-consul-server \
-    #     -p '{"automountServiceAccountToken": false}' \
-    #     --namespace "${namespace}"
-
-    # # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    # kubectl rollout restart statefulset/cortx-consul-server --namespace "${namespace}"
-    # kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
-
-    # ##TODO This needs to be maintained during upgrades etc...
 }
 
 ##########################################################
@@ -549,7 +524,7 @@ function deployCortxLocalBlockStorage()
 
 function deleteStaleAutoGenFolders()
 {
-    # Delete all stale auto gen folders
+    # Delete all auto-generated files
     rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap"
 }
 
@@ -625,12 +600,6 @@ function deployCortxSecrets()
     cortx_external_ssl_secret=$(getSolutionValue "solution.common.ssl.external_secret")
 }
 
-function silentKill()
-{
-    kill "$1"
-    wait "$1" 2> /dev/null
-}
-
 function waitForAllDeploymentsAvailable()
 {
     local timeout=$1
@@ -648,18 +617,6 @@ function waitForAllDeploymentsAvailable()
     fi
 
     return ${rc}
-}
-
-function cleanup()
-{
-    # DEPRECATED: These files are no longer used during deploy, but the cleanup step is left behind
-    # to clean up as much as possible going forward.
-    # Delete files that contain disk partitions on the worker nodes and the node info
-    # and left-over secret data
-    [[ -d $(pwd)/cortx-cloud-helm-pkg ]] && find "$(pwd)/cortx-cloud-helm-pkg" -type f \( -name 'mnt-blk-*' -o -name 'node-list-*' -o -name secret-info.txt \) -delete
-
-    # Delete left-over machine IDs and any other auto-gen data
-    rm -rf "${cfgmap_path}"
 }
 
 function killBackgroundJobs() {
@@ -735,22 +692,15 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
 
-##########################################################
-# Deploy CORTX cloud pre-requisites
-##########################################################
 deleteStaleAutoGenFolders
-deployKubernetesPrereqs
+deployCortxPrereqs
 deployRancherProvisioner
 if [[ -z ${cortx_localblockstorage_skipdeployment} ]]; then
     deployCortxLocalBlockStorage
 fi
 deployCortxSecrets
-
-##########################################################
-# Deploy CORTX cloud
-##########################################################
 deployCortx
-cleanup
+deleteStaleAutoGenFolders
 
 if [[ ${CORTX_DEPLOY_NO_WAIT:-false} == true ]]; then
     exit
