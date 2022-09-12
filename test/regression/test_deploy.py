@@ -15,7 +15,7 @@ def get_expected_cortx_control_pods(namespace):
     child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)  # nosec
     return int(child.communicate()[0])
 
-def verify_pods_in_namespace(checker, namespace):
+def verify_pods_in_namespace(checker, namespace, data_only=False):
     cmd = ['kubectl', 'get', 'pods', '-n', namespace, '--no-headers']
     # nosec
     child = subprocess.Popen(cmd, stdout=subprocess.PIPE)  # nosec
@@ -34,15 +34,24 @@ def verify_pods_in_namespace(checker, namespace):
             if m.group(1) in deployed_pods:
                 deployed_pods[m.group(1)] += 1
 
-    num_control_pods = get_expected_cortx_control_pods(namespace)
-    checker.test(deployed_pods['cortx-control'] == num_control_pods,
-                 f'Verify {num_control_pods} cortx-control pod deployed in namespace {namespace}')
-    checker.test(deployed_pods['cortx-ha'] == 1,
-                 f'Verify one cortx-ha pod deployed in namespace {namespace}')
+    if data_only:
+        checker.test(deployed_pods['cortx-control'] == 0,
+                     f'Verify 0 cortx-control pods deployed in namespace {namespace}')
+        checker.test(deployed_pods['cortx-ha'] == 0,
+                     f'Verify 0 cortx-ha pods deployed in namespace {namespace}')
+        checker.test(deployed_pods['cortx-server'] == 0,
+                     f'Verify 0 cortx-server pods deployed in namespace {namespace}')
+    else:
+        num_control_pods = get_expected_cortx_control_pods(namespace)
+        checker.test(deployed_pods['cortx-control'] == num_control_pods,
+                     f'Verify {num_control_pods} cortx-control pod deployed in namespace {namespace}')
+        checker.test(deployed_pods['cortx-ha'] == 1,
+                     f'Verify one cortx-ha pod deployed in namespace {namespace}')
+        checker.test(deployed_pods['cortx-server'] >= 1,
+                     f'Verify at least one cortx-server pod deployed in namespace {namespace}')
+
     checker.test(deployed_pods['cortx-data'] >= 1,
                  f'Verify at least one cortx-data pod deployed in namespace {namespace}')
-    checker.test(deployed_pods['cortx-server'] >= 1,
-                 f'Verify at least one cortx-server pod deployed in namespace {namespace}')
 
 def run_deploy_test(cluster, logger, checker, shutdown=False):
 
@@ -83,7 +92,9 @@ def run_deploy_test(cluster, logger, checker, shutdown=False):
     logger.log(subprocess.Popen(['kubectl', 'get', 'all', '-n', namespace],  # nosec
                                 stdout=subprocess.PIPE)
                          .communicate()[0].decode('utf-8'))
-    verify_pods_in_namespace(checker, namespace)
+
+    data_only = cluster.solution['deployment_type'] == 'data-only'
+    verify_pods_in_namespace(checker, namespace, data_only)
 
     logger.log('\n\n')
     logger.logheader('-'*80)
@@ -126,7 +137,7 @@ def run_deploy_test(cluster, logger, checker, shutdown=False):
         logger.log(f'TIMING: Status: {sw.elapsed():.0f}s', color=Logger.OKBLUE)
 
         # Verify cortx pods running in expected namespace
-        verify_pods_in_namespace(checker, namespace)
+        verify_pods_in_namespace(checker, namespace, data_only)
 
     logger.log('\n\n')
     logger.logheader('-'*80)
