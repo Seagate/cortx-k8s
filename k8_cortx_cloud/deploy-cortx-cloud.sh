@@ -9,7 +9,6 @@ fi
 
 readonly solution_yaml=${1:-'solution.yaml'}
 readonly custom_values_file=${CORTX_DEPLOY_CUSTOM_VALUES_FILE:-}
-readonly cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 cortx_secret_fields=("kafka_admin_secret"
                      "consul_admin_secret"
                      "common_admin_secret"
@@ -148,14 +147,15 @@ function configurationCheck()
     fi
 }
 
+# Generate a values.yaml file for the CORTX Helm Chart
 buildValues() {
     set -eu
 
     local -r values_file="$1"
 
-    #
-    # Values for third-party Charts, and previous cortx-configmap Helm Chart
-    #
+    # If common.ssl.external_secret is not defined, this will be empty, which is ok
+    local cortx_external_ssl_secret
+    cortx_external_ssl_secret=$(getSolutionValue "solution.common.ssl.external_secret")
 
     # Initialize
     yq --null-input "
@@ -522,12 +522,6 @@ function deployCortxLocalBlockStorage()
         || exit $?
 }
 
-function deleteStaleAutoGenFolders()
-{
-    # Delete all auto-generated files
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap"
-}
-
 function pwgen()
 {
     # This function generates a random password that is
@@ -569,10 +563,13 @@ function deployCortxSecrets()
     printf "########################################################\n"
     # Parse secret from the solution file and create all secret files
     # in the "auto-gen-secret" folder
-    local secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
-    mkdir -p "${secret_auto_gen_path}"
     cortx_secret_name=$(getSolutionValue "solution.secrets.name")  # This is a global variable
     if [[ -n "${cortx_secret_name}" ]]; then
+        # Temporary location for secret field files
+        local secret_auto_gen_path="auto-gen-secret-${namespace}"
+        rm -rf "${secret_auto_gen_path}"
+        mkdir -p "${secret_auto_gen_path}"
+
         # Process secrets from solution.yaml
         for field in "${cortx_secret_fields[@]}"; do
             fcontent=$(getSolutionValue "solution.secrets.content.${field}")
@@ -590,14 +587,13 @@ function deployCortxSecrets()
             printf "Exit early.  Failed to create Secret '%s'\n" "${cortx_secret_name}"
             exit 1
         fi
+
+        # cleanup
+        rm -rf "${secret_auto_gen_path}"
     else
         cortx_secret_name="$(getSolutionValue "solution.secrets.external_secret")"
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
-
-    # This is a global variable
-    # If common.ssl.external_secret is not defined, this will be empty, which is ok
-    cortx_external_ssl_secret=$(getSolutionValue "solution.common.ssl.external_secret")
 }
 
 function waitForAllDeploymentsAvailable()
@@ -692,7 +688,6 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
 
-deleteStaleAutoGenFolders
 deployCortxPrereqs
 deployRancherProvisioner
 if [[ -z ${cortx_localblockstorage_skipdeployment} ]]; then
@@ -700,7 +695,6 @@ if [[ -z ${cortx_localblockstorage_skipdeployment} ]]; then
 fi
 deployCortxSecrets
 deployCortx
-deleteStaleAutoGenFolders
 
 if [[ ${CORTX_DEPLOY_NO_WAIT:-false} == true ]]; then
     exit
