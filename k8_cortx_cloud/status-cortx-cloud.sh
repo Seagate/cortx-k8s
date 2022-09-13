@@ -138,8 +138,6 @@ else
     failcount=$((failcount+1))
 fi
 
-readonly exclude_deprecated_selector="cortx.io/deprecated!=true"  # exclude deprecated service
-
 # Check services
 expected_count=1
 [[ ${data_deployment} == true ]] && expected_count=0
@@ -150,7 +148,7 @@ while IFS= read -r line; do
     printf "%s..." "${status[0]}"
     msg_passed
     count=$((count+1))
-done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector},${exclude_deprecated_selector} --no-headers)
+done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector} --no-headers)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -406,7 +404,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --no-headers --selector ${server_selector},${exclude_deprecated_selector} | grep -v -- -headless)
+done < <(kubectl get services --namespace="${namespace}" --no-headers --selector ${server_selector} | grep -v -- -headless)
 
 if (( count >= expected_count && count <= max_count )); then
     msg_overall_passed
