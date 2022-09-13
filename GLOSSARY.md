@@ -66,7 +66,7 @@ Commonly known as "the package manager for Kubernetes", [Helm](https://helm.sh/)
 
 ### IEM
 
-IEM stands for Interesting Event Messages, relating to events happening within the system, affecting normal system functionality and which may be useful for preliminary debugging. 
+In the context of [CORTX](https://github.com/Seagate/cortx), IEM stands for Interesting Event Messages, relating to events happening within the system, affecting normal system functionality and which may be useful for preliminary debugging. 
 
 ### JBOD
 
