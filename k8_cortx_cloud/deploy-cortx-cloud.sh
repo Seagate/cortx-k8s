@@ -572,7 +572,7 @@ function deployCortxSecrets()
 
         # Process secrets from solution.yaml
         for field in "${cortx_secret_fields[@]}"; do
-            fcontent=$(getSolutionValue "solution.secrets.content.${field}")
+            fcontent=$(yq ".solution.secrets.content.${field} | select( (. != null) )" "${solution_yaml}")
             if [[ -z ${fcontent} ]]; then
                 # No data for this field.  Generate a password.
                 fcontent=$(pwgen)
