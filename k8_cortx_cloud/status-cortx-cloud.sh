@@ -150,7 +150,7 @@ while IFS= read -r line; do
     printf "%s..." "${status[0]}"
     msg_passed
     count=$((count+1))
-done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector},${exclude_deprecated_selector} --no-headers)
+done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector} --no-headers)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
