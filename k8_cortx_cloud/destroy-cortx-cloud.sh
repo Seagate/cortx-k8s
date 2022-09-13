@@ -73,9 +73,7 @@ function uninstallHelmChart()
 
 function deleteSecrets()
 {
-    printf "########################################################\n"
-    printf "# Delete Auto-Generated Secrets                        #\n"
-    printf "########################################################\n"
+    printf "# Deleting Auto-Generated Secrets\n"
     local secret_name
     secret_name=$(yq '.solution.secrets.name | select( (. != null) )' "${solution_yaml}")
     if [[ -n "${secret_name}" ]]; then
@@ -86,13 +84,11 @@ function deleteSecrets()
 function deletePVCs()
 {
     # PVCs are not removed by uninstalling the Charts, so manually remove them for a complete cleanup
-    printf "########################################################\n"
-    printf "# Delete Persistent Volume Claims                      #\n"
-    printf "########################################################\n"
+    printf "# Deleting Persistent Volume Claims\n"
     for selector in "app.kubernetes.io/instance=cortx" "app=consul,release=cortx"; do
         if [[ "${force_delete}" == "--force" || "${force_delete}" == "-f" ]]; then
             while IFS= read -r pvc; do
-                printf "Patching %s for forced removal\n" "${pvc}"
+                printf "  patching %s for forced removal\n" "${pvc}"
                 kubectl patch "${pvc}" --namespace "${namespace}" --patch '{"metadata":{"finalizers":null}}'
             done < <(kubectl get pvc --no-headers --selector=${selector} --output=name)
         fi
@@ -100,6 +96,8 @@ function deletePVCs()
     done
 }
 
+
+printf "# Uninstalling CORTX Helm Charts\n"
 uninstallHelmChart cortx "${namespace}"
 uninstallHelmChart cortx-block-data "${namespace}"
 deleteSecrets
