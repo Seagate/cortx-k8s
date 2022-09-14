@@ -436,16 +436,6 @@ fi
 # Begin CORTX on k8s deployment
 ##########################################################
 
-function deployCortxPrereqs()
-{
-    # Add Helm repository dependencies
-    helm repo add hashicorp https://helm.releases.hashicorp.com
-    helm repo add bitnami https://charts.bitnami.com/bitnami
-
-    # Installing a chart from the filesystem requires fetching the dependencies
-    helm dependency build ../charts/cortx
-}
-
 function deployRancherProvisioner()
 {
     local image
@@ -489,6 +479,7 @@ function deployCortx()
         "${values[@]}" \
         --namespace "${namespace}" \
         --create-namespace \
+        --dependency-update \
         || exit $?
 }
 
@@ -688,7 +679,6 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
 
-deployCortxPrereqs
 deployRancherProvisioner
 if [[ -z ${cortx_localblockstorage_skipdeployment} ]]; then
     deployCortxLocalBlockStorage
