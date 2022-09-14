@@ -983,7 +983,7 @@ else
 fi
 
 # Check Pods
-num_items=$(( num_replicas + num_worker_nodes ))
+num_items="${num_replicas}"
 count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
@@ -997,7 +997,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get pods --namespace="${namespace}" --selector=${consul_selector} --no-headers)
+done < <(kubectl get pods --namespace="${namespace}" --selector="${consul_selector}",component=server --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed
