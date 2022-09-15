@@ -35,6 +35,7 @@ jobs:
           check_filenames: true
           check_hidden: true
           ignore_words_file: .codespellignore
+          skip: ./k8_cortx_cloud/templates/cloudformation/cloudformation.py
 
   shellcheck:
     name: Shellcheck
