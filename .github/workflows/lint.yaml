@@ -22,6 +22,19 @@ on:
   pull_request: ~
 
 jobs:
+  codespell:
+    name: Check for spelling errors
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3.0.0
+
+      - name: Run codespell
+        uses: codespell-project/actions-codespell@v1.0  # TODO: replace with Seagate fork
+        with:
+          check_filenames: true
+          check_hidden: true
+
   shellcheck:
     name: Shellcheck
     runs-on: ubuntu-latest
