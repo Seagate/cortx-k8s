@@ -115,6 +115,7 @@ fi
 
 # Check pods
 expected_count=$(helm get values cortx --all --namespace "${namespace}" --output yaml | yq .control.replicaCount)
+[[ ${data_deployment} == true ]] && expected_count=0
 count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
@@ -137,10 +138,9 @@ else
     failcount=$((failcount+1))
 fi
 
-readonly exclude_deprecated_selector="cortx.io/deprecated!=true"  # exclude deprecated service
-
 # Check services
 expected_count=1
+[[ ${data_deployment} == true ]] && expected_count=0
 count=0
 msg_info "| Checking Services: cortx-control |"
 while IFS= read -r line; do
@@ -148,7 +148,7 @@ while IFS= read -r line; do
     printf "%s..." "${status[0]}"
     msg_passed
     count=$((count+1))
-done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector},${exclude_deprecated_selector} --no-headers)
+done < <(kubectl get services --namespace="${namespace}" --selector=${control_selector} --no-headers)
 
 if [[ ${expected_count} -eq ${count} ]]; then
     msg_overall_passed
@@ -404,7 +404,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get services --namespace="${namespace}" --no-headers --selector ${server_selector},${exclude_deprecated_selector} | grep -v -- -headless)
+done < <(kubectl get services --namespace="${namespace}" --no-headers --selector ${server_selector} | grep -v -- -headless)
 
 if (( count >= expected_count && count <= max_count )); then
     msg_overall_passed
@@ -983,7 +983,7 @@ else
 fi
 
 # Check Pods
-num_items=$(( num_replicas + num_worker_nodes ))
+num_items="${num_replicas}"
 count=0
 msg_info "| Checking Pods |"
 while IFS= read -r line; do
@@ -997,7 +997,7 @@ while IFS= read -r line; do
         msg_passed
         count=$((count+1))
     fi
-done < <(kubectl get pods --namespace="${namespace}" --selector=${consul_selector} --no-headers)
+done < <(kubectl get pods --namespace="${namespace}" --selector="${consul_selector}",component=server --no-headers)
 
 if [[ ${num_items} -eq ${count} ]]; then
     msg_overall_passed

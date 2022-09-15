@@ -16,3 +16,8 @@ test_deploy_basic_default_with_motrclient:
   id: TEST-DEPLOY-0004
   cmd: ./test_deploy.py -s {{ k8_cloud_dir }}/solution.example.yaml -s {{ solution }} -s {{ test_dir }}/namespace.default.yaml -s {{ test_dir }}/client.yaml --shutdown --localfs={{ localfs }}
 
+#Deploy into default namespace
+test_deploy_basic_default_data_only:
+  id: TEST-DEPLOY-0005
+  cmd: ./test_deploy.py -s {{ k8_cloud_dir }}/solution.example.yaml -s {{ solution }} -s {{ test_dir }}/namespace.default.yaml -s {{ test_dir }}/data-only.yaml --shutdown --localfs={{ localfs }}
+
