@@ -113,7 +113,7 @@ def template():
                 "Type": "AWS::EC2::SecurityGroup::Id",
             },
             "KeyPair": {
-                "Description": "Name of an existing EC2 KeyPair to enable SSH access to the nodes.",
+                "Description": "Name of an existing EC2 key pair to enable SSH access to the nodes.",
                 "Type": "AWS::EC2::KeyPair::KeyName",
             },
             "InstanceType": {
@@ -358,11 +358,11 @@ def k8s_join():
     ]
 
 
-def cortx_prepare(cvgs, datas):
+def cortx_prepare(cvgs, data):
     return [
         {"Fn::Sub": "git clone -b ${VersionDeploymentRepo} https://github.com/Seagate/cortx-k8s.git"},
         "mv ./cortx-k8s/k8_cortx_cloud/solution.yaml ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig",
-        {"Fn::Sub": "./cortx-k8s/k8_cortx_cloud/generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs {} --data {} --solution ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig  --datasize ${{DiskSizeMotr}}Gi --metadatasize ${{DiskSizeMotr}}Gi > ./cortx-k8s/k8_cortx_cloud/solution.yaml".format(cvgs, datas)},
+        {"Fn::Sub": "./cortx-k8s/k8_cortx_cloud/generate-cvg-yaml.sh --nodes nodes.txt --devices devices.txt --cvgs {} --data {} --solution ./cortx-k8s/k8_cortx_cloud/solution.yaml.orig  --datasize ${{DiskSizeMotr}}Gi --metadatasize ${{DiskSizeMotr}}Gi > ./cortx-k8s/k8_cortx_cloud/solution.yaml".format(cvgs, data)},
         #TODO after bump to version with https://github.com/Seagate/cortx-k8s/pull/144
         # update prereq script args. Should be:
         #     ./prereq-deploy-cortx-cloud.sh -d /dev/sdb
@@ -394,9 +394,9 @@ def cortx_deploy():
     ]
 
 
-def disk_count(cvgs, datas):
+def disk_count(cvgs, data):
     # always use 1 metadata disk for now
-    return cvgs * (datas + 1)
+    return cvgs * (data + 1)
 
 
 def devices(disk_count):
@@ -435,7 +435,7 @@ def motr_disk(device):
     }
 
 
-def control_plane(resources, worker_count, cvgs, datas):
+def control_plane(resources, worker_count, cvgs, data):
     name = 'ControlPlane'
     eni_name = name + 'ENI'
 
@@ -443,14 +443,14 @@ def control_plane(resources, worker_count, cvgs, datas):
     resources[name] = node(eni_name,
         prepare(name) +
         node_list(worker_count) +
-        device_list(disk_count(cvgs, datas)) +
+        device_list(disk_count(cvgs, data)) +
         k8s_init() +
-        cortx_prepare(cvgs, datas) +
+        cortx_prepare(cvgs, data) +
         cortx_deploy(),
     )
 
 
-def worker(resources, worker_count, cvgs, datas, i):
+def worker(resources, worker_count, cvgs, data, i):
     name = 'Worker{}'.format(i)
     eni_name = name + 'ENI'
 
@@ -458,9 +458,9 @@ def worker(resources, worker_count, cvgs, datas, i):
     resources[name] = node(eni_name,
         prepare(name) +
         node_list(worker_count) +
-        device_list(disk_count(cvgs, datas)) +
+        device_list(disk_count(cvgs, data)) +
         k8s_join() +
-        cortx_prepare(cvgs, datas)
+        cortx_prepare(cvgs, data)
     )
 
 
