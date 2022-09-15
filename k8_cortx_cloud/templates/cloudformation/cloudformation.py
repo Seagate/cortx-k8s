@@ -113,7 +113,7 @@ def template():
                 "Type": "AWS::EC2::SecurityGroup::Id",
             },
             "KeyPair": {
-                "Description": "Name of an existing EC2 key pair to enable SSH access to the nodes.",
+                "Description": "Name of an existing EC2 KeyPair to enable SSH access to the nodes.",
                 "Type": "AWS::EC2::KeyPair::KeyName",
             },
             "InstanceType": {
