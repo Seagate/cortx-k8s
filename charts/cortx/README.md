@@ -157,8 +157,29 @@ helm uninstall cortx
 | server.persistence.accessModes | list | `["ReadWriteOnce"]` | Persistent volume access modes |
 | server.persistence.size | string | `"1Gi"` | Persistent volume size |
 | server.replicaCount | int | `1` | Number of Server replicas |
+| server.rgw.customLivenessProbe | object | `{}` | Override the default RGW liveness probe with a custom one. |
+| server.rgw.customReadinessProbe | object | `{}` | Override the default RGW readiness probe with a custom one. |
+| server.rgw.customStartupProbe | object | `{}` | Override the default RGW startup probe with a custom one. |
+| server.rgw.livenessProbe.enabled | bool | `false` | Enable the RGW container liveness probe |
+| server.rgw.livenessProbe.failureThreshold | int | `5` | Number of times to retry the liveness probe after it fails, before the pod is marked Unready. |
+| server.rgw.livenessProbe.initialDelaySeconds | int | `10` | Number of seconds to wait before the liveness probe is initiated |
+| server.rgw.livenessProbe.periodSeconds | int | `5` | How often (in seconds) to perform the liveness probe |
+| server.rgw.livenessProbe.successThreshold | int | `1` | Number of times the liveness probe must succeed, after having failed, to be considered successful (must be 1) |
+| server.rgw.livenessProbe.timeoutSeconds | int | `5` | Number of seconds after which the liveness probe times out |
+| server.rgw.readinessProbe.enabled | bool | `false` | Enable the RGW container readiness probe |
+| server.rgw.readinessProbe.failureThreshold | int | `5` | Number of times to retry the readiness probe after it fails, before the pod is marked Unready. |
+| server.rgw.readinessProbe.initialDelaySeconds | int | `10` | Number of seconds to wait before the readiness probe is initiated |
+| server.rgw.readinessProbe.periodSeconds | int | `5` | How often (in seconds) to perform the readiness probe |
+| server.rgw.readinessProbe.successThreshold | int | `1` | Number of times the readiness probe must succeed, after having failed, to be considered successful |
+| server.rgw.readinessProbe.timeoutSeconds | int | `1` | Number of seconds after which the readiness probe times out |
 | server.rgw.resources.limits | object | `{"cpu":"2000m","memory":"2Gi"}` | The resource limits for the Server RGW containers and processes |
 | server.rgw.resources.requests | object | `{"cpu":"250m","memory":"128Mi"}` | The resource requests for the Server RGW containers and processes |
+| server.rgw.startupProbe.enabled | bool | `false` | Enable the RGW container startup probe |
+| server.rgw.startupProbe.failureThreshold | int | `15` | Number of times the startup probe must succeed, after having failed, to be considered successful |
+| server.rgw.startupProbe.initialDelaySeconds | int | `0` | Number of seconds to wait before the startup probe is initiated |
+| server.rgw.startupProbe.periodSeconds | int | `5` | How often (in seconds) to perform the startup probe |
+| server.rgw.startupProbe.successThreshold | int | `1` | Number of times to retry the startup probe after it fails, before the pod is marked Unready. |
+| server.rgw.startupProbe.timeoutSeconds | int | `5` | Number of seconds after which the startup probe times out |
 | server.service.instanceCount | int | `1` | Number of service instances for LoadBalancer service types |
 | server.service.nodePorts.http | string | `""` | Node port for S3 HTTP for LoadBalancer and NodePort service types |
 | server.service.nodePorts.https | string | `""` | Node port for S3 HTTPS for LoadBalancer and NodePort service types |
