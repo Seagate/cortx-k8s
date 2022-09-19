@@ -9,7 +9,6 @@ fi
 
 readonly solution_yaml=${1:-'solution.yaml'}
 readonly custom_values_file=${CORTX_DEPLOY_CUSTOM_VALUES_FILE:-}
-readonly cfgmap_path="./cortx-cloud-helm-pkg/cortx-configmap"
 cortx_secret_fields=("kafka_admin_secret"
                      "consul_admin_secret"
                      "common_admin_secret"
@@ -148,19 +147,21 @@ function configurationCheck()
     fi
 }
 
+# Generate a values.yaml file for the CORTX Helm Chart
 buildValues() {
     set -eu
 
     local -r values_file="$1"
 
-    #
-    # Values for third-party Charts, and previous cortx-configmap Helm Chart
-    #
+    # If common.ssl.external_secret is not defined, this will be empty, which is ok
+    local cortx_external_ssl_secret
+    cortx_external_ssl_secret=$(getSolutionValue "solution.common.ssl.external_secret")
 
     # Initialize
     yq --null-input "
         (.global.storageClass, .consul.server.storageClass) = \"local-path\"
-        | .existingSecret = \"${cortx_secret_name}\"" > "${values_file}"
+        | .existingSecret = \"${cortx_secret_name}\"
+        | .existingCertificateSecret = \"${cortx_external_ssl_secret}\"" > "${values_file}"
 
     # Configure all cortx-setup containers for console component logging
     yq -i '.global.cortx.setupLoggingDetail = "component"' "${values_file}"
@@ -327,6 +328,12 @@ buildValues() {
     set +eu
 }
 
+if [[ -n $(helm ls --all-namespaces --short --filter '^cortx$') ]]; then
+    echo "CORTX is already deployed in this Kubernetes cluster." \
+         "Only a single CORTX installation is currently supported. Exiting."
+    exit 1
+fi
+
 num_motr_client=$(extractBlock 'solution.common.motr.num_client_inst')
 
 # Initial solution.yaml / system state checks
@@ -365,7 +372,7 @@ if [[ ${not_ready_node_count} -gt 0 ]]; then
         echo "- ${not_ready_node}"
     done
 
-    printf "\nContinue CORTX Cloud deployment could lead to unexpeted results.\n"
+    printf "\nContinue CORTX Cloud deployment could lead to unexpected results.\n"
     read -p "Do you want to continue (y/n, yes/no)? " -r reply
     if [[ "${reply}" =~ ^(y|Y)*.(es)$ || "${reply}" =~ ^(y|Y)$ ]]; then
         exit_early=false
@@ -429,23 +436,6 @@ fi
 # Begin CORTX on k8s deployment
 ##########################################################
 
-##########################################################
-# Deploy CORTX k8s pre-reqs
-##########################################################
-function deployKubernetesPrereqs()
-{
-    # Add Helm repository dependencies
-    helm repo add hashicorp https://helm.releases.hashicorp.com
-    helm repo add bitnami https://charts.bitnami.com/bitnami
-
-    # Installing a chart from the filesystem requires fetching the dependencies
-    helm dependency build ../charts/cortx
-}
-
-
-##########################################################
-# Deploy CORTX 3rd party
-##########################################################
 function deployRancherProvisioner()
 {
     local image
@@ -489,25 +479,8 @@ function deployCortx()
         "${values[@]}" \
         --namespace "${namespace}" \
         --create-namespace \
+        --dependency-update \
         || exit $?
-
-    # Restarting Consul at this time causes havoc. Disabling this for now until
-    # Consul supports configuring automountServiceAccountToken (a PR is planned
-    # to add support).
-
-    # # Patch generated ServiceAccounts to prevent automounting ServiceAccount tokens
-    # kubectl patch serviceaccount/cortx-consul-client \
-    #     -p '{"automountServiceAccountToken": false}' \
-    #     --namespace "${namespace}"
-    # kubectl patch serviceaccount/cortx-consul-server \
-    #     -p '{"automountServiceAccountToken": false}' \
-    #     --namespace "${namespace}"
-
-    # # Rollout a new deployment version of Consul pods to use updated Service Account settings
-    # kubectl rollout restart statefulset/cortx-consul-server --namespace "${namespace}"
-    # kubectl rollout restart daemonset/cortx-consul-client --namespace "${namespace}"
-
-    # ##TODO This needs to be maintained during upgrades etc...
 }
 
 ##########################################################
@@ -538,12 +511,6 @@ function deployCortxLocalBlockStorage()
         --namespace "${namespace}" \
         --create-namespace \
         || exit $?
-}
-
-function deleteStaleAutoGenFolders()
-{
-    # Delete all stale auto gen folders
-    rm -rf "$(pwd)/cortx-cloud-helm-pkg/cortx-configmap"
 }
 
 function pwgen()
@@ -587,13 +554,16 @@ function deployCortxSecrets()
     printf "########################################################\n"
     # Parse secret from the solution file and create all secret files
     # in the "auto-gen-secret" folder
-    local secret_auto_gen_path="${cfgmap_path}/auto-gen-secret-${namespace}"
-    mkdir -p "${secret_auto_gen_path}"
     cortx_secret_name=$(getSolutionValue "solution.secrets.name")  # This is a global variable
     if [[ -n "${cortx_secret_name}" ]]; then
+        # Temporary location for secret field files
+        local secret_auto_gen_path="auto-gen-secret-${namespace}"
+        rm -rf "${secret_auto_gen_path}"
+        mkdir -p "${secret_auto_gen_path}"
+
         # Process secrets from solution.yaml
         for field in "${cortx_secret_fields[@]}"; do
-            fcontent=$(getSolutionValue "solution.secrets.content.${field}")
+            fcontent=$(yq ".solution.secrets.content.${field} | select( (. != null) )" "${solution_yaml}")
             if [[ -z ${fcontent} ]]; then
                 # No data for this field.  Generate a password.
                 fcontent=$(pwgen)
@@ -608,16 +578,13 @@ function deployCortxSecrets()
             printf "Exit early.  Failed to create Secret '%s'\n" "${cortx_secret_name}"
             exit 1
         fi
+
+        # cleanup
+        rm -rf "${secret_auto_gen_path}"
     else
         cortx_secret_name="$(getSolutionValue "solution.secrets.external_secret")"
         printf "Installing CORTX with existing Secret %s.\n" "${cortx_secret_name}"
     fi
-}
-
-function silentKill()
-{
-    kill "$1"
-    wait "$1" 2> /dev/null
 }
 
 function waitForAllDeploymentsAvailable()
@@ -637,18 +604,6 @@ function waitForAllDeploymentsAvailable()
     fi
 
     return ${rc}
-}
-
-function cleanup()
-{
-    # DEPRECATED: These files are no longer used during deploy, but the cleanup step is left behind
-    # to clean up as much as possible going forward.
-    # Delete files that contain disk partitions on the worker nodes and the node info
-    # and left-over secret data
-    [[ -d $(pwd)/cortx-cloud-helm-pkg ]] && find "$(pwd)/cortx-cloud-helm-pkg" -type f \( -name 'mnt-blk-*' -o -name 'node-list-*' -o -name secret-info.txt \) -delete
-
-    # Delete left-over machine IDs and any other auto-gen data
-    rm -rf "${cfgmap_path}"
 }
 
 function killBackgroundJobs() {
@@ -724,22 +679,12 @@ if [[ "${num_worker_nodes}" -gt "${max_kafka_inst}" ]]; then
     num_kafka_replicas=${max_kafka_inst}
 fi
 
-##########################################################
-# Deploy CORTX cloud pre-requisites
-##########################################################
-deleteStaleAutoGenFolders
-deployKubernetesPrereqs
 deployRancherProvisioner
 if [[ -z ${cortx_localblockstorage_skipdeployment} ]]; then
     deployCortxLocalBlockStorage
 fi
 deployCortxSecrets
-
-##########################################################
-# Deploy CORTX cloud
-##########################################################
 deployCortx
-cleanup
 
 if [[ ${CORTX_DEPLOY_NO_WAIT:-false} == true ]]; then
     exit

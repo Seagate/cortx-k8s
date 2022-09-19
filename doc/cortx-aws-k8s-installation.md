@@ -48,7 +48,7 @@ CORTX requires Kubernetes cluster for installation.
 
 This procedure was tested within the following limits:
 - Number of nodes in the cluster: 1 - 15
-- Number of Motr (data+metadata) drives per node: 3 - 21 
+- Number of Motr (data+metadata) drives per node: 3 - 21
   - A configuration of 100+ drives per node was also tested outside of AWS
 
 Since this procedure uses an AWS key pair,
@@ -76,7 +76,7 @@ The CloudFormation template will set the:
 
 The memory allocation and resource utilization for the nodes (setup size) must be appropriate for the instances you are deploying to.
 The c5.2xlarge instances used in this guide have too little memory for the `large` configuration,
-so `small` is the deafult in the template.
+so `small` is the default in the template.
 
 <details>
   <summary> Click here to get more details about other configuration parameters </summary>
@@ -88,8 +88,8 @@ so `small` is the deafult in the template.
 
   SNS refers to data protection, and is defined as "N+K+S"
   * N - number of data chunks
-  * K - number of parity chunks or a number of failed CVGs the cluster can withstand without loosing data 
-  * S - number of spares. Currently no spares are supported. 
+  * K - number of parity chunks or a number of failed CVGs the cluster can withstand without losing data
+  * S - number of spares. Currently no spares are supported.
   * N+K should be smaller than the number of nodes multiplied by the number of CVGs per node.
 
   DIX refers to metadata protection. Current CORTX implementation supports replication for metadata. DIX configuration should be specified as 1+K+0, where K defines number of replicas.
@@ -215,7 +215,7 @@ export CSM_IP=`kubectl get svc cortx-control-loadbal-svc -ojsonpath='{.spec.clus
 # Authenticate using CORTX credentials (as defined in solutions.yaml)
 curl -v -d '{"username": "cortxadmin", "password": "Cortxadmin@123"}' https://$CSM_IP:8081/api/v2/login --insecure
 
-# Create an S3 account. Replace Bearer authorization with the token returned by the login command 
+# Create an S3 account. Replace Bearer authorization with the token returned by the login command
 curl -H 'Authorization: Bearer 286dd2db4c65427cbd961aa96ea257da' -d '{  "account_name": "gts3account",   "account_email": "gt@seagate.com",   "password": "Account1!", "access_key": "gregoryaccesskey", "secret_key": "gregorysecretkey" }' https://$CSM_IP:8081/api/v2/s3_accounts --insecure
 
 ```
@@ -237,7 +237,7 @@ export AWS_DEFAULT_REGION=us-east-1
 ### 4.3 Use CORTX IAM and S3 functionality
 CORTX S3 and IAM interfaces are available through multiple IPs (one IP per worker node). An external load balancer can be used to aggregate all traffic
 ```
-# Define one of the data IPs in the cluster 
+# Define one of the data IPs in the cluster
 export SERVER_IP=`kubectl get svc | grep cortx-server-clusterip-svc | head -1 | awk '{print $3}'`
 
 # Create an IAM user and get credentials for this user
@@ -245,7 +245,7 @@ aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam create-user --use
 aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam create-access-key --user-name bob
 aws --no-verify-ssl --endpoint-url https://$SERVER_IP:9443 iam list-users
 
-# Create an S3 bucket and upload a file 
+# Create an S3 bucket and upload a file
 aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 ls
 aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 mb s3://cortx-aws-works
 aws --no-verify-ssl --endpoint-url http://$SERVER_IP:80 s3 cp awscliv2.zip s3://cortx-aws-works
@@ -268,4 +268,4 @@ chmod +x s3-benchmark
 ## Tested by:
 
 Feb 22, 2022: Tim Shaffer (tim.shaffer@seagate.com)
-Nov 12, 2021: Rose Wambui (rose.wambui@seagate.com) and Justin Woo (justin.woo@seagate.com) 
+Nov 12, 2021: Rose Wambui (rose.wambui@seagate.com) and Justin Woo (justin.woo@seagate.com)

@@ -1,0 +1,5 @@
+solution:
+  deployment_type: data-only
+  common:
+    motr:
+      num_client_inst: 1
