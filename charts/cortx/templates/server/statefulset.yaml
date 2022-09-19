@@ -100,6 +100,45 @@ spec:
             - name: motr-client
               containerPort: {{ include "cortx.server.motrClientPort" . | int }}
               protocol: TCP
+          {{- if .Values.server.rgw.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /swift/healthcheck
+              port: rgw-http
+            initialDelaySeconds: {{ .Values.server.rgw.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.rgw.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.rgw.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.rgw.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.rgw.livenessProbe.failureThreshold }}
+          {{- else if .Values.server.rgw.customLivenessProbe }}
+          livenessProbe: {{- toYaml .Values.server.rgw.customLivenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.server.rgw.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /swift/healthcheck
+              port: rgw-http
+            initialDelaySeconds: {{ .Values.server.rgw.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.rgw.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.rgw.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.rgw.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.rgw.readinessProbe.failureThreshold }}
+          {{- else if .Values.server.rgw.customReadinessProbe }}
+          readinessProbe: {{- toYaml .Values.server.rgw.customReadinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.server.rgw.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: /swift/healthcheck
+              port: rgw-http
+            initialDelaySeconds: {{ .Values.server.rgw.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.rgw.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.rgw.startupProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.rgw.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.rgw.startupProbe.failureThreshold }}
+          {{- else if .Values.server.rgw.customStartupProbe }}
+          startupProbe: {{- toYaml .Values.server.rgw.customStartupProbe | nindent 12 }}
+          {{- end }}
           resources: {{- toYaml .Values.server.rgw.resources | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false

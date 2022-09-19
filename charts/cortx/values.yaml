@@ -385,6 +385,61 @@ server:
         cpu: 250m
         memory: 128Mi
 
+    ## Server RGW container liveness probe options
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+    livenessProbe:
+      # -- Enable the RGW container liveness probe
+      enabled: false
+      # -- Number of seconds to wait before the liveness probe is initiated
+      initialDelaySeconds: 10
+      # -- How often (in seconds) to perform the liveness probe
+      periodSeconds: 5
+      # -- Number of seconds after which the liveness probe times out
+      timeoutSeconds: 5
+      # -- Number of times the liveness probe must succeed, after having failed, to be considered successful (must be 1)
+      successThreshold: 1
+      # -- Number of times to retry the liveness probe after it fails, before the pod is marked Unready.
+      failureThreshold: 5
+
+    ## Server RGW container readiness probe options
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+    readinessProbe:
+      # -- Enable the RGW container readiness probe
+      enabled: false
+      # -- Number of seconds to wait before the readiness probe is initiated
+      initialDelaySeconds: 10
+      # -- How often (in seconds) to perform the readiness probe
+      periodSeconds: 5
+      # -- Number of seconds after which the readiness probe times out
+      timeoutSeconds: 1
+      # -- Number of times the readiness probe must succeed, after having failed, to be considered successful
+      successThreshold: 1
+      # -- Number of times to retry the readiness probe after it fails, before the pod is marked Unready.
+      failureThreshold: 5
+
+    ## Server RGW container startup probe options
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+    startupProbe:
+      # -- Enable the RGW container startup probe
+      enabled: false
+      # -- Number of seconds to wait before the startup probe is initiated
+      initialDelaySeconds: 0
+      # -- How often (in seconds) to perform the startup probe
+      periodSeconds: 5
+      # -- Number of seconds after which the startup probe times out
+      timeoutSeconds: 5
+      # -- Number of times the startup probe must succeed, after having failed, to be considered successful
+      failureThreshold: 15
+      # -- Number of times to retry the startup probe after it fails, before the pod is marked Unready.
+      successThreshold: 1
+
+    # -- Override the default RGW liveness probe with a custom one.
+    customLivenessProbe: {}
+    # -- Override the default RGW readiness probe with a custom one.
+    customReadinessProbe: {}
+    # -- Override the default RGW startup probe with a custom one.
+    customStartupProbe: {}
+
   # Server S3 service
   service:
     # -- Kubernetes service type
