@@ -17,7 +17,7 @@ Kubernetes: `>=1.22.0-0`
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://charts.bitnami.com/bitnami | kafka | 16.2.7 |
+| https://charts.bitnami.com/bitnami | kafka | 17.2.3 |
 | https://helm.releases.hashicorp.com | consul | 0.42.0 |
 
 ## Installation
